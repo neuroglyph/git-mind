@@ -6,7 +6,7 @@ set -e
 
 # Source Docker guard - will exit if not in Docker
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../docker-guard.sh"
+source "$SCRIPT_DIR/../scripts/docker-guard.sh"
 
 echo "=== GitMind C Test Suite ==="
 

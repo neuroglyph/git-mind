@@ -67,7 +67,7 @@ demo:
 
 # Run fuzz testing
 fuzz:
-	./tests/integration/fuzz-test.sh
+	./tests/tools/fuzz-test.sh
 
 # Run memory checks with Valgrind
 valgrind:
@@ -75,7 +75,7 @@ valgrind:
 
 # Multi-compiler strict testing
 strict-test:
-	docker compose run --rm dev ./test-multi-compiler.sh
+	docker compose run --rm dev ./tests/tools/test-multi-compiler.sh
 
 # Convenience target to build and test
 all: build test

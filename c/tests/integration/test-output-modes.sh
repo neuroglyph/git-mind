@@ -8,7 +8,7 @@ set -uo pipefail  # Remove -e to allow tests to continue on failure
 
 # Source Docker guard - will exit if not in Docker
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../docker-guard.sh"
+source "$SCRIPT_DIR/../scripts/docker-guard.sh"
 
 # Get to the C implementation root
 cd "$(dirname "$0")/../.."

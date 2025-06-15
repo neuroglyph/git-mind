@@ -14,7 +14,7 @@ set(TEST_SOURCES
 
 # Path validation tests
 add_executable(test_path_validation
-    test_path_validation.c
+    unit/test_path_validation.c
     ${TEST_SOURCES}
 )
 target_include_directories(test_path_validation PRIVATE ../include ${CMOCKA_INCLUDE_DIRS})
@@ -24,7 +24,7 @@ add_test(NAME path_validation COMMAND test_path_validation)
 
 # Memory leak tests (requires linker wrapping)
 add_executable(test_memory_leaks
-    test_memory_leaks.c
+    unit/test_memory_leaks.c
     ${TEST_SOURCES}
 )
 target_include_directories(test_memory_leaks PRIVATE ../include ${CMOCKA_INCLUDE_DIRS})

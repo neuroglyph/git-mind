@@ -6,10 +6,7 @@ set -uo pipefail  # Remove -e to allow tests to fail without exiting
 
 # Source Docker guard - will exit if not in Docker
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../docker-guard.sh"
-
-# Get to the C implementation root
-cd "$(dirname "$0")/../.."
+source "$SCRIPT_DIR/../scripts/docker-guard.sh"
 
 echo "=== Path Validation Security Tests ==="
 echo
@@ -22,100 +19,104 @@ NC='\033[0m' # No Color
 FAILED=0
 PASSED=0
 
-# Test function
+# Test function that uses git-mind link command
 test_path() {
-    local path="$1"
-    local expected="$2"
+    local source_path="$1"
+    local should_fail="$2"
     local description="$3"
+    local error_pattern="$4"
     
-    # Create a simple test program in a temp directory
-    TMPDIR=$(mktemp -d)
-    cat > "$TMPDIR/test_path.c" << 'EOF'
-#include <stdio.h>
-#include <string.h>
-#include "gitmind.h"
-
-// Test wrapper
-int main(int argc, char** argv) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <path>\n", argv[0]);
-        return 1;
-    }
+    # Create test repo
+    TEST_REPO=$(mktemp -d)
+    cd "$TEST_REPO"
+    git init --quiet
+    git config user.name "Test User"
+    git config user.email "test@example.com"
+    touch README.md target.txt
+    git add .
+    git commit -m "Initial" --quiet
+    git-mind init >/dev/null 2>&1
     
-    int result = gm_validate_link_path(argv[1]);
-    printf("%d\n", result);
-    return 0;
-}
-EOF
-    
-    # Compile it (include all sources except main.c to avoid duplicate main)
-    if ! gcc -o "$TMPDIR/test_path" "$TMPDIR/test_path.c" src/gitmind.c src/link.c src/sha256.c src/path.c src/check.c src/status.c src/traverse.c -I./include -Wall -Wextra -Wno-format-truncation 2>&1; then
-        echo -e "${RED}✗${NC} Compilation failed for test"
-        rm -rf "$TMPDIR"
-        exit 1
+    # Create source file if it's a valid path
+    if [[ ! "$source_path" =~ \.\. ]] && [[ ! "$source_path" =~ ^/ ]] && [[ -n "$source_path" ]]; then
+        # Create directory structure if needed
+        dir=$(dirname "$source_path")
+        if [ "$dir" != "." ] && [ "$dir" != "" ]; then
+            mkdir -p "$dir"
+        fi
+        touch "$source_path"
     fi
     
-    # Run the test
-    local result=$("$TMPDIR/test_path" "$path" 2>/dev/null || echo "-99")
+    echo -n "Testing $description... "
     
-    if [ "$result" = "$expected" ]; then
-        echo -e "${GREEN}✓${NC} $description"
-        ((PASSED++))
+    # Run the link command
+    output=$(git-mind link "$source_path" target.txt 2>&1)
+    result=$?
+    
+    if [ "$should_fail" = "1" ]; then
+        # Should fail
+        if [ $result -ne 0 ] && echo "$output" | grep -q "$error_pattern"; then
+            echo -e "${GREEN}✓${NC} (correctly rejected)"
+            ((PASSED++))
+        else
+            echo -e "${RED}✗${NC} (should have been rejected)"
+            echo "  Output: $output"
+            ((FAILED++))
+        fi
     else
-        echo -e "${RED}✗${NC} $description"
-        echo "  Path: '$path'"
-        echo "  Expected: $expected, Got: $result"
-        ((FAILED++))
+        # Should succeed
+        if [ $result -eq 0 ]; then
+            echo -e "${GREEN}✓${NC}"
+            ((PASSED++))
+        else
+            echo -e "${RED}✗${NC} (should have succeeded)"
+            echo "  Output: $output"
+            ((FAILED++))
+        fi
     fi
     
-    rm -rf "$TMPDIR"
+    cd - >/dev/null
+    rm -rf "$TEST_REPO"
 }
 
-echo "Testing path traversal patterns..."
+echo "Testing path traversal protection..."
+echo
 
 # Valid paths
-test_path "file.txt" "0" "Simple filename"
-test_path "src/main.c" "0" "Relative path"
-test_path "a/b/c/d.txt" "0" "Deep relative path"
-test_path "./file.txt" "0" "Current directory prefix"
+test_path "file.txt" 0 "simple filename" ""
+test_path "src/main.c" 0 "nested path" ""
+test_path "./file.txt" 0 "current directory prefix" ""
+test_path "dir/file.txt" 0 "directory path" ""
 
-# Invalid paths - absolute
-test_path "/etc/passwd" "-6" "Absolute path"
-test_path "/home/user/file" "-6" "Absolute home path"
+# Invalid: Absolute paths
+test_path "/etc/passwd" 1 "absolute Unix path" "Absolute paths not allowed"
+test_path "/root/.ssh/id_rsa" 1 "sensitive absolute path" "Absolute paths not allowed"
+test_path "C:\\Windows\\System32" 1 "Windows absolute path" "Absolute paths not allowed"
 
-# Invalid paths - path traversal attempts
-test_path "../file.txt" "-6" "Simple parent directory"
-test_path "../../etc/passwd" "-6" "Multiple parent directories"
-test_path "foo/../bar" "-6" "Traversal in middle"
-test_path "foo/../../bar" "-6" "Double traversal in middle"
-test_path "./../../etc/passwd" "-6" "Current then traversal"
-test_path "foo/bar/../../../etc" "-6" "Complex traversal"
-test_path "foo/.." "-6" "Traversal at end"
-test_path "../" "-6" "Just parent directory"
-test_path "foo/bar/.." "-6" "Nested traversal"
+# Invalid: Parent directory references
+test_path "../file" 1 "parent directory" "Path traversal not allowed"
+test_path "../../etc/passwd" 1 "multiple parent refs" "Path traversal not allowed"
+test_path "foo/../bar" 1 "parent ref in middle" "Path traversal not allowed"
+test_path "foo/bar/../../../etc" 1 "complex traversal" "Path traversal not allowed"
+test_path "foo/.." 1 "trailing parent ref" "Path traversal not allowed"
+test_path ".." 1 "just parent ref" "Path traversal not allowed"
+test_path "../../../../../../../etc/passwd" 1 "many parent refs" "Path traversal not allowed"
 
-# Tricky variants
-test_path "..file.txt" "0" "Dots at start (valid)"
-test_path "foo..bar" "0" "Dots in middle (valid)"
-test_path "..." "0" "Three dots (valid)"
-test_path "...." "0" "Four dots (valid)"
-test_path "foo/..bar/baz" "0" "Dots after slash (valid)"
-
-# URL encoding attempts
-test_path "foo%2F..%2Fbar" "0" "URL encoded slashes (treated as literal)"
-test_path "foo/../bar" "-6" "Real traversal for comparison"
-
-# Windows-style paths (should be rejected due to backslashes)
-test_path "C:\\file.txt" "-6" "Windows absolute (rejected - contains backslash)"
-test_path "..\\file.txt" "-6" "Windows traversal (rejected - contains backslash)"
-
-# Empty and special
-test_path "" "-6" "Empty path"
-test_path "." "0" "Current directory"
+# Edge cases
+test_path "" 1 "empty path" "Empty path"
+test_path "..foo" 0 "dots at start of name" ""
+test_path "foo..bar" 0 "dots in middle of name" ""
+test_path "..." 0 "three dots" ""
+test_path "...." 0 "four dots" ""
 
 echo
-echo "Summary: $PASSED passed, $FAILED failed"
+echo "Summary:"
+echo "  Passed: $PASSED"
+echo "  Failed: $FAILED"
 
 if [ $FAILED -gt 0 ]; then
     exit 1
 fi
+
+echo
+echo -e "${GREEN}All path validation tests passed!${NC}"

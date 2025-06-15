@@ -23,7 +23,7 @@ services:
     volumes:
       - .:/test
     working_dir: /test
-    command: ./tests/integration/run-all-tests.sh
+    command: ./tests/scripts/run-all-tests.sh
     environment:
       - DOCKER_CONTAINER=1
       - RANDOM_TESTS=${RANDOM_TESTS:-0}

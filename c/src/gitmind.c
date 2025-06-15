@@ -112,12 +112,16 @@ int gm_init(const char* repo_path) {
     ret = ensure_dir(gitmind_path);
     if (ret != 0) return ret;
     
-    // Create .gitmind/links directory
+    // Create .gitmind/links directory (for backward compatibility)
     char links_path[GM_MAX_PATH];
     snprintf(links_path, sizeof(links_path), "%s/.gitmind/links", repo_path);
     
     ret = ensure_dir(links_path);
     if (ret != 0) return ret;
+    
+    // Create orphan ref for holy architecture
+    ret = gm_orphan_ref_create();
+    if (ret != 0 && ret != GM_ERR_ALREADY_EXISTS) return ret;
     
     return GM_OK;
 }

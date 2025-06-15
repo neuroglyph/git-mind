@@ -89,13 +89,61 @@ typedef enum {
 // SHA constants
 #define GM_SHA256_SIZE 32
 #define GM_SHA256_STRING_SIZE 65
+#define GM_SHA1_SIZE 20
+#define GM_SHA1_STRING_SIZE 41
 
 // Default values
 #define GM_DEFAULT_LINK_TYPE "REFERENCES"
 #define GM_LINKS_DIR ".gitmind/links"
-#define GM_LINK_EXTENSION ".link"
+#define GM_LINK_EXTENSION ".gml"
+#define GM_LINK_FORMAT_VERSION "1.0"
 
-// Link structure
+// File format constants
+#define GM_FILE_MAGIC "GMv1"  // 4-byte magic header
+#define GM_FILE_SEPARATOR "|"
+#define GM_EDGE_MARKER "+"
+#define GM_TOMBSTONE_MARKER "-"
+
+// Git commands
+#define GM_GIT_HASH_OBJECT "git hash-object \"%s\" 2>/dev/null"
+#define GM_GIT_CONFIG_USER_NAME "git config user.name"
+#define GM_GIT_ADD_FILE "git add %s 2>/dev/null"
+
+// Default values
+#define GM_DEFAULT_AUTHOR "unknown"
+#define GM_DEFAULT_CONFIDENCE 1.0
+
+// Orphan ref paths
+#define GM_GRAPH_REF "refs/gitmind/graph"
+#define GM_INBOUND_NOTES_REF "refs/notes/gitmind/inbound"
+#define GM_TRAVERSAL_NOTES_REF "refs/notes/gitmind/traversal"
+
+// Multi-edge constants
+#define GM_MAX_EDGES_PER_FILE 100
+#define GM_MAX_AUTHOR 128
+#define GM_MAX_REASON 512
+
+// Edge structure for multi-edge model
+typedef struct {
+    char type[GM_MAX_TYPE];
+    char author[GM_MAX_AUTHOR];
+    time_t timestamp;
+    double confidence;
+    int is_tombstone;  // Using int instead of bool for C99 compatibility
+    char tombstone_reason[GM_MAX_REASON];
+} gm_edge_t;
+
+// Multi-edge link file structure
+typedef struct {
+    char source_sha[GM_SHA256_STRING_SIZE];  // Git blob SHA
+    char target_sha[GM_SHA256_STRING_SIZE];  // Git blob SHA
+    char source_path[GM_MAX_PATH];           // Path metadata
+    char target_path[GM_MAX_PATH];           // Path metadata
+    gm_edge_t edges[GM_MAX_EDGES_PER_FILE];
+    size_t edge_count;
+} gm_link_file_t;
+
+// Legacy single-edge structure (for compatibility during migration)
 typedef struct {
     char type[GM_MAX_TYPE];
     char source[GM_MAX_PATH];
@@ -103,7 +151,7 @@ typedef struct {
     time_t timestamp;
 } gm_link_t;
 
-// Link collection
+// Link collection (now represents edges across multiple files)
 typedef struct {
     gm_link_t* links;
     size_t count;
@@ -167,15 +215,60 @@ const char* gm_error_string(int error_code);
 
 // Utilities
 int gm_sha256_string(const char* content, char* out_sha);
+int gm_sha1_string(const char* content, char* out_sha);
 int gm_normalize_path(const char* path, char* out_normalized);
 int gm_path_join(char* dest, size_t dest_size, const char* dir, const char* file);
 int gm_validate_link_path(const char* path);
 
+// Multi-edge operations
+int gm_path_to_sha(const char* path, char* out_sha);
+int gm_compute_link_filename(const char* source_sha, const char* target_sha, 
+                           char* out_filename, size_t filename_size);
+int gm_link_file_load(const char* filename, gm_link_file_t* link_file);
+int gm_link_file_save(const char* filename, const gm_link_file_t* link_file);
+int gm_link_file_merge(gm_link_file_t* dest, 
+                      const gm_link_file_t* src1,
+                      const gm_link_file_t* src2);
+
 // Internal - not part of public API
-void gm_set_error(const char* fmt, ...);
+void gm_set_error(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 
 // Version info
 const char* gm_version_string(void);
+
+// Orphan ref operations
+int gm_orphan_ref_exists(void);
+int gm_orphan_ref_create(void);
+int gm_get_graph_tree(char* out_tree_sha);
+int gm_update_graph_ref(const char* new_tree_sha, const char* message);
+
+// ULID operations
+#define GM_ULID_SIZE 27  // 26 chars + null terminator
+int gm_ulid_generate(char* out_ulid);
+int gm_ulid_timestamp(const char* ulid, time_t* out_timestamp);
+
+// CBOR operations
+int gm_cbor_encode_edge(const char* target_sha, float confidence, 
+                       time_t timestamp, unsigned char* out_buf, 
+                       size_t* out_len, size_t max_len);
+int gm_cbor_decode_edge(const unsigned char* cbor_data, size_t data_len,
+                       char* out_target_sha, float* out_confidence,
+                       time_t* out_timestamp);
+
+// Fan-out operations
+void gm_compute_fanout(const char* sha, char* out_fanout, size_t fanout_size);
+int gm_compute_rel_hash(const char* rel_type, char* out_hash);
+int gm_build_edge_path(const char* src_sha, const char* rel_type, 
+                      const char* edge_id, char* out_path, size_t path_size);
+int gm_update_tree_with_blob(const char* tree_sha, const char* path,
+                           const char* blob_sha, char* out_new_tree);
+int gm_build_edge_tree(const char* edge_path, const char* edge_blob_sha,
+                      const char* current_tree_sha, char* out_tree_sha);
+
+// Shell-safe command execution
+int gm_exec_git_command(const char* git_args[], char* output, size_t output_size);
+int gm_git_hash_object(const void* data, size_t size, const char* type, char* out_sha);
+int gm_git_cat_file_blob(const char* sha, void* output, size_t max_size, size_t* actual_size);
 
 #ifdef __cplusplus
 }
