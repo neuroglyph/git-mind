@@ -1,343 +1,102 @@
-// SPDX-License-Identifier: Apache-2.0
-// © 2025 J. Kirby Ross / Neuroglyph Collective
+/* SPDX-License-Identifier: Apache-2.0 */
+/* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #ifndef GITMIND_H
 #define GITMIND_H
 
-#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include <time.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/* Forward declarations */
+typedef struct gm_context gm_context_t;
+typedef struct gm_edge gm_edge_t;
+typedef struct gm_journal gm_journal_t;
+typedef struct gm_cache gm_cache_t;
 
-// Version
-#define GITMIND_VERSION_MAJOR 0
-#define GITMIND_VERSION_MINOR 1
-#define GITMIND_VERSION_PATCH 0
+/* Error codes */
+#define GM_OK           0
+#define GM_ERROR       -1
+#define GM_NOT_FOUND   -2
+#define GM_INVALID_ARG -3
+#define GM_NO_MEMORY   -4
+#define GM_IO_ERROR    -5
 
-// Git object modes
-#define GM_GIT_MODE_BLOB "100644"
-#define GM_GIT_MODE_TREE "040000"
-#define GM_GIT_TYPE_BLOB "blob"
-#define GM_GIT_TYPE_TREE "tree"
-
-// String constants
-#define GM_STRING_NULL "NULL"
-
-// Git command formats
-#define GM_GIT_HASH_OBJECT_CMD "git hash-object \"%s\""
-#define GM_GIT_LS_TREE_CMD "git ls-tree %s %s 2>/dev/null | awk '{print $3}'"
-#define GM_GIT_LS_TREE_RECURSIVE_CMD "git ls-tree -r %s 2>/dev/null"
-#define GM_GIT_LS_TREE_PATH_CMD "git ls-tree -r %s:%s/%s/ 2>/dev/null"
-#define GM_GIT_MKTREE_CMD "git mktree"
-#define GM_GIT_NOTES_ADD_CMD "git notes --ref=refs/notes/gitmind/paths add -f -m '%s' %s 2>/dev/null"
-#define GM_GIT_NOTES_SHOW_CMD "git notes --ref=refs/notes/gitmind/paths show %s 2>/dev/null"
-
-// Git refs
-#define GM_NOTES_PATH_REF "refs/notes/gitmind/paths"
-#define GM_NOTES_TYPES_REF "refs/notes/gitmind/types"
-
-// Edge message format
-#define GM_EDGE_MESSAGE_FORMAT "Add edge: %s -[%s]-> %s"
-
-// Error codes
-typedef enum {
-    GM_OK = 0,
-    GM_ERR_NOT_REPO = -1,
-    GM_ERR_NOT_FOUND = -2,
-    GM_ERR_IO = -3,
-    GM_ERR_GIT = -4,
-    GM_ERR_MEMORY = -5,
-    GM_ERR_INVALID_ARG = -6,
-    GM_ERR_PATH_TOO_LONG = -7,
-    GM_ERR_ALREADY_EXISTS = -8
-} gm_error_t;
-
-// Error message constants
-#define ERR_MSG_NOT_REPO "Not a git repository: %s"
-#define ERR_MSG_NOT_FOUND "Not found: %s"
-#define ERR_MSG_IO_ERROR "I/O error: %s"
-#define ERR_MSG_GIT_FAILED "Git operation failed: %s"
-#define ERR_MSG_MEMORY "Memory allocation failed"
-#define ERR_MSG_INVALID_ARG "Invalid argument: %s"
-#define ERR_MSG_PATH_TOO_LONG "Path too long: %s"
-#define ERR_MSG_ALREADY_EXISTS "Already exists: %s"
-#define ERR_MSG_EMPTY_PATH "Empty path"
-#define ERR_MSG_ABSOLUTE_PATH "Absolute paths not allowed in links: %s"
-#define ERR_MSG_PATH_TRAVERSAL "Path traversal not allowed: %s"
-#define ERR_MSG_LINK_NOT_FOUND "Link not found"
-#define ERR_MSG_DIR_CREATE_FAILED "Failed to create directory %s: %s"
-#define ERR_MSG_FILE_CREATE_FAILED "Failed to create file: %s"
-#define ERR_MSG_FILE_WRITE_FAILED "Failed to write file"
-#define ERR_MSG_LINK_CONTENT_TOO_LONG "Link content too long"
-#define ERR_MSG_CWD_FAILED "Failed to get current directory"
-#define ERR_MSG_NULL_POINTER "NULL pointer provided for %s"
-
-// CLI error messages
-#define ERR_MSG_LINK_REQUIRES_ARGS "Error: link requires source and target arguments\n"
-#define ERR_MSG_UNLINK_REQUIRES_ARGS "Error: unlink requires source and target arguments\n"
-#define ERR_MSG_UNKNOWN_COMMAND "Error: Unknown command '%s'\n"
-#define ERR_MSG_MISSING_FILE_ARG "Error: Missing file argument\n"
-#define ERR_MSG_DEPTH_OUT_OF_RANGE "Error: Depth must be between 1 and %d\n"
-
-// Status messages
-#define MSG_INIT_SUCCESS "Initialized git-mind in current repository\n"
-#define MSG_LINK_CREATED "Created link: %s -> %s (%s)\n"
-#define MSG_LINK_REMOVED "Removed link: %s -> %s\n"
-#define MSG_NO_LINKS "No links found\n"
-#define MSG_ALL_LINKS_VALID "All links are valid\n"
-#define MSG_BROKEN_LINKS_FOUND "Found %d broken link%s\n"
-#define MSG_BROKEN_LINKS_REMOVED "Removed %d broken link%s\n"
-#define MSG_RUN_CHECK_FIX "Run 'git mind check --fix' to remove them\n"
-#define MSG_NOT_INITIALIZED "git-mind: Not initialized (run 'git mind init')\n"
-
-// Version info
-#define MSG_VERSION_FORMAT "git-mind version %s\n"
-
-// Porcelain output formats
-#define PORCELAIN_INIT_OK "init:ok\n"
-#define PORCELAIN_LINK_CREATED "link:created:%s:%s:%s\n"
-#define PORCELAIN_LINK_REMOVED "link:removed:%s:%s\n"
-#define PORCELAIN_LINK_FORMAT "link:%s:%s:%s:%ld\n"
-
-// Human-readable formats
-#define MSG_LINK_FORMAT "%s: %s -> %s (ts:%ld)\n"
-
-// Buffer sizes - centralized for maintainability
-#define GM_MAX_PATH 4096
-#define GM_MAX_TYPE 64
-#define GM_MAX_LINK_CONTENT 8192
-#define GM_MAX_COMMAND 8192
-#define GM_ERROR_BUFFER_SIZE 256
-#define GM_LINE_BUFFER_SIZE 1024
-#define GM_CBOR_BUFFER_SIZE 256
-#define GM_SHA_HEX_SIZE 40
-#define GM_FANOUT_SIZE 6
-#define GM_FANOUT_PREFIX_SIZE 2
-#define GM_REL_HASH_SIZE 8
-#define GM_REL_HASH_BUFFER_SIZE 9
-
-// SHA constants
+/* Constants */
+#define GM_SHA1_SIZE   20
 #define GM_SHA256_SIZE 32
-#define GM_SHA256_STRING_SIZE 65
-#define GM_SHA1_SIZE 20
-#define GM_SHA1_STRING_SIZE 41
+#define GM_PATH_MAX    256
+#define GM_ULID_SIZE   26
 
-// Default values
-#define GM_DEFAULT_LINK_TYPE "REFERENCES"
-#define GM_LINKS_DIR ".gitmind/links"
-#define GM_LINK_EXTENSION ".gml"
-#define GM_LINK_FORMAT_VERSION "1.0"
-
-// File format constants
-#define GM_FILE_MAGIC "GMv1"  // 4-byte magic header
-#define GM_FILE_SEPARATOR "|"
-#define GM_EDGE_MARKER "+"
-#define GM_TOMBSTONE_MARKER "-"
-
-// Git commands
-#define GM_GIT_HASH_OBJECT "git hash-object \"%s\" 2>/dev/null"
-#define GM_GIT_CONFIG_USER_NAME "git config user.name"
-#define GM_GIT_ADD_FILE "git add %s 2>/dev/null"
-
-// Default values
-#define GM_DEFAULT_AUTHOR "unknown"
-#define GM_DEFAULT_CONFIDENCE 1.0
-
-// Orphan ref paths
-#define GM_GRAPH_REF "refs/gitmind/graph"
-#define GM_INBOUND_NOTES_REF "refs/notes/gitmind/inbound"
-#define GM_TRAVERSAL_NOTES_REF "refs/notes/gitmind/traversal"
-
-// Multi-edge constants
-#define GM_MAX_EDGES_PER_FILE 100
-#define GM_MAX_AUTHOR 128
-#define GM_MAX_REASON 512
-
-// Edge structure for multi-edge model
-typedef struct {
-    char type[GM_MAX_TYPE];
-    char author[GM_MAX_AUTHOR];
-    time_t timestamp;
-    double confidence;
-    int is_tombstone;  // Using int instead of bool for C99 compatibility
-    char tombstone_reason[GM_MAX_REASON];
-} gm_edge_t;
-
-// Multi-edge link file structure
-typedef struct {
-    char source_sha[GM_SHA256_STRING_SIZE];  // Git blob SHA
-    char target_sha[GM_SHA256_STRING_SIZE];  // Git blob SHA
-    char source_path[GM_MAX_PATH];           // Path metadata
-    char target_path[GM_MAX_PATH];           // Path metadata
-    gm_edge_t edges[GM_MAX_EDGES_PER_FILE];
-    size_t edge_count;
-} gm_link_file_t;
-
-// Legacy single-edge structure (for compatibility during migration)
-typedef struct {
-    char type[GM_MAX_TYPE];
-    char source[GM_MAX_PATH];
-    char target[GM_MAX_PATH];
-    time_t timestamp;
-} gm_link_t;
-
-// Link collection (now represents edges across multiple files)
-typedef struct {
-    gm_link_t* links;
-    size_t count;
-    size_t capacity;
-} gm_link_set_t;
-
-// Repository handle
-typedef struct gm_repo gm_repo;
-
-// Traversal constants
-#define GM_MAX_DEPTH 10
-#define GM_DEFAULT_DEPTH 1
-
-// Traversal formats
+/* Relationship types */
 typedef enum {
-    GM_FORMAT_TREE = 0,
-    GM_FORMAT_LIST = 1
-} gm_format_t;
+    GM_REL_IMPLEMENTS = 1,
+    GM_REL_REFERENCES = 2,
+    GM_REL_DEPENDS_ON = 3,
+    GM_REL_AUGMENTS   = 4,
+    GM_REL_CUSTOM     = 1000
+} gm_rel_type_t;
 
-// Traversal node
-typedef struct {
-    char path[GM_MAX_PATH];
-    int depth;
-    char parent[GM_MAX_PATH];
-} gm_traverse_node_t;
+/* Edge structure */
+struct gm_edge {
+    uint8_t  src_sha[GM_SHA1_SIZE];
+    uint8_t  tgt_sha[GM_SHA1_SIZE];
+    uint16_t rel_type;
+    uint16_t confidence;      /* IEEE-754 half float */
+    uint64_t timestamp;       /* Unix millis */
+    char     src_path[GM_PATH_MAX];
+    char     tgt_path[GM_PATH_MAX];
+    char     ulid[GM_ULID_SIZE + 1];
+};
 
-// Traversal result
-typedef struct {
-    gm_traverse_node_t* nodes;
-    size_t count;
-    size_t capacity;
-    int direct_count;
-    int total_count;
-} gm_traverse_result_t;
+/* Context for dependency injection */
+struct gm_context {
+    /* Git operations */
+    struct {
+        int (*resolve_blob)(void *repo, const char *path, uint8_t *sha);
+        int (*create_commit)(void *repo, const char *ref, const void *data, size_t len);
+        int (*read_commits)(void *repo, const char *ref, void *callback, void *userdata);
+    } git_ops;
+    
+    /* Storage operations */
+    struct {
+        int (*write_cache)(void *handle, const void *data, size_t len);
+        int (*read_cache)(void *handle, void *data, size_t len);
+    } storage_ops;
+    
+    /* Logging */
+    void (*log_fn)(int level, const char *fmt, ...);
+    
+    /* User data */
+    void *git_repo;
+    void *storage_handle;
+    void *user_data;
+};
 
-// Core operations (legacy API - without context)
-int gm_init_legacy(const char* repo_path);
-int gm_link_create_legacy(const char* source, const char* target, const char* type);
-int gm_link_list_legacy(gm_link_set_t** set, const char* filter_source, const char* filter_target);
-int gm_link_unlink_legacy(const char* source, const char* target);
-int gm_link_unlink_all(const char* source);
-int gm_link_check(int fix, int* broken_count);
-int gm_status_legacy(void);
-int gm_traverse_legacy(const char* start_node, int depth, gm_format_t format, gm_traverse_result_t** result);
+/* Journal operations */
+int gm_journal_append(gm_context_t *ctx, const gm_edge_t *edges, size_t n_edges);
+int gm_journal_read(gm_context_t *ctx, const char *branch, 
+                    int (*callback)(const gm_edge_t *edge, void *userdata),
+                    void *userdata);
 
-// Link set operations
-gm_link_set_t* gm_link_set_new(void);
-void gm_link_set_free(gm_link_set_t* set);
-int gm_link_set_add(gm_link_set_t* set, const gm_link_t* link);
+/* Edge operations */
+int gm_edge_encode_cbor(const gm_edge_t *edge, uint8_t *buffer, size_t *len);
+int gm_edge_decode_cbor(const uint8_t *buffer, size_t len, gm_edge_t *edge);
 
-// Traverse result operations
-gm_traverse_result_t* gm_traverse_result_new(void);
-void gm_traverse_result_free(gm_traverse_result_t* result);
-int gm_traverse_result_add(gm_traverse_result_t* result, const gm_traverse_node_t* node);
-void gm_traverse_print_tree(const gm_traverse_result_t* result, const char* start_node);
-void gm_traverse_print_list(const gm_traverse_result_t* result, const char* start_node);
+/* Cache operations */
+int gm_cache_rebuild(gm_context_t *ctx, const char *branch);
+int gm_cache_query(gm_context_t *ctx, const uint8_t *sha, 
+                   gm_edge_t **edges, size_t *n_edges);
 
-// Error handling - using context-based version from gitmind_lib.h
-const char* gm_error_string(int error_code);
+/* Edge operations */
+int gm_edge_create(gm_context_t *ctx, const char *src_path, const char *tgt_path,
+                   gm_rel_type_t rel_type, gm_edge_t *edge);
+int gm_edge_equal(const gm_edge_t *a, const gm_edge_t *b);
+int gm_edge_format(const gm_edge_t *edge, char *buffer, size_t len);
 
-// Utilities
-int gm_sha256_string(const char* content, char* out_sha);
-int gm_sha1_string(const char* content, char* out_sha);
-int gm_normalize_path(const char* path, char* out_normalized);
-int gm_path_join(char* dest, size_t dest_size, const char* dir, const char* file);
-int gm_validate_link_path(const char* path);
+/* Utility functions */
+int gm_ulid_generate(char *ulid);
+int gm_sha_from_path(gm_context_t *ctx, const char *path, uint8_t *sha);
+const char *gm_error_string(int error_code);
 
-// Multi-edge operations
-int gm_path_to_sha(const char* path, char* out_sha);
-int gm_compute_link_filename(const char* source_sha, const char* target_sha, 
-                           char* out_filename, size_t filename_size);
-int gm_link_file_load(const char* filename, gm_link_file_t* link_file);
-int gm_link_file_save(const char* filename, const gm_link_file_t* link_file);
-int gm_link_file_merge(gm_link_file_t* dest, 
-                      const gm_link_file_t* src1,
-                      const gm_link_file_t* src2);
-
-// Internal - not part of public API
-void gm_set_error(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
-
-// Version info
-const char* gm_version_string(void);
-
-// Orphan ref operations
-int gm_orphan_ref_exists(void);
-int gm_orphan_ref_create(void);
-int gm_get_graph_tree(char* out_tree_sha);
-int gm_update_graph_ref(const char* new_tree_sha, const char* message);
-
-// ULID operations
-#define GM_ULID_SIZE 27  // 26 chars + null terminator
-int gm_ulid_generate(char* out_ulid);
-int gm_ulid_timestamp(const char* ulid, time_t* out_timestamp);
-
-// CBOR operations
-int gm_cbor_encode_edge(const char* target_sha, float confidence, 
-                       time_t timestamp, unsigned char* out_buf, 
-                       size_t* out_len, size_t max_len);
-int gm_cbor_decode_edge(const unsigned char* cbor_data, size_t data_len,
-                       char* out_target_sha, float* out_confidence,
-                       time_t* out_timestamp);
-
-// Fan-out operations
-void gm_compute_fanout(const char* sha, char* out_fanout, size_t fanout_size);
-int gm_compute_rel_hash(const char* rel_type, char* out_hash);
-int gm_build_edge_path(const char* src_sha, const char* rel_type, 
-                      const char* edge_id, char* out_path, size_t path_size);
-int gm_update_tree_with_blob(const char* tree_sha, const char* path,
-                           const char* blob_sha, char* out_new_tree);
-int gm_build_edge_tree(const char* edge_path, const char* edge_blob_sha,
-                      const char* current_tree_sha, char* out_tree_sha);
-
-// Shell-safe command execution
-int gm_exec_git_command(const char* git_args[], char* output, size_t output_size);
-int gm_git_hash_object(const void* data, size_t size, const char* type, char* out_sha);
-int gm_git_cat_file_blob(const char* sha, void* output, size_t max_size, size_t* actual_size);
-
-// Path mapping operations
-int gm_store_path_mapping(const char* sha, const char* path);
-int gm_get_path_for_sha(const char* sha, char* out_path, size_t path_size);
-
-// Forward declarations for git types
-typedef struct git_repository git_repository;
-typedef struct git_oid git_oid;
-typedef struct git_signature git_signature;
-
-// Git backend operations
-int gm_git_backend_init(void);
-void gm_git_backend_cleanup(void);
-int gm_git_backend_open_repo(git_repository **repo);
-int gm_git_backend_signature_default(git_repository *repo, git_signature **sig);
-
-// Blob operations
-int gm_blob_get_or_create(git_repository *repo, const char *path, git_oid *out_oid);
-int gm_blob_create_from_buffer(git_repository *repo, const void *buffer, size_t len, git_oid *out_oid);
-
-// Type mapping operations
-int gm_type_mapping_store(git_repository *repo, const char *hash, const char *type);
-int gm_type_mapping_get(git_repository *repo, const char *hash, char *out_type, size_t type_size);
-
-// Path mapping operations (libgit2)
-int gm_path_mapping_store_git2(git_repository *repo, const git_oid *oid, const char *path);
-int gm_path_mapping_get_git2(git_repository *repo, const git_oid *oid, char *out_path, size_t path_size);
-
-// Tree merge operations
-int gm_merge_tree_path(const char* base_tree, const char* path, 
-                      const char* entry_mode, const char* entry_sha,
-                      char* out_tree);
-
-// Cleanup operations
-void gm_cleanup(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif // GITMIND_H
+#endif /* GITMIND_H */

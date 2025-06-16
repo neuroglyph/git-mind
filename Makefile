@@ -40,9 +40,16 @@ shell: dev
 .PHONY: clean
 clean:
 	@echo "🧹 Cleaning build artifacts..."
-	@rm -f git-mind
-	@find src -name "*.o" -delete 2>/dev/null || true
+	@rm -rf git-mind build/
 	@docker compose down 2>/dev/null || true
+
+# Build the new journal-based implementation
+.PHONY: build
+build:
+	@echo "🔨 Building git-mind..."
+	@docker compose run --rm dev make -C src
+	@docker compose run --rm dev cp build/bin/git-mind .
+	@echo "✅ Built git-mind successfully!"
 
 # Everything else gets forwarded to Docker
 %:

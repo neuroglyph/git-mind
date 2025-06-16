@@ -1,162 +1,170 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
-# Behavior-based test script for git-mind - tests what users can do, not how it's implemented
+
+# Integration test suite - Test BEHAVIOR not implementation
 
 set -e
 
-# Source Docker guard - will exit if not in Docker
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../scripts/docker-guard.sh"
+# Test directory
+TEST_DIR="/tmp/git-mind-integration-$$"
+GIT_MIND="${GIT_MIND:-../../git-mind}"
 
-# Path to git-mind binary
-GITMIND="$SCRIPT_DIR/../../git-mind"
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
 
-echo "=== GitMind Behavior Test Suite ==="
+# Counters
+PASSED=0
+FAILED=0
 
-# Create temp directory
-TESTDIR=$(mktemp -d)
-cd "$TESTDIR"
+# Helper: Run test
+run_test() {
+    local name="$1"
+    local test_func="$2"
+    
+    echo -n "Testing $name... "
+    
+    if (
+        set -e
+        mkdir -p "$TEST_DIR/$name"
+        cd "$TEST_DIR/$name"
+        git init --quiet
+        git config user.email "test@example.com"
+        git config user.name "Test"
+        $test_func
+    ) >/dev/null 2>&1; then
+        echo -e "${GREEN}PASS${NC}"
+        PASSED=$((PASSED + 1))
+    else
+        echo -e "${RED}FAIL${NC}"
+        FAILED=$((FAILED + 1))
+    fi
+}
 
-# Configure git to use main branch
-git config --global init.defaultBranch main 2>/dev/null || true
+# Test: Can create a link between two files
+test_link_creation() {
+    echo "A" > a.txt
+    echo "B" > b.txt
+    git add .
+    git commit -m "initial" --quiet
+    
+    # Behavior: linking two files should succeed
+    "$GIT_MIND" link a.txt b.txt
+    
+    # Behavior: list should show the link
+    "$GIT_MIND" list | grep -q "a.txt -> b.txt"
+}
 
-# Initialize git repo
-git init
-git config user.email "test@example.com"
-git config user.name "Test User"
+# Test: Cannot link non-existent files
+test_link_nonexistent() {
+    echo "A" > a.txt
+    git add .
+    git commit -m "initial" --quiet
+    
+    # Behavior: linking to non-existent file should fail
+    ! "$GIT_MIND" link a.txt missing.txt
+}
 
-# Create some test files
-echo "# Test Project" > README.md
-mkdir -p docs
-echo "# Architecture" > docs/ARCHITECTURE.md
-echo "# API Docs" > docs/api.md
-git add .
-git commit -m "Initial commit"
+# Test: Links are branch-specific
+test_branch_isolation() {
+    echo "A" > a.txt
+    git add .
+    git commit -m "initial" --quiet
+    
+    # Create link on main
+    "$GIT_MIND" link a.txt a.txt
+    
+    # Create new branch
+    git checkout -b feature --quiet
+    
+    # Behavior: link from main should not appear on feature
+    local count=$("$GIT_MIND" list | grep -c "a.txt -> a.txt" || true)
+    [ "$count" -eq 0 ]
+}
 
-echo "✓ Test repo created"
+# Test: Can specify relationship type
+test_relationship_types() {
+    echo "code" > impl.c
+    echo "design" > design.md
+    git add .
+    git commit -m "initial" --quiet
+    
+    # Behavior: can create typed relationships
+    "$GIT_MIND" link impl.c design.md --type implements
+    
+    # Behavior: list shows the relationship type
+    "$GIT_MIND" list | grep -q "IMPLEMENTS"
+}
 
-# Test 1: Initialize git-mind
-echo -n "Test 1: Can initialize git-mind... "
-if $GITMIND init 2>&1; then
-    echo "✓ PASS"
+# Test: Can filter by path
+test_list_filter() {
+    echo "A" > a.txt
+    echo "B" > b.txt  
+    echo "C" > c.txt
+    git add .
+    git commit -m "initial" --quiet
+    
+    "$GIT_MIND" link a.txt b.txt
+    "$GIT_MIND" link b.txt c.txt
+    
+    # Behavior: filtering by path shows only relevant links
+    local count=$("$GIT_MIND" list b.txt | grep -E "^[A-Z_]+:" | wc -l)
+    [ "$count" -eq 2 ]
+}
+
+# Test: Unicode paths work
+test_unicode_paths() {
+    echo "hello" > "你好.txt"
+    echo "world" > "世界.txt"
+    git add .
+    git commit -m "unicode" --quiet
+    
+    # Behavior: can link unicode paths
+    "$GIT_MIND" link "你好.txt" "世界.txt"
+    
+    # Behavior: unicode paths display correctly
+    "$GIT_MIND" list | grep -q "你好.txt -> 世界.txt"
+}
+
+# Test: Push/pull compatibility
+test_push_pull() {
+    echo "A" > a.txt
+    git add .
+    git commit -m "initial" --quiet
+    
+    # Create link
+    "$GIT_MIND" link a.txt a.txt
+    
+    # Behavior: refs should exist
+    git show-ref | grep -q "refs/gitmind/edges"
+    
+    # Note: Actual push/pull test requires remote
+}
+
+# Run all tests
+echo "Running git-mind integration tests..."
+echo ""
+
+run_test "link_creation" test_link_creation
+run_test "link_nonexistent" test_link_nonexistent  
+run_test "branch_isolation" test_branch_isolation
+run_test "relationship_types" test_relationship_types
+run_test "list_filter" test_list_filter
+run_test "unicode_paths" test_unicode_paths
+run_test "push_pull" test_push_pull
+
+# Cleanup
+rm -rf "$TEST_DIR"
+
+# Summary
+echo ""
+echo "Results: $PASSED passed, $FAILED failed"
+
+if [ $FAILED -eq 0 ]; then
+    echo -e "${GREEN}All tests passed!${NC}"
+    exit 0
 else
-    echo "✗ FAIL: git-mind init failed"
+    echo -e "${RED}Some tests failed!${NC}"
     exit 1
 fi
-
-# Test 2: Create a link between files
-echo -n "Test 2: Can create a link... "
-if $GITMIND link README.md docs/ARCHITECTURE.md --type IMPLEMENTS 2>&1; then
-    echo "✓ PASS"
-else
-    echo "✗ FAIL: $GITMIND link failed"
-    exit 1
-fi
-
-# Test 3: List shows the link we created
-echo -n "Test 3: Can list links... "
-OUTPUT=$($GITMIND list)
-if echo "$OUTPUT" | grep -q "README.md.*docs/ARCHITECTURE.md"; then
-    echo "✓ PASS"
-else
-    echo "✗ FAIL: Link not visible in list"
-    echo "Output: $OUTPUT"
-    exit 1
-fi
-
-# Test 4: Can create multiple links
-echo -n "Test 4: Can create multiple links... "
-$GITMIND link docs/ARCHITECTURE.md docs/api.md --type REFERENCES
-OUTPUT=$($GITMIND list | grep -c -- "->")
-if [ "$OUTPUT" -ge "2" ]; then
-    echo "✓ PASS"
-else
-    echo "✗ FAIL: Expected at least 2 links, got $OUTPUT"
-    exit 1
-fi
-
-# Test 5: Can filter links by source
-echo -n "Test 5: Can filter by source... "
-OUTPUT=$($GITMIND list --source README.md)
-if echo "$OUTPUT" | grep -q "README.md" && ! echo "$OUTPUT" | grep -q "docs/api.md"; then
-    echo "✓ PASS"
-else
-    echo "✗ FAIL: Filter didn't work correctly"
-    echo "Output: $OUTPUT"
-    exit 1
-fi
-
-# Test 6: Status shows link count
-echo -n "Test 6: Status shows links... "
-OUTPUT=$($GITMIND status)
-if echo "$OUTPUT" | grep -q "[0-9]"; then
-    echo "✓ PASS"
-else
-    echo "✗ FAIL: Status didn't show link information"
-    echo "Output: $OUTPUT"
-    exit 1
-fi
-
-# Test 7: Can traverse from source to target
-echo -n "Test 7: Can traverse links... "
-OUTPUT=$($GITMIND traverse README.md)
-if echo "$OUTPUT" | grep -q "docs/ARCHITECTURE.md"; then
-    echo "✓ PASS"
-else
-    echo "✗ FAIL: Traverse didn't find linked file"
-    echo "Output: $OUTPUT"
-    exit 1
-fi
-
-# Test 8: Handles non-existent files gracefully
-echo -n "Test 8: Handles missing files... "
-if ! $GITMIND link nonexistent.txt docs/api.md 2>/dev/null; then
-    echo "✓ PASS"
-else
-    echo "✗ FAIL: Should have failed for non-existent file"
-    exit 1
-fi
-
-# Test 9: Can detect broken links
-echo -n "Test 9: Can detect broken links... "
-# First create a link to a file that will be deleted
-echo "temp content" > temp.txt
-git add temp.txt
-git commit -m "Add temp file"
-$GITMIND link README.md temp.txt --type REFERENCES
-rm temp.txt
-OUTPUT=$($GITMIND check)
-if echo "$OUTPUT" | grep -q "broken\|invalid\|missing"; then
-    echo "✓ PASS"
-else
-    echo "✗ FAIL: Didn't detect broken link"
-    echo "Output: $OUTPUT"
-    exit 1
-fi
-
-# Test 10: Links persist across git operations
-echo -n "Test 10: Links persist... "
-# Create a new branch
-git checkout -b test-branch
-OUTPUT_BEFORE=$($GITMIND list | grep -c -- "->")
-git checkout main
-OUTPUT_AFTER=$($GITMIND list | grep -c -- "->")
-if [ "$OUTPUT_BEFORE" -eq "$OUTPUT_AFTER" ]; then
-    echo "✓ PASS"
-else
-    echo "✗ FAIL: Links changed across branches"
-    exit 1
-fi
-
-echo
-echo "=== All behavior tests passed ==="
-echo "Users can:"
-echo "  - Initialize $GITMIND in a repo"
-echo "  - Create links between files"
-echo "  - List and filter links"
-echo "  - Traverse link relationships"
-echo "  - Check for broken links"
-echo "  - Links persist with git"
-
-cd /
-rm -rf "$TESTDIR"
