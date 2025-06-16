@@ -47,15 +47,15 @@ clean:
 .PHONY: build
 build:
 	@echo "🔨 Building git-mind..."
-	@docker compose run --rm dev make -C src
-	@docker compose run --rm dev cp build/bin/git-mind .
+	@docker compose run --rm -T dev make -C src
 	@echo "✅ Built git-mind successfully!"
+	@echo "Binary is available inside Docker at /workspace/build/bin/git-mind"
 
 # Run tests SAFELY in Docker
 .PHONY: test
 test:
 	@echo "🧪 Running tests in Docker (SAFE)..."
-	@docker compose run --rm dev bash -c "cd /tmp && cp -r /workspace/tests . && tests/integration/test_behavior.sh"
+	@docker compose run --rm -T dev bash -c "cd /tmp && cp -r /workspace/tests /workspace/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
 	@echo "✅ Tests completed!"
 
 # Run E2E tests
