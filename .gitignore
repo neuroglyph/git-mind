@@ -187,3 +187,4 @@ vgcore.*
 # CRITICAL: Never allow git-mind binary in root
 /git-mind
 ci-artifacts/
+docs/audits/

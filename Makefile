@@ -58,6 +58,16 @@ test:
 	@docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
 	@echo "✅ Tests completed!"
 
+# Run tests EXACTLY like GitHub Actions CI
+.PHONY: test-ci
+test-ci:
+	@echo "🧪 Running CI simulation (EXACTLY like GitHub Actions)..."
+	@echo "Building Docker image..."
+	@docker compose build
+	@echo "Running tests in container (no nested Docker)..."
+	@docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
+	@echo "✅ CI simulation completed!"
+
 # Run E2E tests
 .PHONY: test-e2e
 test-e2e:

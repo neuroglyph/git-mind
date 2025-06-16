@@ -25,7 +25,8 @@ jobs:
       run: |
         # Use Docker for all builds and tests
         docker compose build
-        docker compose run --rm -T dev make test
+        # Run tests directly in container without calling make test (which tries to use Docker)
+        docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
         
     - name: Run benchmarks
       run: |
