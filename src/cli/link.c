@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
+#define _GNU_SOURCE
+
 #include "gitmind.h"
 #include <stdio.h>
 #include <string.h>

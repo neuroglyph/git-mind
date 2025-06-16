@@ -34,6 +34,18 @@ ORIGINAL_DIR=$(pwd)
 # Binary location
 GIT_MIND="${GIT_MIND:-../../git-mind}"
 
+# SAFETY CHECK: Never run tests in development repo!
+if pwd | grep -q "git-mind" && [ -f "CLAUDE.md" ]; then
+    echo "🚨🚨🚨 SAFETY VIOLATION! 🚨🚨🚨"
+    echo ""
+    echo "NEVER run tests in the git-mind development repository!"
+    echo "This could create journal commits and corrupt the source."
+    echo ""
+    echo "Use 'make test' to run tests in Docker instead."
+    echo ""
+    exit 42
+fi
+
 # Ensure binary exists
 if [ ! -x "$GIT_MIND" ]; then
     echo "ERROR: git-mind binary not found at $GIT_MIND"

@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
+#define _POSIX_C_SOURCE 200809L
+
 #include "gitmind.h"
 #include <time.h>
 #include <stdlib.h>

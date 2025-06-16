@@ -237,6 +237,15 @@ int gm_edge_decode_cbor(const uint8_t *buffer, size_t len, gm_edge_t *edge) {
     
     size_t offset = 0;
     
+    /* Initialize edge structure */
+    memset(edge, 0, sizeof(gm_edge_t));
+    
+    /* Need at least one byte for array header */
+    if (len < 1) {
+        return GM_INVALID_ARG;
+    }
+    
+    /* Check array header */
     /* Check array header */
     if (buffer[offset] != (CBOR_TYPE_ARRAY | CBOR_ARRAY_SIZE)) {
         return GM_INVALID_ARG;

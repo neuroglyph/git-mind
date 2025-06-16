@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 /* External command functions */
 int gm_cmd_link(gm_context_t *ctx, int argc, char **argv);
@@ -14,6 +15,65 @@ int gm_cmd_list(gm_context_t *ctx, int argc, char **argv);
 /* External utility functions */
 const char *gm_error_string(int error_code);
 void gm_log_default(int level, const char *fmt, ...);
+
+/* SAFETY: Prevent running in development repo */
+static void safety_check(void) {
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) == NULL) {
+        return;
+    }
+    
+    /* Check for known dangerous paths */
+    const char *dangerous[] = {
+        "/git-mind",
+        "/git-mind/",
+        "neuroglyph/git-mind",
+        NULL
+    };
+    
+    for (const char **p = dangerous; *p; p++) {
+        if (strstr(cwd, *p) != NULL) {
+            fprintf(stderr, "\n");
+            fprintf(stderr, "🚨🚨🚨 SAFETY VIOLATION DETECTED! 🚨🚨🚨\n");
+            fprintf(stderr, "\n");
+            fprintf(stderr, "git-mind MUST NOT be run in its own development repository!\n");
+            fprintf(stderr, "Current directory: %s\n", cwd);
+            fprintf(stderr, "\n");
+            fprintf(stderr, "This is a safety feature to prevent:\n");
+            fprintf(stderr, "  - Creating journal commits in the development repo\n");
+            fprintf(stderr, "  - Accidentally corrupting the git-mind source\n");
+            fprintf(stderr, "  - Breaking the First Commandment of CLAUDE.md\n");
+            fprintf(stderr, "\n");
+            fprintf(stderr, "To test git-mind:\n");
+            fprintf(stderr, "  1. Use 'make test' (runs in Docker)\n");
+            fprintf(stderr, "  2. Copy binary to a different repo\n");
+            fprintf(stderr, "  3. Run tests in /tmp or other safe location\n");
+            fprintf(stderr, "\n");
+            fprintf(stderr, "Remember: NEVER run git operations in the working repository!\n");
+            fprintf(stderr, "\n");
+            exit(42);  /* Special exit code for safety violation */
+        }
+    }
+    
+    /* Also check for .git/config containing git-mind */
+    FILE *f = fopen(".git/config", "r");
+    if (f) {
+        char line[256];
+        while (fgets(line, sizeof(line), f)) {
+            if (strstr(line, "neuroglyph/git-mind") || 
+                strstr(line, "url = git@github.com:.*git-mind") ||
+                strstr(line, "url = https://github.com/.*git-mind")) {
+                fclose(f);
+                fprintf(stderr, "\n");
+                fprintf(stderr, "🚨 SAFETY: Detected git-mind development repo! 🚨\n");
+                fprintf(stderr, "Use 'make test' instead.\n");
+                fprintf(stderr, "\n");
+                exit(42);
+            }
+        }
+        fclose(f);
+    }
+}
 
 /* Print usage */
 static void print_usage(const char *prog) {
@@ -67,6 +127,9 @@ static void cleanup_context(gm_context_t *ctx) {
 int main(int argc, char **argv) {
     gm_context_t ctx;
     int result;
+    
+    /* SAFETY FIRST! */
+    safety_check();
     
     if (argc < 2) {
         print_usage(argv[0]);

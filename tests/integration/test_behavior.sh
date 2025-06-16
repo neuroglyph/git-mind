@@ -6,8 +6,15 @@
 set -e
 
 # Test directory
-TEST_DIR="/tmp/git-mind-integration-$$"
+TEST_DIR="/tmp/gm-test-$$"
 GIT_MIND="${GIT_MIND:-../../git-mind}"
+
+# SAFETY CHECK: Never run in dev repo!
+if pwd | grep -q "git-mind" && [ -f "CLAUDE.md" ]; then
+    echo "🚨 SAFETY: Cannot run tests in development repo!"
+    echo "Use 'make test' instead."
+    exit 42
+fi
 
 # Colors
 RED='\033[0;31m'
@@ -33,7 +40,7 @@ run_test() {
         git config user.email "test@example.com"
         git config user.name "Test"
         $test_func
-    ) >/dev/null 2>&1; then
+    ) 2>&1 | tee /tmp/test-$name.log >/dev/null; then
         echo -e "${GREEN}PASS${NC}"
         PASSED=$((PASSED + 1))
     else

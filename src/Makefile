@@ -3,7 +3,8 @@
 
 CC = gcc
 CFLAGS = -Wall -Wextra -Werror -std=c99 -O2 `pkg-config --cflags libgit2`
-LDFLAGS = `pkg-config --libs libgit2` -L/usr/local/lib -lroaring
+LDFLAGS = `pkg-config --libs libgit2`
+# TODO: Add back when cache implemented: -L/usr/local/lib -lroaring
 
 # Directories
 SRCDIR = .

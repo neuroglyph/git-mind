@@ -1,7 +1,10 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
+#define _POSIX_C_SOURCE 200809L
+
 #include "gitmind.h"
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
 
@@ -48,8 +51,8 @@ int gm_edge_create(gm_context_t *ctx, const char *src_path, const char *tgt_path
     
     /* Set metadata */
     edge->rel_type = rel_type;
-    edge->confidence = HALF_FLOAT_ONE;  /* Default to 1.0 */
-    edge->timestamp = get_timestamp();
+    edge->confidence = 100;  /* Default confidence as percentage */
+    edge->timestamp = get_timestamp() / 1000;  /* Store as seconds, not millis */
     
     /* Generate ULID */
     result = gm_ulid_generate(edge->ulid);

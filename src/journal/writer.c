@@ -3,6 +3,7 @@
 
 #include "gitmind.h"
 #include <git2.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -68,14 +69,24 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
     git_signature *sig = NULL;
     git_reference *ref = NULL;
     git_commit *parent = NULL;
+    git_tree *tree = NULL;
     git_oid parent_oid;
-    const git_oid *parent_ids[1];
+    const git_commit *parent_commits[1];
     int parent_count = 0;
     int error;
+    
+    (void)cbor_len; /* Unused for now */
     
     /* Get default signature */
     error = git_signature_default(&sig, jctx->repo);
     if (error < 0) {
+        return GM_ERROR;
+    }
+    
+    /* Get empty tree */
+    error = git_tree_lookup(&tree, jctx->repo, &jctx->empty_tree_oid);
+    if (error < 0) {
+        git_signature_free(sig);
         return GM_ERROR;
     }
     
@@ -87,7 +98,7 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
         if (error == 0) {
             error = git_commit_lookup(&parent, jctx->repo, &parent_oid);
             if (error == 0) {
-                parent_ids[0] = &parent_oid;
+                parent_commits[0] = parent;
                 parent_count = 1;
             }
         }
@@ -103,13 +114,14 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
         sig,
         COMMIT_ENCODING,
         (const char *)cbor_data,
-        &jctx->empty_tree_oid,
+        tree,
         parent_count,
-        parent_ids
+        parent_commits
     );
     
     /* Cleanup */
     git_signature_free(sig);
+    git_tree_free(tree);
     if (parent) {
         git_commit_free(parent);
     }
@@ -122,7 +134,6 @@ int gm_journal_append(gm_context_t *ctx, const gm_edge_t *edges, size_t n_edges)
     journal_ctx_t jctx;
     char branch[128];
     uint8_t *cbor_buffer = NULL;
-    size_t total_size = 0;
     size_t offset = 0;
     git_oid commit_oid;
     int result = GM_ERROR;

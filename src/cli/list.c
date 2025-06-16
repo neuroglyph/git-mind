@@ -54,8 +54,7 @@ int gm_cmd_list(gm_context_t *ctx, int argc, char **argv) {
     /* Read journal */
     result = gm_journal_read(ctx, branch, list_edge_callback, &lctx);
     if (result == GM_NOT_FOUND) {
-        printf("No links found\n");
-        return GM_OK;
+        /* Don't print here, let the summary handle it */
     } else if (result != GM_OK) {
         fprintf(stderr, "Error: Failed to read links\n");
         return result;

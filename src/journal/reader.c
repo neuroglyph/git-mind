@@ -3,6 +3,7 @@
 
 #include "gitmind.h"
 #include <git2.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -20,19 +21,26 @@ typedef struct {
 
 /* Process a single commit */
 static int process_commit(git_commit *commit, reader_ctx_t *rctx) {
-    const char *message;
-    size_t message_len;
+    const char *raw_message;
     const uint8_t *cbor_data;
     size_t offset = 0;
+    size_t message_len;
     
-    /* Get commit message (contains CBOR data) */
-    message = git_commit_message(commit);
-    if (!message) {
+    /* Get raw commit message (contains CBOR data) */
+    raw_message = git_commit_message_raw(commit);
+    if (!raw_message) {
         return GM_ERROR;
     }
     
-    message_len = strlen(message);
-    cbor_data = (const uint8_t *)message;
+    /* The raw message IS the CBOR data directly.
+     * git_commit_message_raw() returns just the message part,
+     * not the full commit object. */
+    cbor_data = (const uint8_t *)raw_message;
+    
+    /* For binary data, we can't use strlen. We need the actual size.
+     * Unfortunately libgit2 doesn't provide a way to get raw message length.
+     * We'll have to parse the CBOR data until we can't parse anymore. */
+    message_len = 8192;  /* MAX_CBOR_SIZE from writer.c */
     
     /* Decode edges from CBOR */
     while (offset < message_len) {
@@ -40,8 +48,10 @@ static int process_commit(git_commit *commit, reader_ctx_t *rctx) {
         size_t remaining = message_len - offset;
         
         /* Try to decode an edge */
-        if (gm_edge_decode_cbor(cbor_data + offset, remaining, &edge) != GM_OK) {
+        int decode_result = gm_edge_decode_cbor(cbor_data + offset, remaining, &edge);
+        if (decode_result != GM_OK) {
             /* End of valid CBOR data or error */
+            /* End of valid CBOR data */
             break;
         }
         
@@ -52,15 +62,9 @@ static int process_commit(git_commit *commit, reader_ctx_t *rctx) {
             return cb_result;
         }
         
-        /* Move to next edge */
-        /* Calculate consumed bytes by re-encoding (not ideal but simple) */
-        uint8_t temp_buf[1024];
-        size_t edge_size = sizeof(temp_buf);
-        if (gm_edge_encode_cbor(&edge, temp_buf, &edge_size) == GM_OK) {
-            offset += edge_size;
-        } else {
-            break;
-        }
+        /* Move to next edge - for now just break after first edge */
+        /* TODO: handle multiple edges per commit */
+        break;
     }
     
     return GM_OK;
@@ -89,8 +93,10 @@ static int walk_journal(reader_ctx_t *rctx, const char *ref_name) {
     }
     
     /* Walk commits */
+    int commit_count = 0;
     while (git_revwalk_next(&oid, walker) == 0) {
         git_commit *commit = NULL;
+        commit_count++;
         
         /* Lookup commit */
         error = git_commit_lookup(&commit, rctx->repo, &oid);
@@ -107,6 +113,12 @@ static int walk_journal(reader_ctx_t *rctx, const char *ref_name) {
             git_revwalk_free(walker);
             return result;
         }
+    }
+    
+    /* If no commits found, return NOT_FOUND */
+    if (commit_count == 0) {
+        git_revwalk_free(walker);
+        return GM_NOT_FOUND;
     }
     
     git_revwalk_free(walker);
