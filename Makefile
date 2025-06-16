@@ -55,14 +55,14 @@ build:
 .PHONY: test
 test:
 	@echo "🧪 Running tests in Docker (SAFE)..."
-	@docker compose run --rm -T dev bash -c "cd /tmp && cp -r /workspace/tests /workspace/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
+	@docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
 	@echo "✅ Tests completed!"
 
 # Run E2E tests
 .PHONY: test-e2e
 test-e2e:
 	@echo "🧪 Running E2E tests in Docker..."
-	@docker compose run --rm dev bash -c "cd /tmp && cp -r /workspace/tests /workspace/git-mind . && cd tests/e2e && ./run_all_tests.sh"
+	@docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && cd tests/e2e && ./run_all_tests.sh"
 
 # Everything else gets forwarded to Docker
 %:
