@@ -4,11 +4,11 @@ This file contains important instructions for Claude and other AI assistants wor
 
 ## Project Overview
 
-- **Project Name**: Neuroglyph
-- **CLI Name**: gitmind
+- **Project Name**: git-mind
+- **CLI Name**: git-mind
 - **License**: Apache 2.0 (NOT MIT!)
 - **Copyright**: © 2025 J. Kirby Ross / Neuroglyph Collective
-- **Repository**: https://github.com/neuroglyph/neuroglyph
+- **Repository**: https://github.com/neuroglyph/git-mind
 
 ## Critical Rules
 
@@ -19,14 +19,25 @@ This file contains important instructions for Claude and other AI assistants wor
 - All git operations must be in Docker containers or temp directories
 - This is a hard rule with no exceptions
 
-### 2. License Headers (SPDX)
+### 2. Code Quality Standards
+- **NO MAGIC NUMBERS** - All numeric constants must be #defined
+- **NO MAGIC STRINGS** - All string literals must be #defined constants
+- **Silent by default** - Library functions output nothing unless error
+- **--verbose** - Main.c controls verbose output based on flag
+- **--porcelain** - Machine-readable output controlled by main.c
+- **SRP** - Each function/module has ONE responsibility
+- **DI** - Use dependency injection for testability
+- **KISS** - Simplest solution that works
+- **YAGNI** - Don't add features until needed
+
+### 3. License Headers (SPDX)
 
 All new files MUST include SPDX headers:
 
-#### Source Code Files (.rs, .js, .ts, .py, .sh, etc.)
-```rust
-// SPDX-License-Identifier: Apache-2.0
-// © 2025 J. Kirby Ross / Neuroglyph Collective
+#### Source Code Files (.h, .c, .sh, etc.)
+```c
+/* SPDX-License-Identifier: Apache-2.0 */
+/* © 2025 J. Kirby Ross / Neuroglyph Collective */
 ```
 
 #### Shell Scripts
@@ -46,25 +57,8 @@ All new files MUST include SPDX headers:
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 ```
 
-### 3. License Information
+### 4. License Information
 - This project uses **Apache License 2.0** exclusively
-- NEVER reference MIT license for this project
-- All contributions are under Apache 2.0
-- Check LICENSE file if unsure
-
-### 4. Project Structure
-This is a monorepo with the following structure:
-```
-neuroglyph/
-├── c/             # gitmind CLI (Pure C) - current implementation
-├── demos/         # Example applications
-├── design/        # Technical specifications
-├── docs/          # User documentation  
-├── lore/          # Philosophy, Gonzai mascot, creative content
-└── scripts/       # Development scripts
-```
-
-**Important:** There is NO root Makefile. Each component (like c/) has its own build system. Always cd into the component directory before running make commands.
 
 ### 5. Development Practices
 
@@ -76,16 +70,16 @@ neuroglyph/
 - **Test Double-Friendly Design**: Use dependency injection and traits to enable test doubles when needed
 
 #### Testing
-- All tests run in Docker for consistency
-- Use `cd c && make test` to run the full test suite
+- ALWAYS run, build, or test in Docker NO MATTER WHAT
+- Use `make test` to run the full test suite
 - Pre-push hooks enforce test passing
 - Write tests BEFORE implementation (TDD)
 - Each function should have corresponding tests
 - **Always use real Git repos in tests** - our entire stack relies on Git
-- **NEVER run Git operations in the actual repo** - only in Docker/temp dirs
+- **NEVER run Git operations in the actual working repo** - only in Docker/temp dirs
 - Create temporary Git repositories for each test
 - All Git operations must be isolated from the working repository
-- Use dependency injection and traits for clean architecture
+- Use dependency injection for clean architecture
 - Test doubles are only for contriving edge cases, not replacing Git
 - **Always test behavior, not implementation** - Tests verify what the system does, not how
 - **One test file per component** - Each test file focuses on testing one component's behavior
@@ -93,8 +87,8 @@ neuroglyph/
 ##### Test Strategy - Three Levels
 Always have these three levels of tests, all focused on behavior:
 1. **Unit Tests** - Test individual components in isolation
-   - Located in `src/` files next to implementation (e.g., `#[cfg(test)] mod tests`)
-   - Test single structs/functions behavior
+   - Located in `tests/unit/` directory
+   - Test single functions/modules in isolation
    - Fast, focused on one thing
 2. **Integration Tests** - Test components working together
    - Located in `tests/` directory
@@ -104,8 +98,12 @@ Always have these three levels of tests, all focused on behavior:
    - Also in `tests/` directory
    - Test full CLI commands from user perspective
    - Verify entire features work as users expect
-   - **Every user story in `design/features/` should have corresponding end-to-end tests**
-   - **Every acceptance criteria should have its own specific test**
+
+**Every user story in `design/features/` should have corresponding end-to-end tests**
+   
+- **Every acceptance criteria should have its own specific test**
+
+- **Tests should be organized by USER STORY by FEATURE** and should verify the user story's acceptance criteria
 
 ##### Testing Principles - NEVER Test stdout/stderr
 - **NEVER test stdout/stderr output** - This is brittle and couples tests to implementation
@@ -123,19 +121,11 @@ A feature is only complete when:
 3. User story is demonstrable through end-to-end tests
 4. Documentation is updated
 5. Code follows project conventions
-
-#### Git Hooks
-- Git LFS is configured for binary files
-- Custom hooks in `scripts/` directory
-- Install with `make install-hooks`
+6. TASKLIST.md has been updated
 
 #### Code Style
-- Rust code uses standard formatting (`cargo fmt`)
-- Always run clippy (`cargo clippy`)
-- Follow conventional commits
 - Keep functions small and focused (SOLID)
 - Avoid premature optimization (YAGNI)
-- **One file = one thing** - Each file contains one struct/enum/trait/type
 - **Single Responsibility Principle** - Each module/struct has one reason to change
 
 ### 6. Key Technical Details
@@ -148,25 +138,15 @@ A feature is only complete when:
 - Every operation uses Git's content-addressable storage
 - Testing must use real Git operations to be valid
 
-#### Architecture
-- CLI first approach (no server required)
+#### Architectur- CLI first approach (no server required)
 - Optional daemon for web UI
 - Distributed by design
 - Content-addressable storage
 
-### 7. Mascot & Tone
-- **Gonzai** 🐵 is the chaos monkey mascot
-- Playful but professional tone
-- "Git as cognition layer" is the tagline
-- Emphasize discovery through chaos
-
 ### 8. Important Files to Read
 When starting work, always check:
-1. `project/meta/TASKLIST.md` - Current implementation status
-2. `/README.md` - Project overview (root)
-3. `design/README.md` - Technical documentation
-4. `design/ARCHITECTURE.md` - Architecture details
-5. This file (`project/meta/CLAUDE.md`) - For updates
+1. `TASKLIST.md` - Current implementation status
+2. `README.md` - Project overview (root)
 
 ## Common Tasks
 
@@ -177,22 +157,20 @@ When starting work, always check:
 4. Update documentation if needed
 
 ### Updating Documentation
-1. Add SPDX headers to new docs (optional but encouraged)
+1. Add SPDX headers to new docs
 2. Keep technical docs in `/design/` or `/docs/` (user docs)
-3. Keep creative content in `/lore/`
-4. Update `project/meta/TASKLIST.md` when completing tasks
+4. Update `TASKLIST.md` when completing tasks
 
 ### Working with Git
 1. NEVER commit without explicit permission
-2. Use conventional commits when asked to commit
-3. Check for Git LFS files in `.gitattributes`
+2. Use conventional commits when asked to commit or suggest commit messages
 4. Run tests before any push (automatic via hooks)
 5. When asked for commit messages, provide them in this format:
    ```bash
    git add <files> && git commit -m "type(scope): message"
    ```
-6. Suggest commits after completing each task from project/meta/TASKLIST.md
-7. Keep project/meta/TASKLIST.md up-to-date as tasks are completed
+6. Suggest commits after completing each task from TASKLIST.md
+7. Keep TASKLIST.md up-to-date as tasks are completed
 
 ## Development Workflow Guidelines
 
@@ -205,36 +183,15 @@ When starting work, always check:
 - No commits without permission!
 - SPDX headers on all new files!
 - Test everything in Docker!
-- Keep Gonzai chaotic! 🐵✨
+- We now depend on libgit2 for robust Git operations
 
 ## Development Workflow Example
 
 When implementing a new feature:
-1. **Start with tests** (TDD):
-   ```rust
-   #[test]
-   fn test_init_creates_directory() {
-       // Create isolated temp directory for test
-       let temp_dir = TempDir::new()?;
-       // Initialize git repo in temp dir, NOT in working repo
-       let git_ops = GitOperations::new(temp_dir.path());
-       git_ops.init_repository()?;
-       assert!(temp_dir.path().join(".gitmind/links").exists());
-   }
-   ```
-2. **Design with traits and DI** for testability:
-   ```rust
-   trait GitBackend {
-       fn init(&self) -> Result<()>;
-       fn add_file(&self, path: &Path) -> Result<()>;
-   }
-   
-   struct LinkManager<G: GitBackend> {
-       git: G,
-   }
-   ```
+1. **Start with tests** (TDD)
+2. **Design with DI** for testability
 3. **Write minimal code** to make tests pass (KISS)
-4. **Use real Git repos** in tests, test doubles only when needed
+4. **Use real Git repos** in tests, test doubles only when needed, work from temporary directories
 5. **Refactor** if needed while keeping tests green
 6. **Don't add extra features** (YAGNI)
 7. **Keep each module focused** on one responsibility (SRP)
@@ -242,29 +199,25 @@ When implementing a new feature:
 ## Important Development Practices
 
 ### Logging and Journal
-- Leave your impressions or thoughts in `lore/claude-mind/YYYY-MM-DD/` directory
+- Leave your impressions or thoughts in `.claude/claude-mind/YYYY-MM-DD/` directory
 - Always use today's actual date (double-check to avoid date errors!)
 - Create per-session files to avoid merge conflicts:
   - Format: `HH:MM-topic-sessionID.md` (e.g., `14:45-web-viz-abc123.md`)
   - Use first 6 chars of conversation ID for sessionID
-- Use ISO 8601 timestamps in UTC (e.g., `2025-06-12T14:45:00Z`)
+- Use posix timestamps (e.g., `1749941840`)
+- Your "Collaborator" identity comes from  `git confg user.name` and `git config user.email`, but protected  i.e. "[J. Kirby Ross](james@flyingrobots.dev)"
 - Include session metadata at the start of each file:
   ```markdown
   # Claude Development Journal
   
-  ## Session: 2025-06-12T14:45:00Z
-  **Collaborator**: j***s (a1b2c3)  
+  ## Session: 1749941840
+  **Collaborator**: [J. Kirby Ross](james@flyingrobots.dev)
   **Topics**: Web visualization, Help system  
   **Conversation**: abc123def456 (first 12 chars)
   
   ### 14:45 UTC - Initial Thoughts
   [content...]
   ```
-- For collaborator identification:
-  - Use git user's GPG key fingerprint (last 16 chars)
-  - Example: `**Collaborator**: James (GPG: 1234567890ABCDEF)`
-  - This leverages the project's requirement for signed commits
-  - Could optionally sign the journal entry itself with their key
 - This is your dev journal - feel free to write freely when you get ideas or insights
 - Create an `index.md` in each day's directory summarizing sessions
 

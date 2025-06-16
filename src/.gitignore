@@ -1,0 +1,9 @@
+# This directory should NEVER have build artifacts!
+*.o
+*.a
+*.so
+*.exe
+*.out
+
+# If you see these files, you built outside Docker!
+# Run 'make clean' from the root directory

@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+FROM ubuntu:22.04
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    libgit2-dev \
+    libgit2-1.1 \
+    pkg-config \
+    valgrind \
+    wget \
+    cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install croaring
+RUN cd /tmp && \
+    wget https://github.com/RoaringBitmap/CRoaring/releases/download/v2.0.4/roaring.c && \
+    wget https://github.com/RoaringBitmap/CRoaring/releases/download/v2.0.4/roaring.h && \
+    gcc -O3 -march=native -std=c11 -c roaring.c -o roaring.o && \
+    ar rcs /usr/local/lib/libroaring.a roaring.o && \
+    cp roaring.h /usr/local/include/ && \
+    rm -f roaring.c roaring.h roaring.o
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy source files
+COPY . .
+
+# Ensure we can detect Docker environment
+RUN touch /.dockerenv
+
+# Default command
+CMD ["/bin/bash"]

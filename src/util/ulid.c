@@ -1,0 +1,60 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* © 2025 J. Kirby Ross / Neuroglyph Collective */
+
+#define _POSIX_C_SOURCE 200809L
+
+#include "gitmind.h"
+#include <time.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* Crockford's Base32 alphabet */
+static const char ENCODING[] = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+/* ULID constants */
+#define TIME_LEN 10
+#define RANDOM_LEN 16
+#define ULID_LEN 26
+
+/* Get current time in milliseconds */
+static uint64_t get_time_millis(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return (uint64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+}
+
+/* Encode time component */
+static void encode_time(uint64_t time, char *out) {
+    for (int i = TIME_LEN - 1; i >= 0; i--) {
+        out[i] = ENCODING[time & 0x1F];
+        time >>= 5;
+    }
+}
+
+/* Encode random component */
+static void encode_random(char *out) {
+    for (int i = 0; i < RANDOM_LEN; i++) {
+        out[i] = ENCODING[rand() & 0x1F];
+    }
+}
+
+/* Generate ULID */
+int gm_ulid_generate(char *ulid) {
+    if (!ulid) {
+        return GM_INVALID_ARG;
+    }
+    
+    /* Get current time */
+    uint64_t time = get_time_millis();
+    
+    /* Encode time component */
+    encode_time(time, ulid);
+    
+    /* Encode random component */
+    encode_random(ulid + TIME_LEN);
+    
+    /* Null terminate */
+    ulid[ULID_LEN] = '\0';
+    
+    return GM_OK;
+}

@@ -181,3 +181,10 @@ vgcore.*
 # GitMind specific
 .gitmind
 .plans
+.audits
+.audits-c
+
+# CRITICAL: Never allow git-mind binary in root
+/git-mind
+ci-artifacts/
+docs/audits/

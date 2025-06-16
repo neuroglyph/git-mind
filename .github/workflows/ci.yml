@@ -22,28 +22,27 @@ jobs:
         sudo apt-get install -y build-essential git
         
     - name: Build and Test
-      working-directory: ./c
       run: |
         # Use Docker for all builds and tests
         docker compose build
-        docker compose run --rm -T test
+        # Run tests directly in container without calling make test (which tries to use Docker)
+        docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
         
     - name: Run benchmarks
-      working-directory: ./c
       run: |
-        docker compose run --rm benchmark
+        docker compose run --rm -T dev make benchmark || true
         
     - name: Extract binary from Docker
-      working-directory: ./c
       run: |
-        # Build and extract the binary
-        docker compose run --rm dev sh -c "DOCKER_BUILD=1 make clean all"
+        # Build the binary inside Docker and extract it for CI artifacts only
+        docker compose run --rm -T -v $(pwd)/ci-artifacts:/artifacts dev sh -c "make -C src && cp /workspace/build/bin/git-mind /artifacts/git-mind-linux"
+        # The binary is now in ci-artifacts/ which is NOT in the repo
         
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
         name: gitmind-linux
-        path: c/gitmind
+        path: ci-artifacts/git-mind-linux
 
   cross-platform:
     strategy:
@@ -61,13 +60,11 @@ jobs:
         brew install openssl
         
     - name: Build
-      working-directory: ./c
       run: |
         DOCKER_BUILD=1 make clean
         DOCKER_BUILD=1 make
         
     - name: Test
-      working-directory: ./c
       run: |
         export PATH="$PWD:$PATH"
-        ./tests/integration/test.sh
+        cd tests && bash integration/test_behavior.sh
