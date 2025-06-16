@@ -1,20 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
-# Docker Guard - Prevents builds/tests outside Docker
+# Docker build guard - ensures we're in Docker
 
-# Check if we're inside Docker
-ifndef DOCKER_CONTAINER
-    ifeq ($(wildcard /.dockerenv),)
-        # Not in Docker! Check for other Docker indicators
-        ifeq ($(shell grep -q docker /proc/1/cgroup 2>/dev/null && echo yes || echo no),no)
-            # Check if running in GitHub Actions (for cross-platform testing)
-            ifndef GITHUB_ACTIONS
-                $(error ❌ FATAL: You must run this inside Docker! Use 'make' from the root directory or 'docker compose run dev make')
-            else
-                $(info ⚠️  Running in GitHub Actions - Docker check bypassed for cross-platform testing)
-            endif
-        endif
-    endif
+ifndef DOCKER_BUILD
+    $(error This Makefile must be run inside Docker. Use 'make' from the host)
 endif
 
-# If we got here, we're in Docker (or explicitly bypassed with DOCKER_CONTAINER=1)
-$(info ✅ Running inside Docker container)
+# Verify we're actually in a container
+ifeq ($(shell test -f /.dockerenv && echo yes || echo no),yes)
+    $(info ✅ Running inside Docker container)
+else
+    $(error ❌ DOCKER_BUILD is set but not in a container. Something is wrong!)
+endif

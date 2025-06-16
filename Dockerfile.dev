@@ -1,20 +1,24 @@
 # SPDX-License-Identifier: Apache-2.0
-FROM alpine:latest
+FROM ubuntu:22.04
 
-# Install C development tools and multiple compilers
-RUN apk add --no-cache \
-    build-base \
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
     git \
-    bash \
+    libgit2-dev \
+    libgit2-1.1 \
+    pkg-config \
     valgrind \
-    gdb \
-    clang \
-    clang-analyzer \
-    openssl-dev \
-    tcc
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /workspace
 
+# Copy source files
+COPY . .
+
+# Ensure we can detect Docker environment
+RUN touch /.dockerenv
+
 # Default command
-CMD ["bash"]
+CMD ["/bin/bash"]

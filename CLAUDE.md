@@ -19,7 +19,18 @@ This file contains important instructions for Claude and other AI assistants wor
 - All git operations must be in Docker containers or temp directories
 - This is a hard rule with no exceptions
 
-### 2. License Headers (SPDX)
+### 2. Code Quality Standards
+- **NO MAGIC NUMBERS** - All numeric constants must be #defined
+- **NO MAGIC STRINGS** - All string literals must be #defined constants
+- **Silent by default** - Library functions output nothing unless error
+- **--verbose** - Main.c controls verbose output based on flag
+- **--porcelain** - Machine-readable output controlled by main.c
+- **SRP** - Each function/module has ONE responsibility
+- **DI** - Use dependency injection for testability
+- **KISS** - Simplest solution that works
+- **YAGNI** - Don't add features until needed
+
+### 3. License Headers (SPDX)
 
 All new files MUST include SPDX headers:
 
@@ -46,7 +57,7 @@ All new files MUST include SPDX headers:
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 ```
 
-### 3. License Information
+### 4. License Information
 - This project uses **Apache License 2.0** exclusively
 
 ### 5. Development Practices
@@ -172,6 +183,7 @@ When starting work, always check:
 - No commits without permission!
 - SPDX headers on all new files!
 - Test everything in Docker!
+- We now depend on libgit2 for robust Git operations
 
 ## Development Workflow Example
 

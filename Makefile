@@ -1,64 +1,49 @@
 # SPDX-License-Identifier: Apache-2.0
-# GitMind C Implementation Makefile
+# © 2025 J. Kirby Ross / Neuroglyph Collective
 
-# Two modes: Direct compilation (inside Docker) or Docker orchestration
-ifeq ($(DOCKER_BUILD),1)
-    # Inside Docker - compilation mode
-    include docker-guard.mk
-    
-    CC ?= cc
-CFLAGS ?= -O3 -Wall -Wextra -Werror -pedantic -std=c99 -Iinclude -flto -Wstrict-prototypes -Wwrite-strings -Wshadow -Wformat=2
-LDFLAGS ?= -flto
+# 🐳 DOCKER-ENFORCED MAKEFILE 🐳
+# This Makefile ALWAYS runs commands in Docker
+# Direct compilation on host is IMPOSSIBLE!
 
-# Platform detection
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-    # Linux-specific flags (static linking possible)
-    LDFLAGS += -static
-endif
-ifeq ($(UNAME_S),Darwin)
-    # macOS doesn't support full static linking
-    # Use -arch flags if provided
-endif
+.PHONY: all
+all: help
 
-# Windows/MinGW detection
-ifeq ($(OS),Windows_NT)
-    TARGET = git-mind.exe
-else
-    TARGET = git-mind
-endif
+.PHONY: help
+help:
+	@echo "🐳 ALL COMMANDS RUN IN DOCKER AUTOMATICALLY 🐳"
+	@echo ""
+	@echo "Usage:"
+	@echo "  make dev     - Start development environment"
+	@echo "  make test    - Run all tests in Docker"
+	@echo "  make build   - Build release binary in Docker"
+	@echo "  make clean   - Clean build artifacts"
+	@echo "  make shell   - Get a shell in the dev container"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make test              # Run full test suite"
+	@echo "  make dev               # Start coding environment"
+	@echo "  make build             # Create release binary"
+	@echo ""
+	@echo "✅ Direct compilation is IMPOSSIBLE - everything runs in Docker!"
 
-SRCS = src/main.c src/gitmind.c src/link.c src/sha256.c src/sha1.c src/path.c src/check.c src/status.c src/traverse.c \
-       src/orphan_ref.c src/ulid.c src/cbor.c src/fanout.c src/link_v2.c src/shell_utils.c
-OBJS = $(SRCS:.c=.o)
+# Special case: dev gives you a shell
+.PHONY: dev
+dev:
+	@echo "🐳 Starting development environment..."
+	@docker compose run --rm dev bash
 
-all: $(TARGET)
+# Special case: shell is an alias for dev
+.PHONY: shell
+shell: dev
 
-$(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
-ifeq ($(UNAME_S),Darwin)
-	strip $@
-else
-	strip --strip-all $@
-endif
-
-debug: CFLAGS = -g -O0 -Wall -Wextra -std=c99 -Iinclude -fsanitize=address,undefined
-debug: LDFLAGS += -fsanitize=address,undefined
-debug: $(TARGET)
-
+# Special case: clean should work on host to remove artifacts
+.PHONY: clean
 clean:
-	rm -f $(TARGET) $(OBJS)
+	@echo "🧹 Cleaning build artifacts..."
+	@rm -f git-mind
+	@find src -name "*.o" -delete 2>/dev/null || true
+	@docker compose down 2>/dev/null || true
 
-.PHONY: all clean debug test-binaries
-
-# Test binaries
-TEST_BINS = tests/test_holy_grail
-
-test-binaries: $(TEST_BINS)
-
-tests/test_holy_grail: tests/test_holy_grail.c $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $< $(OBJS) $(LDFLAGS)
-else
-    # Outside Docker - orchestration mode
-    include Makefile.docker
-endif
+# Everything else gets forwarded to Docker
+%:
+	@docker compose run --rm dev make -f Makefile.docker $@

@@ -16,6 +16,31 @@ extern "C" {
 #define GITMIND_VERSION_MINOR 1
 #define GITMIND_VERSION_PATCH 0
 
+// Git object modes
+#define GM_GIT_MODE_BLOB "100644"
+#define GM_GIT_MODE_TREE "040000"
+#define GM_GIT_TYPE_BLOB "blob"
+#define GM_GIT_TYPE_TREE "tree"
+
+// String constants
+#define GM_STRING_NULL "NULL"
+
+// Git command formats
+#define GM_GIT_HASH_OBJECT_CMD "git hash-object \"%s\""
+#define GM_GIT_LS_TREE_CMD "git ls-tree %s %s 2>/dev/null | awk '{print $3}'"
+#define GM_GIT_LS_TREE_RECURSIVE_CMD "git ls-tree -r %s 2>/dev/null"
+#define GM_GIT_LS_TREE_PATH_CMD "git ls-tree -r %s:%s/%s/ 2>/dev/null"
+#define GM_GIT_MKTREE_CMD "git mktree"
+#define GM_GIT_NOTES_ADD_CMD "git notes --ref=refs/notes/gitmind/paths add -f -m '%s' %s 2>/dev/null"
+#define GM_GIT_NOTES_SHOW_CMD "git notes --ref=refs/notes/gitmind/paths show %s 2>/dev/null"
+
+// Git refs
+#define GM_NOTES_PATH_REF "refs/notes/gitmind/paths"
+#define GM_NOTES_TYPES_REF "refs/notes/gitmind/types"
+
+// Edge message format
+#define GM_EDGE_MESSAGE_FORMAT "Add edge: %s -[%s]-> %s"
+
 // Error codes
 typedef enum {
     GM_OK = 0,
@@ -85,6 +110,13 @@ typedef enum {
 #define GM_MAX_LINK_CONTENT 8192
 #define GM_MAX_COMMAND 8192
 #define GM_ERROR_BUFFER_SIZE 256
+#define GM_LINE_BUFFER_SIZE 1024
+#define GM_CBOR_BUFFER_SIZE 256
+#define GM_SHA_HEX_SIZE 40
+#define GM_FANOUT_SIZE 6
+#define GM_FANOUT_PREFIX_SIZE 2
+#define GM_REL_HASH_SIZE 8
+#define GM_REL_HASH_BUFFER_SIZE 9
 
 // SHA constants
 #define GM_SHA256_SIZE 32
@@ -187,15 +219,15 @@ typedef struct {
     int total_count;
 } gm_traverse_result_t;
 
-// Core operations
-int gm_init(const char* repo_path);
-int gm_link_create(const char* source, const char* target, const char* type);
-int gm_link_list(gm_link_set_t** set, const char* filter_source, const char* filter_target);
-int gm_link_unlink(const char* source, const char* target);
+// Core operations (legacy API - without context)
+int gm_init_legacy(const char* repo_path);
+int gm_link_create_legacy(const char* source, const char* target, const char* type);
+int gm_link_list_legacy(gm_link_set_t** set, const char* filter_source, const char* filter_target);
+int gm_link_unlink_legacy(const char* source, const char* target);
 int gm_link_unlink_all(const char* source);
 int gm_link_check(int fix, int* broken_count);
-int gm_status(void);
-int gm_traverse(const char* start_node, int depth, gm_format_t format, gm_traverse_result_t** result);
+int gm_status_legacy(void);
+int gm_traverse_legacy(const char* start_node, int depth, gm_format_t format, gm_traverse_result_t** result);
 
 // Link set operations
 gm_link_set_t* gm_link_set_new(void);
@@ -209,8 +241,7 @@ int gm_traverse_result_add(gm_traverse_result_t* result, const gm_traverse_node_
 void gm_traverse_print_tree(const gm_traverse_result_t* result, const char* start_node);
 void gm_traverse_print_list(const gm_traverse_result_t* result, const char* start_node);
 
-// Error handling
-const char* gm_last_error(void);
+// Error handling - using context-based version from gitmind_lib.h
 const char* gm_error_string(int error_code);
 
 // Utilities
@@ -269,6 +300,41 @@ int gm_build_edge_tree(const char* edge_path, const char* edge_blob_sha,
 int gm_exec_git_command(const char* git_args[], char* output, size_t output_size);
 int gm_git_hash_object(const void* data, size_t size, const char* type, char* out_sha);
 int gm_git_cat_file_blob(const char* sha, void* output, size_t max_size, size_t* actual_size);
+
+// Path mapping operations
+int gm_store_path_mapping(const char* sha, const char* path);
+int gm_get_path_for_sha(const char* sha, char* out_path, size_t path_size);
+
+// Forward declarations for git types
+typedef struct git_repository git_repository;
+typedef struct git_oid git_oid;
+typedef struct git_signature git_signature;
+
+// Git backend operations
+int gm_git_backend_init(void);
+void gm_git_backend_cleanup(void);
+int gm_git_backend_open_repo(git_repository **repo);
+int gm_git_backend_signature_default(git_repository *repo, git_signature **sig);
+
+// Blob operations
+int gm_blob_get_or_create(git_repository *repo, const char *path, git_oid *out_oid);
+int gm_blob_create_from_buffer(git_repository *repo, const void *buffer, size_t len, git_oid *out_oid);
+
+// Type mapping operations
+int gm_type_mapping_store(git_repository *repo, const char *hash, const char *type);
+int gm_type_mapping_get(git_repository *repo, const char *hash, char *out_type, size_t type_size);
+
+// Path mapping operations (libgit2)
+int gm_path_mapping_store_git2(git_repository *repo, const git_oid *oid, const char *path);
+int gm_path_mapping_get_git2(git_repository *repo, const git_oid *oid, char *out_path, size_t path_size);
+
+// Tree merge operations
+int gm_merge_tree_path(const char* base_tree, const char* path, 
+                      const char* entry_mode, const char* entry_sha,
+                      char* out_tree);
+
+// Cleanup operations
+void gm_cleanup(void);
 
 #ifdef __cplusplus
 }

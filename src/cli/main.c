@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // © 2025 J. Kirby Ross / Neuroglyph Collective
 
-#include "gitmind.h"
+#include "gitmind_lib.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +10,41 @@
 // Global flags
 static int verbose = 0;
 static int porcelain = 0;
+
+// Message constants
+#define MSG_INIT_SUCCESS "GitMind initialized successfully\n"
+#define MSG_LINK_CREATED "Link created: %s -> %s [%s]\n"
+#define MSG_NO_LINKS "No links found\n"
+#define MSG_LINK_FORMAT "%s: %s -> %s (ts:%ld)\n"
+#define MSG_LINK_REMOVED "Link removed: %s -> %s\n"
+#define MSG_ALL_LINKS_VALID "All links are valid\n"
+#define MSG_BROKEN_LINKS_FOUND "Found %d broken link%s\n"
+#define MSG_RUN_CHECK_FIX "Run 'gitmind check --fix' to remove them\n"
+#define MSG_BROKEN_LINKS_REMOVED "Removed %d broken link%s\n"
+#define MSG_VERSION_FORMAT "git-mind version %s\n"
+
+// Porcelain message constants
+#define PORCELAIN_INIT_OK "OK\n"
+#define PORCELAIN_LINK_CREATED "CREATED %s %s %s\n"
+#define PORCELAIN_LINK_FORMAT "%s %s %s %ld\n"
+#define PORCELAIN_LINK_REMOVED "REMOVED %s %s\n"
+
+// Error message constants
+#define ERR_MSG_LINK_REQUIRES_ARGS "Error: link command requires source and target arguments\n"
+#define ERR_MSG_UNLINK_REQUIRES_ARGS "Error: unlink command requires source and target arguments\n"
+#define ERR_MSG_MISSING_FILE_ARG "Error: missing file argument\n"
+#define ERR_MSG_DEPTH_OUT_OF_RANGE "Error: depth must be between 1 and %d\n"
+#define ERR_MSG_UNKNOWN_COMMAND "Error: unknown command '%s'\n"
+
+// Default constants
+#define GM_DEFAULT_DEPTH 1
+#define GM_MAX_DEPTH 10
+
+// Format types
+typedef enum {
+    GM_FORMAT_TREE,
+    GM_FORMAT_LIST
+} gm_format_t;
 
 static void print_usage(const char* prog) {
     fprintf(stderr, "Usage: %s [--verbose] [--porcelain] <command> [options]\n", prog);
@@ -33,13 +68,13 @@ static void print_usage(const char* prog) {
     fprintf(stderr, "  version                 Show version\n");
 }
 
-static int cmd_init(int argc, char** argv) {
+static int cmd_init(gm_context_t* ctx, int argc, char** argv) {
     (void)argc;
     (void)argv;
     
-    int ret = gm_init(".");
+    int ret = gm_init(ctx, ".");
     if (ret != GM_OK) {
-        fprintf(stderr, "Error: %s\n", gm_last_error());
+        fprintf(stderr, "Error: %s\n", gm_last_error(ctx));
         return 1;
     }
     
@@ -51,7 +86,7 @@ static int cmd_init(int argc, char** argv) {
     return 0;
 }
 
-static int cmd_link(int argc, char** argv) {
+static int cmd_link(gm_context_t* ctx, int argc, char** argv) {
     const char* type = "REFERENCES";
     
     // Save global optind 
@@ -81,9 +116,9 @@ static int cmd_link(int argc, char** argv) {
         }
     }
     
-    int ret = gm_link_create(source, target, type);
+    int ret = gm_link_create(ctx, source, target, type);
     if (ret != GM_OK) {
-        fprintf(stderr, "Error: %s\n", gm_last_error());
+        fprintf(stderr, "Error: %s\n", gm_last_error(ctx));
         return 1;
     }
     
@@ -95,7 +130,7 @@ static int cmd_link(int argc, char** argv) {
     return 0;
 }
 
-static int cmd_list(int argc, char** argv) {
+static int cmd_list(gm_context_t* ctx, int argc, char** argv) {
     const char* filter_source = NULL;
     const char* filter_target = NULL;
     
@@ -125,10 +160,10 @@ static int cmd_list(int argc, char** argv) {
         }
     }
     
-    gm_link_set_t* set;
-    int ret = gm_link_list(&set, filter_source, filter_target);
+    gm_link_set_t* set = NULL;
+    int ret = gm_link_list(ctx, &set, filter_source, filter_target);
     if (ret != GM_OK) {
-        fprintf(stderr, "Error: %s\n", gm_last_error());
+        fprintf(stderr, "Error: %s\n", gm_last_error(ctx));
         return 1;
     }
     
@@ -153,7 +188,7 @@ static int cmd_list(int argc, char** argv) {
     return 0;
 }
 
-static int cmd_unlink(int argc, char** argv) {
+static int cmd_unlink(gm_context_t* ctx, int argc, char** argv) {
     // Save global optind
     int saved_optind = optind;
     int cmd_start = saved_optind + 1;  // Skip past "unlink" command
@@ -167,9 +202,9 @@ static int cmd_unlink(int argc, char** argv) {
     const char* source = argv[cmd_start];
     const char* target = argv[cmd_start + 1];
     
-    int ret = gm_link_unlink(source, target);
+    int ret = gm_link_unlink(ctx, source, target);
     if (ret != GM_OK) {
-        fprintf(stderr, "Error: %s\n", gm_last_error());
+        fprintf(stderr, "Error: %s\n", gm_last_error(ctx));
         return 1;
     }
     
@@ -181,7 +216,7 @@ static int cmd_unlink(int argc, char** argv) {
     return 0;
 }
 
-static int cmd_check(int argc, char** argv) {
+static int cmd_check(gm_context_t* ctx, int argc, char** argv) {
     int fix = 0;
     
     // Save global optind
@@ -197,9 +232,9 @@ static int cmd_check(int argc, char** argv) {
     }
     
     int broken_count = 0;
-    int ret = gm_link_check(fix, &broken_count);
+    int ret = gm_check(ctx, fix, &broken_count);
     if (ret != GM_OK) {
-        fprintf(stderr, "Error: %s\n", gm_last_error());
+        fprintf(stderr, "Error: %s\n", gm_last_error(ctx));
         return 1;
     }
     
@@ -215,20 +250,30 @@ static int cmd_check(int argc, char** argv) {
     return 0;
 }
 
-static int cmd_status(int argc, char** argv) {
+static int cmd_status(gm_context_t* ctx, int argc, char** argv) {
     (void)argc;
     (void)argv;
     
-    int ret = gm_status();
+    int link_count = 0, unique_files = 0;
+    int ret = gm_status(ctx, &link_count, &unique_files);
     if (ret != GM_OK) {
-        fprintf(stderr, "Error: %s\n", gm_last_error());
+        fprintf(stderr, "Error: %s\n", gm_last_error(ctx));
         return 1;
+    }
+    
+    if (porcelain) {
+        printf("LINKS %d\n", link_count);
+        printf("FILES %d\n", unique_files);
+    } else {
+        printf("Total links: %d\n", link_count);
+        printf("Unique files: %d\n", unique_files);
     }
     
     return 0;
 }
 
-static int cmd_version(int argc, char** argv) {
+static int cmd_version(gm_context_t* ctx, int argc, char** argv) {
+    (void)ctx;
     (void)argc;
     (void)argv;
     
@@ -236,7 +281,22 @@ static int cmd_version(int argc, char** argv) {
     return 0;
 }
 
-static int cmd_traverse(int argc, char** argv) {
+// Traverse callback for tree format
+static void traverse_tree_callback(const gm_link_t* link, int level, void* userdata) {
+    (void)userdata;
+    for (int i = 0; i < level; i++) {
+        printf("  ");
+    }
+    printf("└─ %s -> %s [%s]\n", link->source, link->target, link->type);
+}
+
+// Traverse callback for list format
+static void traverse_list_callback(const gm_link_t* link, int level, void* userdata) {
+    (void)userdata;
+    printf("%d: %s -> %s [%s]\n", level, link->source, link->target, link->type);
+}
+
+static int cmd_traverse(gm_context_t* ctx, int argc, char** argv) {
     // Save global optind
     int saved_optind = optind;
     int cmd_start = saved_optind + 1;  // Skip past "traverse" command
@@ -284,21 +344,20 @@ static int cmd_traverse(int argc, char** argv) {
         }
     }
     
-    gm_traverse_result_t* result = NULL;
-    int ret = gm_traverse(file, depth, format, &result);
+    // Use appropriate callback based on format
+    void (*callback)(const gm_link_t*, int, void*) = 
+        (format == GM_FORMAT_TREE) ? traverse_tree_callback : traverse_list_callback;
+    
+    if (!porcelain) {
+        printf("Traversing from: %s (depth: %d)\n", file, depth);
+    }
+    
+    int ret = gm_traverse(ctx, file, depth, callback, NULL);
     if (ret != GM_OK) {
-        fprintf(stderr, "Error: %s\n", gm_last_error());
+        fprintf(stderr, "Error: %s\n", gm_last_error(ctx));
         return 1;
     }
     
-    // Print results based on format
-    if (format == GM_FORMAT_TREE) {
-        gm_traverse_print_tree(result, file);
-    } else {
-        gm_traverse_print_list(result, file);
-    }
-    
-    gm_traverse_result_free(result);
     return 0;
 }
 
@@ -342,27 +401,58 @@ int main(int argc, char** argv) {
     
     const char* cmd = argv[optind];
     
-    // Don't shift argv - pass original with adjusted indices
-    
-    if (strcmp(cmd, "init") == 0) {
-        return cmd_init(argc, argv);
-    } else if (strcmp(cmd, "link") == 0) {
-        return cmd_link(argc, argv);
-    } else if (strcmp(cmd, "list") == 0) {
-        return cmd_list(argc, argv);
-    } else if (strcmp(cmd, "unlink") == 0) {
-        return cmd_unlink(argc, argv);
-    } else if (strcmp(cmd, "check") == 0) {
-        return cmd_check(argc, argv);
-    } else if (strcmp(cmd, "status") == 0) {
-        return cmd_status(argc, argv);
-    } else if (strcmp(cmd, "traverse") == 0) {
-        return cmd_traverse(argc, argv);
-    } else if (strcmp(cmd, "version") == 0) {
-        return cmd_version(argc, argv);
-    } else {
-        fprintf(stderr, ERR_MSG_UNKNOWN_COMMAND, cmd);
-        print_usage(argv[0]);
+    // Create context with default backend
+    gm_context_t* ctx = gm_create_context(NULL);
+    if (!ctx) {
+        fprintf(stderr, "Error: Failed to create context\n");
         return 1;
     }
+    
+    // Set output mode based on flags
+    gm_output_mode_t output_mode = GM_OUTPUT_SILENT;
+    if (verbose) {
+        output_mode = GM_OUTPUT_VERBOSE;
+    } else if (porcelain) {
+        output_mode = GM_OUTPUT_PORCELAIN;
+    }
+    gm_set_output_mode(ctx, output_mode);
+    
+    // Don't shift argv - pass original with adjusted indices
+    
+    int ret = 0;
+    if (strcmp(cmd, "init") == 0) {
+        ret = cmd_init(ctx, argc, argv);
+    } else if (strcmp(cmd, "version") == 0) {
+        ret = cmd_version(ctx, argc, argv);
+    } else {
+        // For all non-init/version commands, initialize the repository context
+        ret = gm_init(ctx, ".");
+        if (ret != GM_OK) {
+            fprintf(stderr, "Error: %s\n", gm_last_error(ctx));
+            gm_destroy_context(ctx);
+            return 1;
+        }
+        
+        if (strcmp(cmd, "link") == 0) {
+            ret = cmd_link(ctx, argc, argv);
+        } else if (strcmp(cmd, "list") == 0) {
+            ret = cmd_list(ctx, argc, argv);
+        } else if (strcmp(cmd, "unlink") == 0) {
+            ret = cmd_unlink(ctx, argc, argv);
+        } else if (strcmp(cmd, "check") == 0) {
+            ret = cmd_check(ctx, argc, argv);
+        } else if (strcmp(cmd, "status") == 0) {
+            ret = cmd_status(ctx, argc, argv);
+        } else if (strcmp(cmd, "traverse") == 0) {
+            ret = cmd_traverse(ctx, argc, argv);
+        } else {
+            fprintf(stderr, ERR_MSG_UNKNOWN_COMMAND, cmd);
+            print_usage(argv[0]);
+            ret = 1;
+        }
+    }
+    
+    // Cleanup context
+    gm_destroy_context(ctx);
+    return ret;
 }

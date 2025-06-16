@@ -1,0 +1,14 @@
+⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️
+
+    DO NOT COMPILE IN THIS DIRECTORY!
+
+    ALL BUILDS MUST HAPPEN IN DOCKER!
+
+    From the root directory, use:
+      make dev    - Development environment
+      make test   - Run tests
+      make build  - Build release
+
+    If you see any .o files here, you broke the rule!
+
+⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️

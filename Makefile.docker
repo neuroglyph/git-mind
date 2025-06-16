@@ -1,81 +1,68 @@
 # SPDX-License-Identifier: Apache-2.0
-# Docker orchestration targets for GitMind C implementation
+# GitMind C Implementation Makefile - Runs inside Docker
 
-.PHONY: help build test clean install dev benchmark demo fuzz valgrind all
+include docker-guard.mk
 
-# Default target
-help:
-	@echo "GitMind C Implementation Commands:"
-	@echo ""
-	@echo "  make build        - Build the gitmind binary in Docker"
-	@echo "  make test         - Run all tests in Docker"
-	@echo "  make clean        - Clean build artifacts"
-	@echo "  make install      - Install to /usr/local/bin"
-	@echo "  make dev          - Open development shell in Docker"
-	@echo "  make benchmark    - Run benchmarks in Docker"
-	@echo ""
-	@echo "Advanced targets:"
-	@echo "  make demo         - Run demo repository setup"
-	@echo "  make fuzz         - Run AFL++ fuzzing tests"
-	@echo "  make valgrind     - Run Valgrind memory checks"
-	@echo ""
-	@echo "All operations run in Docker for consistency and safety."
+CC ?= cc
+CFLAGS ?= -O3 -Wall -Wextra -Werror -pedantic -std=c99 -Iinclude -Isrc -flto -Wstrict-prototypes -Wwrite-strings -Wshadow -Wformat=2
+LDFLAGS ?= -flto
 
-# Build the binary in Docker
-build:
-	docker compose build dev
-	docker compose run --rm dev sh -c "DOCKER_BUILD=1 make clean all"
+# Try to use pkg-config for libgit2
+LIBGIT2_CFLAGS := $(shell pkg-config --cflags libgit2 2>/dev/null || echo "")
+LIBGIT2_LIBS := $(shell pkg-config --libs libgit2 2>/dev/null || echo "-lgit2")
 
-# Run all tests in Docker
-test:
-	docker compose build test
-	docker compose run --rm -T test
+CFLAGS += $(LIBGIT2_CFLAGS)
+LDFLAGS += $(LIBGIT2_LIBS)
 
-# Run tests in random order
-test-random:
-	docker compose build test
-	RANDOM_TESTS=1 docker compose run --rm -T test
+# Platform detection
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+    # Linux-specific flags
+endif
+ifeq ($(UNAME_S),Darwin)
+    # macOS specific flags
+endif
 
-# Clean build artifacts
+# Windows/MinGW detection
+ifeq ($(OS),Windows_NT)
+    TARGET = git-mind.exe
+else
+    TARGET = git-mind
+endif
+
+SRCS = src/cli/main.c \
+       src/core/init.c src/core/context.c src/core/link.c src/core/link_list.c \
+       src/core/status.c src/core/traverse.c src/core/check.c \
+       src/backends/libgit2.c src/backends/test.c src/backends/git_lifecycle.c \
+       src/storage/orphan_ref.c src/storage/orphan_ref_ctx.c src/storage/tree_merge.c src/storage/fanout.c \
+       src/storage/path_mapping.c src/storage/type_mapping.c src/storage/blob_ops.c \
+       src/utils/sha256.c src/utils/sha1.c src/utils/path.c src/utils/ulid.c \
+       src/utils/cbor.c src/utils/path_resolution.c
+OBJS = $(SRCS:.c=.o)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+ifeq ($(UNAME_S),Darwin)
+	strip $@
+else
+	strip --strip-all $@
+endif
+
+debug: CFLAGS = -g -O0 -Wall -Wextra -std=c99 -Iinclude -Isrc -fsanitize=address,undefined $(LIBGIT2_CFLAGS)
+debug: LDFLAGS += -fsanitize=address,undefined
+debug: $(TARGET)
+
 clean:
-	docker compose down
-	rm -f gitmind src/*.o
+	rm -f $(TARGET) $(OBJS)
 
-# Development shell
-dev:
-	docker compose run --rm dev
+install: $(TARGET)
+	install -m 755 $(TARGET) /usr/local/bin/
 
-# Run benchmarks
-benchmark:
-	docker compose build benchmark
-	docker compose run --rm benchmark
+.PHONY: all clean install debug test
 
-# Install locally (build first, then copy)
-install: build
-	@echo "Installing gitmind to /usr/local/bin..."
-	@if [ -w /usr/local/bin ]; then \
-		cp gitmind /usr/local/bin/; \
-	else \
-		echo "🔐 Administrator access required..."; \
-		sudo cp gitmind /usr/local/bin/; \
-	fi
-	@echo "✅ Installation complete!"
-
-# Run demo setup
-demo:
-	cd ../demos/mvp && ./test-demo.sh
-
-# Run fuzz testing
-fuzz:
-	./tests/tools/fuzz-test.sh
-
-# Run memory checks with Valgrind
-valgrind:
-	./tests/integration/valgrind-test.sh
-
-# Multi-compiler strict testing
-strict-test:
-	docker compose run --rm dev ./tests/tools/test-multi-compiler.sh
-
-# Convenience target to build and test
-all: build test
+test: $(TARGET)
+	@echo "Running integration tests..."
+	@./tests/integration/test.sh
+	@./tests/integration/test_behavior.sh

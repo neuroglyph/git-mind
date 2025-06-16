@@ -120,10 +120,10 @@ Common link types: `implements`, `references`, `depends_on`, `tests`, `documents
 Built for speed and simplicity:
 
 ```
-Binary size:        130KB     (1000x smaller than Electron apps)
+Binary size:        ~200KB    (still 1000x smaller than Electron apps)
 Startup time:       <1ms      (faster than your thoughts)
-Memory usage:       ~500KB    (less than a browser tab)
-Dependencies:       Zero      (just Git + libc)
+Memory usage:       ~1MB      (less than a browser tab)
+Dependencies:       libgit2   (for robust Git operations)
 ```
 
 **Storage:** Semantic links as plain text files in `.gitmind/links/`:

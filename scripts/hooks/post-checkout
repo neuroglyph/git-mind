@@ -1,0 +1,46 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# git-mind post-checkout hook - Updates working directory awareness
+
+# Only run if git-mind is initialized
+if [ ! -d ".gitmind" ]; then
+    exit 0
+fi
+
+# Get the checkout details
+PREV_HEAD=$1
+NEW_HEAD=$2
+BRANCH_CHECKOUT=$3  # 1 if checking out branch, 0 if checking out files
+
+# Only run for branch checkouts, not file checkouts
+if [ "$BRANCH_CHECKOUT" != "1" ]; then
+    exit 0
+fi
+
+# Skip if same commit (like during rebase)
+if [ "$PREV_HEAD" = "$NEW_HEAD" ]; then
+    exit 0
+fi
+
+# Check if any linked files changed between branches
+CHANGED_FILES=$(git diff --name-only $PREV_HEAD..$NEW_HEAD 2>/dev/null || true)
+
+if [ ! -z "$CHANGED_FILES" ]; then
+    # Check if any changed files have links
+    LINK_COUNT=$(git-mind list --porcelain 2>/dev/null | grep -cE "^LINK" || echo "0")
+    
+    if [ "$LINK_COUNT" -gt "0" ]; then
+        # Some linked files might have changed
+        echo "git-mind: Branch switch detected, checking link integrity..."
+        
+        # Run a quick check
+        BROKEN=$(git-mind check --porcelain 2>/dev/null | grep -c "BROKEN" || echo "0")
+        
+        if [ "$BROKEN" -gt "0" ]; then
+            echo "git-mind: Warning: $BROKEN broken links detected"
+            echo "git-mind: Run 'git-mind check' for details"
+        fi
+    fi
+fi
+
+exit 0

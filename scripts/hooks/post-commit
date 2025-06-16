@@ -1,0 +1,52 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# git-mind post-commit hook - Updates links after commits
+
+# Only run if git-mind is initialized
+if [ ! -d ".gitmind" ]; then
+    exit 0
+fi
+
+# Get the commit that was just made
+COMMIT=$(git rev-parse HEAD)
+
+# Check for renames in this commit
+RENAMES=$(git diff-tree -M --name-status -r $COMMIT^ $COMMIT 2>/dev/null | grep "^R")
+
+if [ ! -z "$RENAMES" ]; then
+    echo "git-mind: Detected renames, updating links..."
+    
+    # Process each rename
+    while IFS=$'\t' read -r status old_path new_path; do
+        # Update links where old_path appears
+        git-mind update-path "$old_path" "$new_path" --quiet 2>/dev/null || true
+    done <<< "$RENAMES"
+    
+    # Check if git-mind made any changes
+    if git diff --quiet --exit-code refs/gitmind/graph; then
+        echo "git-mind: No link updates needed"
+    else
+        echo "git-mind: Links updated for renamed files"
+    fi
+fi
+
+# Optional: Extract new links from committed markdown files (POC behavior)
+if [ "${GITMIND_AUTO_EXTRACT:-0}" = "1" ]; then
+    CHANGED_MD=$(git diff-tree --no-commit-id --name-only -r $COMMIT | grep '\.md$' || true)
+    
+    if [ ! -z "$CHANGED_MD" ]; then
+        echo "git-mind: Extracting links from markdown files..."
+        while read -r file; do
+            # Extract [text](path.md) style links
+            grep -oE '\[([^\]]+)\]\(([^)]+\.md)\)' "$file" 2>/dev/null | while read -r link; do
+                target=$(echo "$link" | sed -E 's/.*\(([^)]+)\).*/\1/')
+                # Create link if target exists
+                if [ -f "$target" ]; then
+                    git-mind link "$file" "$target" --type references --quiet 2>/dev/null || true
+                fi
+            done
+        done <<< "$CHANGED_MD"
+    fi
+fi
+
+exit 0

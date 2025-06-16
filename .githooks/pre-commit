@@ -1,0 +1,39 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# © 2025 J. Kirby Ross / Neuroglyph Collective
+
+# Pre-commit hook to prevent committing build artifacts
+
+# Check for .o files
+if git diff --cached --name-only | grep -q '\.o$'; then
+    echo "❌ ERROR: Object files (.o) detected!"
+    echo ""
+    echo "You have build artifacts that shouldn't be committed."
+    echo "This means you compiled outside Docker!"
+    echo ""
+    echo "To fix:"
+    echo "  1. Run 'make clean' to remove artifacts"
+    echo "  2. Use 'make dev' or 'make test' instead"
+    echo "  3. Stage your changes again"
+    echo ""
+    echo "Remember: ALL builds must happen in Docker! 🐳"
+    exit 1
+fi
+
+# Check for other build artifacts
+if git diff --cached --name-only | grep -E '\.(a|so|dylib|exe)$'; then
+    echo "❌ ERROR: Build artifacts detected!"
+    echo "Please remove them and build in Docker instead."
+    exit 1
+fi
+
+# Check for the binary itself
+if git diff --cached --name-only | grep -E '^git-mind$'; then
+    echo "❌ ERROR: Trying to commit the git-mind binary!"
+    echo "Binaries should not be in the repository."
+    echo "Run 'make clean' and build in Docker."
+    exit 1
+fi
+
+# All good!
+exit 0
