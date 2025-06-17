@@ -11,6 +11,7 @@ typedef struct {
     const char *filter_path;
     int count;
     int show_all;
+    int show_augments;
 } list_ctx_t;
 
 /* Edge callback for listing */
@@ -23,6 +24,11 @@ static int list_edge_callback(const gm_edge_t *edge, void *userdata) {
             strcmp(edge->tgt_path, lctx->filter_path) != 0) {
             return 0;  /* Skip this edge */
         }
+    }
+    
+    /* Skip AUGMENTS edges unless --show-augments */
+    if (!lctx->show_augments && edge->rel_type == GM_REL_AUGMENTS) {
+        return 0;  /* Skip augments edges by default */
     }
     
     /* Format and print edge */
@@ -44,6 +50,8 @@ int gm_cmd_list(gm_context_t *ctx, int argc, char **argv) {
     for (int i = 0; i < argc; i++) {
         if (strcmp(argv[i], "--all") == 0) {
             lctx.show_all = 1;
+        } else if (strcmp(argv[i], "--show-augments") == 0) {
+            lctx.show_augments = 1;
         } else if (strcmp(argv[i], "--branch") == 0 && i + 1 < argc) {
             branch = argv[++i];
         } else if (!lctx.filter_path) {

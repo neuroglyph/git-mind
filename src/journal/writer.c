@@ -191,3 +191,25 @@ cleanup:
     free(cbor_buffer);
     return result;
 }
+
+/* Public wrapper for hooks to create commits */
+int journal_create_commit(git_repository *repo, const char *ref, 
+                         const void *data, size_t len) {
+    journal_ctx_t jctx;
+    git_oid commit_oid;
+    
+    /* Initialize context */
+    jctx.repo = repo;
+    
+    /* Parse empty tree OID */
+    if (git_oid_fromstr(&jctx.empty_tree_oid, EMPTY_TREE_SHA) < 0) {
+        return GM_ERROR;
+    }
+    
+    /* Copy ref name */
+    strncpy(jctx.ref_name, ref, sizeof(jctx.ref_name) - 1);
+    jctx.ref_name[sizeof(jctx.ref_name) - 1] = '\0';
+    
+    /* Create commit */
+    return create_journal_commit(&jctx, data, len, &commit_oid);
+}

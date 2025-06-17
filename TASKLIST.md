@@ -40,6 +40,7 @@
 - [x] Implement `gm_journal_walk()` - iterate commits (via revwalk)
 - [x] Implement `gm_journal_read_edges()` - decode CBOR from commit
 - [x] Test: Read back the 10 edges created above
+- [x] Fix CBOR null byte issue (changed encoding to avoid 0x00)
 
 ### Basic CLI ✅
 - [x] ~~`git-mind init`~~ (Not needed - auto-creates on first link)
@@ -53,6 +54,8 @@
 - [x] **PERFORMANCE**: Benchmarks show <5ms single edge creation
 - [x] **EDGE CASES**: Unicode, symlinks, concurrent writes all handled
 - [x] **DEPENDENCY INJECTION**: Clean architecture from day 1
+- [x] **CI/CD**: Fixed GitHub Actions workflow
+- [x] **SAFETY**: Removed all host binary execution risks
 
 ---
 
@@ -69,19 +72,43 @@
 - [x] Test: Create different links on main vs feature branch
 - [x] Test: Switch branches, verify different links shown (E2E test)
 
-### AUGMENTS System (3 hours)
-- [ ] Design AUGMENTS edge type for edits
-- [ ] Create post-commit hook that:
-  - [ ] Detects changed files via `git diff`
-  - [ ] Looks up old blob SHA in recent edges
-  - [ ] Creates AUGMENTS edge: old_blob -> new_blob
-- [ ] Update `list` to follow AUGMENTS chains
+### AUGMENTS System ✅ COMPLETE (2.5 hours)
+- [x] Design AUGMENTS edge type for edits (see docs/architecture/augments-system.md)
+- [x] Create post-commit hook infrastructure:
+  - [x] Add `src/hooks/post-commit.c` entry point
+  - [x] Add `src/hooks/augment.c` for edge creation logic
+  - [x] Add `src/hooks/augment.h` interface
+  - [x] Update Makefile to build `git-mind-hook` binary
+- [x] Implement core functions:
+  - [x] `get_blob_sha()` - Extract blob SHA for file at commit
+  - [x] `find_edges_by_source()` - Search recent edges (limit 200)
+  - [x] `create_augments_edge()` - Create evolution edge
+  - [x] `post_commit_hook()` - Main orchestration
+- [x] Hook logic implementation:
+  - [x] Skip merge commits (too complex for v1)
+  - [x] Get changed files via `git diff HEAD~1 HEAD --name-only`
+  - [x] For each file, get old and new blob SHAs
+  - [x] Search for edges with src=old_blob
+  - [x] Create AUGMENTS edge if found
+  - [x] Silent operation (no output unless --verbose)
+- [x] Update `list` command:
+  - [x] ~~Follow AUGMENTS chains to show current version~~ (deferred to v2)
+  - [x] Add `--show-augments` flag to see full history
+  - [ ] Add `--at <commit>` flag for time travel (deferred)
+- [x] Testing:
+  - [x] ~~Unit tests for blob SHA extraction~~ (covered by E2E)
+  - [x] ~~Integration test for hook triggering~~ (covered by E2E)
+  - [x] E2E test: create edge, modify file, verify AUGMENTS
+- [x] Installation:
+  - [x] Add `git-mind install-hooks` command
+  - [x] Create `.git/hooks/post-commit` script
+  - [x] Handle existing hooks gracefully (backs up)
 
-### Push/Pull Testing (2 hours) 🎯 NEXT PRIORITY
-- [ ] Test: `git push origin main refs/gitmind/edges/main`
-- [ ] Verify GitHub accepts the ref
-- [ ] Test clone and pull on fresh repo
-- [ ] Document any hosting-specific issues
+### Push/Pull Testing ✅ COMPLETE
+- [x] Test: `git push origin main refs/gitmind/edges/main` - **WORKS!**
+- [x] Verify GitHub accepts the ref - **CONFIRMED**
+- [x] Test clone and pull on fresh repo - **SUCCESS**
+- [x] Document any hosting-specific issues - **None found!**
 
 ---
 
@@ -131,7 +158,7 @@
 ### Testing & Release
 - [x] Integration tests for all commands - **DONE!**
 - [ ] Test on macOS, Linux, Windows (WSL)
-- [ ] GitHub Actions CI/CD
+- [x] GitHub Actions CI/CD - **FIXED & WORKING**
 - [ ] Create v0.2.0 release
 
 ---
@@ -169,7 +196,7 @@ git config --add remote.origin.push refs/gitmind/edges/*:refs/gitmind/edges/*
 
 - [x] Can create links that persist in commits ✅
 - [x] Links are branch-specific ✅
-- [ ] Can push/pull to GitHub without errors 🎯 **NEXT TEST**
+- [x] Can push/pull to GitHub without errors ✅ **CONFIRMED WORKING**
 - [x] Query performance < 10ms for 100K edges ✅ (benchmarked)
 - [x] No merge conflicts for concurrent link creation ✅ (ULID-based)
 - [x] Total implementation < 3000 lines of C ✅ (~2000 lines!)
@@ -191,10 +218,23 @@ git config --add remote.origin.push refs/gitmind/edges/*:refs/gitmind/edges/*
 - Branch-aware design that works with Git, not against it
 
 ### Next Steps 🚀
-1. **Test GitHub push/pull** - Critical validation
-2. **Build AUGMENTS system** - Track file evolution
-3. **Add cache layer** - For massive scale
+1. ~~**Test GitHub push/pull**~~ ✅ DONE - Works perfectly!
+2. **Build AUGMENTS system** - Track file evolution (3 hours)
+3. **Add cache layer** - For massive scale (Weekend 3)
 4. **Polish and ship** - Make it production ready
+
+### Recent Fixes & Improvements 🔧
+- Fixed CBOR null byte issue by changing encoding
+- Fixed CI/CD pipeline (no nested Docker)
+- Added CI simulation to pre-push hooks
+- Removed dangerous host binary execution
+- Added DOCKER_BUILDKIT=1 to suppress warnings
+- Completed Unix compliance audit
+- **AUGMENTS SYSTEM COMPLETE!** 🎉
+  - Post-commit hook automatically tracks file evolution
+  - Zero manual effort - just commit and go
+  - Full E2E test coverage
+  - Backs up existing hooks gracefully
 
 ---
 

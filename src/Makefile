@@ -16,18 +16,29 @@ INCDIR = ../include
 JOURNAL_SRCS = journal/writer.c journal/reader.c
 EDGE_SRCS = edge/cbor.c edge/edge.c
 CACHE_SRCS = cache/bitmap.c cache/builder.c cache/query.c
-CLI_SRCS = cli/main.c cli/link.c cli/list.c
+CLI_SRCS = cli/main.c cli/link.c cli/list.c cli/install_hooks.c
 UTIL_SRCS = util/ulid.c util/sha.c util/error.c
+HOOK_SRCS = hooks/augment.c
 
 ALL_SRCS = $(JOURNAL_SRCS) $(EDGE_SRCS) $(CACHE_SRCS) $(CLI_SRCS) $(UTIL_SRCS)
 OBJS = $(patsubst %.c,$(OBJDIR)/%.o,$(ALL_SRCS))
 
+# Hook objects (separate binary)
+HOOK_OBJS = $(OBJDIR)/hooks/post-commit.o $(OBJDIR)/hooks/augment.o \
+            $(OBJDIR)/journal/writer.o $(OBJDIR)/journal/reader.o \
+            $(OBJDIR)/edge/cbor.o $(OBJDIR)/edge/edge.o \
+            $(OBJDIR)/util/ulid.o $(OBJDIR)/util/sha.o $(OBJDIR)/util/error.o
+
 # Main target
-all: $(BINDIR)/git-mind
+all: $(BINDIR)/git-mind $(BINDIR)/git-mind-hook
 
 $(BINDIR)/git-mind: $(OBJS)
 	@mkdir -p $(BINDIR)
 	$(CC) $(OBJS) $(LDFLAGS) -o $@
+
+$(BINDIR)/git-mind-hook: $(HOOK_OBJS)
+	@mkdir -p $(BINDIR)
+	$(CC) $(HOOK_OBJS) $(LDFLAGS) -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(dir $@)
