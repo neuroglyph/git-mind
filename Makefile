@@ -30,7 +30,7 @@ help:
 .PHONY: dev
 dev:
 	@echo "🐳 Starting development environment..."
-	@docker compose run --rm dev bash
+	@DOCKER_BUILDKIT=1 docker compose run --rm dev bash
 
 # Special case: shell is an alias for dev
 .PHONY: shell
@@ -47,7 +47,7 @@ clean:
 .PHONY: build
 build:
 	@echo "🔨 Building git-mind..."
-	@docker compose run --rm -T dev make -C src
+	@DOCKER_BUILDKIT=1 docker compose run --rm -T dev make -C src
 	@echo "✅ Built git-mind successfully!"
 	@echo "Binary is available inside Docker at /workspace/build/bin/git-mind"
 
@@ -55,7 +55,7 @@ build:
 .PHONY: test
 test:
 	@echo "🧪 Running tests in Docker (SAFE)..."
-	@docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
+	@DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
 	@echo "✅ Tests completed!"
 
 # Run tests EXACTLY like GitHub Actions CI
@@ -63,17 +63,17 @@ test:
 test-ci:
 	@echo "🧪 Running CI simulation (EXACTLY like GitHub Actions)..."
 	@echo "Building Docker image..."
-	@docker compose build
+	@DOCKER_BUILDKIT=1 docker compose build
 	@echo "Running tests in container (no nested Docker)..."
-	@docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
+	@DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
 	@echo "✅ CI simulation completed!"
 
 # Run E2E tests
 .PHONY: test-e2e
 test-e2e:
 	@echo "🧪 Running E2E tests in Docker..."
-	@docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && cd tests/e2e && ./run_all_tests.sh"
+	@DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && cd tests/e2e && ./run_all_tests.sh"
 
 # Everything else gets forwarded to Docker
 %:
-	@docker compose run --rm dev make -f Makefile.docker $@
+	@DOCKER_BUILDKIT=1 docker compose run --rm dev make -f Makefile.docker $@
