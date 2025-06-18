@@ -42,15 +42,18 @@ static int process_commit(git_commit *commit, reader_ctx_t *rctx) {
      * We'll have to parse the CBOR data until we can't parse anymore. */
     message_len = 8192;  /* MAX_CBOR_SIZE from writer.c */
     
+    /* Forward declaration of extended decoder */
+    int gm_edge_decode_cbor_ex(const uint8_t *buffer, size_t len, gm_edge_t *edge, size_t *consumed);
+    
     /* Decode edges from CBOR */
     while (offset < message_len) {
         gm_edge_t edge;
         size_t remaining = message_len - offset;
+        size_t consumed = 0;
         
         /* Try to decode an edge */
-        int decode_result = gm_edge_decode_cbor(cbor_data + offset, remaining, &edge);
-        if (decode_result != GM_OK) {
-            /* End of valid CBOR data or error */
+        int decode_result = gm_edge_decode_cbor_ex(cbor_data + offset, remaining, &edge, &consumed);
+        if (decode_result != GM_OK || consumed == 0) {
             /* End of valid CBOR data */
             break;
         }
@@ -62,9 +65,8 @@ static int process_commit(git_commit *commit, reader_ctx_t *rctx) {
             return cb_result;
         }
         
-        /* Move to next edge - for now just break after first edge */
-        /* TODO: handle multiple edges per commit */
-        break;
+        /* Move to next edge */
+        offset += consumed;
     }
     
     return GM_OK;
