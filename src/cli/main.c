@@ -12,6 +12,7 @@
 int gm_cmd_link(gm_context_t *ctx, int argc, char **argv);
 int gm_cmd_list(gm_context_t *ctx, int argc, char **argv);
 int gm_cmd_install_hooks(gm_context_t *ctx, int argc, char **argv);
+int gm_cmd_cache_rebuild(gm_context_t *ctx, int argc, char **argv);
 
 /* External utility functions */
 const char *gm_error_string(int error_code);
@@ -83,6 +84,7 @@ static void print_usage(const char *prog) {
     printf("  link <source> <target> [--type <type>]  Create a link between files\n");
     printf("  list [<path>] [--branch <branch>]       List links\n");
     printf("  install-hooks                            Install git hooks for AUGMENTS\n");
+    printf("  cache-rebuild [--branch <branch>]        Rebuild bitmap cache for fast queries\n");
     printf("\nRelationship types:\n");
     printf("  implements    Source implements target\n");
     printf("  references    Source references target\n");
@@ -152,6 +154,8 @@ int main(int argc, char **argv) {
         result = gm_cmd_list(&ctx, argc - 2, argv + 2);
     } else if (strcmp(cmd, "install-hooks") == 0) {
         result = gm_cmd_install_hooks(&ctx, argc - 2, argv + 2);
+    } else if (strcmp(cmd, "cache-rebuild") == 0) {
+        result = gm_cmd_cache_rebuild(&ctx, argc - 2, argv + 2);
     } else if (strcmp(cmd, "--help") == 0 || strcmp(cmd, "-h") == 0) {
         print_usage(argv[0]);
         result = GM_OK;
