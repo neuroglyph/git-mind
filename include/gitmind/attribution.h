@@ -1,0 +1,90 @@
+/* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
+/* © 2025 J. Kirby Ross / Neuroglyph Collective */
+
+#ifndef GITMIND_ATTRIBUTION_H
+#define GITMIND_ATTRIBUTION_H
+
+#include <stdint.h>
+
+/* Source types for edge attribution */
+typedef enum {
+    GM_SOURCE_HUMAN        = 0,    /* Human-created edge */
+    GM_SOURCE_AI_CLAUDE    = 1,    /* Claude AI via MCP */
+    GM_SOURCE_AI_GPT      = 2,    /* GPT-4 or similar */
+    GM_SOURCE_AI_OTHER    = 3,    /* Other AI systems */
+    GM_SOURCE_SYSTEM      = 4,    /* System-generated (e.g., AUGMENTS) */
+    GM_SOURCE_IMPORT      = 5,    /* Imported from external source */
+    GM_SOURCE_UNKNOWN     = 255   /* Unknown source */
+} gm_source_type_t;
+
+/* Attribution metadata */
+typedef struct {
+    gm_source_type_t source_type;       /* Who created this edge */
+    char author[64];                    /* Email or identifier */
+    char session_id[32];                /* Session/conversation ID */
+    uint32_t flags;                     /* Future expansion */
+} gm_attribution_t;
+
+/* Attribution flags */
+#define GM_ATTR_REVIEWED    0x0001      /* Human reviewed AI suggestion */
+#define GM_ATTR_ACCEPTED    0x0002      /* AI suggestion accepted */
+#define GM_ATTR_REJECTED    0x0004      /* AI suggestion rejected */
+#define GM_ATTR_MODIFIED    0x0008      /* AI suggestion modified */
+#define GM_ATTR_CONSENSUS   0x0010      /* Human and AI agree */
+#define GM_ATTR_CONFLICT    0x0020      /* Human and AI disagree */
+#define GM_ATTR_PENDING     0x0040      /* Awaiting review */
+
+/* Lane types for organizing edges */
+typedef enum {
+    GM_LANE_DEFAULT     = 0,    /* Default lane */
+    GM_LANE_ARCHITECTURE = 1,    /* Architecture documentation */
+    GM_LANE_TESTING     = 2,    /* Test coverage */
+    GM_LANE_REFACTOR   = 3,    /* Refactoring relationships */
+    GM_LANE_ANALYSIS   = 4,    /* AI analysis results */
+    GM_LANE_CUSTOM     = 100   /* User-defined lanes */
+} gm_lane_type_t;
+
+/* Filter criteria for edge queries */
+typedef struct {
+    gm_source_type_t source_mask;       /* Bitmask of sources to include */
+    float min_confidence;               /* Minimum confidence (0.0-1.0) */
+    float max_confidence;               /* Maximum confidence (0.0-1.0) */
+    gm_lane_type_t lane;               /* Specific lane or GM_LANE_DEFAULT for all */
+    uint32_t flags_required;           /* Must have these flags */
+    uint32_t flags_excluded;           /* Must not have these flags */
+} gm_filter_t;
+
+/* Extended edge structure with attribution */
+typedef struct {
+    /* Original edge data */
+    uint8_t  src_sha[20];              /* Source blob SHA */
+    uint8_t  tgt_sha[20];              /* Target blob SHA */
+    uint16_t rel_type;                 /* Relationship type */
+    uint16_t confidence;               /* IEEE-754 half float */
+    uint64_t timestamp;                /* Unix millis */
+    char     src_path[256];            /* Source path */
+    char     tgt_path[256];            /* Target path */
+    char     ulid[27];                 /* Unique ID */
+    
+    /* Attribution data */
+    gm_attribution_t attribution;       /* Who created this */
+    gm_lane_type_t lane;               /* Which lane it belongs to */
+} gm_edge_attributed_t;
+
+/* Attribution functions */
+int gm_attribution_set_default(gm_attribution_t *attr, gm_source_type_t source);
+int gm_attribution_from_env(gm_attribution_t *attr);
+int gm_attribution_encode(const gm_attribution_t *attr, uint8_t *buffer, size_t *len);
+int gm_attribution_decode(const uint8_t *buffer, size_t len, gm_attribution_t *attr);
+
+/* Filter functions */
+int gm_filter_init_default(gm_filter_t *filter);
+int gm_filter_init_human_only(gm_filter_t *filter);
+int gm_filter_init_ai_insights(gm_filter_t *filter, float min_confidence);
+int gm_filter_match(const gm_filter_t *filter, const gm_edge_attributed_t *edge);
+
+/* Extended edge functions */
+int gm_edge_attributed_encode_cbor(const gm_edge_attributed_t *edge, uint8_t *buffer, size_t *len);
+int gm_edge_attributed_decode_cbor(const uint8_t *buffer, size_t len, gm_edge_attributed_t *edge);
+
+#endif /* GITMIND_ATTRIBUTION_H */

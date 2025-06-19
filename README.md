@@ -54,7 +54,7 @@ Your understanding has history, just like your code.
 
 ## How This Project Unfolds
 
-**What begins as a CLI utility becomes a mirror for your thinking — and eventually, a medium for shared intelligence.**
+**What begins as a CLI utility becomes a mirror for your thinking — and eventually, a medium for shared intelligence between humans and AI.**
 
 Different people discover different aspects:
 
@@ -62,10 +62,32 @@ Different people discover different aspects:
 |-------|---------|------------|
 | 📱 **Personal** | *"Smart assistant that remembers how files connect"* | "I don't have to remember everything!" |
 | 👥 **Teams** | *"Share context, not just content"* | "We're sharing understanding!" |
+| 🤖 **Human-AI** | *"AI and humans build knowledge together"* | "We're collaborating, not just querying!" |
 | ⚙️ **Technical** | *"Git objects as a graph database — zero dependencies"* | "Wait... Git can do THAT?" |
 | 🏗️ **Strategic** | *"Relationships as infrastructure"* | "Understanding becomes code!" |
 
 The tool doesn't change. Your perception of what it enables does.
+
+### 🆕 Human-AI Collaboration
+
+git-mind now includes an **attribution system** that tracks whether edges were created by humans or AI:
+
+- **Human edges**: High-confidence, intentional connections
+- **AI edges**: Pattern-discovered relationships with confidence scores
+- **Consensus**: When human and AI agree, understanding is reinforced
+- **Review workflow**: Accept, reject, or modify AI suggestions
+
+```bash
+# Human creates edge
+git mind link README.md src/main.c --type documents
+
+# AI creates edge (via MCP)
+export GIT_MIND_SOURCE=claude
+git mind link src/auth.c config/oauth.json --type likely_depends_on --confidence 0.85
+
+# Review AI suggestions
+git mind review --pending
+```
 
 ---
 
@@ -177,9 +199,10 @@ git mind --help
 - [x] Cross-platform builds (Mac, Linux, Windows WSL)
 
 **Coming soon:**
+- [x] Human-AI collaboration via attribution system
+- [ ] Web interface with 3D graph visualization (`git mind explore`)
+- [ ] MCP integration for Claude with persistent memory
 - [ ] Visual evolution timeline (`git mind evolution`)
-- [ ] Web interface for graph visualization  
-- [ ] AI integration (persistent memory across conversations)
 - [ ] Cross-repository relationship discovery
 
 **The vision:** This is infrastructure for augmented cognition. The CLI you see today is the foundation for new forms of human-AI collaboration on complex problems.

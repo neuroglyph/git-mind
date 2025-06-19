@@ -1,0 +1,234 @@
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
+<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+
+# git-mind link
+
+> *"Everything the light touches is our kingdom... But a king's time as ruler rises and falls like the sun."* - Mufasa
+
+## NAME
+
+`git-mind link` - Create semantic connections between files
+
+## SYNOPSIS
+
+```bash
+git mind link <source> <target> --type <relationship> [options]
+```
+
+## DESCRIPTION
+
+In the vast savanna of your codebase, no file stands alone. Each is connected to others through invisible threads of meaning - a test file validates its implementation, documentation explains its design, configuration guides its behavior.
+
+The `git mind link` command makes these connections visible and permanent. It creates semantic edges that travel through time with your code, surviving refactors, renames, and the endless circle of development.
+
+## THE HEART OF GIT-MIND
+
+This is the command that started it all. When you create a link, you're not just adding metadata - you're encoding understanding into the fabric of your repository. These links become part of your Git history, as permanent as the code itself.
+
+```bash
+# The moment of connection
+$ git mind link design.md src/parser.c --type implements
+Created edge: design.md ──implements──> src/parser.c
+```
+
+From this moment forward, anyone who checks out your code can discover this relationship. More importantly, they can travel back in time and see what you understood at any point in history.
+
+## OPTIONS
+
+`--type <relationship>`
+: **Required.** The type of semantic relationship. Common types:
+  - `implements` - Source implements design/spec in target
+  - `references` - Source references or mentions target
+  - `depends_on` - Source requires target to function
+  - `tests` - Source tests the functionality in target
+  - `documents` - Source documents how target works
+  - `inspires` - Source inspired the creation of target
+  - `refactors` - Source is refactored version of target
+  - *...or any relationship that captures your understanding*
+
+`--confidence <float>`
+: Confidence level from 0.0 to 1.0 (default: 1.0)
+  - `1.0` - Certain (default)
+  - `0.8` - Highly confident
+  - `0.5` - Somewhat confident
+  - `0.2` - Speculative
+
+`--note <message>`
+: Add a note explaining the connection (stored in commit message)
+
+`--bidirectional`
+: Create edges in both directions
+
+`--quiet`
+: Suppress success message
+
+## EXAMPLES
+
+### Basic usage - The daily workflow
+```bash
+# Implementation tracks design
+$ git mind link src/auth.c docs/auth-design.md --type implements
+
+# Test validates implementation  
+$ git mind link tests/test_auth.c src/auth.c --type tests
+
+# Config guides behavior
+$ git mind link src/auth.c config/auth.yaml --type depends_on
+```
+
+### With confidence - Encoding uncertainty
+```bash
+# Pretty sure this implements the RFC, but not certain
+$ git mind link src/parser.c rfc/grammar.txt --type implements --confidence 0.7
+
+# Definitely inspired by this paper
+$ git mind link src/algorithm.c papers/dijkstra62.pdf --type inspires
+```
+
+### Bidirectional links - Symmetric relationships
+```bash
+# These files are peers that reference each other
+$ git mind link src/client.c src/server.c --type references --bidirectional
+Created edge: src/client.c ──references──> src/server.c
+Created edge: src/server.c ──references──> src/client.c
+```
+
+### With notes - Adding context
+```bash
+$ git mind link src/cache.c docs/performance.md \
+    --type implements \
+    --note "Implements the LRU eviction strategy described in section 3.2"
+```
+
+## HOW IT WORKS
+
+### Git-Native Storage
+Each link is stored as a Git commit in `refs/gitmind/edges/<branch>`. The commit contains:
+- CBOR-encoded edge data in the commit message
+- Empty tree (git's null tree: 4b825dc...)
+- Author/committer from your Git config
+- Timestamp of creation
+
+### Content Addressing
+Links connect specific versions of files using their blob SHAs:
+```
+source_sha: 8a9f3b2c...  # SHA of design.md's content
+target_sha: 7c4d5e6f...  # SHA of parser.c's content
+```
+
+This means links point to exact versions. When files change, the AUGMENTS system (see `git-mind-install-hooks(1)`) tracks their evolution.
+
+### Branch Isolation
+Links are branch-specific. Create different connections on different branches:
+```bash
+$ git checkout -b feature/auth
+$ git mind link src/auth.c new-auth-api.md --type implements
+
+$ git checkout main  
+$ git mind list  # Won't show the feature branch link
+```
+
+## RELATIONSHIP TYPES
+
+While you can use any string as a relationship type, these conventions help maintain consistency:
+
+### Structural Relations
+- `implements` - Code implements a design/specification
+- `depends_on` - Requires target to function correctly
+- `extends` - Builds upon target's functionality
+- `replaces` - Newer version replacing target
+
+### Documentation Relations
+- `documents` - Explains how target works
+- `references` - Mentions or links to target
+- `examples` - Shows usage of target
+- `tutorials` - Teaches concepts in target
+
+### Development Relations
+- `tests` - Validates target's behavior
+- `benchmarks` - Measures target's performance
+- `fixes` - Resolves issues in target
+- `refactors` - Restructured version of target
+
+### Inspiration Relations
+- `inspires` - Target inspired this implementation
+- `adapts` - Modified version of target's approach
+- `conflicts` - Incompatible with target
+- `discusses` - Analyzes or critiques target
+
+## BEST PRACTICES
+
+### Be Specific
+```bash
+# Too vague
+$ git mind link src/parser.c docs/ --type references  # Which doc?
+
+# Better
+$ git mind link src/parser.c docs/parser-design.md --type implements
+```
+
+### Use Conventional Types
+Stick to common relationship types when possible. This makes queries more powerful:
+```bash
+# Find all tests easily
+$ git mind list --type tests
+```
+
+### Link at the Right Granularity
+- Link files, not directories (unless the directory is the unit)
+- Link to specific documents, not entire folders
+- Link the most specific relevant files
+
+### Document Non-Obvious Links
+```bash
+# Why does the parser depend on the logger config?
+$ git mind link src/parser.c config/logger.yaml --type depends_on \
+    --note "Parser uses logger for syntax error reporting"
+```
+
+## PERMANENCE & EVOLUTION
+
+*"Remember who you are."*
+
+Every link you create becomes part of your repository's permanent history. Future developers can:
+- See what you connected and why
+- Travel back to see historical connections
+- Understand the evolution of architectural decisions
+
+This is why git-mind exists: to encode not just what your code is, but what it means and how it relates to everything else.
+
+## ERROR HANDLING
+
+Common errors and solutions:
+
+**"File not found"**
+- Ensure both source and target exist in the repository
+- Use paths relative to repository root
+- Check for typos in filenames
+
+**"Not in a git repository"**
+- Run from within a Git repository
+- Initialize with `git init` if needed
+
+**"Invalid confidence value"**
+- Use a float between 0.0 and 1.0
+- Default is 1.0 if not specified
+
+## SEE ALSO
+
+- `git-mind-list(1)` - Query semantic links
+- `git-mind-traverse(1)` - Explore connection graphs
+- `git-mind-install-hooks(1)` - Track file evolution
+- `git-mind(1)` - Main command overview
+
+## THE PHILOSOPHY
+
+*"There's more to being a king than getting your way."*
+
+Creating links is an act of documentation, but more than that - it's an act of teaching. Every link you create teaches future readers (including future you) about the relationships that matter.
+
+The power isn't in the tool. It's in the understanding you encode with it.
+
+---
+
+*"You are more than what you have become. Remember."* - Your semantic links remember for you.
