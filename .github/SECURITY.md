@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 # Security Policy
 
 ## 🛡️ Reporting a Vulnerability

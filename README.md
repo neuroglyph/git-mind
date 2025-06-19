@@ -1,13 +1,15 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 
-[![CI](https://github.com/neuroglyph/neuroglyph/actions/workflows/ci.yml/badge.svg)](https://github.com/neuroglyph/neuroglyph/actions/workflows/ci.yml)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![CI](https://github.com/neuroglyph/git-mind/actions/workflows/ci.yml/badge.svg)](https://github.com/neuroglyph/git-mind/actions/workflows/ci.yml)
+
+[![MIND-UCAL](https://img.shields.io/badge/license-MIND--UCAL-orange)](license/LICENSE.md)
+
 # git-mind
 
 **Time-travel through your understanding of any codebase.**
 
-A blazing-fast CLI tool written in pure C. No dependencies. 130KB binary.
+A blazing-fast CLI tool written in pure C with minimal dependencies.
 
 ```bash
 git mind link design.md src/main.rs --type implements
@@ -70,8 +72,10 @@ The tool doesn't change. Your perception of what it enables does.
 ## Quick Start
 
 ```bash
-# Install (macOS/Linux)
-curl -fsSL https://get.gitmind.dev | bash
+# Build from source
+git clone https://github.com/neuroglyph/git-mind
+cd git-mind && make build
+export PATH="$PATH:$(pwd)/build"
 
 # In any Git repo
 git mind init
@@ -120,33 +124,37 @@ Common link types: `implements`, `references`, `depends_on`, `tests`, `documents
 Built for speed and simplicity:
 
 ```
-Binary size:        ~200KB    (still 1000x smaller than Electron apps)
 Startup time:       <1ms      (faster than your thoughts)
 Memory usage:       ~1MB      (less than a browser tab)
-Dependencies:       libgit2   (for robust Git operations)
+Query performance:  O(log N)  (Roaring Bitmap cache layer)
+Dependencies:       libgit2, croaring
 ```
 
-**Storage:** Semantic links as plain text files in `.gitmind/links/`:
+**Storage:** Two-layer architecture for blazing performance:
+- **Journal Layer**: Semantic links as CBOR-encoded Git commits (source of truth)
+- **Cache Layer**: Roaring Bitmap indices sharded by SHA prefix (O(log N) queries)
+
 ```
 IMPLEMENTS: design.md -> src/main.rs  # ts:1736637876
 REFERENCES: README.md -> docs/api.md  # ts:1736637890
 ```
 
-Human-readable, version-controlled, greppable. Your data stays yours.
+Human-readable journal, lightning-fast cache. Your data stays yours.
 
 ---
 
 ## Installation
 
-**Quick install:**
+**Quick install (coming soon):**
 ```bash
-curl -fsSL https://get.gitmind.dev | bash
+# Installation script in development
+# For now, build from source
 ```
 
 **From source:**
 ```bash
-git clone https://github.com/neuroglyph/neuroglyph
-cd neuroglyph
+git clone https://github.com/neuroglyph/git-mind
+cd git-mind
 make build  # Builds in Docker
 ```
 
@@ -165,6 +173,7 @@ git mind --help
 - [x] Git-native storage with full versioning
 - [x] Time-travel through understanding via Git checkout
 - [x] Graph traversal and integrity checking
+- [x] Roaring Bitmap cache for O(log N) query performance
 - [x] Cross-platform builds (Mac, Linux, Windows WSL)
 
 **Coming soon:**
@@ -220,14 +229,6 @@ This project unfolds. **Try it on your repos. See what emerges.**
 
 ---
 
-**License:** Apache 2.0  
-**Install:** `curl -fsSL https://get.gitmind.dev | bash`  
-**Source:** https://github.com/neuroglyph/neuroglyph
-
-> *"Version control for understanding itself."*
-
----
-
 ## What This Enables
 
 The more you use it, the more you realize:
@@ -241,3 +242,10 @@ The more you use it, the more you realize:
 But today, it's a CLI that helps you remember why you connected two files.
 
 **Start there. See where it leads.**
+
+## License
+
+### SPDX Notice:
+
+> This project uses a custom ethical license: `LicenseRef-MIND-UCAL-1.0`
+> Not yet registered with SPDX. Compliance required for all use. See [LICENSE.md](LICENSE.md) for full terms.

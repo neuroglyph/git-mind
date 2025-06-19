@@ -1,5 +1,6 @@
 #!/bin/bash
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0
+# © 2025 J. Kirby Ross / Neuroglyph Collective
 
 # Performance Benchmarks - Make Linus Respect You
 

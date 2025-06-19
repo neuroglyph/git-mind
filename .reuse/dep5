@@ -1,0 +1,16 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: git-mind
+Upstream-Contact: J. Kirby Ross <info@gitscrolls.org>
+Source: https://github.com/gitscrolls/git-mind
+
+Files: *
+Copyright: © 2025 J. Kirby Ross / Neuroglyph Collective
+License: LicenseRef-MIND-UCAL-1.0
+
+License: LicenseRef-MIND-UCAL-1.0
+ This project is licensed under the Moral Intelligence Nonviolent Development – Universal Charter Aligned License (MIND-UCAL v1.0).
+ .
+ See LICENSE.md or https://universalcharter.org for the full text.
+ .
+ SPDX identifier: LicenseRef-MIND-UCAL-1.0
+ 

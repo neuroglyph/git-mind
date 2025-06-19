@@ -1,4 +1,5 @@
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0
+# © 2025 J. Kirby Ross / Neuroglyph Collective
 # Docker build guard - ensures we're in Docker
 
 ifndef DOCKER_BUILD

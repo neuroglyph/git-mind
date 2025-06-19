@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 # Contributing to Neuroglyph
 
 Thank you for your interest in contributing to Neuroglyph! We're building a protocol for transforming Git into a substrate for distributed semantic memory, and we'd love your help.

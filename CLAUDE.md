@@ -6,7 +6,7 @@ This file contains important instructions for Claude and other AI assistants wor
 
 - **Project Name**: git-mind
 - **CLI Name**: git-mind
-- **License**: Apache 2.0 (NOT MIT!)
+- **License**: MIND-UCLA v1.0 (NOT APACHE 2.0! NOT MIT!)
 - **Copyright**: © 2025 J. Kirby Ross / Neuroglyph Collective
 - **Repository**: https://github.com/neuroglyph/git-mind
 
@@ -36,29 +36,29 @@ All new files MUST include SPDX headers:
 
 #### Source Code Files (.h, .c, .sh, etc.)
 ```c
-/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 ```
 
 #### Shell Scripts
 ```bash
 #!/bin/bash
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0
 ```
 
 #### Configuration Files (Dockerfile, Makefile, .yml, .toml, .json)
 ```yaml
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0
 ```
 
 #### Markdown Files (optional but encouraged)
 ```markdown
-<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 ```
 
 ### 4. License Information
-- This project uses **Apache License 2.0** exclusively
+- This project uses **MIND-UCLA v1.0** exclusively
 
 ### 5. Development Practices
 
@@ -179,7 +179,7 @@ When starting work, always check:
 - Whenever we complete a feature, update the document in `design/features` to reflect its status
 
 ## Final Reminders
-- Apache 2.0, not MIT!
+- MIND-UCLA v1.0, not Apache 2.0, not MIT!
 - No commits without permission!
 - SPDX headers on all new files!
 - Test everything in Docker!
