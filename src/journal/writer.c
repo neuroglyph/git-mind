@@ -192,6 +192,69 @@ cleanup:
     return result;
 }
 
+/* Append attributed edges to journal */
+int gm_journal_append_attributed(gm_context_t *ctx, const gm_edge_attributed_t *edges, size_t n_edges) {
+    journal_ctx_t jctx;
+    char branch[128];
+    uint8_t *cbor_buffer = NULL;
+    size_t offset = 0;
+    git_oid commit_oid;
+    int result = GM_ERROR;
+    
+    if (!ctx || !edges || n_edges == 0) {
+        return GM_INVALID_ARG;
+    }
+    
+    /* Get current branch */
+    if (get_current_branch(ctx->git_repo, branch, sizeof(branch)) != GM_OK) {
+        return GM_ERROR;
+    }
+    
+    /* Initialize journal context */
+    if (journal_init(&jctx, ctx, branch) != GM_OK) {
+        return GM_ERROR;
+    }
+    
+    /* Allocate buffer for all edges */
+    cbor_buffer = malloc(MAX_CBOR_SIZE);
+    if (!cbor_buffer) {
+        return GM_NO_MEMORY;
+    }
+    
+    /* Encode all edges to CBOR */
+    for (size_t i = 0; i < n_edges; i++) {
+        size_t edge_size = MAX_CBOR_SIZE - offset;
+        
+        if (gm_edge_attributed_encode_cbor(&edges[i], cbor_buffer + offset, &edge_size) != GM_OK) {
+            goto cleanup;
+        }
+        
+        offset += edge_size;
+        
+        /* Check buffer overflow */
+        if (offset > MAX_CBOR_SIZE - 512) {
+            /* Would overflow on next edge, commit this batch */
+            if (create_journal_commit(&jctx, cbor_buffer, offset, &commit_oid) != GM_OK) {
+                goto cleanup;
+            }
+            offset = 0;
+        }
+    }
+    
+    /* Commit any remaining edges */
+    if (offset > 0) {
+        if (create_journal_commit(&jctx, cbor_buffer, offset, &commit_oid) != GM_OK) {
+            goto cleanup;
+        }
+    }
+    
+    result = GM_OK;
+    
+cleanup:
+    free(cbor_buffer);
+    return result;
+}
+
 /* Public wrapper for hooks to create commits */
 int journal_create_commit(git_repository *repo, const char *ref, 
                          const void *data, size_t len) {

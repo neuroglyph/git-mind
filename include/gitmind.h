@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
+#include "gitmind/attribution.h"
+#include "gitmind/constants.h"
 
 /* Forward declarations */
 typedef struct gm_context gm_context_t;
@@ -93,6 +95,26 @@ int gm_edge_create(gm_context_t *ctx, const char *src_path, const char *tgt_path
                    gm_rel_type_t rel_type, gm_edge_t *edge);
 int gm_edge_equal(const gm_edge_t *a, const gm_edge_t *b);
 int gm_edge_format(const gm_edge_t *edge, char *buffer, size_t len);
+
+/* Attributed edge operations */
+int gm_edge_attributed_create(gm_context_t *ctx, const char *src_path, const char *tgt_path,
+                             gm_rel_type_t rel_type, uint16_t confidence,
+                             const gm_attribution_t *attribution, gm_lane_type_t lane,
+                             gm_edge_attributed_t *edge);
+int gm_edge_attributed_format(const gm_edge_attributed_t *edge, char *buffer, size_t len);
+int gm_edge_attributed_format_with_attribution(const gm_edge_attributed_t *edge, 
+                                              char *buffer, size_t len);
+
+/* Journal operations for attributed edges */
+int gm_journal_append_attributed(gm_context_t *ctx, const gm_edge_attributed_t *edges, size_t n_edges);
+int gm_journal_read_attributed(gm_context_t *ctx, const char *branch,
+                              int (*callback)(const gm_edge_attributed_t *edge, void *userdata),
+                              void *userdata);
+
+/* Confidence conversion utilities */
+uint16_t gm_confidence_to_half_float(float confidence);
+float gm_confidence_from_half_float(uint16_t half_float);
+int gm_confidence_parse(const char *str, uint16_t *confidence);
 
 /* Utility functions */
 int gm_ulid_generate(char *ulid);

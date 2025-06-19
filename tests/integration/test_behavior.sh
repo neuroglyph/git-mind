@@ -150,6 +150,102 @@ test_push_pull() {
     # Note: Actual push/pull test requires remote
 }
 
+# Test: Human attribution (default behavior)
+test_human_attribution() {
+    echo "main" > main.c
+    echo "header" > main.h
+    git add .
+    git commit -m "initial" --quiet
+    
+    # Clear environment to ensure human defaults
+    unset GIT_MIND_SOURCE GIT_MIND_AUTHOR GIT_MIND_SESSION
+    
+    # Behavior: human link should succeed without attribution display
+    "$GIT_MIND" link main.c main.h --type implements
+    
+    # Behavior: output should not show attribution for humans
+    output=$("$GIT_MIND" list 2>&1 || true)
+    echo "$output" | grep -q "main.c ──implements──> main.h"
+    ! echo "$output" | grep -q "conf:"
+}
+
+# Test: AI attribution from environment
+test_ai_attribution() {
+    echo "auth" > auth.c
+    echo "config" > oauth.json
+    git add .
+    git commit -m "initial" --quiet
+    
+    # Behavior: AI with environment should show attribution
+    export GIT_MIND_SOURCE=claude
+    export GIT_MIND_AUTHOR=claude@anthropic
+    export GIT_MIND_SESSION=test123
+    
+    "$GIT_MIND" link auth.c oauth.json --type depends_on --confidence 0.85
+    
+    # Behavior: should show AI attribution in output
+    output=$("$GIT_MIND" list 2>&1 || true)
+    echo "$output" | grep -q "auth.c ──depends_on──> oauth.json"
+    echo "$output" | grep -q "claude@anthropic"
+    echo "$output" | grep -q "conf: 0.85"
+    
+    # Cleanup
+    unset GIT_MIND_SOURCE GIT_MIND_AUTHOR GIT_MIND_SESSION
+}
+
+# Test: Confidence validation
+test_confidence_validation() {
+    echo "file1" > file1.txt
+    echo "file2" > file2.txt
+    git add .
+    git commit -m "initial" --quiet
+    
+    export GIT_MIND_SOURCE=claude
+    
+    # Behavior: invalid confidence should be rejected
+    ! "$GIT_MIND" link file1.txt file2.txt --confidence 1.5
+    ! "$GIT_MIND" link file1.txt file2.txt --confidence -0.1
+    
+    # Behavior: valid confidence should work
+    "$GIT_MIND" link file1.txt file2.txt --confidence 0.5
+    
+    unset GIT_MIND_SOURCE
+}
+
+# Test: List command filtering flags
+test_list_filtering() {
+    echo "file1" > file1.txt
+    echo "file2" > file2.txt
+    echo "file3" > file3.txt
+    git add .
+    git commit -m "initial" --quiet
+    
+    # Create human edge
+    unset GIT_MIND_SOURCE GIT_MIND_AUTHOR
+    "$GIT_MIND" link file1.txt file2.txt --type implements
+    
+    # Create AI edge
+    export GIT_MIND_SOURCE=claude
+    export GIT_MIND_AUTHOR=claude@anthropic
+    "$GIT_MIND" link file2.txt file3.txt --type depends_on --confidence 0.8
+    
+    # Behavior: --source human should show only human edges
+    human_output=$("$GIT_MIND" list --source human 2>&1 || true)
+    echo "$human_output" | grep -q "file1.txt ──implements──> file2.txt"
+    ! echo "$human_output" | grep -q "file2.txt ──depends_on──> file3.txt"
+    
+    # Behavior: --source ai should show only AI edges
+    ai_output=$("$GIT_MIND" list --source ai 2>&1 || true)
+    ! echo "$ai_output" | grep -q "file1.txt ──implements──> file2.txt"
+    echo "$ai_output" | grep -q "file2.txt ──depends_on──> file3.txt"
+    
+    # Behavior: --show-attribution should show attribution info
+    attr_output=$("$GIT_MIND" list --show-attribution 2>&1 || true)
+    echo "$attr_output" | grep -q "claude@anthropic"
+    
+    unset GIT_MIND_SOURCE GIT_MIND_AUTHOR
+}
+
 # Run all tests
 echo "Running git-mind integration tests..."
 echo ""
@@ -161,6 +257,10 @@ run_test "relationship_types" test_relationship_types
 run_test "list_filter" test_list_filter
 run_test "unicode_paths" test_unicode_paths
 run_test "push_pull" test_push_pull
+run_test "human_attribution" test_human_attribution
+run_test "ai_attribution" test_ai_attribution
+run_test "confidence_validation" test_confidence_validation
+run_test "list_filtering" test_list_filtering
 
 # Cleanup
 rm -rf "$TEST_DIR"

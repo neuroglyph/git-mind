@@ -174,3 +174,20 @@ int gm_journal_read(gm_context_t *ctx, const char *branch,
     /* Walk the journal */
     return walk_journal(&rctx, ref_name);
 }
+
+/* Read attributed journal for a branch */
+int gm_journal_read_attributed(gm_context_t *ctx, const char *branch,
+                              int (*callback)(const gm_edge_attributed_t *edge, void *userdata),
+                              void *userdata) {
+    /* For now, this is a stub that will attempt to decode attributed edges */
+    /* The actual implementation would need to modify the reader context and callback system */
+    /* to support attributed edges. For initial testing, we'll return NOT_FOUND */
+    /* so it falls back to the legacy reader. */
+    
+    (void)ctx;
+    (void)branch;
+    (void)callback;
+    (void)userdata;
+    
+    return GM_NOT_FOUND;
+}

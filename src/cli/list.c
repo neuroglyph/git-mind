@@ -9,12 +9,14 @@
 /* List context for callback */
 typedef struct {
     const char *filter_path;
+    gm_filter_t *filter;
     int count;
     int show_all;
     int show_augments;
+    int show_attribution;
 } list_ctx_t;
 
-/* Edge callback for listing */
+/* Legacy edge callback for listing */
 static int list_edge_callback(const gm_edge_t *edge, void *userdata) {
     list_ctx_t *lctx = (list_ctx_t *)userdata;
     
@@ -32,7 +34,7 @@ static int list_edge_callback(const gm_edge_t *edge, void *userdata) {
     }
     
     /* Format and print edge */
-    char formatted[512];
+    char formatted[GM_FORMAT_BUFFER_SIZE];
     gm_edge_format(edge, formatted, sizeof(formatted));
     printf("%s\n", formatted);
     
@@ -40,27 +42,111 @@ static int list_edge_callback(const gm_edge_t *edge, void *userdata) {
     return 0;  /* Continue iteration */
 }
 
-/* List command implementation */
+/* Attributed edge callback for listing */
+static int list_attributed_edge_callback(const gm_edge_attributed_t *edge, void *userdata) {
+    list_ctx_t *lctx = (list_ctx_t *)userdata;
+    
+    /* Apply attribution filter if specified */
+    if (lctx->filter && !gm_filter_match(lctx->filter, edge)) {
+        return 0;  /* Skip this edge */
+    }
+    
+    /* Apply path filter if specified */
+    if (lctx->filter_path) {
+        if (strcmp(edge->src_path, lctx->filter_path) != 0 &&
+            strcmp(edge->tgt_path, lctx->filter_path) != 0) {
+            return 0;  /* Skip this edge */
+        }
+    }
+    
+    /* Skip AUGMENTS edges unless --show-augments */
+    if (!lctx->show_augments && edge->rel_type == GM_REL_AUGMENTS) {
+        return 0;  /* Skip augments edges by default */
+    }
+    
+    /* Format and print edge */
+    char formatted[GM_FORMAT_BUFFER_SIZE];
+    if (lctx->show_attribution || edge->attribution.source_type != GM_SOURCE_HUMAN) {
+        gm_edge_attributed_format_with_attribution(edge, formatted, sizeof(formatted));
+    } else {
+        gm_edge_attributed_format(edge, formatted, sizeof(formatted));
+    }
+    printf("%s\n", formatted);
+    
+    lctx->count++;
+    return 0;  /* Continue iteration */
+}
+
+/* List command implementation with attribution support */
 int gm_cmd_list(gm_context_t *ctx, int argc, char **argv) {
     list_ctx_t lctx = {0};
     const char *branch = NULL;
+    const char *source_filter = NULL;
+    const char *min_conf_str = NULL;
+    gm_filter_t filter;
+    int use_filter = 0;
     int result;
     
     /* Parse arguments */
     for (int i = 0; i < argc; i++) {
-        if (strcmp(argv[i], "--all") == 0) {
+        if (strcmp(argv[i], GM_FLAG_VERBOSE) == 0) {
             lctx.show_all = 1;
         } else if (strcmp(argv[i], "--show-augments") == 0) {
             lctx.show_augments = 1;
         } else if (strcmp(argv[i], "--branch") == 0 && i + 1 < argc) {
             branch = argv[++i];
-        } else if (!lctx.filter_path) {
+        } else if (strcmp(argv[i], GM_FLAG_SOURCE) == 0 && i + 1 < argc) {
+            source_filter = argv[++i];
+            use_filter = 1;
+        } else if (strcmp(argv[i], GM_FLAG_MIN_CONF) == 0 && i + 1 < argc) {
+            min_conf_str = argv[++i];
+            use_filter = 1;
+        } else if (strcmp(argv[i], GM_FLAG_SHOW_ATTR) == 0) {
+            lctx.show_attribution = 1;
+        } else if (strcmp(argv[i], GM_FLAG_FROM) == 0 && i + 1 < argc) {
+            lctx.filter_path = argv[++i];
+        } else if (!lctx.filter_path && argv[i][0] != '-') {
+            /* Positional argument for path filter */
             lctx.filter_path = argv[i];
         }
     }
     
-    /* Read journal */
-    result = gm_journal_read(ctx, branch, list_edge_callback, &lctx);
+    /* Set up attribution filter if needed */
+    if (use_filter) {
+        gm_filter_init_default(&filter);
+        
+        /* Apply source filter */
+        if (source_filter) {
+            if (strcmp(source_filter, GM_ENV_VAL_HUMAN) == 0) {
+                gm_filter_init_human_only(&filter);
+            } else if (strcmp(source_filter, "ai") == 0) {
+                float min_conf = 0.0f;
+                if (min_conf_str) {
+                    min_conf = strtof(min_conf_str, NULL);
+                }
+                gm_filter_init_ai_insights(&filter, min_conf);
+            } else if (strcmp(source_filter, "all") == 0) {
+                gm_filter_init_default(&filter);
+            }
+        }
+        
+        /* Apply confidence filter */
+        if (min_conf_str && !source_filter) {
+            float min_conf = strtof(min_conf_str, NULL);
+            filter.min_confidence = min_conf;
+        }
+        
+        lctx.filter = &filter;
+    }
+    
+    /* Try to read attributed edges first, fall back to legacy if needed */
+    result = gm_journal_read_attributed(ctx, branch, list_attributed_edge_callback, &lctx);
+    
+    if (result == GM_NOT_FOUND && !use_filter) {
+        /* Fall back to legacy journal reader if no attribution filters */
+        result = gm_journal_read(ctx, branch, list_edge_callback, &lctx);
+    }
+    
     if (result == GM_NOT_FOUND) {
         /* Don't print here, let the summary handle it */
     } else if (result != GM_OK) {
@@ -72,11 +158,24 @@ int gm_cmd_list(gm_context_t *ctx, int argc, char **argv) {
     if (lctx.count == 0) {
         if (lctx.filter_path) {
             printf("No links found for: %s\n", lctx.filter_path);
+        } else if (use_filter) {
+            printf("No links found matching filter criteria\n");
         } else {
             printf("No links found\n");
         }
     } else {
-        printf("\nTotal: %d link%s\n", lctx.count, lctx.count == 1 ? "" : "s");
+        const char *filter_desc = "";
+        if (source_filter) {
+            filter_desc = source_filter;
+        } else if (min_conf_str) {
+            filter_desc = "confidence filter";
+        }
+        
+        if (use_filter && strlen(filter_desc) > 0) {
+            printf(GM_SUCCESS_FILTERED "\n", (size_t)lctx.count, filter_desc);
+        } else {
+            printf(GM_SUCCESS_TOTAL "\n", (size_t)lctx.count);
+        }
     }
     
     return GM_OK;
