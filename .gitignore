@@ -188,3 +188,4 @@ vgcore.*
 /git-mind
 ci-artifacts/
 docs/audits/
+docs/hn-demo/

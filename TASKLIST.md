@@ -152,34 +152,174 @@
 - [x] **EXTENDED CBOR DECODER**: Returns consumed bytes for multi-edge
 - [x] **CLEAN SEPARATION**: tree_builder.c, tree_size.c, cbor_decode_ex.c
 - [x] **ALL TESTS PASS**: Ready for production use!
+- [x] **WILDEBEEST STAMPEDE BENCHMARK**: Created performance benchmark showing O(N) vs O(log N)
 
 ---
 
 ## Phase 4: Polish & Ship (Bonus Weekend)
 
-### Missing Features
+### HN Demo Milestones 🚀 REVISED WITH AI+WEB UI!
+
+#### Milestone 0: Foundation for Human-AI Collaboration (2 days) 🆕
+- [x] Add source attribution to edges (human vs AI) ✅
+- [x] Add confidence scores to all edges ✅
+- [x] Implement filtering by source/confidence ✅
+- [ ] Create review/pending system for AI suggestions (design done)
+- [x] Modify edge structure for attribution ✅
+- [x] Document attribution system comprehensively ✅
+
+#### Milestone 1: Web UI Core - The Experience (3 days) 🔥
+- [ ] `git mind explore` command launches web UI
+- [ ] Express server with WebSocket support
+- [ ] Three.js 3D force-directed graph visualization
+- [ ] Time slider with smooth transitions
+- [ ] Real-time updates via WebSocket
+- [ ] Basic CRUD operations from web UI
+
+#### Milestone 2: MCP Integration - AI Collaboration (3 days) 🧠
+- [ ] MCP server implementation  
+- [ ] Tools: link, traverse, recall, remember
+- [ ] AI memory repository system
+- [ ] Claude panel in web UI
+- [ ] Real-time edge creation from AI
+- [ ] Human-AI collaboration features
+
+#### Milestone 3: Core Features Completion (2 days)
+- [ ] `git-mind traverse` CLI command
+- [ ] `git-mind evolution` with animation
+- [ ] `git-mind status` command
+- [ ] Integrate all into web UI
+- [ ] Time-travel visualizations
+
+#### Milestone 4: Polish & Ship (2 days)
+- [ ] One-line installer (with MCP setup)
+- [ ] Error message overhaul
+- [ ] Demo repository with rich history
+- [ ] Performance optimization
+- [ ] Screen recording for HN post
+
+### Missing Features (Post-HN)
 - [ ] `git-mind unlink` - adds tombstone edge
-- [ ] `git-mind traverse` - BFS from starting point
 - [ ] `git-mind gc` - compress old journal commits
-- [ ] `git-mind status` - show graph statistics
-
-### Developer Experience  
-- [ ] Installation script
-- [ ] Git hooks installer
+- [ ] Git hooks installer improvements
 - [ ] Man pages
-- [ ] Comprehensive error messages
 
-### Documentation
+### Documentation Cleanup 🧹 
+- [ ] **Fix Broken References** (High Priority):
+  - [x] ~~Fix README.md CONTRIBUTING.md link~~ **CREATED CONTRIBUTING.md!**
+  - [ ] Fix docs/README.md extensive broken links:
+    - [x] ~~Remove references to non-existent cli/ directory~~ **CLI DOCS NOW EXIST!**
+    - [ ] Update ../design/ paths (doesn't exist)
+    - [ ] Fix ../project/meta/TASKLIST.md → /TASKLIST.md
+    - [ ] Remove references to non-existent man pages
+  - [x] ~~Update QUICK_START.md GitHub URLs~~ **FIXED ALL URLS!**
+
+- [x] **Create Missing Essential Docs** (High Priority) ✅ **CRUSHED IT!**
+  - [x] ~~Create CONTRIBUTING.md with developer guidelines~~ **DONE!**
+  - [x] Create docs/cli/ directory with command docs:
+    - [x] gitmind.md (overview) - **EPIC DOCS WITH MUFASA WISDOM!**
+    - [x] gitmind-link.md - **THE HEART OF CONNECTIONS**
+    - [x] gitmind-list.md - **WINDOW INTO UNDERSTANDING**
+    - [ ] gitmind-traverse.md (when implemented)
+    - [ ] gitmind-review.md (when implemented)
+    - [x] gitmind-cache-rebuild.md - **ROARING PERFORMANCE GUIDE**
+    - [x] gitmind-install-hooks.md - **EVOLUTION TRACKING MAGIC**
+    - [x] README.md - **CLI INDEX WITH PHILOSOPHY**
+
+### Human-AI Collaboration Documentation 🤖🧠 (NEW!)
+- [ ] **User-Facing Documentation** (High Priority for HN):
+  - [ ] Create `docs/user-guide/attribution.md` - Simple guide for using attribution
+  - [ ] Create `docs/user-guide/human-ai-collaboration.md` - Best practices and workflows
+  - [ ] Create `docs/tutorials/ai-code-review.md` - Tutorial for AI-assisted review
+  - [ ] Create `docs/tutorials/first-ai-edges.md` - Getting started with AI edges
+
+- [ ] **Developer Documentation** (Medium Priority):
+  - [ ] Create `docs/api/attribution-api.md` - Detailed API reference
+  - [ ] Move MCP docs from deep-thoughts to `docs/architecture/mcp-integration.md`
+  - [ ] Create `docs/development/testing-attribution.md` - Testing guide
+  - [ ] Create `docs/development/attribution-security.md` - Security considerations
+
+- [ ] **Examples and Scripts** (Medium Priority):
+  - [ ] Create `examples/attribution/basic-usage.sh` - Basic examples
+  - [ ] Create `examples/attribution/ai-batch-analysis.py` - AI analysis script
+  - [ ] Create `examples/attribution/review-workflow.sh` - Review examples
+  - [ ] Create `examples/attribution/ci-integration.yml` - GitHub Actions example
+
+- [ ] **Reorganize Documentation Structure** (Medium Priority):
+  - [ ] Create new directory structure:
+    ```
+    docs/
+    ├── user/         # Quick start, tutorials
+    ├── reference/    # API, CLI commands  
+    ├── architecture/ # Design, technical
+    └── development/  # Contributing, setup
+    ```
+  - [ ] Move existing docs to proper locations:
+    - [ ] Move reports/*.md → architecture/
+    - [ ] Move QUICK_START.md → user/
+    - [ ] Move api/ → reference/
+  - [ ] Create DOCUMENTATION.md explaining structure
+
+- [ ] **Complete Existing Documentation** (Medium Priority):
+  - [ ] Finish API reference (currently partial)
+  - [ ] Add architecture diagrams to supplement text
+  - [ ] Create developer setup guide beyond CLAUDE.md
+  - [x] ~~Document cache-rebuild command usage~~ **ALREADY DOCUMENTED!**
+  - [ ] Document all exit codes and error scenarios
+  - [ ] Add performance characteristics documentation
+  - [ ] Create "Cookbook" with common recipes and patterns
+
+### Original Documentation Tasks
 - [x] Architecture diagram with mermaid - **DONE IN DOCS!**
 - [ ] Tutorial: "Your first semantic graph"
 - [ ] FAQ: "Why journal commits?"
 - [ ] Migration guide from v0
+- [ ] Create attribution FAQ section
+- [ ] Add "Common Patterns" guide for human-AI collaboration
+
+### Environment Variables & Configuration 🔧 (NEW!)
+- [ ] **Document All Environment Variables** (High Priority):
+  - [ ] Create `docs/reference/environment-variables.md` covering:
+    - [ ] GIT_MIND_SOURCE, GIT_MIND_AUTHOR, GIT_MIND_SESSION (attribution)
+    - [ ] GIT_MIND_BRANCH (override branch)
+    - [ ] GIT_MIND_NO_CACHE (disable cache)
+    - [ ] GIT_MIND_VERBOSE (verbose output)
+  - [ ] Add env var examples to relevant command docs
+
+### Operations & Deployment 🚀 (NEW!)
+- [ ] **Installation & Distribution** (High Priority for HN):
+  - [ ] Create `docs/installation.md` with platform-specific instructions
+  - [ ] Document binary distribution process
+  - [ ] Create one-line installer script
+  - [ ] Document system requirements and dependencies
+  
+- [ ] **Operational Documentation** (Medium Priority):
+  - [ ] Create `docs/operations/backup-recovery.md`
+  - [ ] Create `docs/operations/performance-tuning.md`
+  - [ ] Create `docs/operations/monitoring.md`
+  - [ ] Create `docs/operations/troubleshooting.md` with common errors
+
+### Security Documentation 🔒 (NEW!)
+- [ ] **Security Guide** (Medium Priority):
+  - [ ] Create `docs/security.md` covering:
+    - [ ] Attribution spoofing risks and mitigations
+    - [ ] Hook security (code execution risks)
+    - [ ] Access control patterns
+    - [ ] Handling untrusted repositories
+    - [ ] Protecting sensitive edge data
+
+### Advanced Features Documentation 📚 (NEW!)
+- [ ] **Lane System Guide** - Document GM_LANE_* usage
+- [ ] **Filter System Guide** - Complex filtering capabilities
+- [ ] **Batch Operations Guide** - Bulk edge creation patterns
+- [ ] **Time-Travel Queries Guide** - Using git checkout with git-mind
 
 ### Testing & Release
 - [x] Integration tests for all commands - **DONE!**
 - [ ] Test on macOS, Linux, Windows (WSL)
 - [x] GitHub Actions CI/CD - **FIXED & WORKING**
 - [ ] Create v0.2.0 release
+- [ ] Create release documentation and changelog
 
 ---
 
@@ -262,9 +402,44 @@ git config --add remote.origin.push refs/gitmind/edges/*:refs/gitmind/edges/*
   - Graceful fallback to journal scan
   - `git-mind cache-rebuild` command
   - All tests passing!
+- **LICENSE MIGRATION COMPLETE!** ⚖️
+  - All files now use MIND-UCLA v1.0
+  - SPDX headers added to all source files
+  - Copyright notices added to all files
+  - No Apache 2.0 or MIT references remain
+
+---
+
+## HN Demo Readiness 🎯 STRATEGIC PIVOT!
+
+### Current State
+- ✅ Core functionality (link, list, cache)
+- ✅ Roaring Bitmap performance 
+- ✅ AUGMENTS evolution tracking
+- ✅ Beautiful CLI documentation
+- ❌ No Web UI (NOW CRITICAL)
+- ❌ No MCP integration (NOW MANDATORY)
+- ❌ No edge attribution system
+- ❌ No AI memory repos
+
+### NEW Path to Launch
+1. **Week 1**: Foundation + Web UI + MCP (~7 days)
+2. **Week 2**: Integration + Polish + Launch (~5 days)
+3. **Demo Day**: Live demo with AI collaboration
+
+### The NEW Hook
+```bash
+git mind explore
+# Opens browser with 3D graph
+# Time slider shows evolution  
+# Claude has persistent memory
+# Human + AI build understanding together
+```
+
+Full analysis in `/docs/hn-demo/deep-thoughts/`
 
 ---
 
 *"Keep code in files, truth in commits, speed in shards."*
 
-**From THE CRUSHER to THE CREATOR - LET'S KEEP BUILDING!** 🚀
+**From THE CRUSHER to THE CREATOR to THE HN FRONTPAGE!** 🚀🦁

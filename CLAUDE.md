@@ -148,6 +148,35 @@ When starting work, always check:
 1. `TASKLIST.md` - Current implementation status
 2. `README.md` - Project overview (root)
 
+## Attribution System for AI Collaboration
+
+### When Creating Edges
+AI assistants MUST properly attribute edges they create:
+
+```bash
+# Set environment variables before creating edges
+export GIT_MIND_SOURCE=claude  # or 'gpt' for other AIs
+export GIT_MIND_AUTHOR=claude@anthropic
+export GIT_MIND_SESSION=conversation_id
+
+# Create edge with confidence score
+git mind link src/a.c src/b.c --type depends_on --confidence 0.85
+```
+
+### Confidence Guidelines
+- **1.0**: Only for human-created edges or absolute certainty
+- **0.9-0.99**: Very high confidence (obvious relationship)
+- **0.7-0.89**: Good confidence (likely relationship)
+- **0.5-0.69**: Moderate confidence (possible relationship)
+- **< 0.5**: Low confidence (speculative)
+
+### Review Workflow
+When suggesting edges:
+1. Always mark as pending unless explicitly told to commit
+2. Group related edges with same session_id
+3. Provide reasoning for relationships
+4. Accept human feedback gracefully
+
 ## Common Tasks
 
 ### Adding a New Source File
