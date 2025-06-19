@@ -77,87 +77,82 @@ static int list_attributed_edge_callback(const gm_edge_attributed_t *edge, void 
     return 0;  /* Continue iteration */
 }
 
-/* List command implementation with attribution support */
-int gm_cmd_list(gm_context_t *ctx, int argc, char **argv) {
-    list_ctx_t lctx = {0};
-    const char *branch = NULL;
-    const char *source_filter = NULL;
-    const char *min_conf_str = NULL;
-    gm_filter_t filter;
-    int use_filter = 0;
-    int result;
-    
-    /* Parse arguments */
+/* Parse list command arguments */
+static void parse_list_arguments(int argc, char **argv, list_ctx_t *lctx, 
+                                const char **branch, const char **source_filter,
+                                const char **min_conf_str, int *use_filter) {
     for (int i = 0; i < argc; i++) {
         if (strcmp(argv[i], GM_FLAG_VERBOSE) == 0) {
-            lctx.show_all = 1;
+            lctx->show_all = 1;
         } else if (strcmp(argv[i], "--show-augments") == 0) {
-            lctx.show_augments = 1;
+            lctx->show_augments = 1;
         } else if (strcmp(argv[i], "--branch") == 0 && i + 1 < argc) {
-            branch = argv[++i];
+            *branch = argv[++i];
         } else if (strcmp(argv[i], GM_FLAG_SOURCE) == 0 && i + 1 < argc) {
-            source_filter = argv[++i];
-            use_filter = 1;
+            *source_filter = argv[++i];
+            *use_filter = 1;
         } else if (strcmp(argv[i], GM_FLAG_MIN_CONF) == 0 && i + 1 < argc) {
-            min_conf_str = argv[++i];
-            use_filter = 1;
+            *min_conf_str = argv[++i];
+            *use_filter = 1;
         } else if (strcmp(argv[i], GM_FLAG_SHOW_ATTR) == 0) {
-            lctx.show_attribution = 1;
+            lctx->show_attribution = 1;
         } else if (strcmp(argv[i], GM_FLAG_FROM) == 0 && i + 1 < argc) {
-            lctx.filter_path = argv[++i];
-        } else if (!lctx.filter_path && argv[i][0] != '-') {
+            lctx->filter_path = argv[++i];
+        } else if (!lctx->filter_path && argv[i][0] != '-') {
             /* Positional argument for path filter */
-            lctx.filter_path = argv[i];
+            lctx->filter_path = argv[i];
         }
     }
+}
+
+/* Set up filter based on arguments */
+static void setup_list_filter(gm_filter_t *filter, const char *source_filter,
+                             const char *min_conf_str) {
+    gm_filter_init_default(filter);
     
-    /* Set up attribution filter if needed */
-    if (use_filter) {
-        gm_filter_init_default(&filter);
-        
-        /* Apply source filter */
-        if (source_filter) {
-            if (strcmp(source_filter, GM_ENV_VAL_HUMAN) == 0) {
-                gm_filter_init_human_only(&filter);
-            } else if (strcmp(source_filter, "ai") == 0) {
-                float min_conf = 0.0f;
-                if (min_conf_str) {
-                    min_conf = strtof(min_conf_str, NULL);
-                }
-                gm_filter_init_ai_insights(&filter, min_conf);
-            } else if (strcmp(source_filter, "all") == 0) {
-                gm_filter_init_default(&filter);
+    /* Apply source filter */
+    if (source_filter) {
+        if (strcmp(source_filter, GM_ENV_VAL_HUMAN) == 0) {
+            gm_filter_init_human_only(filter);
+        } else if (strcmp(source_filter, "ai") == 0) {
+            float min_conf = 0.0f;
+            if (min_conf_str) {
+                min_conf = strtof(min_conf_str, NULL);
             }
+            gm_filter_init_ai_insights(filter, min_conf);
+        } else if (strcmp(source_filter, "all") == 0) {
+            gm_filter_init_default(filter);
         }
-        
-        /* Apply confidence filter */
-        if (min_conf_str && !source_filter) {
-            float min_conf = strtof(min_conf_str, NULL);
-            filter.min_confidence = min_conf;
-        }
-        
-        lctx.filter = &filter;
     }
     
+    /* Apply confidence filter */
+    if (min_conf_str && !source_filter) {
+        float min_conf = strtof(min_conf_str, NULL);
+        filter->min_confidence = min_conf;
+    }
+}
+
+/* Execute the list query */
+static int execute_list_query(gm_context_t *ctx, const char *branch,
+                             list_ctx_t *lctx, int use_filter) {
     /* Try to read attributed edges first, fall back to legacy if needed */
-    result = gm_journal_read_attributed(ctx, branch, list_attributed_edge_callback, &lctx);
+    int result = gm_journal_read_attributed(ctx, branch, 
+                                          list_attributed_edge_callback, lctx);
     
     if (result == GM_NOT_FOUND && !use_filter) {
         /* Fall back to legacy journal reader if no attribution filters */
-        result = gm_journal_read(ctx, branch, list_edge_callback, &lctx);
+        result = gm_journal_read(ctx, branch, list_edge_callback, lctx);
     }
     
-    if (result == GM_NOT_FOUND) {
-        /* Don't print here, let the summary handle it */
-    } else if (result != GM_OK) {
-        fprintf(stderr, "Error: Failed to read links\n");
-        return result;
-    }
-    
-    /* Print summary */
-    if (lctx.count == 0) {
-        if (lctx.filter_path) {
-            printf("No links found for: %s\n", lctx.filter_path);
+    return result;
+}
+
+/* Format list output based on results */
+static void format_list_output(const list_ctx_t *lctx, const char *source_filter,
+                              const char *min_conf_str, int use_filter) {
+    if (lctx->count == 0) {
+        if (lctx->filter_path) {
+            printf("No links found for: %s\n", lctx->filter_path);
         } else if (use_filter) {
             printf("No links found matching filter criteria\n");
         } else {
@@ -172,11 +167,45 @@ int gm_cmd_list(gm_context_t *ctx, int argc, char **argv) {
         }
         
         if (use_filter && strlen(filter_desc) > 0) {
-            printf(GM_SUCCESS_FILTERED "\n", (size_t)lctx.count, filter_desc);
+            printf(GM_SUCCESS_FILTERED "\n", (size_t)lctx->count, filter_desc);
         } else {
-            printf(GM_SUCCESS_TOTAL "\n", (size_t)lctx.count);
+            printf(GM_SUCCESS_TOTAL "\n", (size_t)lctx->count);
         }
     }
+}
+
+/* List command implementation with attribution support */
+int gm_cmd_list(gm_context_t *ctx, int argc, char **argv) {
+    list_ctx_t lctx = {0};
+    const char *branch = NULL;
+    const char *source_filter = NULL;
+    const char *min_conf_str = NULL;
+    gm_filter_t filter;
+    int use_filter = 0;
+    int result;
+    
+    /* Parse arguments */
+    parse_list_arguments(argc, argv, &lctx, &branch, &source_filter, 
+                        &min_conf_str, &use_filter);
+    
+    /* Set up attribution filter if needed */
+    if (use_filter) {
+        setup_list_filter(&filter, source_filter, min_conf_str);
+        lctx.filter = &filter;
+    }
+    
+    /* Execute the query */
+    result = execute_list_query(ctx, branch, &lctx, use_filter);
+    
+    if (result == GM_NOT_FOUND) {
+        /* Don't print here, let the summary handle it */
+    } else if (result != GM_OK) {
+        fprintf(stderr, "Error: Failed to read links\n");
+        return result;
+    }
+    
+    /* Print summary */
+    format_list_output(&lctx, source_filter, min_conf_str, use_filter);
     
     return GM_OK;
 }

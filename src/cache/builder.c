@@ -20,6 +20,8 @@
 #define CACHE_TEMP_DIR "/tmp/gitmind-cache-XXXXXX"
 #define EMPTY_TREE_SHA "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 #define MAX_SHARD_PATH 32
+#define EDGE_MAP_BUCKETS 65536
+#define CLOCKS_PER_MS (CLOCKS_PER_SEC / 1000)
 
 /* In-memory edge ID map entry */
 typedef struct edge_map_entry {
@@ -220,35 +222,16 @@ static int collect_edge_callback(const gm_edge_t* edge, void* userdata) {
     return GM_OK;
 }
 
-/* Encode cache metadata to CBOR */
-static int encode_cache_meta(const gm_cache_meta_t* meta, uint8_t** buffer, size_t* size) {
-    /* Simple encoding: fixed size for now */
-    *size = sizeof(gm_cache_meta_t);
-    *buffer = malloc(*size);
-    if (!*buffer) return GM_NO_MEMORY;
-    
-    memcpy(*buffer, meta, *size);
-    return GM_OK;
-}
 
-/* Internal cache rebuild function */
-int gm_cache_rebuild_internal(git_repository* repo, const char* branch, bool force_full) {
-    edge_map_t* forward = NULL;
-    edge_map_t* reverse = NULL;
-    char temp_dir[GM_PATH_MAX];
-    git_oid tree_oid, commit_oid;
-    int rc = GM_OK;
-    
-    /* Create context */
-    gm_context_t ctx = {0};
-    ctx.git_repo = repo;
-    
+/* Helper functions for cache rebuild */
+static int cache_prepare_rebuild(gm_context_t* ctx, const char* branch, 
+                               bool force_full, gm_cache_meta_t* old_meta,
+                               bool* has_old_cache, char* temp_dir) {
     /* Load existing cache metadata if not forcing full rebuild */
-    gm_cache_meta_t old_meta = {0};
-    bool has_old_cache = false;
+    *has_old_cache = false;
     if (!force_full) {
-        rc = gm_cache_load_meta(repo, branch, &old_meta);
-        has_old_cache = (rc == GM_OK);
+        int rc = gm_cache_load_meta(ctx->git_repo, branch, old_meta);
+        *has_old_cache = (rc == GM_OK);
     }
     
     /* Create temp directory */
@@ -257,99 +240,97 @@ int gm_cache_rebuild_internal(git_repository* repo, const char* branch, bool for
         return GM_IO_ERROR;
     }
     
-    /* Create edge maps */
-    forward = edge_map_create(65536);  /* 64K buckets */
-    reverse = edge_map_create(65536);
-    if (!forward || !reverse) {
-        rc = GM_NO_MEMORY;
-        goto cleanup;
-    }
-    
-    /* Set up collector */
+    return GM_OK;
+}
+
+static int cache_collect_edges(gm_context_t* ctx, const char* branch,
+                             edge_map_t* forward, edge_map_t* reverse,
+                             uint32_t starting_edge_id, uint32_t* total_edges) {
     edge_collector_t collector = {
         .forward = forward,
         .reverse = reverse,
-        .edge_id = has_old_cache ? (uint32_t)old_meta.edge_count : 0
+        .edge_id = starting_edge_id
     };
     
-    /* Walk journal and collect edges */
-    clock_t start = clock();
-    rc = gm_journal_read(&ctx, branch, collect_edge_callback, &collector);
-    if (rc != GM_OK) goto cleanup;
+    int rc = gm_journal_read(ctx, branch, collect_edge_callback, &collector);
+    if (rc == GM_OK) {
+        *total_edges = collector.edge_id;
+    }
+    return rc;
+}
+
+static int cache_build_edge_map(edge_map_t** forward, edge_map_t** reverse) {
+    *forward = edge_map_create(EDGE_MAP_BUCKETS);
+    *reverse = edge_map_create(EDGE_MAP_BUCKETS);
     
-    /* Write bitmaps to temp directory */
-    rc = write_bitmaps_to_temp(forward, reverse, temp_dir, GM_CACHE_SHARD_BITS);
-    if (rc != GM_OK) goto cleanup;
+    if (!*forward || !*reverse) {
+        edge_map_free(*forward);
+        edge_map_free(*reverse);
+        return GM_NO_MEMORY;
+    }
     
-    /* Build tree from temp directory */
-    rc = build_tree_from_temp(repo, temp_dir, &tree_oid);
-    if (rc != GM_OK) goto cleanup;
-    
-    /* Create cache metadata */
-    gm_cache_meta_t meta = {
-        .journal_tip_time = (uint64_t)time(NULL),
-        .edge_count = collector.edge_id,
-        .build_time_ms = (clock() - start) * 1000 / CLOCKS_PER_SEC,
-        .shard_bits = GM_CACHE_SHARD_BITS,
-        .version = GM_CACHE_VERSION
-    };
-    strncpy(meta.branch, branch, sizeof(meta.branch) - 1);
-    
-    /* Get actual journal tip OID */
+    return GM_OK;
+}
+
+static int cache_write_bitmaps(edge_map_t* forward, edge_map_t* reverse,
+                             const char* temp_dir) {
+    return write_bitmaps_to_temp(forward, reverse, temp_dir, GM_CACHE_SHARD_BITS);
+}
+
+static int cache_build_trees(git_repository* repo, const char* temp_dir,
+                           git_oid* tree_oid) {
+    return build_tree_from_temp(repo, temp_dir, tree_oid);
+}
+
+static int cache_get_journal_tip(git_repository* repo, const char* branch,
+                               gm_cache_meta_t* meta) {
     git_reference* journal_ref = NULL;
     char journal_ref_name[256];
-    snprintf(journal_ref_name, sizeof(journal_ref_name), "refs/gitmind/edges/%s", branch);
+    snprintf(journal_ref_name, sizeof(journal_ref_name), 
+             "refs/gitmind/edges/%s", branch);
     
     if (git_reference_lookup(&journal_ref, repo, journal_ref_name) == 0) {
         const git_oid* tip_oid = git_reference_target(journal_ref);
         if (tip_oid) {
-            git_oid_tostr(meta.journal_tip_oid, sizeof(meta.journal_tip_oid), tip_oid);
+            git_oid_tostr(meta->journal_tip_oid, 
+                         sizeof(meta->journal_tip_oid), tip_oid);
             
             /* Also get the timestamp of the tip commit */
             git_commit* tip_commit = NULL;
             if (git_commit_lookup(&tip_commit, repo, tip_oid) == 0) {
-                meta.journal_tip_time = git_commit_time(tip_commit);
+                meta->journal_tip_time = git_commit_time(tip_commit);
                 git_commit_free(tip_commit);
             }
         }
         git_reference_free(journal_ref);
     } else {
         /* No journal yet */
-        strcpy(meta.journal_tip_oid, "0000000000000000000000000000000000000000");
+        strcpy(meta->journal_tip_oid, "0000000000000000000000000000000000000000");
     }
     
-    /* Encode metadata */
-    uint8_t* meta_buffer = NULL;
-    size_t meta_size = 0;
-    rc = encode_cache_meta(&meta, &meta_buffer, &meta_size);
-    if (rc != GM_OK) goto cleanup;
-    
-    /* Create cache commit */
+    return GM_OK;
+}
+
+static int cache_create_commit(git_repository* repo, const git_oid* tree_oid,
+                             const gm_cache_meta_t* meta __attribute__((unused)), 
+                             git_oid* commit_oid) {
     git_signature* sig = NULL;
-    rc = git_signature_default(&sig, repo);
-    if (rc < 0) {
-        free(meta_buffer);
-        rc = GM_ERROR;
-        goto cleanup;
-    }
-    
-    char ref_name[256];
-    snprintf(ref_name, sizeof(ref_name), "%s%s/%ld", 
-             GM_CACHE_REF_PREFIX, branch, time(NULL));
-    
-    /* Create commit with metadata in message */
     git_tree* tree = NULL;
     git_odb* odb = NULL;
+    int rc;
     
-    rc = git_tree_lookup(&tree, repo, &tree_oid);
+    /* Create signature */
+    rc = git_signature_default(&sig, repo);
+    if (rc < 0) return GM_ERROR;
+    
+    /* Lookup tree */
+    rc = git_tree_lookup(&tree, repo, tree_oid);
     if (rc < 0) {
         git_signature_free(sig);
-        free(meta_buffer);
-        rc = GM_ERROR;
-        goto cleanup;
+        return GM_ERROR;
     }
     
-    /* Create commit with binary metadata */
+    /* Create commit buffer */
     git_buf commit_buf = {0};
     rc = git_commit_create_buffer(
         &commit_buf,
@@ -367,7 +348,7 @@ int gm_cache_rebuild_internal(git_repository* repo, const char* branch, bool for
         /* Write commit object */
         rc = git_repository_odb(&odb, repo);
         if (rc == 0) {
-            rc = git_odb_write(&commit_oid, odb, 
+            rc = git_odb_write(commit_oid, odb, 
                               commit_buf.ptr, commit_buf.size, GIT_OBJECT_COMMIT);
             git_odb_free(odb);
         }
@@ -375,26 +356,97 @@ int gm_cache_rebuild_internal(git_repository* repo, const char* branch, bool for
     }
     
     git_tree_free(tree);
-    
     git_signature_free(sig);
-    free(meta_buffer);
     
-    if (rc < 0) {
-        rc = GM_ERROR;
-        goto cleanup;
-    }
+    return (rc < 0) ? GM_ERROR : GM_OK;
+}
+
+static int cache_update_ref(git_repository* repo, const char* branch,
+                          const git_oid* commit_oid) {
+    char ref_name[256];
+    snprintf(ref_name, sizeof(ref_name), "%s%s/%ld", 
+             GM_CACHE_REF_PREFIX, branch, time(NULL));
     
-    /* Update cache ref */
     git_reference* ref = NULL;
-    rc = git_reference_create(&ref, repo, ref_name, &commit_oid, 1, "Cache rebuild");
+    int rc = git_reference_create(&ref, repo, ref_name, commit_oid, 1, "Cache rebuild");
     if (ref) git_reference_free(ref);
     
-    rc = (rc < 0) ? GM_ERROR : GM_OK;
-    
-cleanup:
+    return (rc < 0) ? GM_ERROR : GM_OK;
+}
+
+static void cache_cleanup(edge_map_t* forward, edge_map_t* reverse, 
+                        const char* temp_dir) {
     edge_map_free(forward);
     edge_map_free(reverse);
     remove_temp_dir(temp_dir);
+}
+
+/* Internal cache rebuild function */
+int gm_cache_rebuild_internal(git_repository* repo, const char* branch, bool force_full) {
+    edge_map_t* forward = NULL;
+    edge_map_t* reverse = NULL;
+    char temp_dir[GM_PATH_MAX];
+    git_oid tree_oid, commit_oid;
+    gm_cache_meta_t old_meta = {0};
+    gm_cache_meta_t meta = {0};
+    bool has_old_cache = false;
+    int rc = GM_OK;
+    clock_t start_time;
+    
+    /* Create context */
+    gm_context_t ctx = {0};
+    ctx.git_repo = repo;
+    
+    /* Prepare for rebuild */
+    rc = cache_prepare_rebuild(&ctx, branch, force_full, &old_meta, 
+                             &has_old_cache, temp_dir);
+    if (rc != GM_OK) return rc;
+    
+    /* Create edge maps */
+    rc = cache_build_edge_map(&forward, &reverse);
+    if (rc != GM_OK) {
+        remove_temp_dir(temp_dir);
+        return rc;
+    }
+    
+    /* Collect edges from journal */
+    start_time = clock();
+    uint32_t starting_edge_id = has_old_cache ? (uint32_t)old_meta.edge_count : 0;
+    uint32_t total_edges = 0;
+    
+    rc = cache_collect_edges(&ctx, branch, forward, reverse, 
+                           starting_edge_id, &total_edges);
+    if (rc != GM_OK) goto cleanup;
+    
+    /* Write bitmaps to disk */
+    rc = cache_write_bitmaps(forward, reverse, temp_dir);
+    if (rc != GM_OK) goto cleanup;
+    
+    /* Build Git tree */
+    rc = cache_build_trees(repo, temp_dir, &tree_oid);
+    if (rc != GM_OK) goto cleanup;
+    
+    /* Create metadata */
+    meta.journal_tip_time = (uint64_t)time(NULL);
+    meta.edge_count = total_edges;
+    meta.build_time_ms = (clock() - start_time) / CLOCKS_PER_MS;
+    meta.shard_bits = GM_CACHE_SHARD_BITS;
+    meta.version = GM_CACHE_VERSION;
+    strncpy(meta.branch, branch, sizeof(meta.branch) - 1);
+    
+    /* Get journal tip info */
+    rc = cache_get_journal_tip(repo, branch, &meta);
+    if (rc != GM_OK) goto cleanup;
+    
+    /* Create cache commit */
+    rc = cache_create_commit(repo, &tree_oid, &meta, &commit_oid);
+    if (rc != GM_OK) goto cleanup;
+    
+    /* Update cache ref */
+    rc = cache_update_ref(repo, branch, &commit_oid);
+    
+cleanup:
+    cache_cleanup(forward, reverse, temp_dir);
     return rc;
 }
 

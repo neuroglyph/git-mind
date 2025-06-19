@@ -5,53 +5,53 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
 ## Priority 1: Emergency Function Size Violations (Day 1-2)
 
 ### Attribution Module - CBOR Functions
-- [ ] **Break down `gm_edge_attributed_decode_cbor_ex()`** (172 lines → <15 lines each)
-  - [ ] Extract `decode_cbor_header()` - validate array header
-  - [ ] Extract `decode_cbor_shas()` - decode source/target SHAs
-  - [ ] Extract `decode_cbor_metadata()` - decode rel_type, confidence, timestamp
-  - [ ] Extract `decode_cbor_paths()` - decode src_path, tgt_path, ulid
-  - [ ] Extract `decode_cbor_attribution()` - decode attribution fields
-  - [ ] Extract `decode_cbor_lane()` - decode lane field
+- [x] **Break down `gm_edge_attributed_decode_cbor_ex()`** (172 lines → <15 lines each)
+  - [x] Extract `decode_cbor_header()` - validate array header
+  - [x] Extract `decode_cbor_shas()` - decode source/target SHAs
+  - [x] Extract `decode_cbor_metadata()` - decode rel_type, confidence, timestamp
+  - [x] Extract `decode_cbor_paths()` - decode src_path, tgt_path, ulid
+  - [x] Extract `decode_cbor_attribution()` - decode attribution fields
+  - [x] Extract `decode_cbor_lane()` - decode lane field
   
-- [ ] **Break down `gm_edge_attributed_encode_cbor()`** (111 lines → <15 lines each)
-  - [ ] Extract `encode_cbor_header()` - write array header
-  - [ ] Extract `encode_cbor_shas()` - encode source/target SHAs
-  - [ ] Extract `encode_cbor_metadata()` - encode rel_type, confidence, timestamp
-  - [ ] Extract `encode_cbor_paths()` - encode src_path, tgt_path, ulid
-  - [ ] Extract `encode_cbor_attribution()` - encode attribution fields
-  - [ ] Extract `encode_cbor_lane()` - encode lane field
+- [x] **Break down `gm_edge_attributed_encode_cbor()`** (111 lines → <15 lines each)
+  - [x] Extract `encode_cbor_header()` - write array header
+  - [x] Extract `encode_cbor_shas()` - encode source/target SHAs
+  - [x] Extract `encode_cbor_metadata()` - encode rel_type, confidence, timestamp
+  - [x] Extract `encode_cbor_paths()` - encode src_path, tgt_path, ulid
+  - [x] Extract `encode_cbor_attribution()` - encode attribution fields
+  - [x] Extract `encode_cbor_lane()` - encode lane field
 
 ### Cache Module
-- [ ] **Break down `gm_cache_rebuild_internal()`** (154 lines → <15 lines each)
-  - [ ] Extract `cache_prepare_rebuild()` - setup temp directory
-  - [ ] Extract `cache_collect_edges()` - gather all edges
-  - [ ] Extract `cache_build_edge_map()` - create edge mappings
-  - [ ] Extract `cache_write_bitmaps()` - write bitmap files
-  - [ ] Extract `cache_build_trees()` - create Git trees
-  - [ ] Extract `cache_create_commit()` - create cache commit
-  - [ ] Extract `cache_update_ref()` - update refs
-  - [ ] Extract `cache_cleanup()` - cleanup temp files
+- [x] **Break down `gm_cache_rebuild_internal()`** (154 lines → <15 lines each)
+  - [x] Extract `cache_prepare_rebuild()` - setup temp directory
+  - [x] Extract `cache_collect_edges()` - gather all edges
+  - [x] Extract `cache_build_edge_map()` - create edge mappings
+  - [x] Extract `cache_write_bitmaps()` - write bitmap files
+  - [x] Extract `cache_build_trees()` - create Git trees
+  - [x] Extract `cache_create_commit()` - create cache commit
+  - [x] Extract `cache_update_ref()` - update refs
+  - [x] Extract `cache_cleanup()` - cleanup temp files
 
 ### CLI Module
-- [ ] **Break down `gm_cmd_list()`** (101 lines → <15 lines each)
-  - [ ] Extract `parse_list_arguments()` - argument parsing
-  - [ ] Extract `setup_list_filter()` - filter configuration
-  - [ ] Extract `execute_list_query()` - perform the query
-  - [ ] Extract `format_list_output()` - output formatting
-  - [ ] Extract `print_list_summary()` - summary output
+- [x] **Break down `gm_cmd_list()`** (101 lines → <15 lines each)
+  - [x] Extract `parse_list_arguments()` - argument parsing
+  - [x] Extract `setup_list_filter()` - filter configuration
+  - [x] Extract `execute_list_query()` - perform the query
+  - [x] Extract `format_list_output()` - output formatting
+  - [x] Extract `print_list_summary()` - summary output
 
-- [ ] **Break down `gm_cmd_install_hooks()`** (86 lines → <15 lines each)
-  - [ ] Extract `check_git_hooks_directory()`
-  - [ ] Extract `backup_existing_hook()`
-  - [ ] Extract `write_hook_script()`
-  - [ ] Extract `make_hook_executable()`
-  - [ ] Extract `verify_hook_installation()`
+- [x] **Break down `gm_cmd_install_hooks()`** (86 lines → <15 lines each)
+  - [x] Extract `check_git_hooks_directory()`
+  - [x] Extract `backup_existing_hook()`
+  - [x] Extract `write_hook_script()`
+  - [x] Extract `make_hook_executable()`
+  - [x] Extract `verify_hook_installation()`
 
-- [ ] **Break down `gm_cmd_link()`** (80 lines → <15 lines each)
-  - [ ] Extract `parse_link_arguments()`
-  - [ ] Extract `validate_link_inputs()`
-  - [ ] Extract `create_edge_from_args()`
-  - [ ] Extract `save_edge_to_journal()`
+- [x] **Break down `gm_cmd_link()`** (80 lines → <15 lines each)
+  - [x] Extract `parse_link_arguments()`
+  - [x] Extract `validate_link_inputs()`
+  - [x] Extract `create_edge_from_args()`
+  - [x] Extract `save_edge_to_journal()`
 
 ## Priority 2: CLI Output Control System (Day 2-3)
 
