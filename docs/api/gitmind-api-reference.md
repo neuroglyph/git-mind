@@ -515,4 +515,4 @@ const char* gm_version_string(void);  // Returns "0.1.0"
 
 ---
 
-*For implementation details and architecture, see [How It Works](../architecture/how-it-works.md)*
+*For implementation details and architecture, see [Architecture Overview](../architecture/README.md)*

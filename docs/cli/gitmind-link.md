@@ -78,11 +78,17 @@ $ git mind link src/auth.c config/auth.yaml --type depends_on
 
 ### With confidence - Encoding uncertainty
 ```bash
-# Pretty sure this implements the RFC, but not certain
-$ git mind link src/parser.c rfc/grammar.txt --type implements --confidence 0.7
+# Human creating a confident link (confidence defaults to 1.0)
+$ git mind link src/parser.c rfc/grammar.txt --type implements
 
-# Definitely inspired by this paper
-$ git mind link src/algorithm.c papers/dijkstra62.pdf --type inspires
+# AI suggesting a relationship with confidence score
+$ export GIT_MIND_SOURCE=claude
+$ export GIT_MIND_AUTHOR=claude@anthropic
+$ git mind link src/parser.c rfc/grammar.txt --type implements --confidence 0.85
+Created link: src/parser.c ──implements──> rfc/grammar.txt [claude: claude@anthropic, conf: 0.85]
+
+# High-confidence AI relationship
+$ git mind link src/algorithm.c papers/dijkstra62.pdf --type references --confidence 0.95
 ```
 
 ### Bidirectional links - Symmetric relationships
@@ -93,11 +99,22 @@ Created edge: src/client.c ──references──> src/server.c
 Created edge: src/server.c ──references──> src/client.c
 ```
 
-### With notes - Adding context
+### Human-AI Collaboration - Attribution System
 ```bash
-$ git mind link src/cache.c docs/performance.md \
-    --type implements \
-    --note "Implements the LRU eviction strategy described in section 3.2"
+# Human creates edge (default behavior)
+$ git mind link README.md src/main.c --type documents
+Created link: README.md ──documents──> src/main.c
+
+# AI creates edge with attribution
+$ export GIT_MIND_SOURCE=claude
+$ export GIT_MIND_AUTHOR=claude@anthropic  
+$ export GIT_MIND_SESSION=analysis_2025
+$ git mind link src/auth.c config/oauth.json --type depends_on --confidence 0.82
+Created link: src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.82]
+
+# System-generated edge (from hooks)
+$ export GIT_MIND_SOURCE=system
+$ git mind link old_file.c new_file.c --type augments
 ```
 
 ## HOW IT WORKS
