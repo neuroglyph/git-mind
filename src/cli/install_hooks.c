@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind.h"
@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 #define HOOK_SCRIPT "#!/bin/sh\n" \
-    "# SPDX-License-Identifier: Apache-2.0\n" \
+    "# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0\n" \
     "# git-mind post-commit hook\n" \
     "\n" \
     "# Find git-mind-hook binary\n" \

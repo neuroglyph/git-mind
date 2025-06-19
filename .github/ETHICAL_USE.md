@@ -1,7 +1,7 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 # Ethical Use Policy: The Gitmind Pledge
 
-This project is released under the Apache 2.0 License. However, we respectfully request that users and organizations honor the spirit in which Gitmind was created.
+This project is released under the MIND-UCAL v1.0 License. However, we respectfully request that users and organizations honor the spirit in which Gitmind was created.
 
 ### Gitmind Is For:
 - Empowering individual thought
