@@ -3,7 +3,7 @@
 
 [![CI](https://github.com/neuroglyph/git-mind/actions/workflows/ci.yml/badge.svg)](https://github.com/neuroglyph/git-mind/actions/workflows/ci.yml)
 
-[![MIND-UCAL](https://img.shields.io/badge/license-MIND--UCAL-orange)](license/LICENSE.md)
+[![MIND-UCAL](https://img.shields.io/badge/license-MIND--UCAL-orange)](LICENSE)
 
 # git-mind
 
@@ -238,7 +238,7 @@ make test    # Full test suite
 make build   # Production binary
 ```
 
-See [CONTRIBUTING.md](project/community/CONTRIBUTING.md) for details.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ---
 
@@ -271,4 +271,4 @@ But today, it's a CLI that helps you remember why you connected two files.
 ### SPDX Notice:
 
 > This project uses a custom ethical license: `LicenseRef-MIND-UCAL-1.0`
-> Not yet registered with SPDX. Compliance required for all use. See [LICENSE.md](LICENSE.md) for full terms.
+> Not yet registered with SPDX. Compliance required for all use. See [LICENSE](LICENSE) for full terms.
