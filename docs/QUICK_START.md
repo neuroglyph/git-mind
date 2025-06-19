@@ -1,6 +1,6 @@
-# GitMind Quick Start Guide
+# git-mind Quick Start Guide
 
-Get up and running with GitMind in under 5 minutes!
+Get up and running with git-mind in under 5 minutes!
 
 ## Installation
 
@@ -8,16 +8,16 @@ Get up and running with GitMind in under 5 minutes!
 
 ```bash
 # Download the latest release
-curl -LO https://github.com/neuroglyph/neuroglyph/releases/latest/download/gitmind-$(uname -s)-$(uname -m)
+curl -LO https://github.com/neuroglyph/git-mind/releases/latest/download/git-mind-$(uname -s)-$(uname -m)
 
 # Make it executable
-chmod +x gitmind-*
+chmod +x git-mind-*
 
 # Move to your PATH
-sudo mv gitmind-* /usr/local/bin/gitmind
+sudo mv git-mind-* /usr/local/bin/git-mind
 
 # Verify installation
-gitmind version
+git mind version
 ```
 
 ### Option 2: Build from Source
@@ -26,71 +26,77 @@ Prerequisites: Docker, Make
 
 ```bash
 # Clone the repository
-git clone https://github.com/neuroglyph/neuroglyph.git
-cd neuroglyph
+git clone https://github.com/neuroglyph/git-mind.git
+cd git-mind
 
 # Build with Docker (ensures consistency)
 make build
 
-# Binary will be at c/gitmind
-sudo cp c/gitmind /usr/local/bin/
+# Binary will be at build/git-mind
+sudo cp build/git-mind /usr/local/bin/
 
 # Verify installation
-gitmind version
+git mind version
 ```
 
 ## Basic Usage
 
-### 1. Initialize GitMind in Your Repository
+### 1. Initialize git-mind in Your Repository
 
 ```bash
 cd your-git-repo
-gitmind init
+git mind init
 ```
 
-This creates a `.gitmind/links/` directory to store your semantic links.
+This creates the journal system to store your semantic links as Git commits.
 
 ### 2. Create Your First Links
 
 ```bash
 # Link your README to documentation
-gitmind link README.md docs/API.md --type DOCUMENTS
+git mind link README.md docs/API.md --type documents
 
 # Link implementation to its spec
-gitmind link src/parser.c docs/parser-spec.md --type IMPLEMENTS
+git mind link src/parser.c docs/parser-spec.md --type implements
 
 # Link related files
-gitmind link tests/auth.test.js src/auth.js --type TESTS
+git mind link tests/auth.test.js src/auth.js --type tests
 ```
 
 ### 3. Explore Your Knowledge Graph
 
 ```bash
 # List all links
-gitmind list
+git mind list
 
 # See what README.md links to
-gitmind list --source README.md
+git mind list --from README.md
 
-# Check repository status
-gitmind status
+# Show only human-created edges
+git mind list --source human
+
+# Rebuild cache for performance
+git mind cache-rebuild
 ```
 
 ### 4. Maintain Link Health
 
 ```bash
 # Check for broken links (after deleting files)
-gitmind check
+git mind check
 
 # Automatically remove broken links
-gitmind check --fix
+git mind check --fix
+
+# Install hooks for automatic evolution tracking
+git mind install-hooks
 ```
 
 ### 5. Remove Links
 
 ```bash
 # Remove a specific link
-gitmind unlink README.md docs/old-api.md
+git mind unlink README.md docs/old-api.md
 ```
 
 ## Real-World Example
@@ -98,21 +104,20 @@ gitmind unlink README.md docs/old-api.md
 Here's a practical example for a typical project:
 
 ```bash
-# Initialize
+# Initialize (not needed - auto-creates on first link)
 cd my-project
-gitmind init
 
 # Document your architecture
-gitmind link README.md docs/architecture.md --type REFERENCES
-gitmind link docs/architecture.md src/core/engine.js --type DOCUMENTS
-gitmind link src/core/engine.js tests/engine.test.js --type TESTED_BY
+git mind link README.md docs/architecture.md --type references
+git mind link docs/architecture.md src/core/engine.js --type documents
+git mind link src/core/engine.js tests/engine.test.js --type tested_by
 
 # Track dependencies
-gitmind link package.json README.md --type REFERENCED_BY
-gitmind link src/api/server.js package.json --type DEPENDS_ON
+git mind link package.json README.md --type referenced_by
+git mind link src/api/server.js package.json --type depends_on
 
 # View the connections
-gitmind list
+git mind list
 # Output:
 # REFERENCES: README.md -> docs/architecture.md
 # DOCUMENTS: docs/architecture.md -> src/core/engine.js
@@ -121,7 +126,7 @@ gitmind list
 # DEPENDS_ON: src/api/server.js -> package.json
 
 # See all connections from architecture doc
-gitmind list --source docs/architecture.md
+git mind list --from docs/architecture.md
 # Output:
 # DOCUMENTS: docs/architecture.md -> src/core/engine.js
 ```
@@ -130,77 +135,93 @@ gitmind list --source docs/architecture.md
 
 While you can use any type, here are some common patterns:
 
-- `IMPLEMENTS` - Code implements a specification
-- `DOCUMENTS` - Documentation describes code
-- `REFERENCES` - General reference between files
-- `DEPENDS_ON` - File depends on another
-- `TESTS` - Test file tests implementation
-- `INCLUDES` - File includes/imports another
-- `RELATED_TO` - General relationship
+- `implements` - Code implements a specification
+- `documents` - Documentation describes code
+- `references` - General reference between files
+- `depends_on` - File depends on another
+- `tests` - Test file tests implementation
+- `includes` - File includes/imports another
+- `related_to` - General relationship
+- `augments` - File evolved from another (automatic)
 
 ## Git Integration
 
-Links are just files, so they work with Git:
+Links are stored as Git commits, so they work seamlessly with Git:
 
 ```bash
-# Add links to your repository
-git add .gitmind
-git commit -m "Add semantic links for documentation"
-git push
+# Links are automatically committed to a special ref
+# Just push the edge refs along with your code
+git push origin refs/gitmind/edges/*
 
-# Your teammates can now see the relationships!
+# Your teammates pull and immediately see the relationships!
+git pull origin refs/gitmind/edges/*
 ```
 
 ## Performance
 
-GitMind is blazing fast:
+git-mind is blazing fast:
 - **Startup**: <1ms
-- **Create link**: ~2ms
-- **List 100 links**: <1ms
-- **Binary size**: 67KB
+- **Create link**: ~5ms
+- **List 100K links**: <10ms (with Roaring Bitmap cache)
+- **Binary size**: ~2MB (includes libgit2)
 
 ## Next Steps
 
-1. **Coming Soon**: Graph traversal
+1. **Human-AI Collaboration**
    ```bash
-   # This will let you explore connections
-   gitmind traverse README.md --depth 3
+   # AI can create edges with attribution
+   export GIT_MIND_SOURCE=claude
+   git mind link src/auth.c config/oauth.json --type depends_on --confidence 0.85
+   
+   # Review AI suggestions
+   git mind review --pending
    ```
 
 2. **Coming Soon**: Web visualization
    ```bash
-   # This will show an interactive graph
-   gitmind serve
-   # Open http://localhost:7432
+   # This will show an interactive 3D graph
+   git mind explore
+   # Opens browser with time-travel visualization
+   ```
+
+3. **Coming Soon**: MCP Integration
+   ```bash
+   # Claude will have persistent memory of your codebase
+   # Real-time collaboration between human and AI understanding
    ```
 
 ## Tips
 
 1. **Start Small**: Begin with a few key relationships
 2. **Be Consistent**: Use consistent link types across your team
-3. **Commit Links**: Add `.gitmind/` to version control
-4. **Regular Cleanup**: Run `gitmind check` periodically
-5. **Document Important Connections**: Focus on non-obvious relationships
+3. **Auto Evolution**: Use `git mind install-hooks` to track file changes
+4. **Performance**: Run `git mind cache-rebuild` for large repos
+5. **AI Collaboration**: Set attribution when AI creates edges
+6. **Document Important Connections**: Focus on non-obvious relationships
 
 ## Troubleshooting
 
-**"gitmind: command not found"**
-- Make sure gitmind is in your PATH
-- Try using the full path: `./gitmind`
+**"git-mind: command not found"**
+- Make sure git-mind is in your PATH
+- Try using the full path: `./git-mind`
+- Or use the git alias: `git mind`
 
 **"Not a git repository"**
-- GitMind requires a Git repository
+- git-mind requires a Git repository
 - Run `git init` first
 
 **"Permission denied"**
-- Make sure the binary is executable: `chmod +x gitmind`
+- Make sure the binary is executable: `chmod +x git-mind`
 - Use `sudo` when copying to `/usr/local/bin`
 
 ## Get Help
 
-- GitHub Issues: https://github.com/neuroglyph/neuroglyph/issues
-- Documentation: https://github.com/neuroglyph/neuroglyph/tree/main/docs
+- GitHub Issues: https://github.com/neuroglyph/git-mind/issues
+- Documentation: https://github.com/neuroglyph/git-mind/tree/main/docs
+- Architecture Docs: https://github.com/neuroglyph/git-mind/tree/main/docs/architecture
 
 ---
 
-That's it! You're now tracking semantic relationships in your codebase with GitMind. 🚀
+That's it! You're now tracking semantic relationships in your codebase with git-mind. 🚀
+
+**Next: Enable human-AI collaboration to build understanding together!**

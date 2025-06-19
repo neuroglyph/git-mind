@@ -206,24 +206,44 @@
 
 ### Documentation Cleanup 🧹 
 - [ ] **Fix Broken References** (High Priority):
-  - [ ] Fix README.md CONTRIBUTING.md link (points to non-existent file)
+  - [x] ~~Fix README.md CONTRIBUTING.md link~~ **CREATED CONTRIBUTING.md!**
   - [ ] Fix docs/README.md extensive broken links:
     - [x] ~~Remove references to non-existent cli/ directory~~ **CLI DOCS NOW EXIST!**
     - [ ] Update ../design/ paths (doesn't exist)
     - [ ] Fix ../project/meta/TASKLIST.md → /TASKLIST.md
     - [ ] Remove references to non-existent man pages
-  - [ ] Update QUICK_START.md GitHub URLs
+  - [x] ~~Update QUICK_START.md GitHub URLs~~ **FIXED ALL URLS!**
 
 - [x] **Create Missing Essential Docs** (High Priority) ✅ **CRUSHED IT!**
-  - [ ] Create CONTRIBUTING.md with developer guidelines
+  - [x] ~~Create CONTRIBUTING.md with developer guidelines~~ **DONE!**
   - [x] Create docs/cli/ directory with command docs:
     - [x] gitmind.md (overview) - **EPIC DOCS WITH MUFASA WISDOM!**
     - [x] gitmind-link.md - **THE HEART OF CONNECTIONS**
     - [x] gitmind-list.md - **WINDOW INTO UNDERSTANDING**
     - [ ] gitmind-traverse.md (when implemented)
+    - [ ] gitmind-review.md (when implemented)
     - [x] gitmind-cache-rebuild.md - **ROARING PERFORMANCE GUIDE**
     - [x] gitmind-install-hooks.md - **EVOLUTION TRACKING MAGIC**
     - [x] README.md - **CLI INDEX WITH PHILOSOPHY**
+
+### Human-AI Collaboration Documentation 🤖🧠 (NEW!)
+- [ ] **User-Facing Documentation** (High Priority for HN):
+  - [ ] Create `docs/user-guide/attribution.md` - Simple guide for using attribution
+  - [ ] Create `docs/user-guide/human-ai-collaboration.md` - Best practices and workflows
+  - [ ] Create `docs/tutorials/ai-code-review.md` - Tutorial for AI-assisted review
+  - [ ] Create `docs/tutorials/first-ai-edges.md` - Getting started with AI edges
+
+- [ ] **Developer Documentation** (Medium Priority):
+  - [ ] Create `docs/api/attribution-api.md` - Detailed API reference
+  - [ ] Move MCP docs from deep-thoughts to `docs/architecture/mcp-integration.md`
+  - [ ] Create `docs/development/testing-attribution.md` - Testing guide
+  - [ ] Create `docs/development/attribution-security.md` - Security considerations
+
+- [ ] **Examples and Scripts** (Medium Priority):
+  - [ ] Create `examples/attribution/basic-usage.sh` - Basic examples
+  - [ ] Create `examples/attribution/ai-batch-analysis.py` - AI analysis script
+  - [ ] Create `examples/attribution/review-workflow.sh` - Review examples
+  - [ ] Create `examples/attribution/ci-integration.yml` - GitHub Actions example
 
 - [ ] **Reorganize Documentation Structure** (Medium Priority):
   - [ ] Create new directory structure:
@@ -244,19 +264,62 @@
   - [ ] Finish API reference (currently partial)
   - [ ] Add architecture diagrams to supplement text
   - [ ] Create developer setup guide beyond CLAUDE.md
-  - [ ] Document cache-rebuild command usage
+  - [x] ~~Document cache-rebuild command usage~~ **ALREADY DOCUMENTED!**
+  - [ ] Document all exit codes and error scenarios
+  - [ ] Add performance characteristics documentation
+  - [ ] Create "Cookbook" with common recipes and patterns
 
 ### Original Documentation Tasks
 - [x] Architecture diagram with mermaid - **DONE IN DOCS!**
 - [ ] Tutorial: "Your first semantic graph"
 - [ ] FAQ: "Why journal commits?"
 - [ ] Migration guide from v0
+- [ ] Create attribution FAQ section
+- [ ] Add "Common Patterns" guide for human-AI collaboration
+
+### Environment Variables & Configuration 🔧 (NEW!)
+- [ ] **Document All Environment Variables** (High Priority):
+  - [ ] Create `docs/reference/environment-variables.md` covering:
+    - [ ] GIT_MIND_SOURCE, GIT_MIND_AUTHOR, GIT_MIND_SESSION (attribution)
+    - [ ] GIT_MIND_BRANCH (override branch)
+    - [ ] GIT_MIND_NO_CACHE (disable cache)
+    - [ ] GIT_MIND_VERBOSE (verbose output)
+  - [ ] Add env var examples to relevant command docs
+
+### Operations & Deployment 🚀 (NEW!)
+- [ ] **Installation & Distribution** (High Priority for HN):
+  - [ ] Create `docs/installation.md` with platform-specific instructions
+  - [ ] Document binary distribution process
+  - [ ] Create one-line installer script
+  - [ ] Document system requirements and dependencies
+  
+- [ ] **Operational Documentation** (Medium Priority):
+  - [ ] Create `docs/operations/backup-recovery.md`
+  - [ ] Create `docs/operations/performance-tuning.md`
+  - [ ] Create `docs/operations/monitoring.md`
+  - [ ] Create `docs/operations/troubleshooting.md` with common errors
+
+### Security Documentation 🔒 (NEW!)
+- [ ] **Security Guide** (Medium Priority):
+  - [ ] Create `docs/security.md` covering:
+    - [ ] Attribution spoofing risks and mitigations
+    - [ ] Hook security (code execution risks)
+    - [ ] Access control patterns
+    - [ ] Handling untrusted repositories
+    - [ ] Protecting sensitive edge data
+
+### Advanced Features Documentation 📚 (NEW!)
+- [ ] **Lane System Guide** - Document GM_LANE_* usage
+- [ ] **Filter System Guide** - Complex filtering capabilities
+- [ ] **Batch Operations Guide** - Bulk edge creation patterns
+- [ ] **Time-Travel Queries Guide** - Using git checkout with git-mind
 
 ### Testing & Release
 - [x] Integration tests for all commands - **DONE!**
 - [ ] Test on macOS, Linux, Windows (WSL)
 - [x] GitHub Actions CI/CD - **FIXED & WORKING**
 - [ ] Create v0.2.0 release
+- [ ] Create release documentation and changelog
 
 ---
 
