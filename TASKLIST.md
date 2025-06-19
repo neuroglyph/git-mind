@@ -159,25 +159,25 @@
 ## Phase 4: Polish & Ship (Bonus Weekend)
 
 ### Critical Attribution Completion Tasks 🚨 (HIGHEST PRIORITY!)
-- [ ] **Complete CBOR Decoder for Attributed Edges** (2 hours)
-  - [ ] Implement full decoder in `src/attribution/cbor.c` for all 13 fields
-  - [ ] Handle array parsing with proper bounds checking
-  - [ ] Test with malformed/corrupted data
-- [ ] **Implement Attributed Journal Reader** (3 hours)
-  - [ ] Create `gm_journal_read_attributed()` implementation in `src/journal/reader.c`
-  - [ ] Modify reader context to support attributed edge callbacks
-  - [ ] Try attributed decoding first, fall back to legacy format
-  - [ ] Ensure backward compatibility with legacy edges
-- [ ] **Add Round-Trip Attribution Tests** (1 hour)
-  - [ ] Test: Create attributed edge → Read it back → Verify all fields
-  - [ ] Test: Mixed legacy and attributed edges in same journal
-  - [ ] Test: Filtering actually works with real attributed edges
-  - [ ] Test: Attribution display shows correct information
-- [ ] **Verify End-to-End Functionality** (1 hour)
-  - [ ] Create human edge → List shows it without attribution
-  - [ ] Create AI edge → List shows it with attribution
-  - [ ] Filter by source → Only correct edges appear
-  - [ ] Filter by confidence → Threshold works correctly
+- [x] **Complete CBOR Decoder for Attributed Edges** (2 hours) ✅
+  - [x] Implement full decoder in `src/attribution/cbor.c` for all 13 fields
+  - [x] Handle array parsing with proper bounds checking
+  - [x] Test with malformed/corrupted data
+- [x] **Implement Attributed Journal Reader** (3 hours) ✅
+  - [x] Create `gm_journal_read_attributed()` implementation in `src/journal/reader.c`
+  - [x] Modify reader context to support attributed edge callbacks
+  - [x] Try attributed decoding first, fall back to legacy format
+  - [x] Ensure backward compatibility with legacy edges
+- [x] **Add Round-Trip Attribution Tests** (1 hour) ✅
+  - [x] Test: Create attributed edge → Read it back → Verify all fields
+  - [x] Test: Mixed legacy and attributed edges in same journal
+  - [x] Test: Filtering actually works with real attributed edges
+  - [x] Test: Attribution display shows correct information
+- [x] **Verify End-to-End Functionality** (1 hour) ✅
+  - [x] Create human edge → List shows it without attribution
+  - [x] Create AI edge → List shows it with attribution
+  - [x] Filter by source → Only correct edges appear
+  - [x] Filter by confidence → Threshold works correctly
 
 ### HN Demo Milestones 🚀 REVISED WITH AI+WEB UI!
 

@@ -135,10 +135,10 @@ int gm_edge_attributed_encode_cbor(const gm_edge_attributed_t *edge,
 }
 
 /**
- * Decode CBOR to attributed edge
+ * Decode CBOR to attributed edge (with consumed bytes)
  */
-int gm_edge_attributed_decode_cbor(const uint8_t *buffer, size_t len, 
-                                  gm_edge_attributed_t *edge) {
+int gm_edge_attributed_decode_cbor_ex(const uint8_t *buffer, size_t len, 
+                                     gm_edge_attributed_t *edge, size_t *consumed) {
     if (!buffer || !edge || len < 1) {
         return -1;
     }
@@ -163,9 +163,150 @@ int gm_edge_attributed_decode_cbor(const uint8_t *buffer, size_t len,
     }
     p++;
     
-    /* TODO: Implement full decoder for all 13 fields */
-    /* For now, this is a stub that validates the format */
-    (void)end;  /* Mark as used to avoid warning */
+    /* 1. Source SHA (bytes) */
+    if (p + 21 > end || *p != (CBOR_TYPE_BYTES | 20)) {
+        return -1;
+    }
+    p++;
+    memcpy(edge->src_sha, p, 20);
+    p += 20;
+    
+    /* 2. Target SHA (bytes) */
+    if (p + 21 > end || *p != (CBOR_TYPE_BYTES | 20)) {
+        return -1;
+    }
+    p++;
+    memcpy(edge->tgt_sha, p, 20);
+    p += 20;
+    
+    /* 3. Relationship type (uint16) */
+    if (p + 3 > end || *p != (CBOR_TYPE_UINT | CBOR_ADDITIONAL_2)) {
+        return -1;
+    }
+    p++;
+    edge->rel_type = ((uint16_t)p[0] << 8) | p[1];
+    p += 2;
+    
+    /* 4. Confidence (uint16) */
+    if (p + 3 > end || *p != (CBOR_TYPE_UINT | CBOR_ADDITIONAL_2)) {
+        return -1;
+    }
+    p++;
+    edge->confidence = ((uint16_t)p[0] << 8) | p[1];
+    p += 2;
+    
+    /* 5. Timestamp (uint64) */
+    if (p + 9 > end || *p != (CBOR_TYPE_UINT | CBOR_ADDITIONAL_8)) {
+        return -1;
+    }
+    p++;
+    edge->timestamp = 0;
+    for (int i = 0; i < 8; i++) {
+        edge->timestamp = (edge->timestamp << 8) | p[i];
+    }
+    p += 8;
+    
+    /* 6. Source path (text) */
+    if (p >= end || (*p & 0xE0) != CBOR_TYPE_TEXT) {
+        return -1;
+    }
+    size_t src_len = *p & 0x1F;
+    p++;
+    if (p + src_len > end || src_len >= sizeof(edge->src_path)) {
+        return -1;
+    }
+    memcpy(edge->src_path, p, src_len);
+    edge->src_path[src_len] = '\0';
+    p += src_len;
+    
+    /* 7. Target path (text) */
+    if (p >= end || (*p & 0xE0) != CBOR_TYPE_TEXT) {
+        return -1;
+    }
+    size_t tgt_len = *p & 0x1F;
+    p++;
+    if (p + tgt_len > end || tgt_len >= sizeof(edge->tgt_path)) {
+        return -1;
+    }
+    memcpy(edge->tgt_path, p, tgt_len);
+    edge->tgt_path[tgt_len] = '\0';
+    p += tgt_len;
+    
+    /* 8. ULID (text) */
+    if (p >= end || *p != (CBOR_TYPE_TEXT | 26)) {
+        return -1;
+    }
+    p++;
+    if (p + 26 > end) {
+        return -1;
+    }
+    memcpy(edge->ulid, p, 26);
+    edge->ulid[26] = '\0';
+    p += 26;
+    
+    /* 9. Source type (uint8) */
+    if (p + 2 > end || *p != (CBOR_TYPE_UINT | CBOR_ADDITIONAL_1)) {
+        return -1;
+    }
+    p++;
+    edge->attribution.source_type = *p;
+    p++;
+    
+    /* 10. Author (text) */
+    if (p >= end || (*p & 0xE0) != CBOR_TYPE_TEXT) {
+        return -1;
+    }
+    size_t author_len = *p & 0x1F;
+    p++;
+    if (p + author_len > end || author_len >= sizeof(edge->attribution.author)) {
+        return -1;
+    }
+    memcpy(edge->attribution.author, p, author_len);
+    edge->attribution.author[author_len] = '\0';
+    p += author_len;
+    
+    /* 11. Session ID (text) */
+    if (p >= end || (*p & 0xE0) != CBOR_TYPE_TEXT) {
+        return -1;
+    }
+    size_t session_len = *p & 0x1F;
+    p++;
+    if (p + session_len > end || session_len >= sizeof(edge->attribution.session_id)) {
+        return -1;
+    }
+    memcpy(edge->attribution.session_id, p, session_len);
+    edge->attribution.session_id[session_len] = '\0';
+    p += session_len;
+    
+    /* 12. Flags (uint32) */
+    if (p + 5 > end || *p != (CBOR_TYPE_UINT | CBOR_ADDITIONAL_4)) {
+        return -1;
+    }
+    p++;
+    edge->attribution.flags = ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | 
+                             ((uint32_t)p[2] << 8) | p[3];
+    p += 4;
+    
+    /* 13. Lane (uint8) */
+    if (p + 2 > end || *p != (CBOR_TYPE_UINT | CBOR_ADDITIONAL_1)) {
+        return -1;
+    }
+    p++;
+    edge->lane = *p;
+    p++;
+    
+    /* Set consumed bytes if requested */
+    if (consumed) {
+        *consumed = p - buffer;
+    }
     
     return 0;
+}
+
+/**
+ * Decode CBOR to attributed edge (simple wrapper)
+ */
+int gm_edge_attributed_decode_cbor(const uint8_t *buffer, size_t len, 
+                                  gm_edge_attributed_t *edge) {
+    return gm_edge_attributed_decode_cbor_ex(buffer, len, edge, NULL);
 }
