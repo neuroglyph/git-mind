@@ -10,6 +10,9 @@
 #include "gitmind/attribution.h"
 #include "gitmind/constants.h"
 #include "gitmind/output.h"
+#include "gitmind/io_ops.h"
+#include "gitmind/time_ops.h"
+#include "gitmind/random_ops.h"
 
 /* Forward declarations */
 typedef struct gm_context gm_context_t;
@@ -72,6 +75,15 @@ struct gm_context {
     
     /* Output control */
     gm_output_t *output;
+    
+    /* I/O operations for dependency injection */
+    const gm_io_ops_t *io_ops;
+    
+    /* Time operations for dependency injection */
+    const gm_time_ops_t *time_ops;
+    
+    /* Random operations for dependency injection */
+    const gm_random_ops_t *random_ops;
     
     /* User data */
     void *git_repo;
