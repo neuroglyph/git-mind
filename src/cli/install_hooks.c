@@ -32,12 +32,13 @@
 
 /* Check if git hooks directory exists */
 static int check_git_hooks_directory(gm_output_t *output) {
-    struct stat st;
-    int error = stat(GM_HOOKS_DIR, &st);
-    
-    if (error != 0 || !S_ISDIR(st.st_mode)) {
-        gm_output_error(output, GM_ERR_HOOK_NO_DIR "\n");
-        return GM_ERROR;
+    /* Try to create directory with mkdir - it will fail safely if it exists */
+    if (mkdir(GM_HOOKS_DIR, 0755) != 0) {
+        if (errno != EEXIST) {
+            gm_output_error(output, GM_ERR_HOOK_NO_DIR "\n");
+            return GM_ERROR;
+        }
+        /* Directory already exists - that's fine */
     }
     
     return GM_OK;
@@ -45,20 +46,18 @@ static int check_git_hooks_directory(gm_output_t *output) {
 
 /* Check if hook is already ours */
 static int check_existing_hook(const char *hook_path, int *is_ours) {
-    struct stat st;
     FILE *fp;
     char line[GM_HOOK_BUFFER_SIZE];
     
     *is_ours = 0;
     
-    if (stat(hook_path, &st) != 0) {
-        /* Hook doesn't exist */
-        return GM_NOT_FOUND;
-    }
-    
-    /* Hook exists, check if it's ours */
+    /* Directly try to open - avoids TOCTOU */
     fp = fopen(hook_path, "r");
     if (!fp) {
+        if (errno == ENOENT) {
+            /* Hook doesn't exist */
+            return GM_NOT_FOUND;
+        }
         return GM_IO_ERROR;
     }
     

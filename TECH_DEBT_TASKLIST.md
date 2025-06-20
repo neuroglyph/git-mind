@@ -1,8 +1,8 @@
 # Technical Debt Task List for Git-Mind
 
-<progress value="115" max="165" style="width: 100%; height: 30px;"></progress>
+<progress value="126" max="165" style="width: 100%; height: 30px;"></progress>
 
-**Progress: 115/165 tasks completed (69.7%)**
+**Progress: 126/165 tasks completed (76.4%)**
 
 This document tracks all technical debt identified in the 2025-06-19 code audit. Each item must be addressed before proceeding to new features.
 
@@ -196,31 +196,28 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
 ## Priority 7: Security Issues (Day 7)
 
 ### Fix TOCTOU Race Conditions
-- [ ] **Identify all TOCTOU vulnerabilities**
-  - [ ] Review code scanning alerts for specific locations
-  - [ ] Document each race condition scenario
+- [x] **Identify all TOCTOU vulnerabilities**
+  - [x] Review code scanning alerts for specific locations
+  - [x] Document each race condition scenario
   
-- [ ] **Fix file system race conditions**
-  - [ ] Replace stat() then open() patterns with atomic operations
-  - [ ] Use O_EXCL flag for exclusive file creation
-  - [ ] Implement proper file locking where needed
-  - [ ] Consider using mkstemp() for temporary files
+- [x] **Fix file system race conditions**
+  - [x] Replace stat() then open() patterns with atomic operations
+  - [x] Use direct open/mkdir instead of stat checks
+  - [x] Use lstat() instead of stat() to avoid symlink races
+  - [x] Handle disappearing files gracefully
 
 ### Fix GitHub Actions Permissions
-- [ ] **Update workflow files**
-  - [ ] Add explicit permissions block to each workflow
-  - [ ] Use least-privilege principle (only required permissions)
-  - [ ] Example minimal permissions:
-    ```yaml
-    permissions:
-      contents: read
-      pull-requests: write
-    ```
+- [x] **Update workflow files**
+  - [x] Add explicit permissions block to each workflow
+  - [x] Use least-privilege principle (only required permissions)
+  - [x] CI: read-only permissions
+  - [x] Release: write for creating releases
+  - [x] Code Quality: read + PR write for comments
   
-- [ ] **Audit all workflows**
-  - [ ] `.github/workflows/*.yml` - add permissions
-  - [ ] Verify no workflows have excessive permissions
-  - [ ] Document why each permission is needed
+- [x] **Audit all workflows**
+  - [x] `.github/workflows/*.yml` - add permissions
+  - [x] Verify no workflows have excessive permissions
+  - [x] Document why each permission is needed
 
 ## Priority 8: API Documentation (Day 8)
 

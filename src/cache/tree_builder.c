@@ -65,8 +65,9 @@ static int add_directory_to_tree(git_repository* repo, git_treebuilder* parent_b
         /* Build full path */
         snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry->d_name);
         
-        /* Get file info */
-        if (stat(full_path, &st) < 0) {
+        /* Get file info - use lstat to avoid following symlinks */
+        if (lstat(full_path, &st) < 0) {
+            /* File disappeared or no access - skip silently */
             continue;
         }
         
@@ -79,16 +80,21 @@ static int add_directory_to_tree(git_repository* repo, git_treebuilder* parent_b
                 entry_name[sizeof(entry_name) - 1] = '\0';
             }
             rc = add_directory_to_tree(repo, dir_builder, full_path, entry_name);
-            if (rc != GM_OK) {
+            if (rc != GM_OK && rc != GM_NOT_FOUND) {
+                /* Only break on serious errors, not if dir disappeared */
                 break;
             }
+            rc = GM_OK; /* Reset for next iteration */
         } else if (S_ISREG(st.st_mode)) {
             /* Regular file - add as blob */
             rc = add_file_to_tree(repo, dir_builder, full_path, entry->d_name);
-            if (rc != GM_OK) {
+            if (rc != GM_OK && rc != GM_NOT_FOUND) {
+                /* Only break on serious errors, not if file disappeared */
                 break;
             }
+            rc = GM_OK; /* Reset for next iteration */
         }
+        /* Skip other file types (symlinks, devices, etc.) */
     }
     
     closedir(dir);
@@ -155,7 +161,10 @@ int gm_build_tree_from_directory(git_repository* repo, const char* dir_path,
         snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry->d_name);
         
         struct stat st;
-        if (stat(full_path, &st) < 0) continue;
+        if (lstat(full_path, &st) < 0) {
+            /* File disappeared - skip silently */
+            continue;
+        }
         
         if (S_ISDIR(st.st_mode)) {
             /* Build subtree */
@@ -172,10 +181,14 @@ int gm_build_tree_from_directory(git_repository* repo, const char* dir_path,
                     rc = git_treebuilder_insert(NULL, root_builder, entry->d_name,
                                                &subtree_oid, GIT_FILEMODE_TREE);
                 }
+            } else if (rc == GM_NOT_FOUND) {
+                /* Directory disappeared - not fatal */
+                rc = 0;
             }
             git_treebuilder_free(sub_builder);
             if (rc < 0) break;
         }
+        /* Skip non-directories for cache tree */
     }
     
     closedir(dir);
