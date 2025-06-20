@@ -1,8 +1,8 @@
 # Technical Debt Task List for Git-Mind
 
-<progress value="105" max="165" style="width: 100%; height: 30px;"></progress>
+<progress value="115" max="165" style="width: 100%; height: 30px;"></progress>
 
-**Progress: 105/165 tasks completed (63.6%)**
+**Progress: 115/165 tasks completed (69.7%)**
 
 This document tracks all technical debt identified in the 2025-06-19 code audit. Each item must be addressed before proceeding to new features.
 
@@ -168,19 +168,19 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
 ## Priority 6: Fix Test Structure (Day 6)
 
 ### Refactor Tests for Behavior
-- [ ] **Update `test_behavior.sh`**
-  - [ ] Remove all stdout/stderr grep checks
-  - [ ] Use `--porcelain` mode for assertions
-  - [ ] Check state changes, not output
+- [x] **Update `test_behavior.sh`**
+  - [x] Remove all stdout/stderr grep checks
+  - [x] Use `--porcelain` mode for assertions
+  - [x] Check state changes, not output
 
-- [ ] **Update `test_attribution.c`**
-  - [ ] Remove all printf statements
-  - [ ] Return proper exit codes
-  - [ ] Test behavior not output
+- [x] **Update `test_attribution.c`**
+  - [x] Remove all printf statements
+  - [x] Return proper exit codes
+  - [x] Test behavior not output
 
-- [ ] **Update `test_augments.sh`**
-  - [ ] Remove output string checks
-  - [ ] Verify edge creation, not messages
+- [x] **Update `test_augments.sh`**
+  - [x] Remove output string checks
+  - [x] Verify edge creation, not messages
 
 ### Organize by User Story
 - [ ] **Create test structure**

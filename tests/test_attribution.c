@@ -7,9 +7,7 @@
 #include "gitmind.h"
 #include "gitmind/attribution.h"
 
-void test_attribution_defaults() {
-    printf("Testing attribution defaults...\n");
-    
+int test_attribution_defaults() {
     gm_attribution_t attr;
     
     /* Test human default */
@@ -22,12 +20,10 @@ void test_attribution_defaults() {
     assert(attr.source_type == GM_SOURCE_AI_CLAUDE);
     assert(strcmp(attr.author, "claude@anthropic") == 0);
     
-    printf("✓ Attribution defaults work\n");
+    return 0;
 }
 
-void test_filters() {
-    printf("Testing filters...\n");
-    
+int test_filters() {
     gm_filter_t filter;
     gm_edge_attributed_t edge = {0};
     
@@ -51,11 +47,10 @@ void test_filters() {
     edge.confidence = 0x2C00;  /* ~0.375 in half-float */
     assert(gm_filter_match(&filter, &edge) == 0);
     
-    printf("✓ Filters work correctly\n");
+    return 0;
 }
 
-void test_cbor_round_trip() {
-    printf("Testing CBOR round-trip (encode + decode)...\n");
+int test_cbor_round_trip() {
     
     gm_edge_attributed_t edge = {0};
     gm_edge_attributed_t decoded = {0};
@@ -104,11 +99,10 @@ void test_cbor_round_trip() {
     assert(decoded.attribution.flags == edge.attribution.flags);
     assert(decoded.lane == edge.lane);
     
-    printf("✓ CBOR round-trip works (encoded %zu bytes)\n", len);
+    return 0;
 }
 
-void test_cbor_edge_cases() {
-    printf("Testing CBOR edge cases...\n");
+int test_cbor_edge_cases() {
     
     gm_edge_attributed_t edge = {0};
     gm_edge_attributed_t decoded = {0};
@@ -152,17 +146,16 @@ void test_cbor_edge_cases() {
     ret = gm_edge_attributed_decode_cbor(buffer, 10, &decoded);  /* Too short */
     assert(ret != 0);
     
-    printf("✓ CBOR edge cases handled correctly\n");
+    return 0;
 }
 
 int main() {
-    printf("=== Attribution System Tests ===\n");
+    int result = 0;
     
-    test_attribution_defaults();
-    test_filters();
-    test_cbor_round_trip();
-    test_cbor_edge_cases();
+    result |= test_attribution_defaults();
+    result |= test_filters();
+    result |= test_cbor_round_trip();
+    result |= test_cbor_edge_cases();
     
-    printf("\nAll tests passed! ✅\n");
-    return 0;
+    return result;
 }
