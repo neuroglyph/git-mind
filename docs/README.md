@@ -19,7 +19,7 @@ Complete command reference with examples:
 
 - [Architecture Overview](architecture/) - System design and internals
   - [Attribution System](architecture/attribution-system.md) - Human-AI collaboration 🆕
-  - [Journal System](architecture/journal-system.md) - Git-native storage
+  - [Journal System](architecture/journal-architecture-pivot.md) - Git-native storage
   - [Bitmap Cache](architecture/bitmap-cache-design.md) - Roaring Bitmap performance
   - [AUGMENTS System](architecture/augments-system.md) - Automatic evolution tracking
 
@@ -30,7 +30,6 @@ Complete command reference with examples:
 ## Additional Resources
 
 - [Project Roadmap](../TASKLIST.md) - Current implementation status
-- [HN Demo Plans](hn-demo/) - Hacker News launch preparation
 - [Source Modules](../src/) - Implementation details
 
 ## Getting Help

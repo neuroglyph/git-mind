@@ -4,6 +4,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "gitmind.h"
+#include "gitmind/constants_internal.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -12,10 +13,15 @@
 #define HALF_FLOAT_ONE 0x3C00  /* 1.0 in IEEE-754 half */
 
 /* Get current timestamp in milliseconds */
-static uint64_t get_timestamp(void) {
+static uint64_t get_timestamp(gm_context_t *ctx) {
     struct timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
-    return (uint64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+    if (ctx && ctx->time_ops && ctx->time_ops->clock_gettime) {
+        ctx->time_ops->clock_gettime(CLOCK_REALTIME, &ts);
+    } else {
+        /* Fallback to direct call */
+        clock_gettime(CLOCK_REALTIME, &ts);
+    }
+    return (uint64_t)ts.tv_sec * MILLIS_PER_SECOND + ts.tv_nsec / NANOS_PER_MILLI;
 }
 
 /* Create edge from paths */
@@ -52,7 +58,7 @@ int gm_edge_create(gm_context_t *ctx, const char *src_path, const char *tgt_path
     /* Set metadata */
     edge->rel_type = rel_type;
     edge->confidence = 100;  /* Default confidence as percentage */
-    edge->timestamp = get_timestamp() / 1000;  /* Store as seconds, not millis */
+    edge->timestamp = get_timestamp(ctx) / MILLIS_PER_SECOND;  /* Store as seconds, not millis */
     
     /* Generate ULID */
     result = gm_ulid_generate(edge->ulid);
@@ -74,6 +80,22 @@ int gm_edge_equal(const gm_edge_t *a, const gm_edge_t *b) {
            a->rel_type == b->rel_type;
 }
 
+/* Get relationship type string */
+static const char* get_rel_type_string(gm_rel_type_t rel_type) {
+    switch (rel_type) {
+        case GM_REL_IMPLEMENTS:
+            return "IMPLEMENTS";
+        case GM_REL_REFERENCES:
+            return "REFERENCES";
+        case GM_REL_DEPENDS_ON:
+            return "DEPENDS_ON";
+        case GM_REL_AUGMENTS:
+            return "AUGMENTS";
+        default:
+            return "CUSTOM";
+    }
+}
+
 /* Format edge for display */
 int gm_edge_format(const gm_edge_t *edge, char *buffer, size_t len) {
     if (!edge || !buffer || len == 0) {
@@ -81,24 +103,7 @@ int gm_edge_format(const gm_edge_t *edge, char *buffer, size_t len) {
     }
     
     /* Format: "TYPE: src_path -> tgt_path" */
-    const char *type_str;
-    switch (edge->rel_type) {
-        case GM_REL_IMPLEMENTS:
-            type_str = "IMPLEMENTS";
-            break;
-        case GM_REL_REFERENCES:
-            type_str = "REFERENCES";
-            break;
-        case GM_REL_DEPENDS_ON:
-            type_str = "DEPENDS_ON";
-            break;
-        case GM_REL_AUGMENTS:
-            type_str = "AUGMENTS";
-            break;
-        default:
-            type_str = "CUSTOM";
-            break;
-    }
+    const char *type_str = get_rel_type_string(edge->rel_type);
     
     int written = snprintf(buffer, len, "%s: %s -> %s",
                           type_str, edge->src_path, edge->tgt_path);

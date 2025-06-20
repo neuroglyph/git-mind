@@ -2,7 +2,7 @@
 # © 2025 J. Kirby Ross / Neuroglyph Collective
 FROM ubuntu:22.04
 
-# Install build dependencies
+# Install build dependencies and code quality tools
 RUN apt-get update && apt-get install -y \
     build-essential \
     git \
@@ -12,6 +12,18 @@ RUN apt-get update && apt-get install -y \
     valgrind \
     wget \
     cmake \
+    clang-format \
+    clang-tidy \
+    cppcheck \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python-based tools
+RUN pip3 install lizard flawfinder
+
+# Install additional analysis tools
+RUN apt-get update && apt-get install -y \
+    bear \
     && rm -rf /var/lib/apt/lists/*
 
 # Install croaring

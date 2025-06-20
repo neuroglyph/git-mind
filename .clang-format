@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0
+# Clang-format configuration for git-mind
+
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 80
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType: None
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: false
+  AfterControlStatement: false
+  AfterStruct: false
+  AfterEnum: false
+PointerAlignment: Right
+SpaceAfterCStyleCast: false
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^"gitmind\.h"'
+    Priority: 1
+  - Regex: '^"gitmind/'
+    Priority: 2
+  - Regex: '^<git2'
+    Priority: 3
+  - Regex: '^<'
+    Priority: 4
+  - Regex: '.*'
+    Priority: 5

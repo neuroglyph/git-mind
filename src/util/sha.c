@@ -2,8 +2,12 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind.h"
+#include "gitmind/constants_internal.h"
 #include <git2.h>
 #include <string.h>
+
+/* Git index constants */
+#define GIT_INDEX_STAGE_DEFAULT 0
 
 /* Get blob SHA from file path */
 int gm_sha_from_path(gm_context_t *ctx, const char *path, uint8_t *sha) {
@@ -25,7 +29,7 @@ int gm_sha_from_path(gm_context_t *ctx, const char *path, uint8_t *sha) {
     }
     
     /* Look up path in index */
-    entry = git_index_get_bypath(index, path, 0);
+    entry = git_index_get_bypath(index, path, GIT_INDEX_STAGE_DEFAULT);
     if (!entry) {
         git_index_free(index);
         return GM_NOT_FOUND;

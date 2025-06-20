@@ -2,22 +2,25 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind.h"
+#include "gitmind/constants_internal.h"
+#include "gitmind/constants_cbor.h"
 #include <git2.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-/* Constants */
-#define EMPTY_TREE_SHA "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+/* Local constants */
 #define REFS_GITMIND_PREFIX "refs/gitmind/edges/"
-#define MAX_CBOR_SIZE 8192
+#define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
 #define COMMIT_ENCODING "binary"
+#define CBOR_OVERFLOW_MARGIN 512
+#define PARENT_COMMITS_MAX 1
 
 /* Journal writer context */
 typedef struct {
     git_repository *repo;
     git_oid empty_tree_oid;
-    char ref_name[256];
+    char ref_name[REF_NAME_BUFFER_SIZE];
 } journal_ctx_t;
 
 /* Initialize journal context */
@@ -71,7 +74,7 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
     git_commit *parent = NULL;
     git_tree *tree = NULL;
     git_oid parent_oid;
-    const git_commit *parent_commits[1];
+    const git_commit *parent_commits[PARENT_COMMITS_MAX];
     int parent_count = 0;
     int error;
     
@@ -99,7 +102,7 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
             error = git_commit_lookup(&parent, jctx->repo, &parent_oid);
             if (error == 0) {
                 parent_commits[0] = parent;
-                parent_count = 1;
+                parent_count = PARENT_COMMITS_MAX;
             }
         }
         git_reference_free(ref);
@@ -129,10 +132,13 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
     return (error < 0) ? GM_ERROR : GM_OK;
 }
 
-/* Append edges to journal */
-int gm_journal_append(gm_context_t *ctx, const gm_edge_t *edges, size_t n_edges) {
+/* Generic journal append function */
+typedef int (*edge_encoder_fn)(const void *edge, uint8_t *buffer, size_t *len);
+
+static int journal_append_generic(gm_context_t *ctx, const void *edges, size_t n_edges,
+                                 size_t edge_size, edge_encoder_fn encoder) {
     journal_ctx_t jctx;
-    char branch[128];
+    char branch[BUFFER_SIZE_TINY];
     uint8_t *cbor_buffer = NULL;
     size_t offset = 0;
     git_oid commit_oid;
@@ -160,16 +166,17 @@ int gm_journal_append(gm_context_t *ctx, const gm_edge_t *edges, size_t n_edges)
     
     /* Encode all edges to CBOR */
     for (size_t i = 0; i < n_edges; i++) {
-        size_t edge_size = MAX_CBOR_SIZE - offset;
+        size_t cbor_edge_size = MAX_CBOR_SIZE - offset;
+        const void *edge = (const char *)edges + (i * edge_size);
         
-        if (gm_edge_encode_cbor(&edges[i], cbor_buffer + offset, &edge_size) != GM_OK) {
+        if (encoder(edge, cbor_buffer + offset, &cbor_edge_size) != GM_OK) {
             goto cleanup;
         }
         
-        offset += edge_size;
+        offset += cbor_edge_size;
         
         /* Check buffer overflow */
-        if (offset > MAX_CBOR_SIZE - 512) {
+        if (offset > MAX_CBOR_SIZE - CBOR_OVERFLOW_MARGIN) {
             /* Would overflow on next edge, commit this batch */
             if (create_journal_commit(&jctx, cbor_buffer, offset, &commit_oid) != GM_OK) {
                 goto cleanup;
@@ -190,6 +197,27 @@ int gm_journal_append(gm_context_t *ctx, const gm_edge_t *edges, size_t n_edges)
 cleanup:
     free(cbor_buffer);
     return result;
+}
+
+/* Wrapper for regular edge encoder */
+static int edge_encoder_wrapper(const void *edge, uint8_t *buffer, size_t *len) {
+    return gm_edge_encode_cbor((const gm_edge_t *)edge, buffer, len);
+}
+
+/* Wrapper for attributed edge encoder */
+static int edge_attributed_encoder_wrapper(const void *edge, uint8_t *buffer, size_t *len) {
+    return gm_edge_attributed_encode_cbor((const gm_edge_attributed_t *)edge, buffer, len);
+}
+
+/* Append edges to journal */
+int gm_journal_append(gm_context_t *ctx, const gm_edge_t *edges, size_t n_edges) {
+    return journal_append_generic(ctx, edges, n_edges, sizeof(gm_edge_t), edge_encoder_wrapper);
+}
+
+/* Append attributed edges to journal */
+int gm_journal_append_attributed(gm_context_t *ctx, const gm_edge_attributed_t *edges, size_t n_edges) {
+    return journal_append_generic(ctx, edges, n_edges, sizeof(gm_edge_attributed_t), 
+                                 edge_attributed_encoder_wrapper);
 }
 
 /* Public wrapper for hooks to create commits */

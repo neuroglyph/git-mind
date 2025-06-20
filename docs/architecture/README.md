@@ -13,7 +13,7 @@ The foundation for human-AI collaboration. Tracks who created each edge (human o
 - [Integration Guide](attribution-integration-guide.md) - How to add attribution to existing code
 - [Use Cases](attribution-use-cases.md) - Real-world collaboration scenarios
 
-### [Journal System](journal-system.md)
+### [Journal System](journal-architecture-pivot.md)
 Git-native storage using commits as the source of truth for semantic edges.
 
 ### [Bitmap Cache](bitmap-cache-design.md)

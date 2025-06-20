@@ -32,14 +32,81 @@ static int add_file_to_tree(git_repository* repo, git_treebuilder* builder,
     return rc < 0 ? GM_ERROR : GM_OK;
 }
 
+/* Process a single file system entry */
+static int process_fs_entry(git_repository* repo, git_treebuilder* dir_builder,
+                           const char* dir_path, const char* entry_name,
+                           const char* rel_path) {
+    char full_path[GM_PATH_MAX * 2];
+    char entry_rel_path[GM_PATH_MAX * 2];
+    struct stat st;
+    int rc;
+    
+    /* Skip . and .. */
+    if (strcmp(entry_name, ".") == 0 || strcmp(entry_name, "..") == 0) {
+        return GM_OK;
+    }
+    
+    /* Build full path */
+    snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry_name);
+    
+    /* Get file info - use lstat to avoid following symlinks */
+    if (lstat(full_path, &st) < 0) {
+        return GM_OK;  /* File disappeared or no access - skip silently */
+    }
+    
+    if (S_ISDIR(st.st_mode)) {
+        /* Build relative path for subdirectory */
+        if (rel_path) {
+            snprintf(entry_rel_path, sizeof(entry_rel_path), "%s/%s", rel_path, entry_name);
+        } else {
+            strncpy(entry_rel_path, entry_name, sizeof(entry_rel_path) - 1);
+            entry_rel_path[sizeof(entry_rel_path) - 1] = '\0';
+        }
+        rc = add_directory_to_tree(repo, dir_builder, full_path, entry_rel_path);
+        return (rc == GM_NOT_FOUND) ? GM_OK : rc;
+    }
+    
+    if (S_ISREG(st.st_mode)) {
+        rc = add_file_to_tree(repo, dir_builder, full_path, entry_name);
+        return (rc == GM_NOT_FOUND) ? GM_OK : rc;
+    }
+    
+    /* Skip other file types (symlinks, devices, etc.) */
+    return GM_OK;
+}
+
+/* Add directory tree to parent */
+static int add_tree_to_parent(git_treebuilder* dir_builder,
+                             git_treebuilder* parent_builder, const char* dir_path) {
+    git_oid tree_oid;
+    int rc;
+    
+    /* Write this directory's tree */
+    rc = git_treebuilder_write(&tree_oid, dir_builder);
+    if (rc < 0) {
+        return GM_ERROR;
+    }
+    
+    if (parent_builder) {
+        /* Add this tree to parent */
+        const char* dirname = strrchr(dir_path, '/');
+        dirname = dirname ? dirname + 1 : dir_path;
+        rc = git_treebuilder_insert(NULL, parent_builder, dirname,
+                                   &tree_oid, GIT_FILEMODE_TREE);
+        if (rc < 0) {
+            return GM_ERROR;
+        }
+    }
+    
+    return GM_OK;
+}
+
 /* Recursively add directory contents to tree */
 static int add_directory_to_tree(git_repository* repo, git_treebuilder* parent_builder,
                                 const char* dir_path, const char* rel_path) {
     DIR* dir;
     struct dirent* entry;
-    char full_path[GM_PATH_MAX * 2];  /* Extra space for concatenation */
-    char entry_name[GM_PATH_MAX * 2];  /* Extra space for path building */
-    struct stat st;
+    git_treebuilder* dir_builder = NULL;
     int rc = GM_OK;
     
     dir = opendir(dir_path);
@@ -48,7 +115,6 @@ static int add_directory_to_tree(git_repository* repo, git_treebuilder* parent_b
     }
     
     /* Create tree builder for this directory */
-    git_treebuilder* dir_builder = NULL;
     rc = git_treebuilder_new(&dir_builder, repo, NULL);
     if (rc < 0) {
         closedir(dir);
@@ -56,58 +122,86 @@ static int add_directory_to_tree(git_repository* repo, git_treebuilder* parent_b
     }
     
     /* Process directory entries */
-    while ((entry = readdir(dir)) != NULL) {
-        /* Skip . and .. */
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-            continue;
-        }
-        
-        /* Build full path */
-        snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry->d_name);
-        
-        /* Get file info */
-        if (stat(full_path, &st) < 0) {
-            continue;
-        }
-        
-        if (S_ISDIR(st.st_mode)) {
-            /* Subdirectory - recurse */
-            if (rel_path) {
-                snprintf(entry_name, sizeof(entry_name), "%s/%s", rel_path, entry->d_name);
-            } else {
-                strncpy(entry_name, entry->d_name, sizeof(entry_name) - 1);
-                entry_name[sizeof(entry_name) - 1] = '\0';
-            }
-            rc = add_directory_to_tree(repo, dir_builder, full_path, entry_name);
-            if (rc != GM_OK) {
-                break;
-            }
-        } else if (S_ISREG(st.st_mode)) {
-            /* Regular file - add as blob */
-            rc = add_file_to_tree(repo, dir_builder, full_path, entry->d_name);
-            if (rc != GM_OK) {
-                break;
-            }
-        }
+    while ((entry = readdir(dir)) != NULL && rc == GM_OK) {
+        rc = process_fs_entry(repo, dir_builder, dir_path, entry->d_name, rel_path);
     }
     
     closedir(dir);
     
-    /* Write this directory's tree */
+    /* Add tree to parent if successful */
     if (rc == GM_OK) {
-        git_oid tree_oid;
-        rc = git_treebuilder_write(&tree_oid, dir_builder);
-        if (rc == 0 && parent_builder) {
-            /* Add this tree to parent */
-            const char* dirname = strrchr(dir_path, '/');
-            dirname = dirname ? dirname + 1 : dir_path;
-            rc = git_treebuilder_insert(NULL, parent_builder, dirname,
-                                       &tree_oid, GIT_FILEMODE_TREE);
-        }
+        rc = add_tree_to_parent(dir_builder, parent_builder, dir_path);
     }
     
     git_treebuilder_free(dir_builder);
-    return rc < 0 ? GM_ERROR : rc;
+    return rc;
+}
+
+/* Process a single directory entry */
+static int process_directory_entry(git_repository* repo, git_treebuilder* parent_builder,
+                                  const char* dir_path, const char* entry_name) {
+    char full_path[GM_PATH_MAX * 2];
+    struct stat st;
+    int rc;
+    
+    /* Skip special entries */
+    if (strcmp(entry_name, ".") == 0 || strcmp(entry_name, "..") == 0) {
+        return GM_OK;
+    }
+    
+    /* Build full path */
+    snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry_name);
+    
+    /* Check if path exists and is directory */
+    if (lstat(full_path, &st) < 0) {
+        return GM_OK;  /* File disappeared - skip silently */
+    }
+    
+    if (!S_ISDIR(st.st_mode)) {
+        return GM_OK;  /* Skip non-directories for cache tree */
+    }
+    
+    /* Build subtree */
+    git_oid subtree_oid;
+    git_treebuilder* sub_builder = NULL;
+    
+    rc = git_treebuilder_new(&sub_builder, repo, NULL);
+    if (rc < 0) {
+        return GM_ERROR;
+    }
+    
+    rc = add_directory_to_tree(repo, sub_builder, full_path, NULL);
+    if (rc == GM_OK) {
+        rc = git_treebuilder_write(&subtree_oid, sub_builder);
+        if (rc == 0) {
+            rc = git_treebuilder_insert(NULL, parent_builder, entry_name,
+                                       &subtree_oid, GIT_FILEMODE_TREE);
+        }
+    } else if (rc == GM_NOT_FOUND) {
+        rc = GM_OK;  /* Directory disappeared - not fatal */
+    }
+    
+    git_treebuilder_free(sub_builder);
+    return rc < 0 ? GM_ERROR : GM_OK;
+}
+
+/* Build directory tree */
+static int build_directory_tree(git_repository* repo, git_treebuilder* builder,
+                               const char* dir_path) {
+    DIR* dir = opendir(dir_path);
+    if (!dir) {
+        return GM_IO_ERROR;
+    }
+    
+    struct dirent* entry;
+    int rc = GM_OK;
+    
+    while ((entry = readdir(dir)) != NULL && rc == GM_OK) {
+        rc = process_directory_entry(repo, builder, dir_path, entry->d_name);
+    }
+    
+    closedir(dir);
+    return rc;
 }
 
 /* Build Git tree from temp directory */
@@ -122,69 +216,17 @@ int gm_build_tree_from_directory(git_repository* repo, const char* dir_path,
         return GM_ERROR;
     }
     
-    /* Add directory contents */
-    rc = add_directory_to_tree(repo, NULL, dir_path, NULL);
-    if (rc != GM_OK) {
-        git_treebuilder_free(root_builder);
-        return rc;
-    }
+    /* Build directory tree */
+    rc = build_directory_tree(repo, root_builder, dir_path);
     
-    /* Get the final tree OID */
-    /* Note: Since we built the tree in the recursive call, we need to
-       rebuild from scratch to get the proper tree */
-    git_treebuilder_free(root_builder);
-    
-    /* Simpler approach: create tree directly from directory */
-    rc = git_treebuilder_new(&root_builder, repo, NULL);
-    if (rc < 0) return GM_ERROR;
-    
-    /* Process top-level entries */
-    DIR* dir = opendir(dir_path);
-    if (!dir) {
-        git_treebuilder_free(root_builder);
-        return GM_IO_ERROR;
-    }
-    
-    struct dirent* entry;
-    while ((entry = readdir(dir)) != NULL) {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-            continue;
-        }
-        
-        char full_path[GM_PATH_MAX * 2];
-        snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry->d_name);
-        
-        struct stat st;
-        if (stat(full_path, &st) < 0) continue;
-        
-        if (S_ISDIR(st.st_mode)) {
-            /* Build subtree */
-            git_oid subtree_oid;
-            git_treebuilder* sub_builder = NULL;
-            
-            rc = git_treebuilder_new(&sub_builder, repo, NULL);
-            if (rc < 0) break;
-            
-            rc = add_directory_to_tree(repo, sub_builder, full_path, NULL);
-            if (rc == GM_OK) {
-                rc = git_treebuilder_write(&subtree_oid, sub_builder);
-                if (rc == 0) {
-                    rc = git_treebuilder_insert(NULL, root_builder, entry->d_name,
-                                               &subtree_oid, GIT_FILEMODE_TREE);
-                }
-            }
-            git_treebuilder_free(sub_builder);
-            if (rc < 0) break;
-        }
-    }
-    
-    closedir(dir);
-    
-    /* Write root tree */
-    if (rc >= 0) {
+    /* Write root tree if successful */
+    if (rc == GM_OK) {
         rc = git_treebuilder_write(tree_oid, root_builder);
+        if (rc < 0) {
+            rc = GM_ERROR;
+        }
     }
     
     git_treebuilder_free(root_builder);
-    return rc < 0 ? GM_ERROR : GM_OK;
+    return rc;
 }

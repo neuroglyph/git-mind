@@ -2,6 +2,7 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind.h"
+#include "gitmind/constants_internal.h"
 #include <git2.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,16 +21,16 @@ void gm_log_default(int level, const char *fmt, ...);
 
 /* SAFETY: Prevent running in development repo */
 static void safety_check(void) {
-    char cwd[1024];
+    char cwd[BUFFER_SIZE_SMALL];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
         return;
     }
     
     /* Check for known dangerous paths */
     const char *dangerous[] = {
-        "/git-mind",
-        "/git-mind/",
-        "neuroglyph/git-mind",
+        "/" SAFETY_PATTERN_GITMIND,
+        "/" SAFETY_PATTERN_GITMIND "/",
+        REMOTE_PATTERN_NEUROGLYPH,
         NULL
     };
     
@@ -53,24 +54,24 @@ static void safety_check(void) {
             fprintf(stderr, "\n");
             fprintf(stderr, "Remember: NEVER run git operations in the working repository!\n");
             fprintf(stderr, "\n");
-            exit(42);  /* Special exit code for safety violation */
+            exit(EXIT_SAFETY_VIOLATION);  /* Special exit code for safety violation */
         }
     }
     
     /* Also check for .git/config containing git-mind */
     FILE *f = fopen(".git/config", "r");
     if (f) {
-        char line[256];
+        char line[BUFFER_SIZE_TINY];
         while (fgets(line, sizeof(line), f)) {
-            if (strstr(line, "neuroglyph/git-mind") || 
-                strstr(line, "url = git@github.com:.*git-mind") ||
-                strstr(line, "url = https://github.com/.*git-mind")) {
+            if (strstr(line, REMOTE_PATTERN_NEUROGLYPH) || 
+                strstr(line, REMOTE_PATTERN_GITMIND_GIT) ||
+                strstr(line, REMOTE_PATTERN_GITMIND)) {
                 fclose(f);
                 fprintf(stderr, "\n");
                 fprintf(stderr, "🚨 SAFETY: Detected git-mind development repo! 🚨\n");
                 fprintf(stderr, "Use 'make test' instead.\n");
                 fprintf(stderr, "\n");
-                exit(42);
+                exit(EXIT_SAFETY_VIOLATION);
             }
         }
         fclose(f);
@@ -79,7 +80,10 @@ static void safety_check(void) {
 
 /* Print usage */
 static void print_usage(const char *prog) {
-    printf("Usage: %s <command> [args...]\n", prog);
+    printf("Usage: %s [--verbose] [--porcelain] <command> [args...]\n", prog);
+    printf("\nGlobal options:\n");
+    printf("  --verbose      Show verbose output\n");
+    printf("  --porcelain    Machine-readable output\n");
     printf("\nCommands:\n");
     printf("  link <source> <target> [--type <type>]  Create a link between files\n");
     printf("  list [<path>] [--branch <branch>]       List links\n");
@@ -92,8 +96,36 @@ static void print_usage(const char *prog) {
     printf("  augments      Source augments/updates target\n");
 }
 
+/* Parse global flags */
+static int parse_global_flags(int *argc, char ***argv, 
+                             gm_output_level_t *level, 
+                             gm_output_format_t *format) {
+    int i = 1;
+    int new_argc = 1;
+    
+    *level = GM_OUTPUT_NORMAL;
+    *format = GM_OUTPUT_HUMAN;
+    
+    while (i < *argc) {
+        if (strcmp((*argv)[i], "--verbose") == 0) {
+            *level = GM_OUTPUT_VERBOSE;
+            i++;
+        } else if (strcmp((*argv)[i], "--porcelain") == 0) {
+            *format = GM_OUTPUT_PORCELAIN;
+            i++;
+        } else {
+            /* Not a global flag, keep it */
+            (*argv)[new_argc++] = (*argv)[i++];
+        }
+    }
+    
+    *argc = new_argc;
+    return GM_OK;
+}
+
 /* Initialize context with libgit2 */
-static int init_context(gm_context_t *ctx) {
+static int init_context(gm_context_t *ctx, gm_output_level_t level, 
+                       gm_output_format_t format) {
     git_repository *repo = NULL;
     int error;
     
@@ -116,11 +148,21 @@ static int init_context(gm_context_t *ctx) {
     ctx->git_repo = repo;
     ctx->log_fn = gm_log_default;
     
+    /* Create output context */
+    ctx->output = gm_output_create(level, format);
+    if (!ctx->output) {
+        git_repository_free(repo);
+        return GM_NO_MEMORY;
+    }
+    
     return GM_OK;
 }
 
 /* Cleanup context */
 static void cleanup_context(gm_context_t *ctx) {
+    if (ctx->output) {
+        gm_output_destroy(ctx->output);
+    }
     if (ctx->git_repo) {
         git_repository_free((git_repository *)ctx->git_repo);
     }
@@ -130,20 +172,25 @@ static void cleanup_context(gm_context_t *ctx) {
 /* Main entry point */
 int main(int argc, char **argv) {
     gm_context_t ctx;
+    gm_output_level_t output_level;
+    gm_output_format_t output_format;
     int result;
     
     /* SAFETY FIRST! */
     safety_check();
     
+    /* Parse global flags */
+    parse_global_flags(&argc, &argv, &output_level, &output_format);
+    
     if (argc < 2) {
         print_usage(argv[0]);
-        return 1;
+        return EXIT_FAILURE;
     }
     
     /* Initialize context */
-    result = init_context(&ctx);
+    result = init_context(&ctx, output_level, output_format);
     if (result != GM_OK) {
-        return 1;
+        return EXIT_FAILURE;
     }
     
     /* Dispatch command */
@@ -168,5 +215,5 @@ int main(int argc, char **argv) {
     /* Cleanup */
     cleanup_context(&ctx);
     
-    return (result == GM_OK) ? 0 : 1;
+    return (result == GM_OK) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

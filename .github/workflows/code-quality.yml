@@ -1,0 +1,70 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: write  # Needed if commenting on PRs
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format clang-tidy cppcheck
+        
+    - name: Run clang-format
+      run: |
+        find src -name "*.c" -o -name "*.h" | xargs clang-format --dry-run --Werror
+        
+    - name: Run clang-tidy
+      run: |
+        find src -name "*.c" | xargs clang-tidy -- -I./include
+        
+    - name: Run cppcheck
+      run: |
+        cppcheck --enable=all --error-exitcode=1 \
+          --suppress=missingIncludeSystem \
+          --suppress=unusedFunction \
+          -I./include \
+          src/
+          
+    - name: Check function length
+      run: ./tools/code-quality/check-function-length.sh
+      
+    - name: Check magic values
+      run: ./tools/code-quality/check-magic-values.sh
+      
+    - name: Check output control
+      run: ./tools/code-quality/check-output-control.sh
+      
+    - name: Check dependency injection
+      run: ./tools/code-quality/check-dependency-injection.sh
+      
+    - name: Check test quality
+      run: ./tools/code-quality/check-test-quality.sh
+
+  complexity:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install lizard
+      run: pip install lizard
+      
+    - name: Check cyclomatic complexity
+      run: |
+        lizard src/ -C 10 -L 15 -a 3 || exit 1
+        # -C 10: max cyclomatic complexity
+        # -L 15: max lines per function  
+        # -a 3: max arguments per function

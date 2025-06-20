@@ -2,8 +2,12 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind.h"
+#include "gitmind/constants_internal.h"
 #include <stdio.h>
 #include <stdarg.h>
+
+/* Log level constants */
+#define LOG_LEVEL_ERROR_ONLY 0
 
 /* Error messages */
 static const char *error_messages[] = {
@@ -32,7 +36,7 @@ void gm_log_default(int level, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
     
-    if (level > 0) {  /* Only log errors by default */
+    if (level > LOG_LEVEL_ERROR_ONLY) {  /* Only log errors by default */
         vfprintf(stderr, fmt, args);
         fprintf(stderr, "\n");
     }

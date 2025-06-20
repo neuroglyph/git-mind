@@ -72,19 +72,104 @@ typedef struct {
 } gm_edge_attributed_t;
 
 /* Attribution functions */
+
+/**
+ * Set default attribution based on source type.
+ * 
+ * @param attr Attribution structure to initialize
+ * @param source Source type (human, AI, etc.)
+ * @return GM_OK on success
+ */
 int gm_attribution_set_default(gm_attribution_t *attr, gm_source_type_t source);
+
+/**
+ * Read attribution from environment variables.
+ * 
+ * Reads GIT_MIND_SOURCE, GIT_MIND_AUTHOR, GIT_MIND_SESSION.
+ * 
+ * @param attr Attribution structure to populate
+ * @return GM_OK on success, GM_NOT_FOUND if no env vars
+ */
 int gm_attribution_from_env(gm_attribution_t *attr);
+
+/**
+ * Encode attribution to binary format.
+ * 
+ * @param attr Attribution to encode
+ * @param buffer Output buffer
+ * @param len In: buffer size, Out: bytes written
+ * @return GM_OK on success
+ */
 int gm_attribution_encode(const gm_attribution_t *attr, uint8_t *buffer, size_t *len);
+
+/**
+ * Decode attribution from binary format.
+ * 
+ * @param buffer Binary data
+ * @param len Buffer length
+ * @param attr Output attribution
+ * @return GM_OK on success
+ */
 int gm_attribution_decode(const uint8_t *buffer, size_t len, gm_attribution_t *attr);
 
 /* Filter functions */
+
+/**
+ * Initialize filter with default settings (show all).
+ * 
+ * @param filter Filter to initialize
+ * @return GM_OK on success
+ */
 int gm_filter_init_default(gm_filter_t *filter);
+
+/**
+ * Initialize filter to show human edges only.
+ * 
+ * @param filter Filter to initialize
+ * @return GM_OK on success
+ */
 int gm_filter_init_human_only(gm_filter_t *filter);
+
+/**
+ * Initialize filter for AI insights above confidence threshold.
+ * 
+ * @param filter Filter to initialize
+ * @param min_confidence Minimum confidence (0.0 to 1.0)
+ * @return GM_OK on success
+ */
 int gm_filter_init_ai_insights(gm_filter_t *filter, float min_confidence);
+
+/**
+ * Check if edge matches filter criteria.
+ * 
+ * @param filter Filter to apply
+ * @param edge Edge to test
+ * @return 1 if matches, 0 if filtered out
+ */
 int gm_filter_match(const gm_filter_t *filter, const gm_edge_attributed_t *edge);
 
 /* Extended edge functions */
+
+/**
+ * Encode attributed edge to CBOR format.
+ * 
+ * Includes all attribution metadata in CBOR.
+ * 
+ * @param edge Edge to encode
+ * @param buffer Output buffer
+ * @param len In: buffer size, Out: bytes written
+ * @return GM_OK on success
+ */
 int gm_edge_attributed_encode_cbor(const gm_edge_attributed_t *edge, uint8_t *buffer, size_t *len);
+
+/**
+ * Decode attributed edge from CBOR format.
+ * 
+ * @param buffer CBOR data
+ * @param len Buffer length
+ * @param edge Output edge
+ * @return GM_OK on success
+ */
 int gm_edge_attributed_decode_cbor(const uint8_t *buffer, size_t len, gm_edge_attributed_t *edge);
 
 #endif /* GITMIND_ATTRIBUTION_H */

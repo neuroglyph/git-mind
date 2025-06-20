@@ -58,8 +58,8 @@ $ git mind list
 `--type <relationship>`
 : Filter by relationship type (implements, tests, etc.)
 
-`--confidence <min>`
-: Show only edges with confidence >= threshold
+`--min-confidence <min>`
+: Show only edges with confidence >= threshold (0.0-1.0)
 
 ### Display Options
 
@@ -76,8 +76,8 @@ $ git mind list
 `--show-augments`
 : Include AUGMENTS evolution edges
 
-`--no-follow-augments`
-: Don't follow AUGMENTS chains (show historical links)
+`--show-attribution`
+: Display attribution information for all edges
 
 ### Time Travel Options
 
@@ -140,9 +140,41 @@ tests/integration/test_flow.c ──tests──> src/flow.c
 
 Find uncertain connections:
 ```bash
-$ git mind list --confidence 0.8 --format human
-src/heuristic.c ──implements──> papers/fuzzy-logic.pdf (confidence: 0.7)
-src/ml-model.c ──inspires──> research/neural-arch.md (confidence: 0.5)
+$ git mind list --min-confidence 0.8
+src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.85]
+src/parser.c ──implements──> specs/grammar.md [gpt: gpt4@openai, conf: 0.92]
+```
+
+### Attribution Filtering
+
+Show only human-created edges:
+```bash
+$ git mind list --source human
+README.md ──documents──> src/main.c
+src/auth.c ──implements──> docs/auth-design.md
+tests/test_auth.c ──tests──> src/auth.c
+```
+
+Show only AI-suggested edges:
+```bash
+$ git mind list --source ai
+src/parser.c ──depends_on──> lib/lexer.h [claude: claude@anthropic, conf: 0.78]
+src/crypto.c ──references──> papers/aes.pdf [gpt: gpt4@openai, conf: 0.91]
+```
+
+Show attribution for all edges:
+```bash
+$ git mind list --show-attribution
+README.md ──documents──> src/main.c [human: user@example.com]
+src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.85]
+src/test.c ──tests──> src/main.c [human: developer@team.com]
+```
+
+High-confidence AI insights only:
+```bash
+$ git mind list --source ai --min-confidence 0.9
+src/crypto.c ──references──> papers/aes.pdf [gpt: gpt4@openai, conf: 0.91]
+src/algorithm.c ──implements──> papers/dijkstra.pdf [claude: claude@anthropic, conf: 0.95]
 ```
 
 ### Time Travel Queries

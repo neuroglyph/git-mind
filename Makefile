@@ -30,7 +30,7 @@ help:
 .PHONY: dev
 dev:
 	@echo "🐳 Starting development environment..."
-	@DOCKER_BUILDKIT=1 docker compose run --rm dev bash
+	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm dev bash
 
 # Special case: shell is an alias for dev
 .PHONY: shell
@@ -47,7 +47,7 @@ clean:
 .PHONY: build
 build:
 	@echo "🔨 Building git-mind..."
-	@DOCKER_BUILDKIT=1 docker compose run --rm -T dev make -C src
+	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev make -C src
 	@echo "✅ Built git-mind successfully!"
 	@echo "Binary is available inside Docker at /workspace/build/bin/git-mind"
 
@@ -55,7 +55,7 @@ build:
 .PHONY: test
 test:
 	@echo "🧪 Running tests in Docker (SAFE)..."
-	@DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
+	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
 	@echo "✅ Tests completed!"
 
 # Run tests EXACTLY like GitHub Actions CI
@@ -63,17 +63,55 @@ test:
 test-ci:
 	@echo "🧪 Running CI simulation (EXACTLY like GitHub Actions)..."
 	@echo "Building Docker image..."
-	@DOCKER_BUILDKIT=1 docker compose build
+	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose build
 	@echo "Running tests in container (no nested Docker)..."
-	@DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
+	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
 	@echo "✅ CI simulation completed!"
 
 # Run E2E tests
 .PHONY: test-e2e
 test-e2e:
 	@echo "🧪 Running E2E tests in Docker..."
-	@DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && cd tests/e2e && ./run_all_tests.sh"
+	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && cd tests/e2e && ./run_all_tests.sh"
+
+# Code quality checks
+.PHONY: lint
+lint:
+	@echo "🔍 Running code quality checks..."
+	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "cd /workspace && ./tools/code-quality/lint.sh"
+
+.PHONY: check-quality
+check-quality:
+	@echo "🔍 Running all quality checks (v2 - using standard tools)..."
+	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "cd /workspace && chmod +x ./tools/code-quality/*.sh && ./tools/code-quality/run-all-checks-v2.sh"
+
+.PHONY: check-quality-legacy
+check-quality-legacy:
+	@echo "🔍 Running legacy custom checks..."
+	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "cd /workspace && ./tools/code-quality/run-all-checks.sh"
+
+.PHONY: format
+format:
+	@echo "🎨 Formatting code with clang-format..."
+	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "find /workspace/src -name '*.c' -o -name '*.h' | xargs clang-format -i"
+	@echo "✅ Code formatted!"
+
+.PHONY: fix-tech-debt
+fix-tech-debt:
+	@echo "📋 Technical Debt Task List:"
+	@echo ""
+	@cat TECH_DEBT_TASKLIST.md | head -50
+	@echo ""
+	@echo "... (see TECH_DEBT_TASKLIST.md for full list)"
+
+# Install git hooks
+.PHONY: install-hooks
+install-hooks:
+	@echo "🪝 Installing git hooks..."
+	@git config core.hooksPath .githooks
+	@chmod +x .githooks/*
+	@echo "✅ Git hooks installed!"
 
 # Everything else gets forwarded to Docker
 %:
-	@DOCKER_BUILDKIT=1 docker compose run --rm dev make -f Makefile.docker $@
+	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm dev make -f Makefile.docker $@

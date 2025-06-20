@@ -1,0 +1,30 @@
+#!/bin/bash
+# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0
+# © 2025 J. Kirby Ross / Neuroglyph Collective
+
+# Pre-push hook - run tests before pushing
+
+echo "🚀 Running pre-push checks..."
+
+# Ensure Docker image is built with optimizations
+export COMPOSE_BAKE=true
+export DOCKER_BUILDKIT=1
+
+# Run quick quality checks
+echo "📋 Running quick quality checks..."
+if ! make check-quality; then
+    echo "❌ Quality checks failed!"
+    echo "Fix issues before pushing."
+    exit 1
+fi
+
+# Run tests
+echo "🧪 Running tests..."
+if ! make test; then
+    echo "❌ Tests failed!"
+    echo "All tests must pass before pushing."
+    exit 1
+fi
+
+echo "✅ All pre-push checks passed!"
+echo "Pushing to remote..."

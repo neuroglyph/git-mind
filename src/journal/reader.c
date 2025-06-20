@@ -2,6 +2,8 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind.h"
+#include "gitmind/constants_internal.h"
+#include "gitmind/constants_cbor.h"
 #include <git2.h>
 #include <stdio.h>
 #include <string.h>
@@ -9,18 +11,100 @@
 
 /* Constants */
 #define REFS_GITMIND_PREFIX "refs/gitmind/edges/"
+#define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
 
-/* Reader context */
+/* Forward declarations */
+int gm_edge_decode_cbor_ex(const uint8_t *buffer, size_t len, gm_edge_t *edge, size_t *consumed);
+int gm_edge_attributed_decode_cbor_ex(const uint8_t *buffer, size_t len, 
+                                     gm_edge_attributed_t *edge, size_t *consumed);
+
+/* Generic reader context */
 typedef struct {
     gm_context_t *gm_ctx;
     git_repository *repo;
-    int (*edge_callback)(const gm_edge_t *edge, void *userdata);
+    void *callback;
     void *userdata;
     int error;
+    int is_attributed;
 } reader_ctx_t;
 
-/* Process a single commit */
-static int process_commit(git_commit *commit, reader_ctx_t *rctx) {
+/* Convert legacy edge to attributed edge */
+static void convert_legacy_to_attributed(const gm_edge_t *legacy, gm_edge_attributed_t *attributed) {
+    /* Copy basic fields */
+    memcpy(attributed->src_sha, legacy->src_sha, SHA_BYTES_SIZE);
+    memcpy(attributed->tgt_sha, legacy->tgt_sha, SHA_BYTES_SIZE);
+    attributed->rel_type = legacy->rel_type;
+    attributed->confidence = legacy->confidence;
+    attributed->timestamp = legacy->timestamp;
+    
+    /* Safe string copies */
+    size_t src_len = strlen(legacy->src_path);
+    if (src_len >= sizeof(attributed->src_path)) src_len = sizeof(attributed->src_path) - 1;
+    memcpy(attributed->src_path, legacy->src_path, src_len);
+    attributed->src_path[src_len] = '\0';
+    
+    size_t tgt_len = strlen(legacy->tgt_path);
+    if (tgt_len >= sizeof(attributed->tgt_path)) tgt_len = sizeof(attributed->tgt_path) - 1;
+    memcpy(attributed->tgt_path, legacy->tgt_path, tgt_len);
+    attributed->tgt_path[tgt_len] = '\0';
+    
+    size_t ulid_len = strlen(legacy->ulid);
+    if (ulid_len >= sizeof(attributed->ulid)) ulid_len = sizeof(attributed->ulid) - 1;
+    memcpy(attributed->ulid, legacy->ulid, ulid_len);
+    attributed->ulid[ulid_len] = '\0';
+    
+    /* Set default attribution */
+    attributed->attribution.source_type = GM_SOURCE_HUMAN;
+    attributed->attribution.author[0] = '\0';
+    attributed->attribution.session_id[0] = '\0';
+    attributed->attribution.flags = 0;
+    attributed->lane = GM_LANE_DEFAULT;
+}
+
+/* Process attributed edge from CBOR */
+static int process_attributed_edge(const uint8_t *cbor_data, size_t remaining,
+                                  reader_ctx_t *rctx, size_t *consumed) {
+    gm_edge_attributed_t edge;
+    memset(&edge, 0, sizeof(edge));
+    
+    /* Try to decode an attributed edge */
+    int decode_result = gm_edge_attributed_decode_cbor_ex(cbor_data, remaining, &edge, consumed);
+    if (decode_result != 0 || *consumed == 0) {
+        /* Try legacy format */
+        gm_edge_t legacy_edge;
+        size_t legacy_consumed = 0;
+        
+        decode_result = gm_edge_decode_cbor_ex(cbor_data, remaining, &legacy_edge, &legacy_consumed);
+        if (decode_result != GM_OK || legacy_consumed == 0) {
+            return GM_ERROR;
+        }
+        
+        /* Convert legacy edge to attributed edge */
+        convert_legacy_to_attributed(&legacy_edge, &edge);
+        *consumed = legacy_consumed;
+    }
+    
+    /* Call attributed callback */
+    return ((int (*)(const gm_edge_attributed_t *, void *))rctx->callback)(&edge, rctx->userdata);
+}
+
+/* Process regular edge from CBOR */
+static int process_regular_edge(const uint8_t *cbor_data, size_t remaining,
+                               reader_ctx_t *rctx, size_t *consumed) {
+    gm_edge_t edge;
+    
+    /* Try to decode a regular edge */
+    int decode_result = gm_edge_decode_cbor_ex(cbor_data, remaining, &edge, consumed);
+    if (decode_result != GM_OK || *consumed == 0) {
+        return GM_ERROR;
+    }
+    
+    /* Call regular callback */
+    return ((int (*)(const gm_edge_t *, void *))rctx->callback)(&edge, rctx->userdata);
+}
+
+/* Process a single commit - generic version */
+static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
     const char *raw_message;
     const uint8_t *cbor_data;
     size_t offset = 0;
@@ -32,48 +116,37 @@ static int process_commit(git_commit *commit, reader_ctx_t *rctx) {
         return GM_ERROR;
     }
     
-    /* The raw message IS the CBOR data directly.
-     * git_commit_message_raw() returns just the message part,
-     * not the full commit object. */
     cbor_data = (const uint8_t *)raw_message;
-    
-    /* For binary data, we can't use strlen. We need the actual size.
-     * Unfortunately libgit2 doesn't provide a way to get raw message length.
-     * We'll have to parse the CBOR data until we can't parse anymore. */
-    message_len = 8192;  /* MAX_CBOR_SIZE from writer.c */
-    
-    /* Forward declaration of extended decoder */
-    int gm_edge_decode_cbor_ex(const uint8_t *buffer, size_t len, gm_edge_t *edge, size_t *consumed);
+    message_len = MAX_CBOR_SIZE;
     
     /* Decode edges from CBOR */
     while (offset < message_len) {
-        gm_edge_t edge;
         size_t remaining = message_len - offset;
         size_t consumed = 0;
+        int cb_result;
         
-        /* Try to decode an edge */
-        int decode_result = gm_edge_decode_cbor_ex(cbor_data + offset, remaining, &edge, &consumed);
-        if (decode_result != GM_OK || consumed == 0) {
-            /* End of valid CBOR data */
-            break;
+        if (rctx->is_attributed) {
+            cb_result = process_attributed_edge(cbor_data + offset, remaining, rctx, &consumed);
+        } else {
+            cb_result = process_regular_edge(cbor_data + offset, remaining, rctx, &consumed);
         }
         
-        /* Call user callback */
-        int cb_result = rctx->edge_callback(&edge, rctx->userdata);
+        if (cb_result == GM_ERROR) {
+            break;  /* No more edges to decode */
+        }
+        
         if (cb_result != 0) {
-            /* User wants to stop */
-            return cb_result;
+            return cb_result;  /* Callback requested stop */
         }
         
-        /* Move to next edge */
         offset += consumed;
     }
     
     return GM_OK;
 }
 
-/* Walk journal commits */
-static int walk_journal(reader_ctx_t *rctx, const char *ref_name) {
+/* Walk journal commits - generic version */
+static int walk_journal_generic(reader_ctx_t *rctx, const char *ref_name) {
     git_revwalk *walker = NULL;
     git_oid oid;
     int error;
@@ -107,7 +180,7 @@ static int walk_journal(reader_ctx_t *rctx, const char *ref_name) {
         }
         
         /* Process commit */
-        int result = process_commit(commit, rctx);
+        int result = process_commit_generic(commit, rctx);
         git_commit_free(commit);
         
         if (result != GM_OK) {
@@ -127,13 +200,12 @@ static int walk_journal(reader_ctx_t *rctx, const char *ref_name) {
     return GM_OK;
 }
 
-/* Read journal for a branch */
-int gm_journal_read(gm_context_t *ctx, const char *branch,
-                    int (*callback)(const gm_edge_t *edge, void *userdata),
-                    void *userdata) {
+/* Generic journal read function */
+static int journal_read_generic(gm_context_t *ctx, const char *branch,
+                               void *callback, void *userdata, int is_attributed) {
     reader_ctx_t rctx;
-    char ref_name[256];
-    char current_branch[128];
+    char ref_name[REF_NAME_BUFFER_SIZE];
+    char current_branch[BUFFER_SIZE_TINY];
     
     if (!ctx || !callback) {
         return GM_INVALID_ARG;
@@ -142,9 +214,10 @@ int gm_journal_read(gm_context_t *ctx, const char *branch,
     /* Initialize reader context */
     rctx.gm_ctx = ctx;
     rctx.repo = (git_repository *)ctx->git_repo;
-    rctx.edge_callback = callback;
+    rctx.callback = callback;
     rctx.userdata = userdata;
     rctx.error = GM_OK;
+    rctx.is_attributed = is_attributed;
     
     /* Determine branch */
     if (!branch) {
@@ -172,5 +245,19 @@ int gm_journal_read(gm_context_t *ctx, const char *branch,
     snprintf(ref_name, sizeof(ref_name), "%s%s", REFS_GITMIND_PREFIX, branch);
     
     /* Walk the journal */
-    return walk_journal(&rctx, ref_name);
+    return walk_journal_generic(&rctx, ref_name);
+}
+
+/* Read journal for a branch */
+int gm_journal_read(gm_context_t *ctx, const char *branch,
+                    int (*callback)(const gm_edge_t *edge, void *userdata),
+                    void *userdata) {
+    return journal_read_generic(ctx, branch, callback, userdata, 0);
+}
+
+/* Read attributed journal for a branch */
+int gm_journal_read_attributed(gm_context_t *ctx, const char *branch,
+                              int (*callback)(const gm_edge_attributed_t *edge, void *userdata),
+                              void *userdata) {
+    return journal_read_generic(ctx, branch, callback, userdata, 1);
 }

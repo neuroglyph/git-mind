@@ -13,10 +13,11 @@ INCDIR = ../include
 
 # Source files (organized by module)
 JOURNAL_SRCS = journal/writer.c journal/reader.c
-EDGE_SRCS = edge/cbor.c edge/edge.c edge/cbor_decode_ex.c
+EDGE_SRCS = edge/cbor.c edge/edge.c edge/cbor_decode_ex.c edge/attributed.c
 CACHE_SRCS = cache/bitmap.c cache/builder.c cache/query.c cache/tree_builder.c cache/tree_size.c
-CLI_SRCS = cli/main.c cli/link.c cli/list.c cli/install_hooks.c cli/cache_rebuild.c
-UTIL_SRCS = util/ulid.c util/sha.c util/error.c
+CLI_SRCS = cli/main.c cli/link.c cli/list.c cli/install_hooks.c cli/cache_rebuild.c cli/output.c
+UTIL_SRCS = util/ulid.c util/sha.c util/error.c util/cbor_common.c \
+            util/io_default.c util/time_default.c util/random_default.c
 HOOK_SRCS = hooks/augment.c
 ATTRIBUTION_SRCS = attribution/attribution.c attribution/cbor.c
 
@@ -26,8 +27,8 @@ OBJS = $(patsubst %.c,$(OBJDIR)/%.o,$(ALL_SRCS))
 # Hook objects (separate binary)
 HOOK_OBJS = $(OBJDIR)/hooks/post-commit.o $(OBJDIR)/hooks/augment.o \
             $(OBJDIR)/journal/writer.o $(OBJDIR)/journal/reader.o \
-            $(OBJDIR)/edge/cbor.o $(OBJDIR)/edge/edge.o $(OBJDIR)/edge/cbor_decode_ex.o \
-            $(OBJDIR)/util/ulid.o $(OBJDIR)/util/sha.o $(OBJDIR)/util/error.o \
+            $(OBJDIR)/edge/cbor.o $(OBJDIR)/edge/edge.o $(OBJDIR)/edge/cbor_decode_ex.o $(OBJDIR)/edge/attributed.o \
+            $(OBJDIR)/util/ulid.o $(OBJDIR)/util/sha.o $(OBJDIR)/util/error.o $(OBJDIR)/util/cbor_common.o \
             $(OBJDIR)/attribution/attribution.o $(OBJDIR)/attribution/cbor.o
 
 # Main target

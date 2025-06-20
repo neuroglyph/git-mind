@@ -66,6 +66,7 @@ else
     FAILED=1
 fi
 
+
 # Summary
 echo ""
 echo -e "${BLUE}===================================="
