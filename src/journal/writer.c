@@ -132,8 +132,11 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
     return (error < 0) ? GM_ERROR : GM_OK;
 }
 
-/* Append edges to journal */
-int gm_journal_append(gm_context_t *ctx, const gm_edge_t *edges, size_t n_edges) {
+/* Generic journal append function */
+typedef int (*edge_encoder_fn)(const void *edge, uint8_t *buffer, size_t *len);
+
+static int journal_append_generic(gm_context_t *ctx, const void *edges, size_t n_edges,
+                                 size_t edge_size, edge_encoder_fn encoder) {
     journal_ctx_t jctx;
     char branch[BUFFER_SIZE_TINY];
     uint8_t *cbor_buffer = NULL;
@@ -163,13 +166,14 @@ int gm_journal_append(gm_context_t *ctx, const gm_edge_t *edges, size_t n_edges)
     
     /* Encode all edges to CBOR */
     for (size_t i = 0; i < n_edges; i++) {
-        size_t edge_size = MAX_CBOR_SIZE - offset;
+        size_t cbor_edge_size = MAX_CBOR_SIZE - offset;
+        const void *edge = (const char *)edges + (i * edge_size);
         
-        if (gm_edge_encode_cbor(&edges[i], cbor_buffer + offset, &edge_size) != GM_OK) {
+        if (encoder(edge, cbor_buffer + offset, &cbor_edge_size) != GM_OK) {
             goto cleanup;
         }
         
-        offset += edge_size;
+        offset += cbor_edge_size;
         
         /* Check buffer overflow */
         if (offset > MAX_CBOR_SIZE - CBOR_OVERFLOW_MARGIN) {
@@ -195,67 +199,25 @@ cleanup:
     return result;
 }
 
+/* Wrapper for regular edge encoder */
+static int edge_encoder_wrapper(const void *edge, uint8_t *buffer, size_t *len) {
+    return gm_edge_encode_cbor((const gm_edge_t *)edge, buffer, len);
+}
+
+/* Wrapper for attributed edge encoder */
+static int edge_attributed_encoder_wrapper(const void *edge, uint8_t *buffer, size_t *len) {
+    return gm_edge_attributed_encode_cbor((const gm_edge_attributed_t *)edge, buffer, len);
+}
+
+/* Append edges to journal */
+int gm_journal_append(gm_context_t *ctx, const gm_edge_t *edges, size_t n_edges) {
+    return journal_append_generic(ctx, edges, n_edges, sizeof(gm_edge_t), edge_encoder_wrapper);
+}
+
 /* Append attributed edges to journal */
 int gm_journal_append_attributed(gm_context_t *ctx, const gm_edge_attributed_t *edges, size_t n_edges) {
-    journal_ctx_t jctx;
-    char branch[BUFFER_SIZE_TINY];
-    uint8_t *cbor_buffer = NULL;
-    size_t offset = 0;
-    git_oid commit_oid;
-    int result = GM_ERROR;
-    
-    if (!ctx || !edges || n_edges == 0) {
-        return GM_INVALID_ARG;
-    }
-    
-    /* Get current branch */
-    if (get_current_branch(ctx->git_repo, branch, sizeof(branch)) != GM_OK) {
-        return GM_ERROR;
-    }
-    
-    /* Initialize journal context */
-    if (journal_init(&jctx, ctx, branch) != GM_OK) {
-        return GM_ERROR;
-    }
-    
-    /* Allocate buffer for all edges */
-    cbor_buffer = malloc(MAX_CBOR_SIZE);
-    if (!cbor_buffer) {
-        return GM_NO_MEMORY;
-    }
-    
-    /* Encode all edges to CBOR */
-    for (size_t i = 0; i < n_edges; i++) {
-        size_t edge_size = MAX_CBOR_SIZE - offset;
-        
-        if (gm_edge_attributed_encode_cbor(&edges[i], cbor_buffer + offset, &edge_size) != GM_OK) {
-            goto cleanup;
-        }
-        
-        offset += edge_size;
-        
-        /* Check buffer overflow */
-        if (offset > MAX_CBOR_SIZE - CBOR_OVERFLOW_MARGIN) {
-            /* Would overflow on next edge, commit this batch */
-            if (create_journal_commit(&jctx, cbor_buffer, offset, &commit_oid) != GM_OK) {
-                goto cleanup;
-            }
-            offset = 0;
-        }
-    }
-    
-    /* Commit any remaining edges */
-    if (offset > 0) {
-        if (create_journal_commit(&jctx, cbor_buffer, offset, &commit_oid) != GM_OK) {
-            goto cleanup;
-        }
-    }
-    
-    result = GM_OK;
-    
-cleanup:
-    free(cbor_buffer);
-    return result;
+    return journal_append_generic(ctx, edges, n_edges, sizeof(gm_edge_attributed_t), 
+                                 edge_attributed_encoder_wrapper);
 }
 
 /* Public wrapper for hooks to create commits */

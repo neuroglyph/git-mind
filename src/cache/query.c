@@ -153,13 +153,15 @@ typedef struct {
     gm_edge_t* edges;
     size_t capacity;
     size_t count;
+    int check_source;  /* 1 for fanout (check src), 0 for fanin (check tgt) */
 } journal_scan_state_t;
 
-static int journal_scan_callback(const gm_edge_t* edge, void* userdata) {
+static int journal_scan_callback_generic(const gm_edge_t* edge, void* userdata) {
     journal_scan_state_t* state = (journal_scan_state_t*)userdata;
+    const uint8_t* edge_sha = state->check_source ? edge->src_sha : edge->tgt_sha;
     
     /* Check if this edge matches our query */
-    if (memcmp(edge->src_sha, state->target_sha, GM_SHA1_SIZE) == 0) {
+    if (memcmp(edge_sha, state->target_sha, GM_SHA1_SIZE) == 0) {
         /* Grow array if needed */
         if (state->count >= state->capacity) {
             size_t new_capacity = state->capacity * 2;
@@ -183,9 +185,10 @@ static int journal_scan_callback(const gm_edge_t* edge, void* userdata) {
     return GM_OK;
 }
 
-/* Query edges by source SHA (forward index) */
-int gm_cache_query_fanout(git_repository* repo, const char* branch,
-                         const uint8_t* src_sha, gm_cache_result_t* result) {
+/* Generic cache query function */
+static int cache_query_generic(git_repository* repo, const char* branch,
+                              const uint8_t* sha, const char* index_type,
+                              int check_source, gm_cache_result_t* result) {
     git_commit* cache_commit = NULL;
     git_tree* cache_tree = NULL;
     roaring_bitmap_t* bitmap = NULL;
@@ -222,7 +225,7 @@ int gm_cache_query_fanout(git_repository* repo, const char* branch,
     }
     
     /* Load bitmap for this SHA */
-    rc = load_bitmap_from_cache(repo, cache_tree, src_sha, "forward", &bitmap);
+    rc = load_bitmap_from_cache(repo, cache_tree, sha, index_type, &bitmap);
     git_tree_free(cache_tree);
     git_commit_free(cache_commit);
     
@@ -244,17 +247,18 @@ int gm_cache_query_fanout(git_repository* repo, const char* branch,
 fallback:
     /* Fall back to journal scan */
     journal_scan_state_t state = {
-        .target_sha = src_sha,
+        .target_sha = sha,
         .edges = malloc(INITIAL_EDGE_CAPACITY * sizeof(gm_edge_t)),
         .capacity = INITIAL_EDGE_CAPACITY,
-        .count = 0
+        .count = 0,
+        .check_source = check_source
     };
     
     if (!state.edges) {
         return GM_NO_MEMORY;
     }
     
-    rc = gm_journal_read(&ctx, branch, journal_scan_callback, &state);
+    rc = gm_journal_read(&ctx, branch, journal_scan_callback_generic, &state);
     if (rc != GM_OK) {
         free(state.edges);
         return rc;
@@ -278,129 +282,16 @@ fallback:
     return GM_OK;
 }
 
-/* Reverse index journal scan callback */
-static int journal_scan_reverse_callback(const gm_edge_t* edge, void* userdata) {
-    journal_scan_state_t* state = (journal_scan_state_t*)userdata;
-    
-    /* Check if this edge's TARGET matches our query */
-    if (memcmp(edge->tgt_sha, state->target_sha, GM_SHA1_SIZE) == 0) {
-        /* Grow array if needed */
-        if (state->count >= state->capacity) {
-            size_t new_capacity = state->capacity * 2;
-            if (new_capacity > MAX_EDGE_IDS) {
-                return GM_ERROR;  /* Too many edges */
-            }
-            
-            gm_edge_t* new_edges = realloc(state->edges, 
-                                          new_capacity * sizeof(gm_edge_t));
-            if (!new_edges) return GM_NO_MEMORY;
-            
-            state->edges = new_edges;
-            state->capacity = new_capacity;
-        }
-        
-        /* Copy edge */
-        memcpy(&state->edges[state->count], edge, sizeof(gm_edge_t));
-        state->count++;
-    }
-    
-    return GM_OK;
+/* Query edges by source SHA (forward index) */
+int gm_cache_query_fanout(git_repository* repo, const char* branch,
+                         const uint8_t* src_sha, gm_cache_result_t* result) {
+    return cache_query_generic(repo, branch, src_sha, "forward", 1, result);
 }
 
 /* Query edges by target SHA (reverse index) */
 int gm_cache_query_fanin(git_repository* repo, const char* branch,
                         const uint8_t* tgt_sha, gm_cache_result_t* result) {
-    git_commit* cache_commit = NULL;
-    git_tree* cache_tree = NULL;
-    roaring_bitmap_t* bitmap = NULL;
-    gm_context_t ctx = {0};
-    int rc;
-    
-    /* Initialize result */
-    memset(result, 0, sizeof(gm_cache_result_t));
-    ctx.git_repo = repo;
-    
-    /* Try to load cache */
-    gm_cache_meta_t meta;
-    rc = gm_cache_load_meta(repo, branch, &meta);
-    if (rc != GM_OK) {
-        goto fallback;  /* No cache, use journal scan */
-    }
-    
-    /* Get cache commit */
-    git_oid cache_oid;
-    char ref_name[REF_NAME_BUFFER_SIZE];
-    snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
-    
-    rc = git_reference_name_to_id(&cache_oid, repo, ref_name);
-    if (rc < 0) goto fallback;
-    
-    rc = git_commit_lookup(&cache_commit, repo, &cache_oid);
-    if (rc < 0) goto fallback;
-    
-    /* Get cache tree */
-    rc = git_commit_tree(&cache_tree, cache_commit);
-    if (rc < 0) {
-        git_commit_free(cache_commit);
-        goto fallback;
-    }
-    
-    /* Load bitmap for this SHA - use REVERSE index */
-    rc = load_bitmap_from_cache(repo, cache_tree, tgt_sha, "reverse", &bitmap);
-    git_tree_free(cache_tree);
-    git_commit_free(cache_commit);
-    
-    if (rc != GM_OK) {
-        goto fallback;  /* SHA not in cache */
-    }
-    
-    /* Extract edge IDs from bitmap */
-    result->edge_ids = gm_bitmap_to_array(bitmap, &result->count);
-    gm_bitmap_free(bitmap);
-    
-    if (!result->edge_ids && result->count > 0) {
-        return GM_NO_MEMORY;
-    }
-    
-    result->from_cache = true;
-    return GM_OK;
-    
-fallback:
-    /* Fall back to journal scan */
-    journal_scan_state_t state = {
-        .target_sha = tgt_sha,
-        .edges = malloc(INITIAL_EDGE_CAPACITY * sizeof(gm_edge_t)),
-        .capacity = INITIAL_EDGE_CAPACITY,
-        .count = 0
-    };
-    
-    if (!state.edges) {
-        return GM_NO_MEMORY;
-    }
-    
-    /* Use reverse callback that checks tgt_sha */
-    rc = gm_journal_read(&ctx, branch, journal_scan_reverse_callback, &state);
-    if (rc != GM_OK) {
-        free(state.edges);
-        return rc;
-    }
-    
-    /* Convert edges to edge IDs (just use indices for now) */
-    result->edge_ids = malloc(state.count * sizeof(uint32_t));
-    if (!result->edge_ids) {
-        free(state.edges);
-        return GM_NO_MEMORY;
-    }
-    
-    for (size_t i = 0; i < state.count; i++) {
-        result->edge_ids[i] = (uint32_t)i;
-    }
-    
-    result->count = state.count;
-    result->from_cache = false;
-    
-    free(state.edges);
-    return GM_OK;
+    return cache_query_generic(repo, branch, tgt_sha, "reverse", 0, result);
 }
 
 /* Free cache result */

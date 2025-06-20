@@ -1,8 +1,8 @@
 # Technical Debt Task List for Git-Mind
 
-<progress value="97" max="165" style="width: 100%; height: 30px;"></progress>
+<progress value="105" max="165" style="width: 100%; height: 30px;"></progress>
 
-**Progress: 97/165 tasks completed (58.8%)**
+**Progress: 105/165 tasks completed (63.6%)**
 
 This document tracks all technical debt identified in the 2025-06-19 code audit. Each item must be addressed before proceeding to new features.
 
@@ -152,14 +152,14 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
 ## Priority 5: Eliminate Code Duplication (Day 5)
 
 ### Merge Duplicate Functions
-- [ ] **Journal module**
-  - [ ] Merge `process_commit()` and `process_commit_attributed()`
-  - [ ] Merge `walk_journal()` and `walk_journal_attributed()`
-  - [ ] Merge `gm_journal_append()` and `gm_journal_append_attributed()`
+- [x] **Journal module**
+  - [x] Merge `process_commit()` and `process_commit_attributed()`
+  - [x] Merge `walk_journal()` and `walk_journal_attributed()`
+  - [x] Merge `gm_journal_append()` and `gm_journal_append_attributed()`
 
-- [ ] **Cache module**
-  - [ ] Merge `gm_cache_query_fanout()` and `gm_cache_query_fanin()`
-  - [ ] Extract common query logic
+- [x] **Cache module**
+  - [x] Merge `gm_cache_query_fanout()` and `gm_cache_query_fanin()`
+  - [x] Extract common query logic
 
 - [x] **CBOR module**
   - [x] Move duplicated functions from `cbor_decode_ex.c` to shared location
