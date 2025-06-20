@@ -76,7 +76,7 @@ int gm_cmd_cache_rebuild(gm_context_t *ctx, int argc, char **argv) {
         gm_output_porcelain(ctx->output, "branch", "%s", branch);
         gm_output_porcelain(ctx->output, "edges", "%llu", (unsigned long long)edge_count);
         gm_output_porcelain(ctx->output, "cache_size_kb", "%llu", (unsigned long long)(cache_size / GM_BYTES_PER_KB));
-        gm_output_porcelain(ctx->output, "build_time_seconds", "%.2f", elapsed);
+        gm_output_porcelain(ctx->output, "build_time_seconds", GM_FMT_TIME_SECONDS, elapsed);
     } else {
         gm_output_print(ctx->output, GM_MSG_CACHE_SUCCESS "\n");
         gm_output_print(ctx->output, GM_MSG_CACHE_STATS "\n", (unsigned long long)edge_count, (unsigned long long)(cache_size / GM_BYTES_PER_KB), elapsed);

@@ -163,7 +163,7 @@ static void format_list_output(const list_ctx_t *lctx, const char *source_filter
         if (source_filter) {
             filter_desc = source_filter;
         } else if (min_conf_str) {
-            filter_desc = "confidence filter";
+            filter_desc = GM_FILTER_DESC_CONF;
         }
         
         if (use_filter && strlen(filter_desc) > 0) {
@@ -200,7 +200,7 @@ int gm_cmd_list(gm_context_t *ctx, int argc, char **argv) {
     if (result == GM_NOT_FOUND) {
         /* Don't print here, let the summary handle it */
     } else if (result != GM_OK) {
-        fprintf(stderr, "Error: Failed to read links\n");
+        fprintf(stderr, GM_ERR_READ_LINKS "\n");
         return result;
     }
     

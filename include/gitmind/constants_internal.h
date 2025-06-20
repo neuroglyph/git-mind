@@ -10,12 +10,17 @@
 #define BUFFER_SIZE_MEDIUM      4096    /* Medium buffer (paths, commands) */
 #define BUFFER_SIZE_LARGE       65536   /* Large buffer (file content) */
 
+/* Numeric Base Constants */
+#define BITS_PER_HEX_CHAR       4       /* Bits per hexadecimal character */
+#define HEX_CHARS_PER_BYTE      2       /* Hex characters per byte */
+
 /* Path and String Sizes */
 #define PATH_BUFFER_SIZE        4096    /* Maximum path length */
 #define REF_NAME_BUFFER_SIZE    512     /* Git reference name buffer (must fit prefix + branch) */
 #define SHA_HEX_SIZE            41      /* SHA1 hex string size (40 + null) */
 #define SHA_BYTES_SIZE          20      /* SHA1 size in bytes */
 #define ZERO_SHA_STRING         "0000000000000000000000000000000000000000"
+#define RM_COMMAND_EXTRA_SIZE   32      /* Extra space for rm -rf command */
 
 /* Time Conversion Constants */
 #define MILLIS_PER_SECOND       1000
@@ -70,6 +75,7 @@
 #define CACHE_BUILD_BATCH_SIZE  1000    /* Edges per batch */
 #define EDGE_MAP_BUCKETS        1024    /* Hash map bucket count */
 #define KB_SIZE                 1024    /* Bytes per KB for display */
+#define CACHE_SIZE_ESTIMATE_PER_EDGE 4  /* Estimated bytes per edge in cache */
 
 /* Display Constants */
 #define PROGRESS_UPDATE_INTERVAL 100    /* Update progress every N items */

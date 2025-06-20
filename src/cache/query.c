@@ -6,6 +6,7 @@
 #include "cache.h"
 #include "bitmap.h"
 #include "../../include/gitmind.h"
+#include "../../include/gitmind/constants_internal.h"
 #include <git2.h>
 #include <string.h>
 #include <stdlib.h>
@@ -15,14 +16,17 @@
 /* Constants */
 #define CACHE_MAX_AGE_SECONDS 3600  /* 1 hour */
 #define MAX_EDGE_IDS 100000         /* Safety limit */
+#define SHA_PREFIX_BUFFER_SIZE 16   /* Buffer for SHA prefix */
+#define CACHE_PATH_BUFFER_SIZE 128  /* Buffer for cache paths */
+#define INITIAL_EDGE_CAPACITY 100   /* Initial allocation for edge arrays */
 
 /* Get SHA prefix for sharding */
 static void get_sha_prefix(const uint8_t* sha, char* prefix, int bits) {
-    int chars = (bits + 3) / 4;  /* Round up to hex chars */
+    int chars = (bits + 3) / BITS_PER_HEX_CHAR;  /* Round up to hex chars */
     for (int i = 0; i < chars; i++) {
-        sprintf(prefix + i * 2, "%02x", sha[i]);
+        sprintf(prefix + i * HEX_CHARS_PER_BYTE, "%02x", sha[i]);
     }
-    prefix[chars * 2] = '\0';
+    prefix[chars * HEX_CHARS_PER_BYTE] = '\0';
 }
 
 /* Load cache metadata from commit message */
@@ -30,7 +34,7 @@ int gm_cache_load_meta(git_repository* repo, const char* branch,
                       gm_cache_meta_t* meta) {
     git_reference* ref = NULL;
     git_commit* commit = NULL;
-    char ref_name[256];
+    char ref_name[REF_NAME_BUFFER_SIZE];
     int rc;
     
     /* Build cache ref name */
@@ -79,7 +83,7 @@ bool gm_cache_is_stale(git_repository* repo, const char* branch) {
     
     /* Check if journal has new commits since cache was built */
     git_reference* journal_ref = NULL;
-    char journal_ref_name[256];
+    char journal_ref_name[REF_NAME_BUFFER_SIZE];
     snprintf(journal_ref_name, sizeof(journal_ref_name), "refs/gitmind/edges/%s", branch);
     
     if (git_reference_lookup(&journal_ref, repo, journal_ref_name) == 0) {
@@ -105,9 +109,9 @@ bool gm_cache_is_stale(git_repository* repo, const char* branch) {
 static int load_bitmap_from_cache(git_repository* repo, git_tree* tree,
                                  const uint8_t* sha, const char* suffix,
                                  roaring_bitmap_t** bitmap) {
-    char prefix[16];
-    char sha_hex[41];
-    char path[128];
+    char prefix[SHA_PREFIX_BUFFER_SIZE];
+    char sha_hex[SHA_HEX_SIZE];
+    char path[CACHE_PATH_BUFFER_SIZE];
     git_tree_entry* entry = NULL;
     git_blob* blob = NULL;
     int rc;
@@ -117,9 +121,9 @@ static int load_bitmap_from_cache(git_repository* repo, git_tree* tree,
     
     /* Convert SHA to hex */
     for (int i = 0; i < GM_SHA1_SIZE; i++) {
-        sprintf(sha_hex + i * 2, "%02x", sha[i]);
+        sprintf(sha_hex + i * HEX_CHARS_PER_BYTE, "%02x", sha[i]);
     }
-    sha_hex[40] = '\0';
+    sha_hex[GM_SHA1_SIZE * HEX_CHARS_PER_BYTE] = '\0';
     
     /* Build path: prefix/sha.suffix */
     snprintf(path, sizeof(path), "%s/%s.%s", prefix, sha_hex, suffix);
@@ -201,7 +205,7 @@ int gm_cache_query_fanout(git_repository* repo, const char* branch,
     
     /* Get cache commit */
     git_oid cache_oid;
-    char ref_name[256];
+    char ref_name[REF_NAME_BUFFER_SIZE];
     snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
     
     rc = git_reference_name_to_id(&cache_oid, repo, ref_name);
@@ -241,8 +245,8 @@ fallback:
     /* Fall back to journal scan */
     journal_scan_state_t state = {
         .target_sha = src_sha,
-        .edges = malloc(100 * sizeof(gm_edge_t)),
-        .capacity = 100,
+        .edges = malloc(INITIAL_EDGE_CAPACITY * sizeof(gm_edge_t)),
+        .capacity = INITIAL_EDGE_CAPACITY,
         .count = 0
     };
     
@@ -325,7 +329,7 @@ int gm_cache_query_fanin(git_repository* repo, const char* branch,
     
     /* Get cache commit */
     git_oid cache_oid;
-    char ref_name[256];
+    char ref_name[REF_NAME_BUFFER_SIZE];
     snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
     
     rc = git_reference_name_to_id(&cache_oid, repo, ref_name);
@@ -365,8 +369,8 @@ fallback:
     /* Fall back to journal scan */
     journal_scan_state_t state = {
         .target_sha = tgt_sha,
-        .edges = malloc(100 * sizeof(gm_edge_t)),
-        .capacity = 100,
+        .edges = malloc(INITIAL_EDGE_CAPACITY * sizeof(gm_edge_t)),
+        .capacity = INITIAL_EDGE_CAPACITY,
         .count = 0
     };
     
@@ -427,7 +431,7 @@ int gm_cache_stats(git_repository* repo, const char* branch,
     
     if (cache_size_bytes) {
         /* Calculate actual cache size from tree */
-        char ref_name[256];
+        char ref_name[REF_NAME_BUFFER_SIZE];
         snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
         
         git_oid cache_oid;
@@ -444,7 +448,7 @@ int gm_cache_stats(git_repository* repo, const char* branch,
         
         /* Fall back to estimate if calculation fails */
         if (rc < 0) {
-            *cache_size_bytes = meta.edge_count * 4;  /* Rough estimate */
+            *cache_size_bytes = meta.edge_count * CACHE_SIZE_ESTIMATE_PER_EDGE;  /* Rough estimate */
         }
     }
     

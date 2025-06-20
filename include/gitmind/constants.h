@@ -113,4 +113,26 @@
 /* Option prefix check */
 #define GM_OPTION_PREFIX       '-'
 
+/* Hook installation constants */
+#define GM_HOOK_PATH           ".git/hooks/post-commit"
+#define GM_HOOKS_DIR           ".git/hooks"
+#define GM_HOOK_IDENTIFIER     "git-mind post-commit hook"
+#define GM_HOOK_PERMS          0755
+
+/* Buffer sizes */
+#define GM_HOOK_BUFFER_SIZE    256
+
+/* Filter descriptions */
+#define GM_FILTER_DESC_CONF    "confidence filter"
+
+/* Error messages for list command */
+#define GM_ERR_READ_LINKS      "Error: Failed to read links"
+
+/* Generic error format */
+#define GM_ERR_FORMAT          "Error: %s"
+
+/* Format strings */
+#define GM_FMT_CONFIDENCE      "%.3f"
+#define GM_FMT_TIME_SECONDS    "%.2f"
+
 #endif /* GITMIND_CONSTANTS_H */

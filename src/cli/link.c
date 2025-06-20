@@ -89,7 +89,7 @@ static int create_edge_from_args(gm_context_t *ctx, const char *src_path,
     int result = gm_edge_attributed_create(ctx, src_path, tgt_path, rel_type, 
                                          confidence, attribution, GM_LANE_DEFAULT, edge);
     if (result != GM_OK) {
-        gm_output_error(ctx->output, "Error: %s\n", gm_error_string(result));
+        gm_output_error(ctx->output, GM_ERR_FORMAT "\n", gm_error_string(result));
     }
     return result;
 }
@@ -113,7 +113,7 @@ static void print_link_success(gm_context_t *ctx, const gm_edge_attributed_t *ed
         gm_output_porcelain(ctx->output, "source", "%s", edge->src_path);
         gm_output_porcelain(ctx->output, "target", "%s", edge->tgt_path);
         gm_output_porcelain(ctx->output, "type", "%d", edge->rel_type);
-        gm_output_porcelain(ctx->output, "confidence", "%.3f", 
+        gm_output_porcelain(ctx->output, "confidence", GM_FMT_CONFIDENCE, 
                            gm_confidence_from_half_float(edge->confidence));
         gm_output_porcelain(ctx->output, "ulid", "%s", edge->ulid);
     } else {

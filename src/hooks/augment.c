@@ -2,8 +2,14 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "augment.h"
+#include "../../include/gitmind/constants_internal.h"
 #include <string.h>
 #include <time.h>
+
+/* Array management constants */
+#define INITIAL_EDGE_ARRAY_SIZE 10
+#define ARRAY_GROWTH_FACTOR 2
+#define AUGMENT_CONFIDENCE 100
 
 /* External functions */
 int gm_journal_append(gm_context_t *ctx, const gm_edge_t *edges, size_t n_edges);
@@ -87,7 +93,7 @@ static int edge_search_callback(const gm_edge_t *edge, void *userdata) {
     if (memcmp(edge->src_sha, ctx->target_sha, GM_SHA1_SIZE) == 0) {
         /* Grow array if needed */
         if (ctx->count >= ctx->capacity) {
-            size_t new_capacity = ctx->capacity * 2;
+            size_t new_capacity = ctx->capacity * ARRAY_GROWTH_FACTOR;
             gm_edge_t *new_edges = realloc(ctx->edges, 
                                           new_capacity * sizeof(gm_edge_t));
             if (!new_edges) {
@@ -111,8 +117,8 @@ int find_edges_by_source(gm_context_t *ctx,
                         size_t *count_out) {
     struct edge_search_ctx search_ctx = {
         .target_sha = src_sha,
-        .edges = malloc(10 * sizeof(gm_edge_t)),
-        .capacity = 10,
+        .edges = malloc(INITIAL_EDGE_ARRAY_SIZE * sizeof(gm_edge_t)),
+        .capacity = INITIAL_EDGE_ARRAY_SIZE,
         .count = 0,
         .scanned = 0
     };
@@ -145,7 +151,7 @@ int create_augments_edge(gm_context_t *ctx,
     memcpy(edge.src_sha, old_sha, GM_SHA1_SIZE);
     memcpy(edge.tgt_sha, new_sha, GM_SHA1_SIZE);
     edge.rel_type = GM_REL_AUGMENTS;
-    edge.confidence = 100; /* Always 100% for augments */
+    edge.confidence = AUGMENT_CONFIDENCE; /* Always 100% for augments */
     edge.timestamp = (uint64_t)time(NULL);
     
     /* Set paths (both same for AUGMENTS) */

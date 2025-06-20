@@ -6,6 +6,7 @@
 #include "cache.h"
 #include "bitmap.h"
 #include "../../include/gitmind.h"
+#include "../../include/gitmind/constants_internal.h"
 #include <git2.h>
 #include <string.h>
 #include <stdlib.h>
@@ -15,13 +16,11 @@
 #include <unistd.h>
 #include <limits.h>
 
-/* Constants */
-#define CACHE_BUILD_BATCH_SIZE 1000
+/* Local constants */
 #define CACHE_TEMP_DIR "/tmp/gitmind-cache-XXXXXX"
-#define EMPTY_TREE_SHA "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 #define MAX_SHARD_PATH 32
-#define EDGE_MAP_BUCKETS 65536
-#define CLOCKS_PER_MS (CLOCKS_PER_SEC / 1000)
+#define CLOCKS_PER_MS (CLOCKS_PER_SEC / MILLIS_PER_SECOND)
+#define SHA_HASH_MULTIPLIER 31
 
 /* In-memory edge ID map entry */
 typedef struct edge_map_entry {
@@ -55,7 +54,7 @@ static edge_map_t* edge_map_create(size_t size) {
 static size_t sha_hash(const uint8_t* sha, size_t size) {
     size_t hash = 0;
     for (int i = 0; i < GM_SHA1_SIZE; i++) {
-        hash = (hash * 31) + sha[i];
+        hash = (hash * SHA_HASH_MULTIPLIER) + sha[i];
     }
     return hash % size;
 }
@@ -112,11 +111,11 @@ static void edge_map_free(edge_map_t* map) {
 
 /* Get SHA prefix for sharding */
 static void get_sha_prefix(const uint8_t* sha, char* prefix, int bits) {
-    int chars = (bits + 3) / 4;  /* Round up to hex chars */
+    int chars = (bits + 3) / BITS_PER_HEX_CHAR;  /* Round up to hex chars */
     for (int i = 0; i < chars; i++) {
-        sprintf(prefix + i * 2, "%02x", sha[i]);
+        sprintf(prefix + i * HEX_CHARS_PER_BYTE, "%02x", sha[i]);
     }
-    prefix[chars * 2] = '\0';
+    prefix[chars * HEX_CHARS_PER_BYTE] = '\0';
 }
 
 /* Write bitmaps to temp directory */
@@ -134,14 +133,14 @@ static int write_bitmaps_to_temp(edge_map_t* forward, edge_map_t* reverse,
             
             /* Create shard directory */
             snprintf(path, sizeof(path), "%s/%s", temp_dir, prefix);
-            mkdir(path, 0755);
+            mkdir(path, DIR_PERMS_NORMAL);
             
             /* Write forward bitmap */
-            char sha_hex[41];
+            char sha_hex[SHA_HEX_SIZE];
             for (int j = 0; j < GM_SHA1_SIZE; j++) {
-                sprintf(sha_hex + j * 2, "%02x", entry->sha[j]);
+                sprintf(sha_hex + j * HEX_CHARS_PER_BYTE, "%02x", entry->sha[j]);
             }
-            sha_hex[40] = '\0';
+            sha_hex[GM_SHA1_SIZE * HEX_CHARS_PER_BYTE] = '\0';
             
             snprintf(path, sizeof(path), "%s/%s/%s.forward", temp_dir, prefix, sha_hex);
             rc = gm_bitmap_write_file(entry->bitmap, path);
@@ -160,14 +159,14 @@ static int write_bitmaps_to_temp(edge_map_t* forward, edge_map_t* reverse,
             
             /* Create shard directory */
             snprintf(path, sizeof(path), "%s/%s", temp_dir, prefix);
-            mkdir(path, 0755);
+            mkdir(path, DIR_PERMS_NORMAL);
             
             /* Write reverse bitmap */
-            char sha_hex[41];
+            char sha_hex[SHA_HEX_SIZE];
             for (int j = 0; j < GM_SHA1_SIZE; j++) {
-                sprintf(sha_hex + j * 2, "%02x", entry->sha[j]);
+                sprintf(sha_hex + j * HEX_CHARS_PER_BYTE, "%02x", entry->sha[j]);
             }
-            sha_hex[40] = '\0';
+            sha_hex[GM_SHA1_SIZE * HEX_CHARS_PER_BYTE] = '\0';
             
             snprintf(path, sizeof(path), "%s/%s/%s.reverse", temp_dir, prefix, sha_hex);
             rc = gm_bitmap_write_file(entry->bitmap, path);
@@ -193,7 +192,7 @@ static int build_tree_from_temp(git_repository* repo, const char* temp_dir,
 
 /* Remove temp directory recursively */
 static void remove_temp_dir(const char* path) {
-    char cmd[GM_PATH_MAX + 32];
+    char cmd[GM_PATH_MAX + RM_COMMAND_EXTRA_SIZE];
     snprintf(cmd, sizeof(cmd), "rm -rf %s", path);
     int rc = system(cmd);  /* Safe since we control the path */
     (void)rc; /* Ignore return value */
@@ -285,7 +284,7 @@ static int cache_build_trees(git_repository* repo, const char* temp_dir,
 static int cache_get_journal_tip(git_repository* repo, const char* branch,
                                gm_cache_meta_t* meta) {
     git_reference* journal_ref = NULL;
-    char journal_ref_name[256];
+    char journal_ref_name[REF_NAME_BUFFER_SIZE];
     snprintf(journal_ref_name, sizeof(journal_ref_name), 
              "refs/gitmind/edges/%s", branch);
     
@@ -305,7 +304,7 @@ static int cache_get_journal_tip(git_repository* repo, const char* branch,
         git_reference_free(journal_ref);
     } else {
         /* No journal yet */
-        strcpy(meta->journal_tip_oid, "0000000000000000000000000000000000000000");
+        strcpy(meta->journal_tip_oid, ZERO_SHA_STRING);
     }
     
     return GM_OK;
@@ -363,7 +362,7 @@ static int cache_create_commit(git_repository* repo, const git_oid* tree_oid,
 
 static int cache_update_ref(git_repository* repo, const char* branch,
                           const git_oid* commit_oid) {
-    char ref_name[256];
+    char ref_name[REF_NAME_BUFFER_SIZE];
     snprintf(ref_name, sizeof(ref_name), "%s%s/%ld", 
              GM_CACHE_REF_PREFIX, branch, time(NULL));
     

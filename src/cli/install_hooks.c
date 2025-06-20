@@ -28,16 +28,12 @@
     "# Always exit 0 to not block commits\n" \
     "exit 0\n"
 
-#define HOOK_PATH ".git/hooks/post-commit"
-#define HOOKS_DIR ".git/hooks"
-#define HOOK_IDENTIFIER "git-mind post-commit hook"
-#define HOOK_PERMS 0755
-#define BUFFER_SIZE 256
+/* Hook constants are now defined in gitmind/constants.h */
 
 /* Check if git hooks directory exists */
 static int check_git_hooks_directory(gm_output_t *output) {
     struct stat st;
-    int error = stat(HOOKS_DIR, &st);
+    int error = stat(GM_HOOKS_DIR, &st);
     
     if (error != 0 || !S_ISDIR(st.st_mode)) {
         gm_output_error(output, GM_ERR_HOOK_NO_DIR "\n");
@@ -51,7 +47,7 @@ static int check_git_hooks_directory(gm_output_t *output) {
 static int check_existing_hook(const char *hook_path, int *is_ours) {
     struct stat st;
     FILE *fp;
-    char line[BUFFER_SIZE];
+    char line[GM_HOOK_BUFFER_SIZE];
     
     *is_ours = 0;
     
@@ -67,7 +63,7 @@ static int check_existing_hook(const char *hook_path, int *is_ours) {
     }
     
     while (fgets(line, sizeof(line), fp)) {
-        if (strstr(line, HOOK_IDENTIFIER)) {
+        if (strstr(line, GM_HOOK_IDENTIFIER)) {
             *is_ours = 1;
             break;
         }
@@ -79,7 +75,7 @@ static int check_existing_hook(const char *hook_path, int *is_ours) {
 
 /* Backup existing hook */
 static int backup_existing_hook(const char *hook_path, gm_output_t *output) {
-    char backup_path[BUFFER_SIZE];
+    char backup_path[GM_HOOK_BUFFER_SIZE];
     snprintf(backup_path, sizeof(backup_path), "%s" GM_HOOK_BACKUP_SUFFIX, hook_path);
     
     gm_output_print(output, GM_MSG_HOOK_EXISTS "\n");
@@ -115,7 +111,7 @@ static int write_hook_script(const char *hook_path, gm_output_t *output) {
 
 /* Make hook executable */
 static int make_hook_executable(const char *hook_path, gm_output_t *output) {
-    if (chmod(hook_path, HOOK_PERMS) != 0) {
+    if (chmod(hook_path, GM_HOOK_PERMS) != 0) {
         gm_output_error(output, GM_ERR_HOOK_CHMOD "\n", strerror(errno));
         unlink(hook_path);
         return GM_ERROR;
@@ -150,7 +146,7 @@ int gm_cmd_install_hooks(gm_context_t *ctx, int argc, char **argv) {
     }
     
     /* Check if hook already exists */
-    rc = check_existing_hook(HOOK_PATH, &is_ours);
+    rc = check_existing_hook(GM_HOOK_PATH, &is_ours);
     if (rc == GM_OK) {
         if (is_ours) {
             if (gm_output_is_porcelain(ctx->output)) {
@@ -162,20 +158,20 @@ int gm_cmd_install_hooks(gm_context_t *ctx, int argc, char **argv) {
         }
         
         /* Not our hook, back it up */
-        rc = backup_existing_hook(HOOK_PATH, ctx->output);
+        rc = backup_existing_hook(GM_HOOK_PATH, ctx->output);
         if (rc != GM_OK) {
             return rc;
         }
     }
     
     /* Write our hook */
-    rc = write_hook_script(HOOK_PATH, ctx->output);
+    rc = write_hook_script(GM_HOOK_PATH, ctx->output);
     if (rc != GM_OK) {
         return rc;
     }
     
     /* Make executable */
-    rc = make_hook_executable(HOOK_PATH, ctx->output);
+    rc = make_hook_executable(GM_HOOK_PATH, ctx->output);
     if (rc != GM_OK) {
         return rc;
     }

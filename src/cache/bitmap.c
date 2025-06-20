@@ -11,6 +11,7 @@
 /* Magic number and version */
 #define BITMAP_MAGIC "GMCACHE\0"
 #define BITMAP_VERSION 1
+#define BITMAP_MAGIC_SIZE 8
 
 roaring_bitmap_t* gm_bitmap_create(void) {
     return roaring_bitmap_create();
@@ -60,7 +61,7 @@ int gm_bitmap_serialize(const roaring_bitmap_t* bitmap, uint8_t** buffer, size_t
     
     /* Write header */
     gm_bitmap_header_t header;
-    memcpy(header.magic, BITMAP_MAGIC, 8);
+    memcpy(header.magic, BITMAP_MAGIC, BITMAP_MAGIC_SIZE);
     header.version = BITMAP_VERSION;
     header.flags = 0;
     memcpy(*buffer, &header, header_size);
@@ -89,7 +90,7 @@ int gm_bitmap_deserialize(const uint8_t* buffer, size_t size, roaring_bitmap_t**
     gm_bitmap_header_t header;
     memcpy(&header, buffer, header_size);
     
-    if (memcmp(header.magic, BITMAP_MAGIC, 8) != 0) {
+    if (memcmp(header.magic, BITMAP_MAGIC, BITMAP_MAGIC_SIZE) != 0) {
         return GM_ERROR;
     }
     

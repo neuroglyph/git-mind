@@ -106,10 +106,10 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
 - [x] **Edge module** - replace all magic numbers/strings
 - [x] **Journal module** - replace all magic numbers/strings
 - [x] **Attribution module** - replace all magic numbers/strings
-- [ ] **CLI module** - replace all magic numbers/strings (partial - main.c done)
-- [ ] **Cache module** - replace all magic numbers/strings
-- [ ] **Util module** - replace all magic numbers/strings
-- [ ] **Hooks module** - replace all magic numbers/strings
+- [x] **CLI module** - replace all magic numbers/strings
+- [x] **Cache module** - replace all magic numbers/strings
+- [x] **Util module** - replace all magic numbers/strings
+- [x] **Hooks module** - replace all magic numbers/strings
 
 ## Priority 4: Dependency Injection (Day 4)
 

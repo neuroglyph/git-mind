@@ -3,10 +3,15 @@
 
 #define _GNU_SOURCE  /* For getline() and strdup() */
 #include "augment.h"
+#include "../../include/gitmind/constants_internal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+/* Array management constants */
+#define INITIAL_FILE_ARRAY_SIZE 10
+#define ARRAY_GROWTH_FACTOR 2
 
 /* External functions we need */
 int journal_create_commit(git_repository *repo, const char *ref, 
@@ -41,7 +46,7 @@ static int get_changed_files(char ***files_out, size_t *count_out) {
     size_t len = 0;
     ssize_t read;
     char **files = NULL;
-    size_t capacity = 10;
+    size_t capacity = INITIAL_FILE_ARRAY_SIZE;
     size_t count = 0;
     
     /* Initial allocation */
@@ -66,7 +71,7 @@ static int get_changed_files(char ***files_out, size_t *count_out) {
         
         /* Grow array if needed */
         if (count >= capacity) {
-            capacity *= 2;
+            capacity *= ARRAY_GROWTH_FACTOR;
             char **new_files = realloc(files, capacity * sizeof(char *));
             if (!new_files) {
                 /* Clean up */
