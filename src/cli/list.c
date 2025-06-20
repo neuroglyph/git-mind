@@ -24,7 +24,7 @@ static int list_edge_callback(const gm_edge_t *edge, void *userdata) {
     if (lctx->filter_path) {
         if (strcmp(edge->src_path, lctx->filter_path) != 0 &&
             strcmp(edge->tgt_path, lctx->filter_path) != 0) {
-            return 0;  /* Skip this edge */
+            return GM_CALLBACK_CONTINUE;  /* Skip this edge */
         }
     }
     
@@ -39,7 +39,7 @@ static int list_edge_callback(const gm_edge_t *edge, void *userdata) {
     printf("%s\n", formatted);
     
     lctx->count++;
-    return 0;  /* Continue iteration */
+    return GM_CALLBACK_CONTINUE;  /* Continue iteration */
 }
 
 /* Attributed edge callback for listing */
@@ -55,7 +55,7 @@ static int list_attributed_edge_callback(const gm_edge_attributed_t *edge, void 
     if (lctx->filter_path) {
         if (strcmp(edge->src_path, lctx->filter_path) != 0 &&
             strcmp(edge->tgt_path, lctx->filter_path) != 0) {
-            return 0;  /* Skip this edge */
+            return GM_CALLBACK_CONTINUE;  /* Skip this edge */
         }
     }
     
@@ -74,7 +74,7 @@ static int list_attributed_edge_callback(const gm_edge_attributed_t *edge, void 
     printf("%s\n", formatted);
     
     lctx->count++;
-    return 0;  /* Continue iteration */
+    return GM_CALLBACK_CONTINUE;  /* Continue iteration */
 }
 
 /* Parse list command arguments */
@@ -84,9 +84,9 @@ static void parse_list_arguments(int argc, char **argv, list_ctx_t *lctx,
     for (int i = 0; i < argc; i++) {
         if (strcmp(argv[i], GM_FLAG_VERBOSE) == 0) {
             lctx->show_all = 1;
-        } else if (strcmp(argv[i], "--show-augments") == 0) {
+        } else if (strcmp(argv[i], GM_FLAG_SHOW_AUG) == 0) {
             lctx->show_augments = 1;
-        } else if (strcmp(argv[i], "--branch") == 0 && i + 1 < argc) {
+        } else if (strcmp(argv[i], GM_FLAG_BRANCH) == 0 && i + 1 < argc) {
             *branch = argv[++i];
         } else if (strcmp(argv[i], GM_FLAG_SOURCE) == 0 && i + 1 < argc) {
             *source_filter = argv[++i];
@@ -98,7 +98,7 @@ static void parse_list_arguments(int argc, char **argv, list_ctx_t *lctx,
             lctx->show_attribution = 1;
         } else if (strcmp(argv[i], GM_FLAG_FROM) == 0 && i + 1 < argc) {
             lctx->filter_path = argv[++i];
-        } else if (!lctx->filter_path && argv[i][0] != '-') {
+        } else if (!lctx->filter_path && argv[i][0] != GM_OPTION_PREFIX) {
             /* Positional argument for path filter */
             lctx->filter_path = argv[i];
         }
@@ -114,13 +114,13 @@ static void setup_list_filter(gm_filter_t *filter, const char *source_filter,
     if (source_filter) {
         if (strcmp(source_filter, GM_ENV_VAL_HUMAN) == 0) {
             gm_filter_init_human_only(filter);
-        } else if (strcmp(source_filter, "ai") == 0) {
-            float min_conf = 0.0f;
+        } else if (strcmp(source_filter, GM_FILTER_VAL_AI) == 0) {
+            float min_conf = GM_CONFIDENCE_MIN;
             if (min_conf_str) {
                 min_conf = strtof(min_conf_str, NULL);
             }
             gm_filter_init_ai_insights(filter, min_conf);
-        } else if (strcmp(source_filter, "all") == 0) {
+        } else if (strcmp(source_filter, GM_FILTER_VAL_ALL) == 0) {
             gm_filter_init_default(filter);
         }
     }
@@ -152,11 +152,11 @@ static void format_list_output(const list_ctx_t *lctx, const char *source_filter
                               const char *min_conf_str, int use_filter) {
     if (lctx->count == 0) {
         if (lctx->filter_path) {
-            printf("No links found for: %s\n", lctx->filter_path);
+            printf(GM_MSG_NO_LINKS_PATH "\n", lctx->filter_path);
         } else if (use_filter) {
-            printf("No links found matching filter criteria\n");
+            printf(GM_MSG_NO_LINKS_FILTER "\n");
         } else {
-            printf("No links found\n");
+            printf(GM_MSG_NO_LINKS "\n");
         }
     } else {
         const char *filter_desc = "";

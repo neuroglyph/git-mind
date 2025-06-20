@@ -246,6 +246,42 @@ test_list_filtering() {
     unset GIT_MIND_SOURCE GIT_MIND_AUTHOR
 }
 
+# Test: --verbose and --porcelain output control
+test_output_control() {
+    echo "main" > main.c
+    echo "config" > config.h
+    git add .
+    git commit -m "initial" --quiet
+    
+    # Test --porcelain for link command
+    porcelain_output=$("$GIT_MIND" --porcelain link main.c config.h --type depends_on 2>&1)
+    echo "$porcelain_output" | grep -q "status=created"
+    echo "$porcelain_output" | grep -q "source=main.c"
+    echo "$porcelain_output" | grep -q "target=config.h"
+    echo "$porcelain_output" | grep -q "type=3"
+    echo "$porcelain_output" | grep -q "confidence=1.000"
+    echo "$porcelain_output" | grep -q "ulid="
+    
+    # Porcelain should not contain human-readable text
+    ! echo "$porcelain_output" | grep -q "Created link:"
+    
+    # Test --verbose for cache rebuild (first create a cache)
+    normal_output=$("$GIT_MIND" cache-rebuild 2>&1 || true)
+    ! echo "$normal_output" | grep -q "Rebuilding cache"
+    
+    verbose_output=$("$GIT_MIND" --verbose cache-rebuild 2>&1 || true)
+    echo "$verbose_output" | grep -q "Rebuilding cache"
+    
+    # Test --porcelain for install-hooks
+    hooks_output=$("$GIT_MIND" --porcelain install-hooks 2>&1)
+    echo "$hooks_output" | grep -q "status=installed"
+    echo "$hooks_output" | grep -q "hook=post-commit"
+    
+    # Second install should show already-installed
+    hooks_output2=$("$GIT_MIND" --porcelain install-hooks 2>&1)
+    echo "$hooks_output2" | grep -q "status=already-installed"
+}
+
 # Run all tests
 echo "Running git-mind integration tests..."
 echo ""
@@ -261,6 +297,7 @@ run_test "human_attribution" test_human_attribution
 run_test "ai_attribution" test_ai_attribution
 run_test "confidence_validation" test_confidence_validation
 run_test "list_filtering" test_list_filtering
+run_test "output_control" test_output_control
 
 # Cleanup
 rm -rf "$TEST_DIR"

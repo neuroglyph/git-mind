@@ -9,6 +9,7 @@
 #include <time.h>
 #include "gitmind/attribution.h"
 #include "gitmind/constants.h"
+#include "gitmind/output.h"
 
 /* Forward declarations */
 typedef struct gm_context gm_context_t;
@@ -68,6 +69,9 @@ struct gm_context {
     
     /* Logging */
     void (*log_fn)(int level, const char *fmt, ...);
+    
+    /* Output control */
+    gm_output_t *output;
     
     /* User data */
     void *git_repo;

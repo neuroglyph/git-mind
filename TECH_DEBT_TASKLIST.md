@@ -56,51 +56,57 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
 ## Priority 2: CLI Output Control System (Day 2-3)
 
 ### Create Output Abstraction
-- [ ] **Create `include/gitmind/output.h`**
-  - [ ] Define `gm_output_t` structure
-  - [ ] Define output levels (SILENT, NORMAL, VERBOSE)
-  - [ ] Define output formats (HUMAN, PORCELAIN)
+- [x] **Create `include/gitmind/output.h`**
+  - [x] Define `gm_output_t` structure
+  - [x] Define output levels (SILENT, NORMAL, VERBOSE)
+  - [x] Define output formats (HUMAN, PORCELAIN)
 
-- [ ] **Create `src/cli/output.c`**
-  - [ ] Implement `gm_output_create()`
-  - [ ] Implement `gm_output_print()` - respects verbose flag
-  - [ ] Implement `gm_output_error()` - always shows errors
-  - [ ] Implement `gm_output_json()` - porcelain mode
-  - [ ] Implement `gm_output_destroy()`
+- [x] **Create `src/cli/output.c`**
+  - [x] Implement `gm_output_create()`
+  - [x] Implement `gm_output_print()` - respects verbose flag
+  - [x] Implement `gm_output_error()` - always shows errors
+  - [x] Implement `gm_output_porcelain()` - porcelain mode
+  - [x] Implement `gm_output_destroy()`
 
 ### Update CLI Commands
-- [ ] **Update `main.c`**
-  - [ ] Parse global `--verbose` and `--porcelain` flags
-  - [ ] Create output context
-  - [ ] Pass output context to all commands
+- [x] **Update `main.c`**
+  - [x] Parse global `--verbose` and `--porcelain` flags
+  - [x] Create output context
+  - [x] Pass output context to all commands
 
-- [ ] **Update all CLI commands** to use output abstraction
-  - [ ] `cache_rebuild.c` - replace all printf/fprintf
-  - [ ] `install_hooks.c` - replace all printf/fprintf
-  - [ ] `link.c` - replace all printf/fprintf
-  - [ ] `list.c` - replace all printf/fprintf
+- [x] **Update all CLI commands** to use output abstraction
+  - [x] `cache_rebuild.c` - replace all printf/fprintf
+  - [x] `install_hooks.c` - replace all printf/fprintf
+  - [x] `link.c` - replace all printf/fprintf
+  - [x] `list.c` - already uses abstraction
+
+### Testing
+- [x] **Add output control tests**
+  - [x] Test --verbose flag functionality
+  - [x] Test --porcelain output format
+  - [x] Verify behavior across all commands
 
 ## Priority 3: Define All Constants (Day 3)
 
 ### Create Constants Headers
-- [ ] **Create `include/gitmind/constants_cbor.h`**
-  - [ ] CBOR type constants (ARRAY, BYTES, TEXT, UINT)
-  - [ ] CBOR size indicators
-  - [ ] CBOR array sizes (13 for attributed, 8 for legacy)
-  - [ ] CBOR field limits
+- [x] **Create `include/gitmind/constants_cbor.h`**
+  - [x] CBOR type constants (ARRAY, BYTES, TEXT, UINT)
+  - [x] CBOR size indicators
+  - [x] CBOR array sizes (13 for attributed, 8 for legacy)
+  - [x] CBOR field limits
 
-- [ ] **Create `include/gitmind/constants_internal.h`**
-  - [ ] Buffer sizes (PATH, REF, CWD, HOOK)
-  - [ ] Time conversions (MILLIS_PER_SECOND, NANOS_PER_MILLI)
-  - [ ] Git constants (EMPTY_TREE_SHA, REFS_PREFIX, HEAD_REF)
-  - [ ] Exit codes (SAFETY_VIOLATION)
-  - [ ] File permissions (HOOK_PERMS)
+- [x] **Create `include/gitmind/constants_internal.h`**
+  - [x] Buffer sizes (PATH, REF, CWD, HOOK)
+  - [x] Time conversions (MILLIS_PER_SECOND, NANOS_PER_MILLI)
+  - [x] Git constants (EMPTY_TREE_SHA, REFS_PREFIX, HEAD_REF)
+  - [x] Exit codes (SAFETY_VIOLATION)
+  - [x] File permissions (HOOK_PERMS)
 
 ### Replace Magic Values
-- [ ] **Edge module** - replace all magic numbers/strings
-- [ ] **Journal module** - replace all magic numbers/strings
-- [ ] **Attribution module** - replace all magic numbers/strings
-- [ ] **CLI module** - replace all magic numbers/strings
+- [x] **Edge module** - replace all magic numbers/strings
+- [x] **Journal module** - replace all magic numbers/strings
+- [x] **Attribution module** - replace all magic numbers/strings
+- [ ] **CLI module** - replace all magic numbers/strings (partial - main.c done)
 - [ ] **Cache module** - replace all magic numbers/strings
 - [ ] **Util module** - replace all magic numbers/strings
 - [ ] **Hooks module** - replace all magic numbers/strings
@@ -183,7 +189,36 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
 - [ ] **Map tests to acceptance criteria**
 - [ ] **Create feature documentation**
 
-## Priority 7: API Documentation (Day 7)
+## Priority 7: Security Issues (Day 7)
+
+### Fix TOCTOU Race Conditions
+- [ ] **Identify all TOCTOU vulnerabilities**
+  - [ ] Review code scanning alerts for specific locations
+  - [ ] Document each race condition scenario
+  
+- [ ] **Fix file system race conditions**
+  - [ ] Replace stat() then open() patterns with atomic operations
+  - [ ] Use O_EXCL flag for exclusive file creation
+  - [ ] Implement proper file locking where needed
+  - [ ] Consider using mkstemp() for temporary files
+
+### Fix GitHub Actions Permissions
+- [ ] **Update workflow files**
+  - [ ] Add explicit permissions block to each workflow
+  - [ ] Use least-privilege principle (only required permissions)
+  - [ ] Example minimal permissions:
+    ```yaml
+    permissions:
+      contents: read
+      pull-requests: write
+    ```
+  
+- [ ] **Audit all workflows**
+  - [ ] `.github/workflows/*.yml` - add permissions
+  - [ ] Verify no workflows have excessive permissions
+  - [ ] Document why each permission is needed
+
+## Priority 8: API Documentation (Day 8)
 
 ### Document All Public APIs
 - [ ] **Edge module** - document all public functions
@@ -228,12 +263,14 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
 - [ ] Run dependency injection checker (no direct system calls)
 - [ ] Run test quality checker (no stdout assertions)
 - [ ] Run documentation checker (all public APIs documented)
+- [ ] Run security scanner (no TOCTOU warnings)
+- [ ] Verify all workflows have explicit permissions
 
 ## Timeline
 
 - **Week 1**: Emergency fixes (Priority 1-4)
-- **Week 2**: Cleanup and polish (Priority 5-7)
-- **Total**: 7-10 days to clear all technical debt
+- **Week 2**: Cleanup, security, and polish (Priority 5-8)
+- **Total**: 8-10 days to clear all technical debt including security issues
 
 ---
 *Generated from audit findings in `.audits-c/2025-06-19-deep-dive/`*

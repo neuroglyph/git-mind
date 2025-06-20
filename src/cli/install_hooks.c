@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <errno.h>
 
 #define HOOK_SCRIPT "#!/bin/sh\n" \
     "# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0\n" \
@@ -34,13 +35,12 @@
 #define BUFFER_SIZE 256
 
 /* Check if git hooks directory exists */
-static int check_git_hooks_directory(void) {
+static int check_git_hooks_directory(gm_output_t *output) {
     struct stat st;
     int error = stat(HOOKS_DIR, &st);
     
     if (error != 0 || !S_ISDIR(st.st_mode)) {
-        fprintf(stderr, "Error: .git/hooks directory not found\n");
-        fprintf(stderr, "Are you in a git repository?\n");
+        gm_output_error(output, GM_ERR_HOOK_NO_DIR "\n");
         return GM_ERROR;
     }
     
@@ -78,15 +78,15 @@ static int check_existing_hook(const char *hook_path, int *is_ours) {
 }
 
 /* Backup existing hook */
-static int backup_existing_hook(const char *hook_path) {
+static int backup_existing_hook(const char *hook_path, gm_output_t *output) {
     char backup_path[BUFFER_SIZE];
-    snprintf(backup_path, sizeof(backup_path), "%s.backup", hook_path);
+    snprintf(backup_path, sizeof(backup_path), "%s" GM_HOOK_BACKUP_SUFFIX, hook_path);
     
-    printf("Existing post-commit hook found\n");
-    printf("Backing up to: %s\n", backup_path);
+    gm_output_print(output, GM_MSG_HOOK_EXISTS "\n");
+    gm_output_print(output, GM_MSG_HOOK_BACKUP "\n", backup_path);
     
     if (rename(hook_path, backup_path) != 0) {
-        perror("Failed to backup existing hook");
+        gm_output_error(output, GM_ERR_HOOK_BACKUP "\n", strerror(errno));
         return GM_ERROR;
     }
     
@@ -94,10 +94,10 @@ static int backup_existing_hook(const char *hook_path) {
 }
 
 /* Write hook script to file */
-static int write_hook_script(const char *hook_path) {
+static int write_hook_script(const char *hook_path, gm_output_t *output) {
     FILE *fp = fopen(hook_path, "w");
     if (!fp) {
-        perror("Failed to create post-commit hook");
+        gm_output_error(output, GM_ERR_HOOK_CREATE "\n", strerror(errno));
         return GM_ERROR;
     }
     
@@ -105,7 +105,7 @@ static int write_hook_script(const char *hook_path) {
     if (fwrite(HOOK_SCRIPT, 1, script_len, fp) != script_len) {
         fclose(fp);
         unlink(hook_path);
-        fprintf(stderr, "Failed to write hook script\n");
+        gm_output_error(output, GM_ERR_HOOK_WRITE "\n");
         return GM_ERROR;
     }
     
@@ -114,9 +114,9 @@ static int write_hook_script(const char *hook_path) {
 }
 
 /* Make hook executable */
-static int make_hook_executable(const char *hook_path) {
+static int make_hook_executable(const char *hook_path, gm_output_t *output) {
     if (chmod(hook_path, HOOK_PERMS) != 0) {
-        perror("Failed to make hook executable");
+        gm_output_error(output, GM_ERR_HOOK_CHMOD "\n", strerror(errno));
         unlink(hook_path);
         return GM_ERROR;
     }
@@ -124,13 +124,14 @@ static int make_hook_executable(const char *hook_path) {
 }
 
 /* Print installation success message */
-static void print_success_message(void) {
-    printf("✅ git-mind hooks installed successfully\n");
-    printf("\n");
-    printf("The post-commit hook will automatically create AUGMENTS edges\n");
-    printf("when you modify files that have existing semantic links.\n");
-    printf("\n");
-    printf("To test: modify a linked file and commit the change.\n");
+static void print_success_message(gm_output_t *output) {
+    if (gm_output_is_porcelain(output)) {
+        gm_output_porcelain(output, "status", "installed");
+        gm_output_porcelain(output, "hook", "post-commit");
+    } else {
+        gm_output_print(output, GM_MSG_HOOK_INSTALLED "\n");
+        gm_output_print(output, GM_MSG_HOOK_DETAILS "\n");
+    }
 }
 
 /* Install git hooks */
@@ -143,7 +144,7 @@ int gm_cmd_install_hooks(gm_context_t *ctx, int argc, char **argv) {
     int rc;
     
     /* Check if .git/hooks exists */
-    rc = check_git_hooks_directory();
+    rc = check_git_hooks_directory(ctx->output);
     if (rc != GM_OK) {
         return rc;
     }
@@ -152,31 +153,35 @@ int gm_cmd_install_hooks(gm_context_t *ctx, int argc, char **argv) {
     rc = check_existing_hook(HOOK_PATH, &is_ours);
     if (rc == GM_OK) {
         if (is_ours) {
-            printf("git-mind hooks already installed\n");
+            if (gm_output_is_porcelain(ctx->output)) {
+                gm_output_porcelain(ctx->output, "status", "already-installed");
+            } else {
+                gm_output_print(ctx->output, GM_MSG_HOOK_ALREADY "\n");
+            }
             return GM_OK;
         }
         
         /* Not our hook, back it up */
-        rc = backup_existing_hook(HOOK_PATH);
+        rc = backup_existing_hook(HOOK_PATH, ctx->output);
         if (rc != GM_OK) {
             return rc;
         }
     }
     
     /* Write our hook */
-    rc = write_hook_script(HOOK_PATH);
+    rc = write_hook_script(HOOK_PATH, ctx->output);
     if (rc != GM_OK) {
         return rc;
     }
     
     /* Make executable */
-    rc = make_hook_executable(HOOK_PATH);
+    rc = make_hook_executable(HOOK_PATH, ctx->output);
     if (rc != GM_OK) {
         return rc;
     }
     
     /* Print success message */
-    print_success_message();
+    print_success_message(ctx->output);
     
     return GM_OK;
 }

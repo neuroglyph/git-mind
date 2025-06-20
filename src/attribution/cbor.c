@@ -3,27 +3,32 @@
 
 #include <string.h>
 #include "gitmind/attribution.h"
+#include "gitmind/constants_cbor.h"
+#include "gitmind/constants_internal.h"
 
-/* CBOR encoding tags */
-#define CBOR_TYPE_ARRAY     0x80
-#define CBOR_TYPE_BYTES     0x40
-#define CBOR_TYPE_TEXT      0x60
-#define CBOR_TYPE_UINT      0x00
+/* Use centralized CBOR constants from constants_cbor.h */
+/* Additional local constants */
 #define CBOR_ADDITIONAL_1   0x01
 #define CBOR_ADDITIONAL_2   0x02
 #define CBOR_ADDITIONAL_4   0x04
 #define CBOR_ADDITIONAL_8   0x08
 
-/* CBOR array sizes */
-#define CBOR_ARRAY_SIZE_ATTRIBUTED  13
-#define CBOR_ARRAY_SIZE_LEGACY      8
+/* Size constants for CBOR encoding */
+#define CBOR_HEADER_SIZE    1
+#define CBOR_UINT8_SIZE     2
+#define CBOR_UINT16_SIZE    3
+#define CBOR_UINT32_SIZE    5
+#define CBOR_UINT64_SIZE    9
+#define BYTES_IN_UINT16     2
+#define BYTES_IN_UINT32     4
+#define BYTES_IN_UINT64     8
 
-/* Field sizes */
-#define SHA_SIZE                    20
-#define ULID_SIZE                   26
-#define MAX_PATH_LEN                255
-#define MAX_AUTHOR_LEN              63
-#define MAX_SESSION_LEN             31
+/* Local aliases for clarity */
+#define SHA_SIZE            SHA_BYTES_SIZE
+#define ULID_SIZE           CBOR_ULID_SIZE
+#define MAX_PATH_LEN        255
+#define MAX_AUTHOR_LEN      63
+#define MAX_SESSION_LEN     31
 
 /* Helper functions for decoding */
 static int decode_cbor_header(const uint8_t **p, const uint8_t *end) {
@@ -44,7 +49,7 @@ static int decode_cbor_header(const uint8_t **p, const uint8_t *end) {
 }
 
 static int decode_cbor_sha(const uint8_t **p, const uint8_t *end, uint8_t *sha) {
-    if (*p + SHA_SIZE + 1 > end || **p != (CBOR_TYPE_BYTES | SHA_SIZE)) {
+    if (*p + SHA_SIZE + CBOR_HEADER_SIZE > end || **p != (CBOR_TYPE_BYTES | SHA_SIZE)) {
         return -1;
     }
     (*p)++;
@@ -54,41 +59,41 @@ static int decode_cbor_sha(const uint8_t **p, const uint8_t *end, uint8_t *sha) 
 }
 
 static int decode_cbor_uint16(const uint8_t **p, const uint8_t *end, uint16_t *value) {
-    if (*p + 3 > end || **p != (CBOR_TYPE_UINT | CBOR_ADDITIONAL_2)) {
+    if (*p + CBOR_UINT16_SIZE > end || **p != (CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_2)) {
         return -1;
     }
     (*p)++;
-    *value = ((uint16_t)(*p)[0] << 8) | (*p)[1];
-    *p += 2;
+    *value = ((uint16_t)(*p)[0] << SHIFT_8) | (*p)[1];
+    *p += BYTES_IN_UINT16;
     return 0;
 }
 
 static int decode_cbor_uint32(const uint8_t **p, const uint8_t *end, uint32_t *value) {
-    if (*p + 5 > end || **p != (CBOR_TYPE_UINT | CBOR_ADDITIONAL_4)) {
+    if (*p + CBOR_UINT32_SIZE > end || **p != (CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_4)) {
         return -1;
     }
     (*p)++;
-    *value = ((uint32_t)(*p)[0] << 24) | ((uint32_t)(*p)[1] << 16) | 
-             ((uint32_t)(*p)[2] << 8) | (*p)[3];
-    *p += 4;
+    *value = ((uint32_t)(*p)[0] << SHIFT_24) | ((uint32_t)(*p)[1] << SHIFT_16) | 
+             ((uint32_t)(*p)[2] << SHIFT_8) | (*p)[3];
+    *p += BYTES_IN_UINT32;
     return 0;
 }
 
 static int decode_cbor_uint64(const uint8_t **p, const uint8_t *end, uint64_t *value) {
-    if (*p + 9 > end || **p != (CBOR_TYPE_UINT | CBOR_ADDITIONAL_8)) {
+    if (*p + CBOR_UINT64_SIZE > end || **p != (CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_8)) {
         return -1;
     }
     (*p)++;
     *value = 0;
-    for (int i = 0; i < 8; i++) {
-        *value = (*value << 8) | (*p)[i];
+    for (int i = 0; i < BYTES_IN_UINT64; i++) {
+        *value = (*value << SHIFT_8) | (*p)[i];
     }
-    *p += 8;
+    *p += BYTES_IN_UINT64;
     return 0;
 }
 
 static int decode_cbor_uint8(const uint8_t **p, const uint8_t *end, uint8_t *value) {
-    if (*p + 2 > end || **p != (CBOR_TYPE_UINT | CBOR_ADDITIONAL_1)) {
+    if (*p + CBOR_UINT8_SIZE > end || **p != (CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_1)) {
         return -1;
     }
     (*p)++;
@@ -99,10 +104,10 @@ static int decode_cbor_uint8(const uint8_t **p, const uint8_t *end, uint8_t *val
 
 static int decode_cbor_text(const uint8_t **p, const uint8_t *end, 
                            char *buffer, size_t buffer_size) {
-    if (*p >= end || (**p & 0xE0) != CBOR_TYPE_TEXT) {
+    if (*p >= end || (**p & CBOR_TYPE_MASK) != CBOR_TYPE_TEXT) {
         return -1;
     }
-    size_t len = **p & 0x1F;
+    size_t len = **p & CBOR_ADDITIONAL_INFO_MASK;
     (*p)++;
     if (*p + len > end || len >= buffer_size) {
         return -1;
@@ -200,92 +205,92 @@ static int decode_cbor_lane(const uint8_t **p, const uint8_t *end,
 
 /* Helper functions for encoding */
 static int encode_cbor_header(uint8_t **p, size_t *remaining) {
-    if (*remaining < 1) return -1;
+    if (*remaining < CBOR_HEADER_SIZE) return -1;
     **p = CBOR_TYPE_ARRAY | CBOR_ARRAY_SIZE_ATTRIBUTED;
     (*p)++;
-    (*remaining)--;
+    (*remaining) -= CBOR_HEADER_SIZE;
     return 0;
 }
 
 static int encode_cbor_sha(uint8_t **p, size_t *remaining, const uint8_t *sha) {
-    if (*remaining < SHA_SIZE + 1) return -1;
+    if (*remaining < SHA_SIZE + CBOR_HEADER_SIZE) return -1;
     **p = CBOR_TYPE_BYTES | SHA_SIZE;
     (*p)++;
     memcpy(*p, sha, SHA_SIZE);
     *p += SHA_SIZE;
-    *remaining -= (SHA_SIZE + 1);
+    *remaining -= (SHA_SIZE + CBOR_HEADER_SIZE);
     return 0;
 }
 
 static int encode_cbor_uint16(uint8_t **p, size_t *remaining, uint16_t value) {
-    if (*remaining < 3) return -1;
-    **p = CBOR_TYPE_UINT | CBOR_ADDITIONAL_2;
+    if (*remaining < CBOR_UINT16_SIZE) return -1;
+    **p = CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_2;
     (*p)++;
-    **p = (value >> 8) & 0xFF;
+    **p = (value >> SHIFT_8) & BYTE_MASK;
     (*p)++;
-    **p = value & 0xFF;
+    **p = value & BYTE_MASK;
     (*p)++;
-    *remaining -= 3;
+    *remaining -= CBOR_UINT16_SIZE;
     return 0;
 }
 
 static int encode_cbor_uint32(uint8_t **p, size_t *remaining, uint32_t value) {
-    if (*remaining < 5) return -1;
-    **p = CBOR_TYPE_UINT | CBOR_ADDITIONAL_4;
+    if (*remaining < CBOR_UINT32_SIZE) return -1;
+    **p = CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_4;
     (*p)++;
-    **p = (value >> 24) & 0xFF;
+    **p = (value >> SHIFT_24) & BYTE_MASK;
     (*p)++;
-    **p = (value >> 16) & 0xFF;
+    **p = (value >> SHIFT_16) & BYTE_MASK;
     (*p)++;
-    **p = (value >> 8) & 0xFF;
+    **p = (value >> SHIFT_8) & BYTE_MASK;
     (*p)++;
-    **p = value & 0xFF;
+    **p = value & BYTE_MASK;
     (*p)++;
-    *remaining -= 5;
+    *remaining -= CBOR_UINT32_SIZE;
     return 0;
 }
 
 static int encode_cbor_uint64(uint8_t **p, size_t *remaining, uint64_t value) {
-    if (*remaining < 9) return -1;
-    **p = CBOR_TYPE_UINT | CBOR_ADDITIONAL_8;
+    if (*remaining < CBOR_UINT64_SIZE) return -1;
+    **p = CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_8;
     (*p)++;
-    for (int i = 7; i >= 0; i--) {
-        **p = (value >> (i * 8)) & 0xFF;
+    for (int i = BYTES_IN_UINT64 - 1; i >= 0; i--) {
+        **p = (value >> (i * BYTE_SIZE)) & BYTE_MASK;
         (*p)++;
     }
-    *remaining -= 9;
+    *remaining -= CBOR_UINT64_SIZE;
     return 0;
 }
 
 static int encode_cbor_uint8(uint8_t **p, size_t *remaining, uint8_t value) {
-    if (*remaining < 2) return -1;
-    **p = CBOR_TYPE_UINT | CBOR_ADDITIONAL_1;
+    if (*remaining < CBOR_UINT8_SIZE) return -1;
+    **p = CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_1;
     (*p)++;
     **p = value;
     (*p)++;
-    *remaining -= 2;
+    *remaining -= CBOR_UINT8_SIZE;
     return 0;
 }
 
 static int encode_cbor_text(uint8_t **p, size_t *remaining, 
                            const char *text, size_t max_len) {
     size_t len = strlen(text);
-    if (len > max_len || *remaining < len + 2) return -1;
-    **p = CBOR_TYPE_TEXT | (len & 0x1F);
+    if (len > max_len || *remaining < len + CBOR_HEADER_SIZE + 1) return -1;
+    **p = CBOR_TYPE_TEXT | (len & CBOR_ADDITIONAL_INFO_MASK);
     (*p)++;
     memcpy(*p, text, len);
     *p += len;
-    *remaining -= (len + 1);
+    *remaining -= (len + CBOR_HEADER_SIZE);
     return 0;
 }
 
 static int encode_cbor_ulid(uint8_t **p, size_t *remaining, const char *ulid) {
-    if (*remaining < ULID_SIZE + 1) return -1;
+    if (*remaining < ULID_SIZE + CBOR_HEADER_SIZE) return -1;
     **p = CBOR_TYPE_TEXT | ULID_SIZE;
     (*p)++;
     memcpy(*p, ulid, ULID_SIZE);
     *p += ULID_SIZE;
-    *remaining -= (ULID_SIZE + 1);
+    *remaining -= (ULID_SIZE + CBOR_HEADER_SIZE);
     return 0;
 }
 

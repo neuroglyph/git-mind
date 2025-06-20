@@ -16,12 +16,12 @@ int gm_cmd_cache_rebuild(gm_context_t *ctx, int argc, char **argv) {
     
     /* Parse arguments */
     for (int i = 0; i < argc; i++) {
-        if (strcmp(argv[i], "--branch") == 0 && i + 1 < argc) {
+        if (strcmp(argv[i], GM_FLAG_BRANCH) == 0 && i + 1 < argc) {
             branch = argv[++i];
-        } else if (strcmp(argv[i], "--force") == 0) {
+        } else if (strcmp(argv[i], GM_FLAG_FORCE) == 0) {
             force = true;
-        } else if (argv[i][0] == '-') {
-            fprintf(stderr, "Error: Unknown option '%s'\n", argv[i]);
+        } else if (argv[i][0] == GM_OPTION_PREFIX) {
+            gm_output_error(ctx->output, GM_ERROR_UNKNOWN_OPT "\n", argv[i]);
             return GM_INVALID_ARG;
         }
     }
@@ -31,7 +31,7 @@ int gm_cmd_cache_rebuild(gm_context_t *ctx, int argc, char **argv) {
         git_reference *head = NULL;
         rc = git_repository_head(&head, ctx->git_repo);
         if (rc < 0) {
-            fprintf(stderr, "Error: Failed to get current branch\n");
+            gm_output_error(ctx->output, GM_ERROR_GET_BRANCH "\n");
             return GM_ERROR;
         }
         
@@ -41,12 +41,17 @@ int gm_cmd_cache_rebuild(gm_context_t *ctx, int argc, char **argv) {
     
     /* Check if cache needs rebuild */
     if (!force && !gm_cache_is_stale(ctx->git_repo, branch)) {
-        printf("Cache is up to date for branch '%s'\n", branch);
+        if (gm_output_is_porcelain(ctx->output)) {
+            gm_output_porcelain(ctx->output, "status", "up-to-date");
+            gm_output_porcelain(ctx->output, "branch", "%s", branch);
+        } else {
+            gm_output_print(ctx->output, GM_MSG_CACHE_CURRENT "\n", branch);
+        }
         return GM_OK;
     }
     
     /* Start rebuild */
-    printf("Rebuilding cache for branch '%s'...\n", branch);
+    gm_output_verbose(ctx->output, GM_MSG_CACHE_REBUILD "\n", branch);
     clock_t start = clock();
     
     /* Pass force flag through context */
@@ -54,7 +59,7 @@ int gm_cmd_cache_rebuild(gm_context_t *ctx, int argc, char **argv) {
     rc = gm_cache_rebuild(ctx, branch);
     ctx->user_data = NULL;
     if (rc != GM_OK) {
-        fprintf(stderr, "Error: Cache rebuild failed: %s\n", gm_error_string(rc));
+        gm_output_error(ctx->output, GM_ERROR_CACHE_FAILED "\n", gm_error_string(rc));
         return rc;
     }
     
@@ -66,11 +71,17 @@ int gm_cmd_cache_rebuild(gm_context_t *ctx, int argc, char **argv) {
     uint64_t cache_size = 0;
     gm_cache_stats(ctx->git_repo, branch, &edge_count, &cache_size);
     
-    printf("Cache rebuilt successfully!\n");
-    printf("  Edges indexed: %llu\n", (unsigned long long)edge_count);
-    printf("  Cache size: ~%llu KB\n", (unsigned long long)(cache_size / 1024));
-    printf("  Build time: %.2f seconds\n", elapsed);
-    printf("\nQueries will now use the bitmap cache for O(log N) performance.\n");
+    if (gm_output_is_porcelain(ctx->output)) {
+        gm_output_porcelain(ctx->output, "status", "success");
+        gm_output_porcelain(ctx->output, "branch", "%s", branch);
+        gm_output_porcelain(ctx->output, "edges", "%llu", (unsigned long long)edge_count);
+        gm_output_porcelain(ctx->output, "cache_size_kb", "%llu", (unsigned long long)(cache_size / GM_BYTES_PER_KB));
+        gm_output_porcelain(ctx->output, "build_time_seconds", "%.2f", elapsed);
+    } else {
+        gm_output_print(ctx->output, GM_MSG_CACHE_SUCCESS "\n");
+        gm_output_print(ctx->output, GM_MSG_CACHE_STATS "\n", (unsigned long long)edge_count, (unsigned long long)(cache_size / GM_BYTES_PER_KB), elapsed);
+        gm_output_print(ctx->output, GM_MSG_CACHE_PERF "\n");
+    }
     
     return GM_OK;
 }

@@ -2,6 +2,8 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind.h"
+#include "gitmind/constants_internal.h"
+#include "gitmind/constants_cbor.h"
 #include <git2.h>
 #include <stdio.h>
 #include <string.h>
@@ -9,6 +11,7 @@
 
 /* Constants */
 #define REFS_GITMIND_PREFIX "refs/gitmind/edges/"
+#define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
 
 /* Reader context */
 typedef struct {
@@ -40,7 +43,7 @@ static int process_commit(git_commit *commit, reader_ctx_t *rctx) {
     /* For binary data, we can't use strlen. We need the actual size.
      * Unfortunately libgit2 doesn't provide a way to get raw message length.
      * We'll have to parse the CBOR data until we can't parse anymore. */
-    message_len = 8192;  /* MAX_CBOR_SIZE from writer.c */
+    message_len = MAX_CBOR_SIZE;
     
     /* Forward declaration of extended decoder */
     int gm_edge_decode_cbor_ex(const uint8_t *buffer, size_t len, gm_edge_t *edge, size_t *consumed);
@@ -132,8 +135,8 @@ int gm_journal_read(gm_context_t *ctx, const char *branch,
                     int (*callback)(const gm_edge_t *edge, void *userdata),
                     void *userdata) {
     reader_ctx_t rctx;
-    char ref_name[256];
-    char current_branch[128];
+    char ref_name[REF_NAME_BUFFER_SIZE];
+    char current_branch[BUFFER_SIZE_TINY];
     
     if (!ctx || !callback) {
         return GM_INVALID_ARG;
@@ -199,7 +202,7 @@ static int process_commit_attributed(git_commit *commit, reader_attributed_ctx_t
     
     /* The raw message IS the CBOR data directly */
     cbor_data = (const uint8_t *)raw_message;
-    message_len = 8192;  /* MAX_CBOR_SIZE from writer.c */
+    message_len = MAX_CBOR_SIZE;
     
     /* Decode edges from CBOR */
     while (offset < message_len) {
@@ -232,8 +235,8 @@ static int process_commit_attributed(git_commit *commit, reader_attributed_ctx_t
             }
             
             /* Convert legacy edge to attributed edge with default attribution */
-            memcpy(edge.src_sha, legacy_edge.src_sha, 20);
-            memcpy(edge.tgt_sha, legacy_edge.tgt_sha, 20);
+            memcpy(edge.src_sha, legacy_edge.src_sha, SHA_BYTES_SIZE);
+            memcpy(edge.tgt_sha, legacy_edge.tgt_sha, SHA_BYTES_SIZE);
             edge.rel_type = legacy_edge.rel_type;
             edge.confidence = legacy_edge.confidence;
             edge.timestamp = legacy_edge.timestamp;
@@ -255,11 +258,11 @@ static int process_commit_attributed(git_commit *commit, reader_attributed_ctx_t
             edge.ulid[ulid_len] = '\0';
             
             /* Set default human attribution */
-            edge.attribution.source_type = 0; /* GM_SOURCE_HUMAN */
+            edge.attribution.source_type = GM_SOURCE_HUMAN;
             edge.attribution.author[0] = '\0';
             edge.attribution.session_id[0] = '\0';
             edge.attribution.flags = 0;
-            edge.lane = 0; /* GM_LANE_DEFAULT */
+            edge.lane = GM_LANE_DEFAULT;
             
             offset += consumed;
         } else {
@@ -338,8 +341,8 @@ int gm_journal_read_attributed(gm_context_t *ctx, const char *branch,
                               int (*callback)(const gm_edge_attributed_t *edge, void *userdata),
                               void *userdata) {
     reader_attributed_ctx_t rctx;
-    char ref_name[256];
-    char current_branch[128];
+    char ref_name[REF_NAME_BUFFER_SIZE];
+    char current_branch[BUFFER_SIZE_TINY];
     
     if (!ctx || !callback) {
         return GM_INVALID_ARG;

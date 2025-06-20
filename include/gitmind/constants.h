@@ -38,6 +38,9 @@
 #define GM_FLAG_FROM         "--from"
 #define GM_FLAG_VERBOSE      "--verbose"
 #define GM_FLAG_HELP         "--help"
+#define GM_FLAG_SHOW_AUG     "--show-augments"
+#define GM_FLAG_BRANCH       "--branch"
+#define GM_FLAG_FORCE        "--force"
 
 /* Default values */
 #define GM_DEFAULT_REL_TYPE  GM_STR_REFERENCES
@@ -64,5 +67,50 @@
 #define GM_CONFIDENCE_SCALE    0x3C00  /* 1.0 in IEEE 754 half-float */
 #define GM_CONFIDENCE_MIN      0.0f
 #define GM_CONFIDENCE_MAX      1.0f
+
+/* Callback return codes */
+#define GM_CALLBACK_CONTINUE   0
+#define GM_CALLBACK_STOP       1
+
+/* Source filter values */
+#define GM_FILTER_VAL_AI       "ai"
+#define GM_FILTER_VAL_ALL      "all"
+
+/* List output messages */
+#define GM_MSG_NO_LINKS        "No links found"
+#define GM_MSG_NO_LINKS_PATH   "No links found for: %s"
+#define GM_MSG_NO_LINKS_FILTER "No links found matching filter criteria"
+
+/* Cache-related constants */
+#define GM_ERROR_UNKNOWN_OPT   "Error: Unknown option '%s'"
+#define GM_ERROR_GET_BRANCH    "Error: Failed to get current branch"
+#define GM_ERROR_CACHE_FAILED  "Error: Cache rebuild failed: %s"
+#define GM_MSG_CACHE_CURRENT   "Cache is up to date for branch '%s'"
+#define GM_MSG_CACHE_REBUILD   "Rebuilding cache for branch '%s'..."
+#define GM_MSG_CACHE_SUCCESS   "Cache rebuilt successfully!"
+#define GM_MSG_CACHE_STATS     "  Edges indexed: %llu\n  Cache size: ~%llu KB\n  Build time: %.2f seconds"
+#define GM_MSG_CACHE_PERF      "\nQueries will now use the bitmap cache for O(log N) performance."
+
+/* Unit conversion */
+#define GM_BYTES_PER_KB        1024
+
+/* Install hooks constants */
+#define GM_HOOK_BACKUP_SUFFIX  ".backup"
+#define GM_MSG_HOOK_EXISTS     "Existing post-commit hook found"
+#define GM_MSG_HOOK_BACKUP     "Backing up to: %s"
+#define GM_MSG_HOOK_INSTALLED  "git-mind hooks installed successfully"
+#define GM_MSG_HOOK_ALREADY    "git-mind hooks already installed"
+#define GM_MSG_HOOK_DETAILS    "\nThe post-commit hook will automatically create AUGMENTS edges\nwhen you modify files that have existing semantic links.\n\nTo test: modify a linked file and commit the change."
+#define GM_ERR_HOOK_BACKUP     "Failed to backup existing hook: %s"
+#define GM_ERR_HOOK_CREATE     "Failed to create post-commit hook: %s"
+#define GM_ERR_HOOK_WRITE      "Failed to write hook script"
+#define GM_ERR_HOOK_CHMOD      "Failed to make hook executable: %s"
+#define GM_ERR_HOOK_NO_DIR     "Error: .git/hooks directory not found\nAre you in a git repository?"
+
+/* Single edge operation */
+#define GM_SINGLE_EDGE_COUNT   1
+
+/* Option prefix check */
+#define GM_OPTION_PREFIX       '-'
 
 #endif /* GITMIND_CONSTANTS_H */

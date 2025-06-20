@@ -2,6 +2,7 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind.h"
+#include "gitmind/constants_internal.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -79,7 +80,7 @@ int gm_edge_attributed_create(gm_context_t *ctx, const char *src_path, const cha
     /* Set basic edge properties */
     edge->rel_type = rel_type;
     edge->confidence = confidence;
-    edge->timestamp = (uint64_t)time(NULL) * 1000; /* Unix millis */
+    edge->timestamp = (uint64_t)time(NULL) * MILLIS_PER_SECOND; /* Unix millis */
     
     /* Copy paths */
     strncpy(edge->src_path, src_path, sizeof(edge->src_path) - 1);
