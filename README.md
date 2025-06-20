@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 
-[![CI](https://github.com/neuroglyph/git-mind/actions/workflows/ci.yml/badge.svg)](https://github.com/neuroglyph/git-mind/actions/workflows/ci.yml)
+[![CI](https://github.com/neuroglyph/git-mind/actions/workflows/ci.yml/badge.svg)](https://github.com/neuroglyph/git-mind/actions/workflows/ci.yml) • [![MIND-UCAL](https://img.shields.io/badge/license-MIND--UCAL-orange)](LICENSE)
 
-[![MIND-UCAL](https://img.shields.io/badge/license-MIND--UCAL-orange)](LICENSE)
+![git-mind](./assets/images/wide-logo.png)
 
 # git-mind
 
