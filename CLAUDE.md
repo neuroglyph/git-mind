@@ -1,6 +1,68 @@
 # Instructions for Claude and AI Assistants
 
-This file contains important instructions for Claude and other AI assistants working on the Neuroglyph project.
+This file contains important instructions for Claude and other AI assistants working on the git-mind project.
+
+## 🚀 Quick Reference
+
+### Most Important Rules
+1. **NEVER commit without permission** - Always ask first!
+2. **MIND-UCLA v1.0 license** - Not Apache, not MIT!
+3. **All Git operations in Docker/temp dirs** - Never in working repo
+4. **SPDX headers on all new files** - See examples below
+5. **Test everything in Docker** - Use `make test`
+
+### Common Commands
+```bash
+# Run tests
+make test
+
+# Build in Docker
+make docker-build
+
+# Check implementation status
+cat TASKLIST.md
+
+# GitHub issue management
+gh issue list --assignee @me
+gh issue view <number>
+gh issue edit <number> --add-assignee @me
+gh issue close <number>
+```
+
+### Decision Flowchart (Simple)
+```mermaid
+graph TD
+    A[New Task] --> B{Have GitHub Issue #?}
+    B -->|Yes| C[Check if valid:<br/>- Open<br/>- Assigned to me or unassigned]
+    B -->|No| D[Try to find one:<br/>gh issue list]
+    
+    C --> E{Valid?}
+    D --> F{Found one?}
+    
+    E -->|Yes| G[Claim if needed]
+    E -->|No| H[⚠️ Work untracked]
+    F -->|Yes| C
+    F -->|No| H
+    
+    G --> I[Do the work]
+    H --> I
+    
+    I --> J[Complete task]
+    J --> K{Had issue?}
+    
+    K -->|Yes| L[Update/close issue]
+    K -->|No| M[Done]
+    
+    L --> M
+```
+
+### Task Implementation Guide
+When working on a task:
+1. **Multiple steps?** → Use TodoWrite
+2. **Git operation?** → Use Docker/temp dir (NEVER working repo!)
+3. **New file?** → Add SPDX header
+4. **Need tests?** → Write test first (TDD)
+5. **Test behavior** → Not stdout/implementation
 
 ## Project Overview
 
@@ -9,6 +71,18 @@ This file contains important instructions for Claude and other AI assistants wor
 - **License**: MIND-UCLA v1.0 (NOT APACHE 2.0! NOT MIT!)
 - **Copyright**: © 2025 J. Kirby Ross / Neuroglyph Collective
 - **Repository**: https://github.com/neuroglyph/git-mind
+
+## 📋 Table of Contents
+
+1. [Quick Reference](#-quick-reference)
+2. [Project Overview](#project-overview)
+3. [Critical Rules](#critical-rules)
+4. [Development Practices](#development-practices)
+5. [Testing Guidelines](#testing-guidelines)
+6. [Technical Details](#technical-details)
+7. [AI Collaboration](#ai-collaboration)
+8. [Common Tasks](#common-tasks)
+9. [Quick Examples](#quick-examples)
 
 ## Development Tools and Techniques
 
@@ -65,7 +139,7 @@ All new files MUST include SPDX headers:
 ### 4. License Information
 - This project uses **MIND-UCLA v1.0** exclusively
 
-### 5. Development Practices
+## Development Practices
 
 #### Development Philosophy
 - **TDD (Test-Driven Development)**: Write tests first, then implementation
@@ -133,7 +207,7 @@ A feature is only complete when:
 - Avoid premature optimization (YAGNI)
 - **Single Responsibility Principle** - Each module/struct has one reason to change
 
-### 6. Key Technical Details
+## Technical Details
 
 #### Storage Model
 - Links stored in `.gitmind/links/` directory
@@ -143,19 +217,22 @@ A feature is only complete when:
 - Every operation uses Git's content-addressable storage
 - Testing must use real Git operations to be valid
 
-#### Architectur- CLI first approach (no server required)
+#### Architecture
+- CLI first approach (no server required)
 - Optional daemon for web UI
 - Distributed by design
 - Content-addressable storage
 
-### 8. Important Files to Read
+### Important Files to Read
 When starting work, always check:
 1. `TASKLIST.md` - Current implementation status
 2. `README.md` - Project overview (root)
 
-## Attribution System for AI Collaboration
+## AI Collaboration
 
-### When Creating Edges
+### Attribution System
+
+#### When Creating Edges
 AI assistants MUST properly attribute edges they create:
 
 ```bash
@@ -168,14 +245,14 @@ export GIT_MIND_SESSION=conversation_id
 git mind link src/a.c src/b.c --type depends_on --confidence 0.85
 ```
 
-### Confidence Guidelines
+#### Confidence Guidelines
 - **1.0**: Only for human-created edges or absolute certainty
 - **0.9-0.99**: Very high confidence (obvious relationship)
 - **0.7-0.89**: Good confidence (likely relationship)
 - **0.5-0.69**: Moderate confidence (possible relationship)
 - **< 0.5**: Low confidence (speculative)
 
-### Review Workflow
+#### Review Workflow
 When suggesting edges:
 1. Always mark as pending unless explicitly told to commit
 2. Group related edges with same session_id
@@ -193,12 +270,12 @@ When suggesting edges:
 ### Updating Documentation
 1. Add SPDX headers to new docs
 2. Keep technical docs in `/design/` or `/docs/` (user docs)
-4. Update `TASKLIST.md` when completing tasks
+3. Update `TASKLIST.md` when completing tasks
 
 ### Working with Git
 1. NEVER commit without explicit permission
 2. Use conventional commits when asked to commit or suggest commit messages
-4. Run tests before any push (automatic via hooks)
+3. Run tests before any push (automatic via hooks)
 5. When asked for commit messages, provide them in this format:
    ```bash
    git add <files> && git commit -m "type(scope): message"
@@ -206,18 +283,9 @@ When suggesting edges:
 6. Suggest commits after completing each task from TASKLIST.md
 7. Keep TASKLIST.md up-to-date as tasks are completed
 
-## Development Workflow Guidelines
-
 ### Tech Design and Feature Tracking
 - Whenever we make a significant tech design decision, document it in `design/decisions`
 - Whenever we complete a feature, update the document in `design/features` to reflect its status
-
-## Final Reminders
-- MIND-UCLA v1.0, not Apache 2.0, not MIT!
-- No commits without permission!
-- SPDX headers on all new files!
-- Test everything in Docker!
-- We now depend on libgit2 for robust Git operations
 
 ## Development Workflow Example
 
@@ -230,8 +298,6 @@ When implementing a new feature:
 6. **Don't add extra features** (YAGNI)
 7. **Keep each module focused** on one responsibility (SRP)
 
-## Important Development Practices
-
 ### Logging and Journal
 - Leave your impressions or thoughts in `.claude/claude-mind/YYYY-MM-DD/` directory
 - Always use today's actual date (double-check to avoid date errors!)
@@ -239,7 +305,7 @@ When implementing a new feature:
   - Format: `HH:MM-topic-sessionID.md` (e.g., `14:45-web-viz-abc123.md`)
   - Use first 6 chars of conversation ID for sessionID
 - Use posix timestamps (e.g., `1749941840`)
-- Your "Collaborator" identity comes from  `git confg user.name` and `git config user.email`, but protected  i.e. "[J. Kirby Ross](james@flyingrobots.dev)"
+- Your "Collaborator" identity comes from `git config user.name` and `git config user.email`, but protected i.e. "[J. Kirby Ross](james@flyingrobots.dev)"
 - Include session metadata at the start of each file:
   ```markdown
   # Claude Development Journal
@@ -254,6 +320,53 @@ When implementing a new feature:
   ```
 - This is your dev journal - feel free to write freely when you get ideas or insights
 - Create an `index.md` in each day's directory summarizing sessions
+
+## Quick Examples
+
+### Creating a New C File
+```c
+/* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
+/* © 2025 J. Kirby Ross / Neuroglyph Collective */
+
+#include "git_mind.h"
+
+// Define constants - NO MAGIC STRINGS/NUMBERS!
+#define MAX_BUFFER_SIZE 1024
+#define ERROR_MSG "Operation failed"
+
+// Single responsibility function
+int process_data(const char* input, char* output) {
+    // Implementation here
+    return 0;
+}
+```
+
+### Writing Tests (TDD Example)
+```c
+// tests/test_process.c
+void test_process_data_handles_empty_input() {
+    char output[MAX_BUFFER_SIZE];
+    int result = process_data("", output);
+    assert(result == 0);
+    assert(strlen(output) == 0);
+}
+```
+
+### Suggesting a Commit
+```bash
+# After completing a task:
+git add src/process.c tests/test_process.c
+git commit -m "feat(process): add data processing with empty input handling"
+```
+
+---
+## 💡 Final Reminders
+
+- **MIND-UCLA v1.0**, not Apache 2.0, not MIT!
+- **No commits without permission!**
+- **SPDX headers on all new files!**
+- **Test everything in Docker!**
+- We now depend on **libgit2** for robust Git operations
 
 ---
 *Last updated: June 2025*

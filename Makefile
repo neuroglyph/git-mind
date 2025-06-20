@@ -68,6 +68,54 @@ test-ci:
 	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && export GIT_MIND=/tmp/git-mind && cd tests && bash integration/test_behavior.sh"
 	@echo "✅ CI simulation completed!"
 
+# Run FULL CI check (tests + code quality) EXACTLY like GitHub Actions
+.PHONY: ci-full
+ci-full:
+	@echo "🚀 Running FULL CI simulation (tests + code quality)..."
+	@echo "Step 1/2: Running code quality checks..."
+	@$(MAKE) ci-quality
+	@echo ""
+	@echo "Step 2/2: Running tests..."
+	@$(MAKE) test-ci
+	@echo ""
+	@echo "✅ FULL CI simulation passed! Safe to push."
+
+# Run code quality checks EXACTLY like GitHub Actions
+.PHONY: ci-quality
+ci-quality:
+	@echo "🔍 Running code quality checks (EXACTLY like GitHub Actions)..."
+	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "\
+		echo '=== Installing quality tools ===' && \
+		apt-get update -qq && apt-get install -y -qq clang-format clang-tidy cppcheck python3-pip >/dev/null 2>&1 && \
+		pip3 install lizard flawfinder --quiet && \
+		echo '=== Running clang-format ===' && \
+		find /workspace/src -name '*.c' -o -name '*.h' | xargs clang-format --dry-run --Werror && \
+		echo '✓ clang-format passed' && \
+		echo '=== Running clang-tidy ===' && \
+		find /workspace/src -name '*.c' | xargs clang-tidy -- -I/workspace/include && \
+		echo '✓ clang-tidy passed' && \
+		echo '=== Running cppcheck ===' && \
+		cppcheck --enable=all --error-exitcode=1 \
+			--suppress=missingIncludeSystem \
+			--suppress=unusedFunction \
+			-I/workspace/include \
+			/workspace/src/ && \
+		echo '✓ cppcheck passed' && \
+		echo '=== Running custom checks ===' && \
+		cd /workspace && \
+		chmod +x ./tools/code-quality/*.sh && \
+		./tools/code-quality/check-function-length.sh && \
+		echo '✓ function length check passed' && \
+		./tools/code-quality/check-magic-values.sh && \
+		echo '✓ magic values check passed' && \
+		./tools/code-quality/check-output-control.sh && \
+		echo '✓ output control check passed' && \
+		./tools/code-quality/check-dependency-injection.sh && \
+		echo '✓ dependency injection check passed' && \
+		./tools/code-quality/check-test-quality.sh && \
+		echo '✓ test quality check passed' && \
+		echo '=== All quality checks passed ==='"
+
 # Run E2E tests
 .PHONY: test-e2e
 test-e2e:

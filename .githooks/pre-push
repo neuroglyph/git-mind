@@ -10,11 +10,12 @@ echo "🚀 Running pre-push checks..."
 export COMPOSE_BAKE=true
 export DOCKER_BUILDKIT=1
 
-# Run quick quality checks
-echo "📋 Running quick quality checks..."
-if ! make check-quality; then
-    echo "❌ Quality checks failed!"
-    echo "Fix issues before pushing."
+# Run CI quality checks (exactly like GitHub Actions)
+echo "🔍 Running CI quality checks (exactly like GitHub Actions)..."
+if ! make ci-quality; then
+    echo "❌ CI quality checks failed!"
+    echo "This runs the EXACT same checks as GitHub Actions."
+    echo "Fix all issues before pushing to avoid CI failures."
     exit 1
 fi
 
