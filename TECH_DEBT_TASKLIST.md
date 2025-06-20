@@ -1,5 +1,9 @@
 # Technical Debt Task List for Git-Mind
 
+<progress value="90" max="165" style="width: 100%; height: 30px;"></progress>
+
+**Progress: 90/165 tasks completed (54.5%)**
+
 This document tracks all technical debt identified in the 2025-06-19 code audit. Each item must be addressed before proceeding to new features.
 
 ## Priority 1: Emergency Function Size Violations (Day 1-2)
@@ -157,9 +161,9 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
   - [ ] Merge `gm_cache_query_fanout()` and `gm_cache_query_fanin()`
   - [ ] Extract common query logic
 
-- [ ] **CBOR module**
-  - [ ] Move duplicated functions from `cbor_decode_ex.c` to shared location
-  - [ ] Create `src/cbor/common.c` for shared helpers
+- [x] **CBOR module**
+  - [x] Move duplicated functions from `cbor_decode_ex.c` to shared location
+  - [x] Create `src/cbor/common.c` for shared helpers
 
 ## Priority 6: Fix Test Structure (Day 6)
 
@@ -246,10 +250,10 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
 ## Completion Metrics
 
 ### Success Criteria
-- [ ] All functions ≤ 15 lines
+- [x] All functions ≤ 15 lines
 - [ ] All functions ≤ 3 levels of nesting
-- [ ] Zero magic numbers/strings
-- [ ] Complete CLI output control
+- [x] Zero magic numbers/strings
+- [x] Complete CLI output control
 - [ ] Full dependency injection
 - [ ] No code duplication
 - [ ] All tests check behavior
@@ -257,9 +261,9 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
 - [ ] Project score ≥ 8/10
 
 ### Verification Checklist
-- [ ] Run function length checker (no violations)
-- [ ] Run magic value detector (no violations)
-- [ ] Run output control checker (no direct printf)
+- [x] Run function length checker (no violations)
+- [x] Run magic value detector (no violations)
+- [x] Run output control checker (no direct printf)
 - [ ] Run dependency injection checker (no direct system calls)
 - [ ] Run test quality checker (no stdout assertions)
 - [ ] Run documentation checker (all public APIs documented)
