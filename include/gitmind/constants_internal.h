@@ -68,6 +68,7 @@
 
 /* Hook Script Constants */
 #define PRE_PUSH_HOOK_NAME      "pre-push"
+#define POST_COMMIT_HOOK_NAME   "post-commit"
 #define HOOK_BACKUP_SUFFIX      ".gitmind-backup"
 #define HOOK_SHEBANG            "#!/bin/sh\n"
 
@@ -93,5 +94,37 @@
 #define MAX_COMMAND_LENGTH      32      /* Maximum CLI command name */
 #define MAX_EDGE_TYPE_LENGTH    64      /* Maximum edge type string */
 #define MAX_ERROR_MSG_LENGTH    512     /* Maximum error message */
+
+/* Porcelain Output Keys */
+#define PORCELAIN_KEY_STATUS    "status"
+#define PORCELAIN_KEY_BRANCH    "branch"
+#define PORCELAIN_KEY_EDGES     "edges"
+#define PORCELAIN_KEY_CACHE_SIZE_KB "cache_size_kb"
+#define PORCELAIN_KEY_BUILD_TIME "build_time_seconds"
+#define PORCELAIN_KEY_SOURCE    "source"
+#define PORCELAIN_KEY_TARGET    "target"
+#define PORCELAIN_KEY_TYPE      "type"
+#define PORCELAIN_KEY_FILE      "file"
+#define PORCELAIN_KEY_COUNT     "count"
+#define PORCELAIN_KEY_SHA       "sha"
+#define PORCELAIN_KEY_ACTION    "action"
+#define PORCELAIN_KEY_REASON    "reason"
+#define PORCELAIN_KEY_HOOK      "hook"
+#define PORCELAIN_KEY_CONFIDENCE "confidence"
+#define PORCELAIN_KEY_ULID      "ulid"
+
+/* Porcelain Status Values */
+#define PORCELAIN_STATUS_SUCCESS "success"
+#define PORCELAIN_STATUS_UP_TO_DATE "up-to-date"
+#define PORCELAIN_STATUS_ALREADY_INSTALLED "already-installed"
+#define PORCELAIN_STATUS_CREATED "created"
+#define PORCELAIN_STATUS_BACKED_UP "backed-up"
+#define PORCELAIN_STATUS_INSTALLED "installed"
+#define PORCELAIN_STATUS_FAILED "failed"
+
+/* Porcelain Action Values */
+#define PORCELAIN_ACTION_BACKUP "backup"
+#define PORCELAIN_ACTION_INSTALL "install"
+#define PORCELAIN_ACTION_LINK   "link"
 
 #endif /* GITMIND_CONSTANTS_INTERNAL_H */

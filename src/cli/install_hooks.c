@@ -2,6 +2,7 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind.h"
+#include "gitmind/constants_internal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -121,8 +122,8 @@ static int make_hook_executable(const char *hook_path, gm_output_t *output) {
 /* Print installation success message */
 static void print_success_message(gm_output_t *output) {
     if (gm_output_is_porcelain(output)) {
-        gm_output_porcelain(output, "status", "installed");
-        gm_output_porcelain(output, "hook", "post-commit");
+        gm_output_porcelain(output, PORCELAIN_KEY_STATUS, PORCELAIN_STATUS_INSTALLED);
+        gm_output_porcelain(output, PORCELAIN_KEY_HOOK, POST_COMMIT_HOOK_NAME);
     } else {
         gm_output_print(output, GM_MSG_HOOK_INSTALLED "\n");
         gm_output_print(output, GM_MSG_HOOK_DETAILS "\n");
@@ -149,7 +150,7 @@ int gm_cmd_install_hooks(gm_context_t *ctx, int argc, char **argv) {
     if (rc == GM_OK) {
         if (is_ours) {
             if (gm_output_is_porcelain(ctx->output)) {
-                gm_output_porcelain(ctx->output, "status", "already-installed");
+                gm_output_porcelain(ctx->output, PORCELAIN_KEY_STATUS, PORCELAIN_STATUS_ALREADY_INSTALLED);
             } else {
                 gm_output_print(ctx->output, GM_MSG_HOOK_ALREADY "\n");
             }

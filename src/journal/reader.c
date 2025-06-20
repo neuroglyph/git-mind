@@ -28,6 +28,81 @@ typedef struct {
     int is_attributed;
 } reader_ctx_t;
 
+/* Convert legacy edge to attributed edge */
+static void convert_legacy_to_attributed(const gm_edge_t *legacy, gm_edge_attributed_t *attributed) {
+    /* Copy basic fields */
+    memcpy(attributed->src_sha, legacy->src_sha, SHA_BYTES_SIZE);
+    memcpy(attributed->tgt_sha, legacy->tgt_sha, SHA_BYTES_SIZE);
+    attributed->rel_type = legacy->rel_type;
+    attributed->confidence = legacy->confidence;
+    attributed->timestamp = legacy->timestamp;
+    
+    /* Safe string copies */
+    size_t src_len = strlen(legacy->src_path);
+    if (src_len >= sizeof(attributed->src_path)) src_len = sizeof(attributed->src_path) - 1;
+    memcpy(attributed->src_path, legacy->src_path, src_len);
+    attributed->src_path[src_len] = '\0';
+    
+    size_t tgt_len = strlen(legacy->tgt_path);
+    if (tgt_len >= sizeof(attributed->tgt_path)) tgt_len = sizeof(attributed->tgt_path) - 1;
+    memcpy(attributed->tgt_path, legacy->tgt_path, tgt_len);
+    attributed->tgt_path[tgt_len] = '\0';
+    
+    size_t ulid_len = strlen(legacy->ulid);
+    if (ulid_len >= sizeof(attributed->ulid)) ulid_len = sizeof(attributed->ulid) - 1;
+    memcpy(attributed->ulid, legacy->ulid, ulid_len);
+    attributed->ulid[ulid_len] = '\0';
+    
+    /* Set default attribution */
+    attributed->attribution.source_type = GM_SOURCE_HUMAN;
+    attributed->attribution.author[0] = '\0';
+    attributed->attribution.session_id[0] = '\0';
+    attributed->attribution.flags = 0;
+    attributed->lane = GM_LANE_DEFAULT;
+}
+
+/* Process attributed edge from CBOR */
+static int process_attributed_edge(const uint8_t *cbor_data, size_t remaining,
+                                  reader_ctx_t *rctx, size_t *consumed) {
+    gm_edge_attributed_t edge;
+    memset(&edge, 0, sizeof(edge));
+    
+    /* Try to decode an attributed edge */
+    int decode_result = gm_edge_attributed_decode_cbor_ex(cbor_data, remaining, &edge, consumed);
+    if (decode_result != 0 || *consumed == 0) {
+        /* Try legacy format */
+        gm_edge_t legacy_edge;
+        size_t legacy_consumed = 0;
+        
+        decode_result = gm_edge_decode_cbor_ex(cbor_data, remaining, &legacy_edge, &legacy_consumed);
+        if (decode_result != GM_OK || legacy_consumed == 0) {
+            return GM_ERROR;
+        }
+        
+        /* Convert legacy edge to attributed edge */
+        convert_legacy_to_attributed(&legacy_edge, &edge);
+        *consumed = legacy_consumed;
+    }
+    
+    /* Call attributed callback */
+    return ((int (*)(const gm_edge_attributed_t *, void *))rctx->callback)(&edge, rctx->userdata);
+}
+
+/* Process regular edge from CBOR */
+static int process_regular_edge(const uint8_t *cbor_data, size_t remaining,
+                               reader_ctx_t *rctx, size_t *consumed) {
+    gm_edge_t edge;
+    
+    /* Try to decode a regular edge */
+    int decode_result = gm_edge_decode_cbor_ex(cbor_data, remaining, &edge, consumed);
+    if (decode_result != GM_OK || *consumed == 0) {
+        return GM_ERROR;
+    }
+    
+    /* Call regular callback */
+    return ((int (*)(const gm_edge_t *, void *))rctx->callback)(&edge, rctx->userdata);
+}
+
 /* Process a single commit - generic version */
 static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
     const char *raw_message;
@@ -51,71 +126,17 @@ static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
         int cb_result;
         
         if (rctx->is_attributed) {
-            gm_edge_attributed_t edge;
-            memset(&edge, 0, sizeof(edge));
-            
-            /* Try to decode an attributed edge */
-            int decode_result = gm_edge_attributed_decode_cbor_ex(cbor_data + offset, remaining, &edge, &consumed);
-            if (decode_result != 0 || consumed == 0) {
-                /* Try legacy format */
-                gm_edge_t legacy_edge;
-                size_t legacy_consumed = 0;
-                
-                decode_result = gm_edge_decode_cbor_ex(cbor_data + offset, remaining, &legacy_edge, &legacy_consumed);
-                if (decode_result != GM_OK || legacy_consumed == 0) {
-                    break;
-                }
-                
-                /* Convert legacy edge to attributed edge */
-                memcpy(edge.src_sha, legacy_edge.src_sha, SHA_BYTES_SIZE);
-                memcpy(edge.tgt_sha, legacy_edge.tgt_sha, SHA_BYTES_SIZE);
-                edge.rel_type = legacy_edge.rel_type;
-                edge.confidence = legacy_edge.confidence;
-                edge.timestamp = legacy_edge.timestamp;
-                
-                /* Safe string copies */
-                size_t src_len = strlen(legacy_edge.src_path);
-                if (src_len >= sizeof(edge.src_path)) src_len = sizeof(edge.src_path) - 1;
-                memcpy(edge.src_path, legacy_edge.src_path, src_len);
-                edge.src_path[src_len] = '\0';
-                
-                size_t tgt_len = strlen(legacy_edge.tgt_path);
-                if (tgt_len >= sizeof(edge.tgt_path)) tgt_len = sizeof(edge.tgt_path) - 1;
-                memcpy(edge.tgt_path, legacy_edge.tgt_path, tgt_len);
-                edge.tgt_path[tgt_len] = '\0';
-                
-                size_t ulid_len = strlen(legacy_edge.ulid);
-                if (ulid_len >= sizeof(edge.ulid)) ulid_len = sizeof(edge.ulid) - 1;
-                memcpy(edge.ulid, legacy_edge.ulid, ulid_len);
-                edge.ulid[ulid_len] = '\0';
-                
-                /* Set default attribution */
-                edge.attribution.source_type = GM_SOURCE_HUMAN;
-                edge.attribution.author[0] = '\0';
-                edge.attribution.session_id[0] = '\0';
-                edge.attribution.flags = 0;
-                edge.lane = GM_LANE_DEFAULT;
-                
-                consumed = legacy_consumed;
-            }
-            
-            /* Call attributed callback */
-            cb_result = ((int (*)(const gm_edge_attributed_t *, void *))rctx->callback)(&edge, rctx->userdata);
+            cb_result = process_attributed_edge(cbor_data + offset, remaining, rctx, &consumed);
         } else {
-            gm_edge_t edge;
-            
-            /* Try to decode a regular edge */
-            int decode_result = gm_edge_decode_cbor_ex(cbor_data + offset, remaining, &edge, &consumed);
-            if (decode_result != GM_OK || consumed == 0) {
-                break;
-            }
-            
-            /* Call regular callback */
-            cb_result = ((int (*)(const gm_edge_t *, void *))rctx->callback)(&edge, rctx->userdata);
+            cb_result = process_regular_edge(cbor_data + offset, remaining, rctx, &consumed);
+        }
+        
+        if (cb_result == GM_ERROR) {
+            break;  /* No more edges to decode */
         }
         
         if (cb_result != 0) {
-            return cb_result;
+            return cb_result;  /* Callback requested stop */
         }
         
         offset += consumed;

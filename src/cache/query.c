@@ -185,43 +185,41 @@ static int journal_scan_callback_generic(const gm_edge_t* edge, void* userdata) 
     return GM_OK;
 }
 
-/* Generic cache query function */
-static int cache_query_generic(git_repository* repo, const char* branch,
-                              const uint8_t* sha, const char* index_type,
-                              int check_source, gm_cache_result_t* result) {
+/* Try to query from cache */
+static int try_cache_query(git_repository* repo, const char* branch,
+                          const uint8_t* sha, const char* index_type,
+                          gm_cache_result_t* result) {
     git_commit* cache_commit = NULL;
     git_tree* cache_tree = NULL;
     roaring_bitmap_t* bitmap = NULL;
-    gm_context_t ctx = {0};
+    git_oid cache_oid;
+    char ref_name[REF_NAME_BUFFER_SIZE];
     int rc;
     
-    /* Initialize result */
-    memset(result, 0, sizeof(gm_cache_result_t));
-    ctx.git_repo = repo;
-    
-    /* Try to load cache */
+    /* Try to load cache metadata */
     gm_cache_meta_t meta;
     rc = gm_cache_load_meta(repo, branch, &meta);
     if (rc != GM_OK) {
-        goto fallback;  /* No cache, use journal scan */
+        return rc;
     }
     
     /* Get cache commit */
-    git_oid cache_oid;
-    char ref_name[REF_NAME_BUFFER_SIZE];
     snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
-    
     rc = git_reference_name_to_id(&cache_oid, repo, ref_name);
-    if (rc < 0) goto fallback;
+    if (rc < 0) {
+        return GM_NOT_FOUND;
+    }
     
     rc = git_commit_lookup(&cache_commit, repo, &cache_oid);
-    if (rc < 0) goto fallback;
+    if (rc < 0) {
+        return GM_ERROR;
+    }
     
     /* Get cache tree */
     rc = git_commit_tree(&cache_tree, cache_commit);
     if (rc < 0) {
         git_commit_free(cache_commit);
-        goto fallback;
+        return GM_ERROR;
     }
     
     /* Load bitmap for this SHA */
@@ -230,7 +228,7 @@ static int cache_query_generic(git_repository* repo, const char* branch,
     git_commit_free(cache_commit);
     
     if (rc != GM_OK) {
-        goto fallback;  /* SHA not in cache */
+        return rc;
     }
     
     /* Extract edge IDs from bitmap */
@@ -243,9 +241,12 @@ static int cache_query_generic(git_repository* repo, const char* branch,
     
     result->from_cache = true;
     return GM_OK;
-    
-fallback:
-    /* Fall back to journal scan */
+}
+
+/* Fallback to journal scan */
+static int fallback_journal_scan(gm_context_t* ctx, const char* branch,
+                                const uint8_t* sha, int check_source,
+                                gm_cache_result_t* result) {
     journal_scan_state_t state = {
         .target_sha = sha,
         .edges = malloc(INITIAL_EDGE_CAPACITY * sizeof(gm_edge_t)),
@@ -258,7 +259,7 @@ fallback:
         return GM_NO_MEMORY;
     }
     
-    rc = gm_journal_read(&ctx, branch, journal_scan_callback_generic, &state);
+    int rc = gm_journal_read(ctx, branch, journal_scan_callback_generic, &state);
     if (rc != GM_OK) {
         free(state.edges);
         return rc;
@@ -280,6 +281,27 @@ fallback:
     
     free(state.edges);
     return GM_OK;
+}
+
+/* Generic cache query function */
+static int cache_query_generic(git_repository* repo, const char* branch,
+                              const uint8_t* sha, const char* index_type,
+                              int check_source, gm_cache_result_t* result) {
+    gm_context_t ctx = {0};
+    int rc;
+    
+    /* Initialize result */
+    memset(result, 0, sizeof(gm_cache_result_t));
+    ctx.git_repo = repo;
+    
+    /* Try cache first */
+    rc = try_cache_query(repo, branch, sha, index_type, result);
+    if (rc == GM_OK) {
+        return GM_OK;
+    }
+    
+    /* Fall back to journal scan */
+    return fallback_journal_scan(&ctx, branch, sha, check_source, result);
 }
 
 /* Query edges by source SHA (forward index) */

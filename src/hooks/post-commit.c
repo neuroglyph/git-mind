@@ -40,14 +40,60 @@ static int read_commits(void *repo, const char *ref, void *callback, void *userd
 }
 
 /* Get list of changed files from git */
+/* Free files array on error */
+static void free_files_array(char **files, size_t count) {
+    if (!files) return;
+    for (size_t i = 0; i < count; i++) {
+        free(files[i]);
+    }
+    free(files);
+}
+
+/* Grow files array if needed */
+static int grow_files_array(char ***files, size_t *capacity) {
+    *capacity *= ARRAY_GROWTH_FACTOR;
+    char **new_files = realloc(*files, *capacity * sizeof(char *));
+    if (!new_files) {
+        return GM_NO_MEMORY;
+    }
+    *files = new_files;
+    return GM_OK;
+}
+
+/* Read single file from git diff output */
+static int read_file_entry(char **files, size_t *count, size_t *capacity, char *line, ssize_t len) {
+    /* Remove newline */
+    if (line[len - 1] == '\n') {
+        line[len - 1] = '\0';
+    }
+    
+    /* Grow array if needed */
+    if (*count >= *capacity) {
+        int error = grow_files_array(&files, capacity);
+        if (error != GM_OK) {
+            return error;
+        }
+    }
+    
+    /* Copy file path */
+    files[*count] = strdup(line);
+    if (!files[*count]) {
+        return GM_NO_MEMORY;
+    }
+    
+    (*count)++;
+    return GM_OK;
+}
+
 static int get_changed_files(char ***files_out, size_t *count_out) {
-    FILE *fp;
+    FILE *fp = NULL;
     char *line = NULL;
     size_t len = 0;
     ssize_t read;
     char **files = NULL;
     size_t capacity = INITIAL_FILE_ARRAY_SIZE;
     size_t count = 0;
+    int error = GM_OK;
     
     /* Initial allocation */
     files = malloc(capacity * sizeof(char *));
@@ -64,41 +110,13 @@ static int get_changed_files(char ***files_out, size_t *count_out) {
     
     /* Read each file */
     while ((read = getline(&line, &len, fp)) != -1) {
-        /* Remove newline */
-        if (line[read - 1] == '\n') {
-            line[read - 1] = '\0';
-        }
-        
-        /* Grow array if needed */
-        if (count >= capacity) {
-            capacity *= ARRAY_GROWTH_FACTOR;
-            char **new_files = realloc(files, capacity * sizeof(char *));
-            if (!new_files) {
-                /* Clean up */
-                for (size_t i = 0; i < count; i++) {
-                    free(files[i]);
-                }
-                free(files);
-                free(line);
-                pclose(fp);
-                return GM_NO_MEMORY;
-            }
-            files = new_files;
-        }
-        
-        /* Copy file path */
-        files[count] = strdup(line);
-        if (!files[count]) {
-            /* Clean up */
-            for (size_t i = 0; i < count; i++) {
-                free(files[i]);
-            }
-            free(files);
+        error = read_file_entry(files, &count, &capacity, line, read);
+        if (error != GM_OK) {
+            free_files_array(files, count);
             free(line);
             pclose(fp);
-            return GM_NO_MEMORY;
+            return error;
         }
-        count++;
     }
     
     free(line);
@@ -109,40 +127,81 @@ static int get_changed_files(char ***files_out, size_t *count_out) {
     return GM_OK;
 }
 
+/* Initialize and open repository */
+static int initialize_repository(git_repository **repo, int verbose) {
+    int error = git_repository_open(repo, ".");
+    if (error < 0) {
+        if (verbose) {
+            fprintf(stderr, "Failed to open repository\n");
+        }
+        return GM_ERROR;
+    }
+    return GM_OK;
+}
+
+/* Check if we should process this commit */
+static int should_process_commit(git_repository *repo, int verbose) {
+    bool is_merge = false;
+    int error = is_merge_commit(repo, &is_merge);
+    
+    if (error != GM_OK || is_merge) {
+        if (verbose && is_merge) {
+            printf("Skipping merge commit\n");
+        }
+        return 0;
+    }
+    return 1;
+}
+
+/* Process all changed files */
+static void process_all_files(gm_context_t *ctx, git_repository *repo,
+                             char **changed_files, size_t file_count, int verbose) {
+    for (size_t i = 0; i < file_count; i++) {
+        if (verbose) {
+            printf("Processing: %s\n", changed_files[i]);
+        }
+        
+        int error = process_changed_file(ctx, repo, changed_files[i]);
+        if (error != GM_OK && verbose) {
+            fprintf(stderr, "Failed to process %s: %d\n", 
+                    changed_files[i], error);
+        }
+    }
+}
+
+/* Free changed files array */
+static void free_changed_files(char **changed_files, size_t file_count) {
+    if (!changed_files) return;
+    
+    for (size_t i = 0; i < file_count; i++) {
+        free(changed_files[i]);
+    }
+    free(changed_files);
+}
+
 /* Main hook entry point */
 int main(int argc, char **argv) {
     git_repository *repo = NULL;
     gm_context_t ctx;
     char **changed_files = NULL;
     size_t file_count = 0;
-    bool is_merge = false;
     int error = 0;
     
     /* Silent operation by default */
-    int verbose = 0;
-    if (argc > 1 && strcmp(argv[1], "--verbose") == 0) {
-        verbose = 1;
-    }
+    int verbose = (argc > 1 && strcmp(argv[1], "--verbose") == 0);
     
     /* Initialize libgit2 */
     git_libgit2_init();
     
     /* Open repository */
-    error = git_repository_open(&repo, ".");
-    if (error < 0) {
-        if (verbose) {
-            fprintf(stderr, "Failed to open repository\n");
-        }
+    error = initialize_repository(&repo, verbose);
+    if (error != GM_OK) {
         git_libgit2_shutdown();
         return 0; /* Don't fail the commit */
     }
     
-    /* Check if merge commit */
-    error = is_merge_commit(repo, &is_merge);
-    if (error != GM_OK || is_merge) {
-        if (verbose && is_merge) {
-            printf("Skipping merge commit\n");
-        }
+    /* Check if we should process this commit */
+    if (!should_process_commit(repo, verbose)) {
         git_repository_free(repo);
         git_libgit2_shutdown();
         return 0;
@@ -159,43 +218,23 @@ int main(int argc, char **argv) {
         return 0;
     }
     
-    /* Skip if too many files */
-    if (file_count > MAX_CHANGED_FILES) {
-        if (verbose) {
-            printf("Skipping: %zu files changed (max %d)\n", 
-                   file_count, MAX_CHANGED_FILES);
-        }
-        goto cleanup;
-    }
-    
-    /* Initialize context */
-    memset(&ctx, 0, sizeof(ctx));
-    ctx.git_ops.resolve_blob = resolve_blob;
-    ctx.git_ops.create_commit = create_commit;
-    ctx.git_ops.read_commits = read_commits;
-    ctx.git_repo = repo;
-    
-    /* Process each changed file */
-    for (size_t i = 0; i < file_count; i++) {
-        if (verbose) {
-            printf("Processing: %s\n", changed_files[i]);
-        }
+    /* Process files if not too many */
+    if (file_count <= MAX_CHANGED_FILES) {
+        /* Initialize context */
+        memset(&ctx, 0, sizeof(ctx));
+        ctx.git_ops.resolve_blob = resolve_blob;
+        ctx.git_ops.create_commit = create_commit;
+        ctx.git_ops.read_commits = read_commits;
+        ctx.git_repo = repo;
         
-        error = process_changed_file(&ctx, repo, changed_files[i]);
-        if (error != GM_OK && verbose) {
-            fprintf(stderr, "Failed to process %s: %d\n", 
-                    changed_files[i], error);
-        }
+        process_all_files(&ctx, repo, changed_files, file_count, verbose);
+    } else if (verbose) {
+        printf("Skipping: %zu files changed (max %d)\n", 
+               file_count, MAX_CHANGED_FILES);
     }
-    
-cleanup:
-    /* Free changed files */
-    for (size_t i = 0; i < file_count; i++) {
-        free(changed_files[i]);
-    }
-    free(changed_files);
     
     /* Cleanup */
+    free_changed_files(changed_files, file_count);
     git_repository_free(repo);
     git_libgit2_shutdown();
     

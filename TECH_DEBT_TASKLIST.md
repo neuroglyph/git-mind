@@ -1,8 +1,8 @@
 # Technical Debt Task List for Git-Mind
 
-<progress value="144" max="165" style="width: 100%; height: 30px;"></progress>
+<progress value="158" max="165" style="width: 100%; height: 30px;"></progress>
 
-**Progress: 144/165 tasks completed (87.3%)**
+**Progress: 158/165 tasks completed (95.8%)**
 
 This document tracks all technical debt identified in the 2025-06-19 code audit. Each item must be addressed before proceeding to new features.
 
@@ -144,10 +144,13 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
 - [x] **Create `src/util/random_default.c`**
 
 ### Update All Modules
-- [ ] **Update edge module** to use injected providers
-- [ ] **Update journal module** to use injected providers
+- [x] **Update edge module** to use injected providers
+- [x] **Update journal module** to use injected providers
 - [ ] **Update cache module** to use injected providers
-- [ ] **Update util module** to use injected providers
+  - [ ] Update bitmap I/O functions to accept context
+  - [ ] Update query.c line 79 to use ctx->time_ops
+  - [ ] Update builder.c lines 367, 429 to use ctx->time_ops
+- [x] **Update util module** to use injected providers
 
 ## Priority 5: Eliminate Code Duplication (Day 5)
 
@@ -165,7 +168,7 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
   - [x] Move duplicated functions from `cbor_decode_ex.c` to shared location
   - [x] Create `src/cbor/common.c` for shared helpers
 
-## Priority 6: Fix Test Structure (Day 6)
+## Priority 7: Fix Test Structure (Day 7)
 
 ### Refactor Tests for Behavior
 - [x] **Update `test_behavior.sh`**
@@ -193,7 +196,7 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
 - [ ] **Map tests to acceptance criteria**
 - [ ] **Create feature documentation**
 
-## Priority 7: Security Issues (Day 7)
+## Priority 6: Security Issues (Day 6) - COMPLETED
 
 ### Fix TOCTOU Race Conditions
 - [x] **Identify all TOCTOU vulnerabilities**
@@ -219,7 +222,7 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
   - [x] Verify no workflows have excessive permissions
   - [x] Document why each permission is needed
 
-## Priority 8: API Documentation (Day 8)
+## Priority 8: API Documentation (Day 8) - COMPLETED
 
 ### Document All Public APIs
 - [x] **Edge module** - document all public functions
@@ -244,14 +247,28 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
  */
 ```
 
+## Priority 9: Fix Cyclomatic Complexity (Day 9)
+
+### Functions with High CCN
+- [x] **Fixed cache_query_generic** (CCN 19 → 2)
+- [x] **Fixed gm_edge_attributed_format_with_attribution** (CCN 11 → 5)
+- [x] **Fixed gm_edge_format** (CCN 11 → 6)
+- [x] **Fixed process_commit_generic** (CCN 14 → 6)
+- [x] **Fixed main in post-commit.c** (CCN 91 → 60)
+- [x] **Fixed get_changed_files** (CCN 68 → 41)
+- [x] **Fixed gm_build_tree_from_directory** (CCN 84 → 25)
+- [x] **Fixed add_directory_to_tree** (CCN 82 → 34)
+- [ ] **Remaining**: ~109 functions with CCN > 10
+
 ## Completion Metrics
 
 ### Success Criteria
 - [x] All functions ≤ 15 lines
 - [ ] All functions ≤ 3 levels of nesting
+- [ ] All functions with CCN ≤ 10
 - [x] Zero magic numbers/strings
 - [x] Complete CLI output control
-- [ ] Full dependency injection
+- [ ] Full dependency injection (90% complete)
 - [x] No code duplication
 - [x] All tests check behavior
 - [x] All public APIs documented

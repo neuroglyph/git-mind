@@ -10,6 +10,11 @@ This file contains important instructions for Claude and other AI assistants wor
 - **Copyright**: © 2025 J. Kirby Ross / Neuroglyph Collective
 - **Repository**: https://github.com/neuroglyph/git-mind
 
+## Development Tools and Techniques
+
+- Use mermaid diagrams to illustrate complex ideas in Markdown, github issues (it can make git graphs too) also svg
+- Track tasks via gh issues and organize them into milestones
+
 ## Critical Rules
 
 ### 1. NEVER Make Git Commits or Operations in Working Repo

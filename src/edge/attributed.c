@@ -80,7 +80,14 @@ int gm_edge_attributed_create(gm_context_t *ctx, const char *src_path, const cha
     /* Set basic edge properties */
     edge->rel_type = rel_type;
     edge->confidence = confidence;
-    edge->timestamp = (uint64_t)time(NULL) * MILLIS_PER_SECOND; /* Unix millis */
+    
+    /* Get timestamp using context if available */
+    if (ctx && ctx->time_ops && ctx->time_ops->time) {
+        edge->timestamp = (uint64_t)ctx->time_ops->time(NULL) * MILLIS_PER_SECOND;
+    } else {
+        /* Fallback to direct call */
+        edge->timestamp = (uint64_t)time(NULL) * MILLIS_PER_SECOND;
+    }
     
     /* Copy paths */
     strncpy(edge->src_path, src_path, sizeof(edge->src_path) - 1);
@@ -99,6 +106,22 @@ int gm_edge_attributed_create(gm_context_t *ctx, const char *src_path, const cha
     return GM_OK;
 }
 
+/* Get relationship type arrow string */
+static const char* get_rel_arrow_string(gm_rel_type_t rel_type) {
+    switch (rel_type) {
+        case GM_REL_IMPLEMENTS:
+            return GM_STR_IMPLEMENTS;
+        case GM_REL_REFERENCES:
+            return GM_STR_REFERENCES;
+        case GM_REL_DEPENDS_ON:
+            return GM_STR_DEPENDS_ON;
+        case GM_REL_AUGMENTS:
+            return GM_STR_AUGMENTS;
+        default:
+            return GM_STR_CUSTOM;
+    }
+}
+
 /**
  * Format attributed edge without attribution info (legacy format)
  */
@@ -107,29 +130,44 @@ int gm_edge_attributed_format(const gm_edge_attributed_t *edge, char *buffer, si
         return GM_INVALID_ARG;
     }
     
-    const char *rel_str;
-    switch (edge->rel_type) {
-        case GM_REL_IMPLEMENTS:
-            rel_str = GM_STR_IMPLEMENTS;
-            break;
-        case GM_REL_REFERENCES:
-            rel_str = GM_STR_REFERENCES;
-            break;
-        case GM_REL_DEPENDS_ON:
-            rel_str = GM_STR_DEPENDS_ON;
-            break;
-        case GM_REL_AUGMENTS:
-            rel_str = GM_STR_AUGMENTS;
-            break;
-        default:
-            rel_str = GM_STR_CUSTOM;
-            break;
-    }
+    const char *rel_str = get_rel_arrow_string(edge->rel_type);
     
     snprintf(buffer, len, "%s ──%s──> %s", 
              edge->src_path, rel_str, edge->tgt_path);
     
     return GM_OK;
+}
+
+/* Get source type string */
+static const char* get_source_type_string(gm_source_type_t source_type) {
+    switch (source_type) {
+        case GM_SOURCE_HUMAN:
+            return GM_ENV_VAL_HUMAN;
+        case GM_SOURCE_AI_CLAUDE:
+            return GM_ENV_VAL_CLAUDE;
+        case GM_SOURCE_AI_GPT:
+            return GM_ENV_VAL_GPT;
+        case GM_SOURCE_SYSTEM:
+            return GM_ENV_VAL_SYSTEM;
+        default:
+            return "unknown";
+    }
+}
+
+/* Format attribution suffix */
+static void format_attribution_suffix(const gm_edge_attributed_t *edge,
+                                     const char *source_str,
+                                     char *buffer, size_t len) {
+    if (edge->attribution.source_type == GM_SOURCE_HUMAN) {
+        /* For humans, don't show confidence (always 1.0) */
+        snprintf(buffer, len, " [%s: %s]", 
+                 source_str, edge->attribution.author);
+    } else {
+        /* For AI, show confidence */
+        float confidence = gm_confidence_from_half_float(edge->confidence);
+        snprintf(buffer, len, " [%s: %s, conf: %.2f]", 
+                 source_str, edge->attribution.author, confidence);
+    }
 }
 
 /**
@@ -148,37 +186,14 @@ int gm_edge_attributed_format_with_attribution(const gm_edge_attributed_t *edge,
         return result;
     }
     
-    /* Add attribution info */
-    const char *source_str;
-    switch (edge->attribution.source_type) {
-        case GM_SOURCE_HUMAN:
-            source_str = GM_ENV_VAL_HUMAN;
-            break;
-        case GM_SOURCE_AI_CLAUDE:
-            source_str = GM_ENV_VAL_CLAUDE;
-            break;
-        case GM_SOURCE_AI_GPT:
-            source_str = GM_ENV_VAL_GPT;
-            break;
-        case GM_SOURCE_SYSTEM:
-            source_str = GM_ENV_VAL_SYSTEM;
-            break;
-        default:
-            source_str = "unknown";
-            break;
-    }
+    /* Get source type string */
+    const char *source_str = get_source_type_string(edge->attribution.source_type);
     
-    float confidence = gm_confidence_from_half_float(edge->confidence);
+    /* Format with attribution */
+    char suffix[GM_FORMAT_BUFFER_SIZE];
+    format_attribution_suffix(edge, source_str, suffix, sizeof(suffix));
     
-    if (edge->attribution.source_type == GM_SOURCE_HUMAN) {
-        /* For humans, don't show confidence (always 1.0) */
-        snprintf(buffer, len, "%s [%s: %s]", 
-                 basic_format, source_str, edge->attribution.author);
-    } else {
-        /* For AI, show confidence */
-        snprintf(buffer, len, "%s [%s: %s, conf: %.2f]", 
-                 basic_format, source_str, edge->attribution.author, confidence);
-    }
+    snprintf(buffer, len, "%s%s", basic_format, suffix);
     
     return GM_OK;
 }

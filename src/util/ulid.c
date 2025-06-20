@@ -21,9 +21,14 @@ static const char ENCODING[] = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 #define BASE32_SHIFT 5
 
 /* Get current time in milliseconds */
-static uint64_t get_time_millis(void) {
+static uint64_t get_time_millis(gm_context_t *ctx) {
     struct timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
+    if (ctx && ctx->time_ops && ctx->time_ops->clock_gettime) {
+        ctx->time_ops->clock_gettime(CLOCK_REALTIME, &ts);
+    } else {
+        /* Fallback to direct call if no context */
+        clock_gettime(CLOCK_REALTIME, &ts);
+    }
     return (uint64_t)ts.tv_sec * MILLIS_PER_SECOND + ts.tv_nsec / NANOS_PER_MILLI;
 }
 
@@ -36,29 +41,41 @@ static void encode_time(uint64_t time, char *out) {
 }
 
 /* Encode random component */
-static void encode_random(char *out) {
+static void encode_random(gm_context_t *ctx, char *out) {
     for (int i = 0; i < RANDOM_LEN; i++) {
-        out[i] = ENCODING[rand() & BASE32_MASK];
+        int r;
+        if (ctx && ctx->random_ops && ctx->random_ops->rand) {
+            r = ctx->random_ops->rand();
+        } else {
+            /* Fallback to direct call if no context */
+            r = rand();
+        }
+        out[i] = ENCODING[r & BASE32_MASK];
     }
 }
 
-/* Generate ULID */
-int gm_ulid_generate(char *ulid) {
+/* Generate ULID with context */
+int gm_ulid_generate_ex(gm_context_t *ctx, char *ulid) {
     if (!ulid) {
         return GM_INVALID_ARG;
     }
     
     /* Get current time */
-    uint64_t time = get_time_millis();
+    uint64_t time = get_time_millis(ctx);
     
     /* Encode time component */
     encode_time(time, ulid);
     
     /* Encode random component */
-    encode_random(ulid + TIME_LEN);
+    encode_random(ctx, ulid + TIME_LEN);
     
     /* Null terminate */
     ulid[ULID_LEN] = '\0';
     
     return GM_OK;
+}
+
+/* Generate ULID (backward compatible) */
+int gm_ulid_generate(char *ulid) {
+    return gm_ulid_generate_ex(NULL, ulid);
 }

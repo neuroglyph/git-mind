@@ -4,6 +4,7 @@
 #define _GNU_SOURCE
 
 #include "gitmind.h"
+#include "gitmind/constants_internal.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -109,13 +110,13 @@ static void print_link_success(gm_context_t *ctx, const gm_edge_attributed_t *ed
     char formatted[GM_FORMAT_BUFFER_SIZE];
     
     if (gm_output_is_porcelain(ctx->output)) {
-        gm_output_porcelain(ctx->output, "status", "created");
-        gm_output_porcelain(ctx->output, "source", "%s", edge->src_path);
-        gm_output_porcelain(ctx->output, "target", "%s", edge->tgt_path);
-        gm_output_porcelain(ctx->output, "type", "%d", edge->rel_type);
-        gm_output_porcelain(ctx->output, "confidence", GM_FMT_CONFIDENCE, 
+        gm_output_porcelain(ctx->output, PORCELAIN_KEY_STATUS, PORCELAIN_STATUS_CREATED);
+        gm_output_porcelain(ctx->output, PORCELAIN_KEY_SOURCE, "%s", edge->src_path);
+        gm_output_porcelain(ctx->output, PORCELAIN_KEY_TARGET, "%s", edge->tgt_path);
+        gm_output_porcelain(ctx->output, PORCELAIN_KEY_TYPE, "%d", edge->rel_type);
+        gm_output_porcelain(ctx->output, PORCELAIN_KEY_CONFIDENCE, GM_FMT_CONFIDENCE, 
                            gm_confidence_from_half_float(edge->confidence));
-        gm_output_porcelain(ctx->output, "ulid", "%s", edge->ulid);
+        gm_output_porcelain(ctx->output, PORCELAIN_KEY_ULID, "%s", edge->ulid);
     } else {
         if (attribution->source_type == GM_SOURCE_HUMAN) {
             gm_edge_attributed_format(edge, formatted, sizeof(formatted));
