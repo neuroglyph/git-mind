@@ -27,22 +27,57 @@ typedef struct gm_output {
     bool suppress_errors;    /* For testing only */
 } gm_output_t;
 
-/* Create output context */
+/**
+ * Create output context for controlling program output.
+ * 
+ * @param level Output verbosity level
+ * @param format Output format (human or machine)
+ * @return New output context (caller must free)
+ */
 gm_output_t* gm_output_create(gm_output_level_t level, gm_output_format_t format);
 
-/* Print message (respects verbose flag) */
+/**
+ * Print normal message.
+ * 
+ * Only printed if output level >= NORMAL.
+ * 
+ * @param out Output context
+ * @param fmt Printf-style format string
+ */
 void gm_output_print(gm_output_t* out, const char* fmt, ...);
 void gm_output_vprint(gm_output_t* out, const char* fmt, va_list args);
 
-/* Print verbose message (only shown with --verbose) */
+/**
+ * Print verbose message.
+ * 
+ * Only printed if output level >= VERBOSE.
+ * 
+ * @param out Output context
+ * @param fmt Printf-style format string
+ */
 void gm_output_verbose(gm_output_t* out, const char* fmt, ...);
 void gm_output_vverbose(gm_output_t* out, const char* fmt, va_list args);
 
-/* Print error (always shown unless suppressed) */
+/**
+ * Print error message.
+ * 
+ * Always shown unless errors are suppressed (testing only).
+ * 
+ * @param out Output context
+ * @param fmt Printf-style format string
+ */
 void gm_output_error(gm_output_t* out, const char* fmt, ...);
 void gm_output_verror(gm_output_t* out, const char* fmt, va_list args);
 
-/* Print in porcelain format */
+/**
+ * Print in machine-readable format.
+ * 
+ * Format: key=value
+ * 
+ * @param out Output context
+ * @param key Key name
+ * @param fmt Printf-style format for value
+ */
 void gm_output_porcelain(gm_output_t* out, const char* key, const char* fmt, ...);
 void gm_output_vporcelain(gm_output_t* out, const char* key, const char* fmt, va_list args);
 
@@ -55,7 +90,11 @@ bool gm_output_is_verbose(const gm_output_t* out);
 bool gm_output_is_porcelain(const gm_output_t* out);
 bool gm_output_is_silent(const gm_output_t* out);
 
-/* Destroy output context */
+/**
+ * Free output context.
+ * 
+ * @param out Output context to free
+ */
 void gm_output_destroy(gm_output_t* out);
 
 #endif /* GITMIND_OUTPUT_H */

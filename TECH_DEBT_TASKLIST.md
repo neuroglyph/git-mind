@@ -1,8 +1,8 @@
 # Technical Debt Task List for Git-Mind
 
-<progress value="126" max="165" style="width: 100%; height: 30px;"></progress>
+<progress value="144" max="165" style="width: 100%; height: 30px;"></progress>
 
-**Progress: 126/165 tasks completed (76.4%)**
+**Progress: 144/165 tasks completed (87.3%)**
 
 This document tracks all technical debt identified in the 2025-06-19 code audit. Each item must be addressed before proceeding to new features.
 
@@ -222,11 +222,11 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
 ## Priority 8: API Documentation (Day 8)
 
 ### Document All Public APIs
-- [ ] **Edge module** - document all public functions
-- [ ] **Journal module** - document all public functions
-- [ ] **Attribution module** - document all public functions
-- [ ] **Cache module** - document all public functions
-- [ ] **Util module** - document all public functions
+- [x] **Edge module** - document all public functions
+- [x] **Journal module** - document all public functions
+- [x] **Attribution module** - document all public functions
+- [x] **Cache module** - document all public functions
+- [x] **Util module** - document all public functions
 
 ### Documentation Template
 ```c
@@ -252,9 +252,9 @@ This document tracks all technical debt identified in the 2025-06-19 code audit.
 - [x] Zero magic numbers/strings
 - [x] Complete CLI output control
 - [ ] Full dependency injection
-- [ ] No code duplication
-- [ ] All tests check behavior
-- [ ] All public APIs documented
+- [x] No code duplication
+- [x] All tests check behavior
+- [x] All public APIs documented
 - [ ] Project score ≥ 8/10
 
 ### Verification Checklist
