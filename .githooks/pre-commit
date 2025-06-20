@@ -35,5 +35,46 @@ if git diff --cached --name-only | grep -E '^git-mind$'; then
     exit 1
 fi
 
-# All good!
+# THE MIGRATION ENFORCER - No touching src/ without FULL migration!
+echo ""
+echo "🔥 MIGRATION ENFORCER: Checking for src/ modifications..."
+
+# Get list of staged files
+STAGED_FILES=$(git diff --cached --name-only)
+
+# Check if any src/ files are being modified
+SRC_FILES=$(echo "$STAGED_FILES" | grep "^src/" | grep "\.c$" || true)
+
+if [ -n "$SRC_FILES" ]; then
+    echo "❌ HALT! You're trying to modify files in src/!"
+    echo ""
+    echo "📋 Files detected:"
+    echo "$SRC_FILES" | sed 's/^/   - /'
+    echo ""
+    echo "⚡ THE RULE: Touch it = Fix it COMPLETELY!"
+    echo ""
+    echo "You MUST migrate these files to core/ or apps/ with:"
+    echo "  1. ALL clang-tidy warnings fixed"
+    echo "  2. ALL functions ≤15 lines (SRP)"
+    echo "  3. NO magic numbers/strings"
+    echo "  4. Comprehensive tests"
+    echo ""
+    echo "Use: ./scripts/migrate-module.sh <module> <destination>"
+    echo ""
+    echo "Or if absolutely necessary: git commit --no-verify"
+    echo ""
+    echo "Remember: We have 11,000+ warnings to fix. No half measures!"
+    exit 1
+fi
+
+# Check if any files in core/ or apps/ meet quality standards
+MIGRATED_FILES=$(echo "$STAGED_FILES" | grep -E "^(core|apps)/" | grep "\.c$" || true)
+
+if [ -n "$MIGRATED_FILES" ]; then
+    echo "🔍 Verifying migrated files are 100% clean..."
+    echo "(This check will be activated once core/ structure exists)"
+    # TODO: Add strict clang-tidy check once core/ exists
+fi
+
+echo "✅ All checks passed!"
 exit 0

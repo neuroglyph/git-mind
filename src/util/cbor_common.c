@@ -2,8 +2,11 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind/cbor_common.h"
-#include "gitmind/constants_cbor.h"
+
 #include "gitmind.h"
+
+#include "gitmind/constants_cbor.h"
+
 #include <string.h>
 
 /* Read CBOR unsigned integer */
@@ -11,11 +14,11 @@ int gm_cbor_read_uint(const uint8_t *buf, size_t *offset, uint64_t *value) {
     uint8_t initial = buf[(*offset)++];
     uint8_t type = initial & CBOR_TYPE_MASK;
     uint8_t info = initial & CBOR_ADDITIONAL_INFO_MASK;
-    
+
     if (type != CBOR_TYPE_UNSIGNED) {
         return GM_INVALID_ARG;
     }
-    
+
     if (info < CBOR_IMMEDIATE_THRESHOLD) {
         *value = info;
     } else if (info == CBOR_UINT8_FOLLOWS) {
@@ -24,10 +27,9 @@ int gm_cbor_read_uint(const uint8_t *buf, size_t *offset, uint64_t *value) {
         *value = (buf[*offset] << SHIFT_8) | buf[*offset + 1];
         *offset += 2;
     } else if (info == CBOR_UINT32_FOLLOWS) {
-        *value = ((uint32_t)buf[*offset] << SHIFT_24) | 
+        *value = ((uint32_t)buf[*offset] << SHIFT_24) |
                  ((uint32_t)buf[*offset + 1] << SHIFT_16) |
-                 ((uint32_t)buf[*offset + 2] << SHIFT_8) |
-                 buf[*offset + 3];
+                 ((uint32_t)buf[*offset + 2] << SHIFT_8) | buf[*offset + 3];
         *offset += 4;
     } else if (info == CBOR_UINT64_FOLLOWS) {
         *value = 0;
@@ -37,21 +39,22 @@ int gm_cbor_read_uint(const uint8_t *buf, size_t *offset, uint64_t *value) {
     } else {
         return GM_INVALID_ARG;
     }
-    
+
     return GM_OK;
 }
 
 /* Read CBOR byte string */
-int gm_cbor_read_bytes(const uint8_t *buf, size_t *offset, uint8_t *data, size_t expected_len) {
+int gm_cbor_read_bytes(const uint8_t *buf, size_t *offset, uint8_t *data,
+                       size_t expected_len) {
     uint8_t initial = buf[(*offset)++];
     uint8_t type = initial & CBOR_TYPE_MASK;
     uint8_t info = initial & CBOR_ADDITIONAL_INFO_MASK;
     size_t len;
-    
+
     if (type != CBOR_TYPE_BYTES) {
         return GM_INVALID_ARG;
     }
-    
+
     if (info < CBOR_IMMEDIATE_THRESHOLD) {
         len = info;
     } else if (info == CBOR_UINT8_FOLLOWS) {
@@ -62,28 +65,29 @@ int gm_cbor_read_bytes(const uint8_t *buf, size_t *offset, uint8_t *data, size_t
     } else {
         return GM_INVALID_ARG;
     }
-    
+
     if (len != expected_len) {
         return GM_INVALID_ARG;
     }
-    
+
     memcpy(data, buf + *offset, len);
     *offset += len;
-    
+
     return GM_OK;
 }
 
 /* Read CBOR text string */
-int gm_cbor_read_text(const uint8_t *buf, size_t *offset, char *text, size_t max_len) {
+int gm_cbor_read_text(const uint8_t *buf, size_t *offset, char *text,
+                      size_t max_len) {
     uint8_t initial = buf[(*offset)++];
     uint8_t type = initial & CBOR_TYPE_MASK;
     uint8_t info = initial & CBOR_ADDITIONAL_INFO_MASK;
     size_t len;
-    
+
     if (type != CBOR_TYPE_TEXT) {
         return GM_INVALID_ARG;
     }
-    
+
     if (info < CBOR_IMMEDIATE_THRESHOLD) {
         len = info;
     } else if (info == CBOR_UINT8_FOLLOWS) {
@@ -94,15 +98,15 @@ int gm_cbor_read_text(const uint8_t *buf, size_t *offset, char *text, size_t max
     } else {
         return GM_INVALID_ARG;
     }
-    
+
     if (len >= max_len) {
         return GM_INVALID_ARG;
     }
-    
+
     memcpy(text, buf + *offset, len);
     text[len] = '\0';
     *offset += len;
-    
+
     return GM_OK;
 }
 
@@ -139,7 +143,7 @@ size_t gm_cbor_write_uint(uint8_t *buf, uint64_t value) {
 /* Write CBOR byte string */
 size_t gm_cbor_write_bytes(uint8_t *buf, const uint8_t *data, size_t len) {
     size_t offset = 0;
-    
+
     if (len < CBOR_IMMEDIATE_THRESHOLD) {
         buf[0] = CBOR_TYPE_BYTES | (uint8_t)len;
         offset = 1;
@@ -153,7 +157,7 @@ size_t gm_cbor_write_bytes(uint8_t *buf, const uint8_t *data, size_t len) {
         buf[2] = len & BYTE_MASK;
         offset = 3;
     }
-    
+
     memcpy(buf + offset, data, len);
     return offset + len;
 }
@@ -162,7 +166,7 @@ size_t gm_cbor_write_bytes(uint8_t *buf, const uint8_t *data, size_t len) {
 size_t gm_cbor_write_text(uint8_t *buf, const char *text) {
     size_t len = strlen(text);
     size_t offset = 0;
-    
+
     if (len < CBOR_IMMEDIATE_THRESHOLD) {
         buf[0] = CBOR_TYPE_TEXT | (uint8_t)len;
         offset = 1;
@@ -176,7 +180,7 @@ size_t gm_cbor_write_text(uint8_t *buf, const char *text) {
         buf[2] = len & BYTE_MASK;
         offset = 3;
     }
-    
+
     memcpy(buf + offset, text, len);
     return offset + len;
 }

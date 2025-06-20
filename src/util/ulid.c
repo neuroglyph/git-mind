@@ -4,11 +4,13 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "gitmind.h"
-#include "gitmind/constants_internal.h"
+
 #include "gitmind/constants_cbor.h"
-#include <time.h>
+#include "gitmind/constants_internal.h"
+
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 /* Crockford's Base32 alphabet */
 static const char ENCODING[] = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
@@ -29,7 +31,8 @@ static uint64_t get_time_millis(gm_context_t *ctx) {
         /* Fallback to direct call if no context */
         clock_gettime(CLOCK_REALTIME, &ts);
     }
-    return (uint64_t)ts.tv_sec * MILLIS_PER_SECOND + ts.tv_nsec / NANOS_PER_MILLI;
+    return (uint64_t)ts.tv_sec * MILLIS_PER_SECOND +
+           ts.tv_nsec / NANOS_PER_MILLI;
 }
 
 /* Encode time component */
@@ -59,19 +62,19 @@ int gm_ulid_generate_ex(gm_context_t *ctx, char *ulid) {
     if (!ulid) {
         return GM_INVALID_ARG;
     }
-    
+
     /* Get current time */
     uint64_t time = get_time_millis(ctx);
-    
+
     /* Encode time component */
     encode_time(time, ulid);
-    
+
     /* Encode random component */
     encode_random(ctx, ulid + TIME_LEN);
-    
+
     /* Null terminate */
     ulid[ULID_LEN] = '\0';
-    
+
     return GM_OK;
 }
 

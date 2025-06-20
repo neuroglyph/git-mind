@@ -1,0 +1,107 @@
+# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0
+# © 2025 J. Kirby Ross / Neuroglyph Collective
+#
+# THE LINUS CONFIGURATION
+# 
+# "If your code can pass THIS, even Linus Torvalds would approve"
+# Based on Linux kernel coding standards and Linus's famous rants
+#
+# WARNING: This is EXTREMELY strict. Use only if you want to achieve
+# code quality that would make kernel developers weep with joy.
+#
+Checks: >
+  -*,
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  cppcoreguidelines-*,
+  misc-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -modernize-*,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -readability-magic-numbers,
+  -cppcoreguidelines-init-variables,
+  -readability-isolate-declaration
+
+# EVERYTHING is an error. No warnings. Fix it or GTFO.
+WarningsAsErrors: '*'
+
+CheckOptions:
+  # Functions must be TINY and FOCUSED
+  - key: readability-function-size.LineThreshold
+    value: '24'  # Fits on a terminal screen
+  - key: readability-function-size.StatementThreshold
+    value: '15'  # Do ONE thing
+  - key: readability-function-size.BranchThreshold
+    value: '4'   # Minimal branching
+  - key: readability-function-size.ParameterThreshold
+    value: '3'   # "If you need more than 3 parameters, your design is wrong"
+  - key: readability-function-size.NestingThreshold
+    value: '2'   # "Code that nests more than 2 levels is broken"
+  - key: readability-function-size.VariableThreshold
+    value: '5'   # Keep it simple
+  
+  # Linus-approved naming (kernel style)
+  - key: readability-identifier-naming.FunctionCase
+    value: 'lower_case'
+  - key: readability-identifier-naming.VariableCase
+    value: 'lower_case'
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: 'UPPER_CASE'
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: 'UPPER_CASE'
+  - key: readability-identifier-naming.TypedefCase
+    value: 'lower_case'
+  - key: readability-identifier-naming.TypedefSuffix
+    value: '_t'
+  - key: readability-identifier-naming.StructCase
+    value: 'lower_case'
+  
+  # "Descriptive names or die"
+  - key: readability-identifier-length.MinimumVariableNameLength
+    value: '3'
+  - key: readability-identifier-length.MinimumParameterNameLength
+    value: '3'
+  - key: readability-identifier-length.MinimumLoopCounterNameLength
+    value: '1'  # 'i' is acceptable for loops
+  - key: readability-identifier-length.IgnoredVariableNames
+    value: '^[ijk]$'  # Loop counters only
+    
+  # Braces ALWAYS required (Linus: "Missing braces killed people")
+  - key: readability-braces-around-statements.ShortStatementLines
+    value: '0'
+    
+  # Cognitive complexity (if Linus can't understand it in 5 seconds, it's too complex)
+  - key: readability-function-cognitive-complexity.Threshold
+    value: '5'
+  - key: readability-function-cognitive-complexity.DescribeBasicIncrements
+    value: 'true'
+  
+  # No trailing whitespace EVER
+  - key: readability-redundant-whitespace.Enabled
+    value: 'true'
+    
+  # Comments must be useful
+  - key: readability-redundant-comment.Enabled
+    value: 'true'
+    
+  # Const correctness (immutability by default)
+  - key: readability-const-return-type.Enabled
+    value: 'true'
+  
+  # No implicit conversions
+  - key: readability-implicit-bool-conversion.AllowIntegerConditions
+    value: 'false'
+  - key: readability-implicit-bool-conversion.AllowPointerConditions
+    value: 'false'
+
+# Check everything, trust nothing
+HeaderFilterRegex: '.*'
+SystemHeaders: false
+
+# Additional notes:
+# - "Good taste" cannot be checked by tools, but this gets close
+# - If you can pass this, your code is probably kernel-worthy
+# - Remember: "Perfection is achieved when there is nothing left to remove"
