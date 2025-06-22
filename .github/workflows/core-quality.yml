@@ -41,19 +41,24 @@ jobs:
           exit 1
         fi
         # Find all C source and header files
-        FILES=$(find src include \( -name "*.c" -o -name "*.h" \) -print)
+        echo "Looking for files in core directory:"
+        ls -la
+        FILES=$(find . -path ./tests -prune -o \( -name "*.c" -o -name "*.h" \) -type f -print)
         if [ -z "$FILES" ]; then
           echo "Error: No C/C++ files found to check"
+          echo "Directory structure:"
+          find . -type d | head -20
           exit 1
         fi
         echo "Found files to check:"
         echo "$FILES" | head -10
         echo "..."
         # Run clang-tidy on all files
-        # Use -0 with xargs to handle filenames with spaces properly
-        echo "$FILES" | tr '\n' '\0' | xargs -0 clang-tidy -warnings-as-errors='*' \
-          -header-filter='.*' \
-          -- -I./include -DGITMIND_CORE_BUILD
+        # Process files one by one to avoid empty xargs issue
+        for file in $FILES; do
+          echo "Checking: $file"
+          clang-tidy -warnings-as-errors='*' -header-filter='.*' "$file" -- -I./include -DGITMIND_CORE_BUILD
+        done
     
     - name: Build with Address Sanitizer
       run: |

@@ -45,6 +45,46 @@ if [ -n "$staged_files" ]; then
 fi
 
 echo "✅ No TODOs found in staged files"
+
+# Check if we have any C/C++ files in core/ being committed
+if [ -n "$staged_files" ]; then
+    echo ""
+    echo "🔍 Running clang-tidy on staged core/ files in Docker..."
+    
+    # Get repository root
+    REPO_ROOT=$(git rev-parse --show-toplevel)
+    
+    # Run clang-tidy in Docker for each file
+    failed=0
+    for file in $staged_files; do
+        echo "Checking $file..."
+        
+        # Run clang-tidy for this file in Docker
+        echo "🐳 Starting Docker container..."
+        if ! docker run --rm -v "$REPO_ROOT":/workspace -w /workspace ubuntu:latest bash -c "
+            echo '📦 Installing dependencies...' && 
+            apt-get update -qq && 
+            apt-get install -y -qq clang clang-tidy libsodium-dev && 
+            echo '🔍 Running clang-tidy...' &&
+            clang-tidy -warnings-as-errors='*' -header-filter='.*' '$file' -- -I./core/include -DGITMIND_CORE_BUILD 2>&1
+        " | head -50; then
+            echo "❌ clang-tidy found issues in: $file"
+            failed=1
+        fi
+    done
+    
+    if [ $failed -eq 1 ]; then
+        echo ""
+        echo "❌ clang-tidy checks failed. Fix the issues before committing."
+        echo ""
+        echo "To run clang-tidy on a specific file:"
+        echo "  docker run --rm -v \$(pwd):/workspace -w /workspace ubuntu:latest bash -c \"apt-get update -qq && apt-get install -y -qq clang clang-tidy libsodium-dev && clang-tidy -warnings-as-errors='*' -header-filter='.*' <FILE> -- -I./core/include -DGITMIND_CORE_BUILD\""
+        exit 1
+    fi
+    
+    echo "✅ clang-tidy checks passed"
+fi
+
 exit 0
 EOF
 
