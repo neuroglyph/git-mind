@@ -6,21 +6,36 @@
 
 #include <stdint.h>
 #include <stdarg.h>
+#include <stdbool.h>
+
+/* Error message size constants */
+#define GM_ERROR_SMALL_SIZE 48   /* Size for small string optimization */
+#define GM_ERROR_MSG_SIZE 256    /* Default message buffer size (deprecated) */
 
 /**
- * @brief Error structure with chaining support
+ * @brief Error structure with chaining support and SSO
  * 
  * Errors are heap-allocated and own their cause chain.
  * The caller must free errors they receive.
+ * 
+ * Uses small string optimization (SSO) for messages:
+ * - Messages <= 48 bytes stored inline
+ * - Longer messages allocated on heap
  */
 typedef struct gm_error {
     int32_t code;                /* Error code (extensible) */
-    char message[256];           /* Human-readable message */
+    union {
+        char small[GM_ERROR_SMALL_SIZE];  /* Inline storage for small messages */
+        char* heap;                       /* Heap pointer for large messages */
+    } msg;
+    uint16_t len;                /* Message length */
+    bool heap_alloc;             /* True if message is heap allocated */
     const char* file;            /* Source file (static string) */
     int line;                    /* Line number */
     const char* func;            /* Function name (static string) */
     struct gm_error* cause;      /* Previous error in chain (owned) */
     void* context;               /* Optional context data */
+    void (*context_free)(void*); /* Optional context destructor */
 } gm_error_t;
 
 /**

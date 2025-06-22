@@ -61,10 +61,16 @@ build:
 # Run tests SAFELY in Docker
 # MIGRATION NOTE: Legacy tests disabled - build broken after file moves
 .PHONY: test
-test:
+test: test-core
 	@echo "🧪 Testing (MIGRATION MODE)..."
 	@echo "⚠️  Legacy tests disabled - focusing on clean core/ rebuild"
-	@echo "✅ Tests will be re-enabled when core/ is ready"
+	@echo "✅ Running new core tests instead..."
+
+# Run tests on new core/ implementation
+.PHONY: test-core
+test-core:
+	@echo "🧪 Running core tests in Docker..."
+	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "cd /workspace/core && make test"
 
 # Run tests EXACTLY like GitHub Actions CI
 # MIGRATION NOTE: Build disabled - legacy src/ is broken after moving files back
