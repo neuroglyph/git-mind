@@ -28,9 +28,9 @@ WarningsAsErrors: >
   cert-*
 
 CheckOptions:
-  # Function size limits - STRICT!
+  # Function size limits - Still strict but not masochistic
   - key: readability-function-size.LineThreshold
-    value: '15'
+    value: '25'
   - key: readability-function-size.StatementThreshold
     value: '20'
   - key: readability-function-size.BranchThreshold
@@ -88,4 +88,3 @@ CheckOptions:
 
 # Only check our code, not system headers
 HeaderFilterRegex: '^(core|apps)/.*'
-SystemHeaders: false

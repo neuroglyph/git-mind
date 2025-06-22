@@ -169,9 +169,11 @@ c/*.log
 *.pdb
 
 # Core dumps
-core
-core.*
-vgcore.*
+# Core dumps (but not our core/ directory!)
+/core
+/core.*
+/vgcore.*
+!core/
 
 # C Coverage files
 *.gcov

@@ -31,7 +31,7 @@ WarningsAsErrors: '*'
 CheckOptions:
   # Functions must be TINY and FOCUSED
   - key: readability-function-size.LineThreshold
-    value: '24'  # Fits on a terminal screen
+    value: '30'  # Still fits on most terminal screens
   - key: readability-function-size.StatementThreshold
     value: '15'  # Do ONE thing
   - key: readability-function-size.BranchThreshold

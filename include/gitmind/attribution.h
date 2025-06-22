@@ -5,6 +5,7 @@
 #define GITMIND_ATTRIBUTION_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 /* Source types for edge attribution */
 typedef enum {
