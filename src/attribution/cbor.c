@@ -1,454 +1,249 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#include "gitmind/attribution.h"
+#include "gitmind.h"
+
+#include "gitmind/cbor_common.h"
 #include "gitmind/constants_cbor.h"
-#include "gitmind/constants_internal.h"
+#include "../util/gm_mem.h"
 
 #include <string.h>
 
-/* Use centralized CBOR constants from constants_cbor.h */
-/* Additional local constants */
-#define CBOR_ADDITIONAL_1 0x01
-#define CBOR_ADDITIONAL_2 0x02
-#define CBOR_ADDITIONAL_4 0x04
-#define CBOR_ADDITIONAL_8 0x08
-
-/* Size constants for CBOR encoding */
-#define CBOR_HEADER_SIZE 1
-#define CBOR_UINT8_SIZE 2
-#define CBOR_UINT16_SIZE 3
-#define CBOR_UINT32_SIZE 5
-#define CBOR_UINT64_SIZE 9
-#define BYTES_IN_UINT16 2
-#define BYTES_IN_UINT32 4
-#define BYTES_IN_UINT64 8
-
-/* Local aliases for clarity */
-#define SHA_SIZE SHA_BYTES_SIZE
-#define ULID_SIZE CBOR_ULID_SIZE
-#define MAX_PATH_LEN 255
-#define MAX_AUTHOR_LEN 63
-#define MAX_SESSION_LEN 31
-
-/* Helper functions for decoding */
-static int decode_cbor_header(const uint8_t **p, const uint8_t *end) {
-    if (*p >= end) {
-        return -1;
-    }
-
-    if (**p != (CBOR_TYPE_ARRAY | CBOR_ARRAY_SIZE_ATTRIBUTED)) {
-        /* Check for legacy format */
-        if (**p == (CBOR_TYPE_ARRAY | CBOR_ARRAY_SIZE_LEGACY)) {
-            /* TODO: Implement legacy decoder */
-            return -1;
-        }
-        return -1;
-    }
-    (*p)++;
-    return 0;
-}
-
-static int decode_cbor_sha(const uint8_t **p, const uint8_t *end,
-                           uint8_t *sha) {
-    if (*p + SHA_SIZE + CBOR_HEADER_SIZE > end ||
-        **p != (CBOR_TYPE_BYTES | SHA_SIZE)) {
-        return -1;
-    }
-    (*p)++;
-    memcpy(sha, *p, SHA_SIZE);
-    *p += SHA_SIZE;
-    return 0;
-}
-
-static int decode_cbor_uint16(const uint8_t **p, const uint8_t *end,
-                              uint16_t *value) {
-    if (*p + CBOR_UINT16_SIZE > end ||
-        **p != (CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_2)) {
-        return -1;
-    }
-    (*p)++;
-    *value = ((uint16_t)(*p)[0] << SHIFT_8) | (*p)[1];
-    *p += BYTES_IN_UINT16;
-    return 0;
-}
-
-static int decode_cbor_uint32(const uint8_t **p, const uint8_t *end,
-                              uint32_t *value) {
-    if (*p + CBOR_UINT32_SIZE > end ||
-        **p != (CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_4)) {
-        return -1;
-    }
-    (*p)++;
-    *value = ((uint32_t)(*p)[0] << SHIFT_24) | ((uint32_t)(*p)[1] << SHIFT_16) |
-             ((uint32_t)(*p)[2] << SHIFT_8) | (*p)[3];
-    *p += BYTES_IN_UINT32;
-    return 0;
-}
-
-static int decode_cbor_uint64(const uint8_t **p, const uint8_t *end,
-                              uint64_t *value) {
-    if (*p + CBOR_UINT64_SIZE > end ||
-        **p != (CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_8)) {
-        return -1;
-    }
-    (*p)++;
-    *value = 0;
-    for (int i = 0; i < BYTES_IN_UINT64; i++) {
-        *value = (*value << SHIFT_8) | (*p)[i];
-    }
-    *p += BYTES_IN_UINT64;
-    return 0;
-}
-
-static int decode_cbor_uint8(const uint8_t **p, const uint8_t *end,
-                             uint8_t *value) {
-    if (*p + CBOR_UINT8_SIZE > end ||
-        **p != (CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_1)) {
-        return -1;
-    }
-    (*p)++;
-    *value = **p;
-    (*p)++;
-    return 0;
-}
-
-static int decode_cbor_text(const uint8_t **p, const uint8_t *end, char *buffer,
-                            size_t buffer_size) {
-    if (*p >= end || (**p & CBOR_TYPE_MASK) != CBOR_TYPE_TEXT) {
-        return -1;
-    }
-    size_t len = **p & CBOR_ADDITIONAL_INFO_MASK;
-    (*p)++;
-    if (*p + len > end || len >= buffer_size) {
-        return -1;
-    }
-    memcpy(buffer, *p, len);
-    buffer[len] = '\0';
-    *p += len;
-    return 0;
-}
-
-static int decode_cbor_ulid(const uint8_t **p, const uint8_t *end, char *ulid) {
-    if (*p >= end || **p != (CBOR_TYPE_TEXT | ULID_SIZE)) {
-        return -1;
-    }
-    (*p)++;
-    if (*p + ULID_SIZE > end) {
-        return -1;
-    }
-    memcpy(ulid, *p, ULID_SIZE);
-    ulid[ULID_SIZE] = '\0';
-    *p += ULID_SIZE;
-    return 0;
-}
-
-static int decode_cbor_shas(const uint8_t **p, const uint8_t *end,
-                            gm_edge_attributed_t *edge) {
-    if (decode_cbor_sha(p, end, edge->src_sha) < 0) {
-        return -1;
-    }
-    if (decode_cbor_sha(p, end, edge->tgt_sha) < 0) {
-        return -1;
-    }
-    return 0;
-}
-
-static int decode_cbor_metadata(const uint8_t **p, const uint8_t *end,
-                                gm_edge_attributed_t *edge) {
-    if (decode_cbor_uint16(p, end, &edge->rel_type) < 0) {
-        return -1;
-    }
-    if (decode_cbor_uint16(p, end, &edge->confidence) < 0) {
-        return -1;
-    }
-    if (decode_cbor_uint64(p, end, &edge->timestamp) < 0) {
-        return -1;
-    }
-    return 0;
-}
-
-static int decode_cbor_paths(const uint8_t **p, const uint8_t *end,
-                             gm_edge_attributed_t *edge) {
-    if (decode_cbor_text(p, end, edge->src_path, sizeof(edge->src_path)) < 0) {
-        return -1;
-    }
-    if (decode_cbor_text(p, end, edge->tgt_path, sizeof(edge->tgt_path)) < 0) {
-        return -1;
-    }
-    if (decode_cbor_ulid(p, end, edge->ulid) < 0) {
-        return -1;
-    }
-    return 0;
-}
-
-static int decode_cbor_attribution(const uint8_t **p, const uint8_t *end,
-                                   gm_edge_attributed_t *edge) {
-    uint8_t source_type;
-    if (decode_cbor_uint8(p, end, &source_type) < 0) {
-        return -1;
-    }
-    edge->attribution.source_type = (gm_source_type_t)source_type;
-
-    if (decode_cbor_text(p, end, edge->attribution.author,
-                         sizeof(edge->attribution.author)) < 0) {
-        return -1;
-    }
-    if (decode_cbor_text(p, end, edge->attribution.session_id,
-                         sizeof(edge->attribution.session_id)) < 0) {
-        return -1;
-    }
-    if (decode_cbor_uint32(p, end, &edge->attribution.flags) < 0) {
-        return -1;
-    }
-    return 0;
-}
-
-static int decode_cbor_lane(const uint8_t **p, const uint8_t *end,
-                            gm_edge_attributed_t *edge) {
-    uint8_t lane;
-    if (decode_cbor_uint8(p, end, &lane) < 0) {
-        return -1;
-    }
-    edge->lane = (gm_lane_type_t)lane;
-    return 0;
-}
-
-/* Helper functions for encoding */
-static int encode_cbor_header(uint8_t **p, size_t *remaining) {
-    if (*remaining < CBOR_HEADER_SIZE)
-        return -1;
-    **p = CBOR_TYPE_ARRAY | CBOR_ARRAY_SIZE_ATTRIBUTED;
-    (*p)++;
-    (*remaining) -= CBOR_HEADER_SIZE;
-    return 0;
-}
-
-static int encode_cbor_sha(uint8_t **p, size_t *remaining, const uint8_t *sha) {
-    if (*remaining < SHA_SIZE + CBOR_HEADER_SIZE)
-        return -1;
-    **p = CBOR_TYPE_BYTES | SHA_SIZE;
-    (*p)++;
-    memcpy(*p, sha, SHA_SIZE);
-    *p += SHA_SIZE;
-    *remaining -= (SHA_SIZE + CBOR_HEADER_SIZE);
-    return 0;
-}
-
-static int encode_cbor_uint16(uint8_t **p, size_t *remaining, uint16_t value) {
-    if (*remaining < CBOR_UINT16_SIZE)
-        return -1;
-    **p = CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_2;
-    (*p)++;
-    **p = (value >> SHIFT_8) & BYTE_MASK;
-    (*p)++;
-    **p = value & BYTE_MASK;
-    (*p)++;
-    *remaining -= CBOR_UINT16_SIZE;
-    return 0;
-}
-
-static int encode_cbor_uint32(uint8_t **p, size_t *remaining, uint32_t value) {
-    if (*remaining < CBOR_UINT32_SIZE)
-        return -1;
-    **p = CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_4;
-    (*p)++;
-    **p = (value >> SHIFT_24) & BYTE_MASK;
-    (*p)++;
-    **p = (value >> SHIFT_16) & BYTE_MASK;
-    (*p)++;
-    **p = (value >> SHIFT_8) & BYTE_MASK;
-    (*p)++;
-    **p = value & BYTE_MASK;
-    (*p)++;
-    *remaining -= CBOR_UINT32_SIZE;
-    return 0;
-}
-
-static int encode_cbor_uint64(uint8_t **p, size_t *remaining, uint64_t value) {
-    if (*remaining < CBOR_UINT64_SIZE)
-        return -1;
-    **p = CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_8;
-    (*p)++;
-    for (int i = BYTES_IN_UINT64 - 1; i >= 0; i--) {
-        **p = (value >> (i * BYTE_SIZE)) & BYTE_MASK;
-        (*p)++;
-    }
-    *remaining -= CBOR_UINT64_SIZE;
-    return 0;
-}
-
-static int encode_cbor_uint8(uint8_t **p, size_t *remaining, uint8_t value) {
-    if (*remaining < CBOR_UINT8_SIZE)
-        return -1;
-    **p = CBOR_TYPE_UNSIGNED | CBOR_ADDITIONAL_1;
-    (*p)++;
-    **p = value;
-    (*p)++;
-    *remaining -= CBOR_UINT8_SIZE;
-    return 0;
-}
-
-static int encode_cbor_text(uint8_t **p, size_t *remaining, const char *text,
-                            size_t max_len) {
-    size_t len = strlen(text);
-    if (len > max_len || *remaining < len + CBOR_HEADER_SIZE + 1)
-        return -1;
-    **p = CBOR_TYPE_TEXT | (len & CBOR_ADDITIONAL_INFO_MASK);
-    (*p)++;
-    memcpy(*p, text, len);
-    *p += len;
-    *remaining -= (len + CBOR_HEADER_SIZE);
-    return 0;
-}
-
-static int encode_cbor_ulid(uint8_t **p, size_t *remaining, const char *ulid) {
-    if (*remaining < ULID_SIZE + CBOR_HEADER_SIZE)
-        return -1;
-    **p = CBOR_TYPE_TEXT | ULID_SIZE;
-    (*p)++;
-    memcpy(*p, ulid, ULID_SIZE);
-    *p += ULID_SIZE;
-    *remaining -= (ULID_SIZE + CBOR_HEADER_SIZE);
-    return 0;
-}
-
-static int encode_cbor_shas(uint8_t **p, size_t *remaining,
-                            const gm_edge_attributed_t *edge) {
-    if (encode_cbor_sha(p, remaining, edge->src_sha) < 0) {
-        return -1;
-    }
-    if (encode_cbor_sha(p, remaining, edge->tgt_sha) < 0) {
-        return -1;
-    }
-    return 0;
-}
-
-static int encode_cbor_metadata(uint8_t **p, size_t *remaining,
-                                const gm_edge_attributed_t *edge) {
-    if (encode_cbor_uint16(p, remaining, edge->rel_type) < 0) {
-        return -1;
-    }
-    if (encode_cbor_uint16(p, remaining, edge->confidence) < 0) {
-        return -1;
-    }
-    if (encode_cbor_uint64(p, remaining, edge->timestamp) < 0) {
-        return -1;
-    }
-    return 0;
-}
-
-static int encode_cbor_paths(uint8_t **p, size_t *remaining,
-                             const gm_edge_attributed_t *edge) {
-    if (encode_cbor_text(p, remaining, edge->src_path, MAX_PATH_LEN) < 0) {
-        return -1;
-    }
-    if (encode_cbor_text(p, remaining, edge->tgt_path, MAX_PATH_LEN) < 0) {
-        return -1;
-    }
-    if (encode_cbor_ulid(p, remaining, edge->ulid) < 0) {
-        return -1;
-    }
-    return 0;
-}
-
-static int encode_cbor_attribution(uint8_t **p, size_t *remaining,
-                                   const gm_edge_attributed_t *edge) {
-    if (encode_cbor_uint8(p, remaining, edge->attribution.source_type) < 0) {
-        return -1;
-    }
-    if (encode_cbor_text(p, remaining, edge->attribution.author,
-                         MAX_AUTHOR_LEN) < 0) {
-        return -1;
-    }
-    if (encode_cbor_text(p, remaining, edge->attribution.session_id,
-                         MAX_SESSION_LEN) < 0) {
-        return -1;
-    }
-    if (encode_cbor_uint32(p, remaining, edge->attribution.flags) < 0) {
-        return -1;
-    }
-    return 0;
-}
-
-static int encode_cbor_lane(uint8_t **p, size_t *remaining,
-                            const gm_edge_attributed_t *edge) {
-    return encode_cbor_uint8(p, remaining, edge->lane);
-}
-
-/**
- * Encode attributed edge to CBOR
- *
- * Format: [src_sha, tgt_sha, rel_type, confidence, timestamp,
- *          src_path, tgt_path, ulid,
- *          source_type, author, session_id, flags, lane]
+/*
+ * CBOR edge encoding/decoding with strict SRP, DI, and test-double-friendly design
  */
-int gm_edge_attributed_encode_cbor(const gm_edge_attributed_t *edge,
-                                   uint8_t *buffer, size_t *len) {
+
+/* ========== CBOR Writer Interface (for DI) ========== */
+typedef struct {
+    size_t (*write_header)(uint8_t *buf);
+    size_t (*write_sha)(uint8_t *buf, const uint8_t *sha);
+    size_t (*write_metadata)(uint8_t *buf, uint16_t type, uint16_t conf, uint64_t tstamp);
+    size_t (*write_path)(uint8_t *buf, const char *path);
+} gm_cbor_writer_t;
+
+/* ========== CBOR Reader Interface (for DI) ========== */
+typedef struct {
+    int (*read_header)(const uint8_t *buf, size_t len, size_t *offset);
+    int (*read_sha)(const uint8_t *buf, size_t *offset, uint8_t *sha);
+    int (*read_type)(const uint8_t *buf, size_t *offset, uint16_t *type);
+    int (*read_conf)(const uint8_t *buf, size_t *offset, uint16_t *conf);
+    int (*read_tstamp)(const uint8_t *buf, size_t *offset, uint64_t *tstamp);
+    int (*read_path)(const uint8_t *buf, size_t *offset, char *path);
+} gm_cbor_reader_t;
+
+/* ========== Writer Implementation (SRP: Each writes ONE thing) ========== */
+
+static size_t write_edge_header(uint8_t *buf) {
+    buf[0] = CBOR_TYPE_ARRAY | CBOR_ARRAY_SIZE_EDGE;
+    return 1;
+}
+
+static size_t write_edge_sha(uint8_t *buf, const uint8_t *sha) {
+    return gm_cbor_write_bytes(buf, sha, GM_SHA1_SIZE);
+}
+
+static size_t write_edge_metadata(uint8_t *buf, uint16_t type, 
+                                 uint16_t conf, uint64_t tstamp) {
+    size_t offset = 0;
+    offset += gm_cbor_write_uint(buf + offset, type);
+    offset += gm_cbor_write_uint(buf + offset, conf);
+    offset += gm_cbor_write_uint(buf + offset, tstamp);
+    return offset;
+}
+
+static size_t write_edge_path(uint8_t *buf, const char *path) {
+    return gm_cbor_write_text(buf, path);
+}
+
+/* Default writer instance */
+static const gm_cbor_writer_t GM_DEFAULT_CBOR_WRITER = {
+    .write_header = write_edge_header,
+    .write_sha = write_edge_sha,
+    .write_metadata = write_edge_metadata,
+    .write_path = write_edge_path
+};
+
+/* ========== Reader Implementation (SRP: Each reads ONE thing) ========== */
+
+static int read_edge_header(const uint8_t *buf, size_t len, size_t *offset) {
+    if (len < 1) {
+        return GM_INVALID_ARG;
+    }
+    
+    if (buf[*offset] != (CBOR_TYPE_ARRAY | CBOR_ARRAY_SIZE_EDGE)) {
+        return GM_INVALID_ARG;
+    }
+    
+    (*offset)++;
+    return GM_OK;
+}
+
+static int read_edge_sha(const uint8_t *buf, size_t *offset, uint8_t *sha) {
+    return gm_cbor_read_bytes(buf, offset, sha, GM_SHA1_SIZE);
+}
+
+/* Helper to read type and confidence separately (avoid swappable params) */
+static int read_edge_type(const uint8_t *buf, size_t *offset, uint16_t *type) {
+    uint64_t temp;
+    if (gm_cbor_read_uint(buf, offset, &temp) != GM_OK) {
+        return GM_INVALID_ARG;
+    }
+    *type = (uint16_t)temp;
+    return GM_OK;
+}
+
+static int read_edge_confidence(const uint8_t *buf, size_t *offset, uint16_t *conf) {
+    uint64_t temp;
+    if (gm_cbor_read_uint(buf, offset, &temp) != GM_OK) {
+        return GM_INVALID_ARG;
+    }
+    *conf = (uint16_t)temp;
+    return GM_OK;
+}
+
+static int read_edge_timestamp(const uint8_t *buf, size_t *offset, uint64_t *tstamp) {
+    return gm_cbor_read_uint(buf, offset, tstamp);
+}
+
+/* Removed - no longer needed with separated functions */
+
+static int read_edge_path(const uint8_t *buf, size_t *offset, char *path) {
+    return gm_cbor_read_text(buf, offset, path, GM_PATH_MAX);
+}
+
+/* Default reader instance */
+static const gm_cbor_reader_t GM_DEFAULT_CBOR_READER = {
+    .read_header = read_edge_header,
+    .read_sha = read_edge_sha,
+    .read_type = read_edge_type,
+    .read_conf = read_edge_confidence,
+    .read_tstamp = read_edge_timestamp,
+    .read_path = read_edge_path
+};
+
+/* ========== Main Encode Function (Orchestrates writing) ========== */
+
+static int encode_with_writer(const gm_edge_t *edge, uint8_t *buffer, 
+                             size_t *len, const gm_cbor_writer_t *writer) {
+    size_t offset = 0;
+    
+    /* Write header */
+    offset += writer->write_header(buffer + offset);
+    
+    /* Write SHAs */
+    offset += writer->write_sha(buffer + offset, edge->src_sha);
+    offset += writer->write_sha(buffer + offset, edge->tgt_sha);
+    
+    /* Write metadata */
+    offset += writer->write_metadata(buffer + offset, edge->rel_type, 
+                                    edge->confidence, edge->timestamp);
+    
+    /* Write paths */
+    offset += writer->write_path(buffer + offset, edge->src_path);
+    offset += writer->write_path(buffer + offset, edge->tgt_path);
+    
+    *len = offset;
+    return GM_OK;
+}
+
+/* Public API - uses default writer */
+int gm_edge_encode_cbor(const gm_edge_t *edge, uint8_t *buffer, size_t *len) {
     if (!edge || !buffer || !len) {
-        return -1;
+        return GM_INVALID_ARG;
     }
-
-    uint8_t *p = buffer;
-    size_t remaining = *len;
-
-    /* Encode all fields */
-    if (encode_cbor_header(&p, &remaining) < 0)
-        return -1;
-    if (encode_cbor_shas(&p, &remaining, edge) < 0)
-        return -1;
-    if (encode_cbor_metadata(&p, &remaining, edge) < 0)
-        return -1;
-    if (encode_cbor_paths(&p, &remaining, edge) < 0)
-        return -1;
-    if (encode_cbor_attribution(&p, &remaining, edge) < 0)
-        return -1;
-    if (encode_cbor_lane(&p, &remaining, edge) < 0)
-        return -1;
-
-    *len = p - buffer;
-    return 0;
+    
+    return encode_with_writer(edge, buffer, len, &GM_DEFAULT_CBOR_WRITER);
 }
 
-/**
- * Decode CBOR to attributed edge (with consumed bytes)
- */
-int gm_edge_attributed_decode_cbor_ex(const uint8_t *buffer, size_t len,
-                                      gm_edge_attributed_t *edge,
-                                      size_t *consumed) {
-    if (!buffer || !edge || len < 1) {
-        return -1;
+/* ========== Decode Helpers (reduce complexity) ========== */
+
+static int decode_edge_metadata(const uint8_t *buffer, size_t *offset,
+                               const gm_cbor_reader_t *reader, gm_edge_t *edge) {
+    if (reader->read_type(buffer, offset, &edge->rel_type) != GM_OK) {
+        return GM_INVALID_ARG;
     }
-
-    const uint8_t *p = buffer;
-    const uint8_t *end = buffer + len;
-
-    /* Decode all fields */
-    if (decode_cbor_header(&p, end) < 0)
-        return -1;
-    if (decode_cbor_shas(&p, end, edge) < 0)
-        return -1;
-    if (decode_cbor_metadata(&p, end, edge) < 0)
-        return -1;
-    if (decode_cbor_paths(&p, end, edge) < 0)
-        return -1;
-    if (decode_cbor_attribution(&p, end, edge) < 0)
-        return -1;
-    if (decode_cbor_lane(&p, end, edge) < 0)
-        return -1;
-
-    /* Set consumed bytes if requested */
-    if (consumed) {
-        *consumed = p - buffer;
+    
+    if (reader->read_conf(buffer, offset, &edge->confidence) != GM_OK) {
+        return GM_INVALID_ARG;
     }
-
-    return 0;
+    
+    return reader->read_tstamp(buffer, offset, &edge->timestamp);
 }
 
-/**
- * Decode CBOR to attributed edge (simple wrapper)
- */
-int gm_edge_attributed_decode_cbor(const uint8_t *buffer, size_t len,
-                                   gm_edge_attributed_t *edge) {
-    return gm_edge_attributed_decode_cbor_ex(buffer, len, edge, NULL);
+static int decode_edge_shas(const uint8_t *buffer, size_t *offset,
+                           const gm_cbor_reader_t *reader, gm_edge_t *edge) {
+    if (reader->read_sha(buffer, offset, edge->src_sha) != GM_OK) {
+        return GM_INVALID_ARG;
+    }
+    
+    if (reader->read_sha(buffer, offset, edge->tgt_sha) != GM_OK) {
+        return GM_INVALID_ARG;
+    }
+    
+    return GM_OK;
+}
+
+static int decode_edge_paths(const uint8_t *buffer, size_t *offset,
+                            const gm_cbor_reader_t *reader, gm_edge_t *edge) {
+    if (reader->read_path(buffer, offset, edge->src_path) != GM_OK) {
+        return GM_INVALID_ARG;
+    }
+    
+    if (reader->read_path(buffer, offset, edge->tgt_path) != GM_OK) {
+        return GM_INVALID_ARG;
+    }
+    
+    return GM_OK;
+}
+
+/* ========== Main Decode Function (Orchestrates reading) ========== */
+
+static int decode_with_reader(const uint8_t *buffer, size_t len, 
+                             gm_edge_t *edge, const gm_cbor_reader_t *reader) {
+    size_t offset = 0;
+    gm_memset(edge, 0, sizeof(gm_edge_t));
+    
+    /* Read all components */
+    if (reader->read_header(buffer, len, &offset) != GM_OK) {
+        return GM_INVALID_ARG;
+    }
+    if (decode_edge_shas(buffer, &offset, reader, edge) != GM_OK) {
+        return GM_INVALID_ARG;
+    }
+    if (decode_edge_metadata(buffer, &offset, reader, edge) != GM_OK) {
+        return GM_INVALID_ARG;
+    }
+    if (decode_edge_paths(buffer, &offset, reader, edge) != GM_OK) {
+        return GM_INVALID_ARG;
+    }
+    
+    return GM_OK;
+}
+
+/* Public API - uses default reader */
+int gm_edge_decode_cbor(const uint8_t *buffer, size_t len, gm_edge_t *edge) {
+    if (!buffer || !edge || len == 0) {
+        return GM_INVALID_ARG;
+    }
+    
+    return decode_with_reader(buffer, len, edge, &GM_DEFAULT_CBOR_READER);
+}
+
+/* Test-double-friendly APIs (allows injection of custom reader/writer) */
+int gm_edge_encode_cbor_ex(const gm_edge_t *edge, uint8_t *buffer, 
+                          size_t *len, const gm_cbor_writer_t *writer) {
+    if (!edge || !buffer || !len || !writer) {
+        return GM_INVALID_ARG;
+    }
+    
+    return encode_with_writer(edge, buffer, len, writer);
+}
+
+int gm_edge_decode_cbor_ex(const uint8_t *buffer, size_t len, 
+                          gm_edge_t *edge, const gm_cbor_reader_t *reader) {
+    if (!buffer || !edge || !reader || len == 0) {
+        return GM_INVALID_ARG;
+    }
+    
+    return decode_with_reader(buffer, len, edge, reader);
 }
