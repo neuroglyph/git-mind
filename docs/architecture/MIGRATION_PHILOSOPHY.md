@@ -16,8 +16,8 @@
 - Proves it CAN be done
 
 **Rules**:
-- ✅ Every `i` → `index`
-- ✅ Every `memcpy` → `safe_mem_copy`
+- ✅ Every `i` → `_i__`
+- ✅ Every `memcpy` → `gm_memcpy`
 - ✅ Every function ≤ 25 lines
 - ✅ Every parameter validated
 - ✅ Every magic number → constant
