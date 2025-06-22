@@ -8,7 +8,7 @@ This document serves as the master index for all architectural documentation and
 ## 🏗️ Current Architecture Status
 
 **Status**: Transitioning from monolithic CLI to modular library-first architecture  
-**Progress**: 0/11,951 code quality issues fixed  
+**Progress**: 75/11,951 code quality issues fixed  
 **Target**: Single-header C library with multiple frontends
 
 ## 📚 Architecture Documents
@@ -54,8 +54,9 @@ git-mind/
 | Component | Status | Quality |
 |-----------|--------|---------|
 | Core Library | 🟡 In Progress | - |
-| Edge Module | ✅ **DONE** | 0 warnings (was 8) |
-| CBOR Module | 🔴 Not Started | ~50 warnings |
+| Edge Module | ✅ **DONE** | 0 warnings (was 12) |
+| CBOR Module | ✅ **DONE** | 0 warnings (was 63) |
+| Attribution | 🔴 Not Started | ~50 warnings |
 | CLI App | 🔴 Not Started | TBD warnings |
 
 ### Migration Philosophy

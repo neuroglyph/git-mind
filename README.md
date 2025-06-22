@@ -1,302 +1,129 @@
-<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
-<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+# git-mind 🧠
 
-[![CI](https://github.com/neuroglyph/git-mind/actions/workflows/ci.yml/badge.svg)](https://github.com/neuroglyph/git-mind/actions/workflows/ci.yml) • [![MIND-UCAL](https://img.shields.io/badge/license-MIND--UCAL-orange)](LICENSE)
+> **⚠️ MAJOR REWRITE IN PROGRESS**: This project is undergoing a complete architectural overhaul to fix 11,951 code quality warnings and establish proper foundations. Not production-ready. See [The Great Migration](#the-great-migration) below.
 
-![git-mind](./assets/images/wide-logo.png)
+## What is git-mind?
 
-# git-mind
-
-**Time-travel through your understanding of any codebase.**
-
-A blazing-fast CLI tool written in pure C with minimal dependencies.
+A Git-native tool for versioning your understanding of code, not just the code itself.
 
 ```bash
+# Create semantic links between files
 git mind link design.md src/main.rs --type implements
+
+# Time-travel through your mental model
 git checkout HEAD~10
-git mind list  # See what you thought 10 commits ago
+git mind list  # See what connections you understood 10 commits ago
 ```
 
-An idea that seems simple at first, but the more you use it, the more you realize what it enables.
+**The key insight**: Your understanding of how code connects evolves over time. git-mind makes that evolution visible and queryable.
 
----
+## Why?
 
-## The Problem
+You know that `UserService.java` implements the design in `user-flows.md`. Six months later, that connection is lost. New team members can't find the relationships. The context dies with time.
 
-You're deep in a complex codebase. You know `UserService.java` implements the design in `user-flows.md`, but six months later, that connection is lost. New team members can't find the relationships. The context dies with time.
+git-mind stores these relationships as Git objects, giving them the same permanence and version history as your code.
 
-Traditional documentation goes stale. Comments are local. Wikis live outside your repo.
+## 🚧 The Great Migration
 
-**What if your understanding could evolve with your code?**
+**Current Status**: Rebuilding from the ground up
 
-## The Solution
+We discovered 11,951 code quality warnings in our codebase. Rather than patch them incrementally, we're doing a complete architectural rebuild to get it right:
 
-`git-mind` stores semantic relationships as versioned Git objects. The connections between your files have the same permanence as the files themselves.
+- **Phase 1** (Current): Building solid foundations in `core/`
+  - Error handling with Result types
+  - Strong typedefs for domain concepts  
+  - Security primitives from day one
+  - Zero warnings policy on all new code
 
-```bash
-git mind init
-git mind link design.md src/main.rs --type implements
-git mind link README.md docs/api.md --type references
-git mind list  # See all relationships
-```
+- **Phase 2**: Migrate existing functionality
+  - Reimplement each module using new foundations
+  - Comprehensive test coverage
+  - Delete legacy code as we go
 
-The key insight: **you can time-travel through your mental model**.
+- **Phase 3**: New features on solid base
+  - Web UI with graph visualization
+  - AI collaboration features
+  - Cross-repository relationships
 
-```bash
-git checkout HEAD~20  # Go back 20 commits
-git mind list         # See what you thought back then
-git checkout main     # Return to present
-```
+See [docs/enforcer/ROADMAP_TO_REFACTORING.md](docs/enforcer/ROADMAP_TO_REFACTORING.md) for the full plan.
 
-Your understanding has history, just like your code.
+## Current State
 
----
+### What Works ✅
+- Basic CLI commands (link, list, traverse)
+- Git-native storage
+- Time-travel through git checkout
+- Tests pass (on legacy code)
 
-## How This Project Unfolds
+### What's Broken 🔥
+- 11,951 compiler warnings
+- No proper error handling
+- Memory management issues
+- Security vulnerabilities
+- Code quality violations everywhere
 
-**What begins as a CLI utility becomes a mirror for your thinking — and eventually, a medium for shared intelligence between humans and AI.**
+### What We're Building 🏗️
+- Clean modular architecture
+- Proper error handling (Result types)
+- Memory-safe operations
+- Security-first design
+- Zero warnings on all code
 
-Different people discover different aspects:
+## For Developers
 
-| Level | You See | The "Aha!" |
-|-------|---------|------------|
-| 📱 **Personal** | *"Smart assistant that remembers how files connect"* | "I don't have to remember everything!" |
-| 👥 **Teams** | *"Share context, not just content"* | "We're sharing understanding!" |
-| 🤖 **Human-AI** | *"AI and humans build knowledge together"* | "We're collaborating, not just querying!" |
-| ⚙️ **Technical** | *"Git objects as a graph database — zero dependencies"* | "Wait... Git can do THAT?" |
-| 🏗️ **Strategic** | *"Relationships as infrastructure"* | "Understanding becomes code!" |
+If you want to help or just watch the migration:
 
-The tool doesn't change. Your perception of what it enables does.
-
-### 🆕 Human-AI Collaboration
-
-git-mind now includes an **attribution system** that tracks whether edges were created by humans or AI:
-
-- **Human edges**: High-confidence, intentional connections
-- **AI edges**: Pattern-discovered relationships with confidence scores
-- **Consensus**: When human and AI agree, understanding is reinforced
-- **Review workflow**: Accept, reject, or modify AI suggestions
-
-```bash
-# Human creates edge
-git mind link README.md src/main.c --type documents
-
-# AI creates edge (via MCP)
-export GIT_MIND_SOURCE=claude
-git mind link src/auth.c config/oauth.json --type likely_depends_on --confidence 0.85
-
-# Review AI suggestions
-git mind review --pending
-```
-
----
-
-## Quick Start
-
-```bash
-# Build from source
-git clone https://github.com/neuroglyph/git-mind
-cd git-mind && make build
-export PATH="$PATH:$(pwd)/build"
-
-# In any Git repo
-git mind init
-git mind link README.md src/main.c --type implements
-git mind status
-
-# The time-travel moment
-git mind list           # Current understanding
-git checkout HEAD~5
-git mind list           # What you thought 5 commits ago
-git checkout main       # Back to present
-```
-
-## Core Commands
-
-```bash
-git mind init                                # Initialize semantic linking
-git mind link <source> <target> --type <TYPE>   # Create relationships  
-git mind list [--from <file>]               # Query your graph
-git mind traverse <file> --depth <N>        # Explore connections
-git mind unlink <source> <target>           # Remove relationships
-git mind check [--fix]                      # Maintain integrity
-git mind status                             # Repository overview
-```
-
-Common link types: `implements`, `references`, `depends_on`, `tests`, `documents`, `inspires`
-
----
-
-## What Makes This Different
-
-**Other tools:** Store snapshots of knowledge  
-**git-mind:** Versions the evolution of understanding
-
-- **Obsidian/Notion**: Rich UI, but knowledge lives outside your code
-- **Wiki systems**: Separate from development, goes stale quickly
-- **Git Notes**: Built-in but no semantic types or query interface  
-- **Documentation**: Static, doesn't capture evolving relationships
-
-**git-mind is the first tool designed for how developers actually think:** relationships that evolve with code, context that survives across time and teams.
-
----
-
-## Performance & Architecture
-
-Built for speed and simplicity:
-
-```
-Startup time:       <1ms      (faster than your thoughts)
-Memory usage:       ~1MB      (less than a browser tab)
-Query performance:  O(log N)  (Roaring Bitmap cache layer)
-Dependencies:       libgit2, croaring
-```
-
-**Storage:** Two-layer architecture for blazing performance:
-- **Journal Layer**: Semantic links as CBOR-encoded Git commits (source of truth)
-- **Cache Layer**: Roaring Bitmap indices sharded by SHA prefix (O(log N) queries)
-
-```
-IMPLEMENTS: design.md -> src/main.rs  # ts:1736637876
-REFERENCES: README.md -> docs/api.md  # ts:1736637890
-```
-
-Human-readable journal, lightning-fast cache. Your data stays yours.
-
----
-
-## Installation
-
-**Quick install (coming soon):**
-```bash
-# Installation script in development
-# For now, build from source
-```
-
-**From source:**
 ```bash
 git clone https://github.com/neuroglyph/git-mind
 cd git-mind
-make build  # Builds in Docker
+
+# Everything runs in Docker
+make build   # Builds the legacy version (with warnings)
+make test    # Tests pass despite the warnings
+
+# Don't touch src/ - it's quarantined
+# New development happens in core/
 ```
 
-**Verify:**
-```bash
-git mind version
-git mind --help
-```
+**Important**: 
+- The pre-commit hook blocks changes to `src/` (legacy code)
+- All new development happens in `core/` with zero warnings
+- We're following "touch it = rewrite it completely" rule
 
----
+## The Vision (Unchanged)
 
-## Architecture
+git-mind will become infrastructure for versioning understanding:
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed technical documentation including:
-- Modular library design
-- Memory management strategy  
-- API specifications
-- Migration roadmap
+- **For individuals**: Never lose context on why code connects
+- **For teams**: Share mental models that evolve with code
+- **For AI**: Collaborate on building knowledge graphs
+- **For the future**: Make understanding as permanent as code
 
----
+## Timeline
 
-## Current Status
-
-### 🔥 The Great Quality Crusade of 2025
-
-We're on an epic journey to transform git-mind from "it works" to "Linus would approve":
-
-**Current Mission**: Fix 11,951 code quality warnings while restructuring into a clean, modular architecture
-- **Warnings Fixed**: 0 / 11,951 (0%) 
-- **Modules Migrated**: 0 / 12
-- **Functions Split**: 0 / ~200 (functions >15 lines)
-- **Magic Numbers Eliminated**: 0 / ~500
-- **Code Quality**: 💀 → 🔥 (in progress)
-
-**Ambitious Timeline**: 
-- Week 1: First module migrated *(haha)*
-- Week 4: Core library complete *(sure)*
-- Week 8: All 11,951 warnings fixed *(totally realistic)*
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the ~~delusional~~ detailed battle plan.
-
-### Working Features
-- [x] Core CLI functionality (all commands above)
-- [x] Git-native storage with full versioning
-- [x] Time-travel through understanding via Git checkout
-- [x] Graph traversal and integrity checking
-- [x] Roaring Bitmap cache for O(log N) query performance
-- [x] Cross-platform builds (Mac, Linux, Windows WSL)
-
-**Coming soon:**
-- [x] Human-AI collaboration via attribution system
-- [ ] Web interface with 3D graph visualization (`git mind explore`)
-- [ ] MCP integration for Claude with persistent memory
-- [ ] Visual evolution timeline (`git mind evolution`)
-- [ ] Cross-repository relationship discovery
-
-**The vision:** This is infrastructure for augmented cognition. The CLI you see today is the foundation for new forms of human-AI collaboration on complex problems.
-
----
-
-## Use Cases
-
-**Individual developers:**
-- Never lose context on architectural decisions
-- Navigate complex codebases by relationship, not just directory structure
-- Onboard your future self to past reasoning
-
-**Teams:**
-- Share mental models alongside code  
-- Instant context for new team members
-- Preserve institutional knowledge through transitions
-
-**Complex projects:**
-- Track how system understanding evolved over years
-- Build on reasoning from previous developers
-- Maintain context through major refactors
-
----
+- **Now - Week 4**: Build foundations (error handling, types, security)
+- **Week 5-8**: Migrate core functionality with zero warnings
+- **Week 9+**: New features on solid foundation
+- **Target**: Production-ready by Q2 2025
 
 ## Contributing
 
-Written in pure C for maximum performance and portability. All development happens in Docker for consistency.
+Want to help? We need:
+- C developers who care about code quality
+- Feedback on the architecture
+- Ideas for the future
 
-```bash
-make dev     # Development environment
-make test    # Full test suite  
-make build   # Production binary
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
-
----
-
-## The Realization
-
-**Git repositories are already graphs. We're just making the connections visible.**
-
-Your `.git` directory contains the complete history of your code. Now it can contain the complete history of your understanding of that code.
-
-This project unfolds. **Try it on your repos. See what emerges.**
-
----
-
-## What This Enables
-
-The more you use it, the more you realize:
-
-- **Time-aware context**: Your reasoning has history, just like your code
-- **Shared understanding**: Teams can literally see each other's mental models
-- **Persistent knowledge**: Context that survives refactors, transitions, and time
-
-**This isn't just better documentation. It's the beginning of something larger.**
-
-But today, it's a CLI that helps you remember why you connected two files.
-
-**Start there. See where it leads.**
+But please understand: we're in heavy construction mode. Things will break and change rapidly.
 
 ## License
 
-### SPDX Notice:
+This project uses a custom ethical license: `LicenseRef-MIND-UCAL-1.0`
 
-> This project uses a custom ethical license: `LicenseRef-MIND-UCAL-1.0`
-> Not yet registered with SPDX. Compliance required for all use. See [LICENSE](LICENSE) for full terms.
+---
+
+**Bottom line**: git-mind is a tool for versioning your understanding of code. We're rebuilding it properly. Come back in a few months for the good stuff, or join us in fixing 11,951 warnings. 🔥
+
+For the full vision and technical details, see:
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture
+- [docs/enforcer/](docs/enforcer/) - Migration documentation
+- [CLAUDE_vs_THE_ENFORCER.md](CLAUDE_vs_THE_ENFORCER.md) - The story of how this started
