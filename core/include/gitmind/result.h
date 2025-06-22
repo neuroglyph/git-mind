@@ -92,11 +92,6 @@ static inline gm_result_size gm_err_size(gm_error_t* e) {
 #define GM_UNWRAP(r) ((r).u.val)
 #define GM_UNWRAP_ERR(r) ((r).u.err)
 
-/* Legacy names for migration compatibility */
-#define gm_is_ok(r) GM_IS_OK(r)
-#define gm_is_err(r) GM_IS_ERR(r)
-#define gm_unwrap(r) GM_UNWRAP(r)
-#define gm_unwrap_err(r) GM_UNWRAP_ERR(r)
 
 /**
  * @brief Early return on error

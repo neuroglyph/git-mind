@@ -47,4 +47,4 @@ CheckOptions:
   - key: readability-function-size.ParameterThreshold
     value: '5'
   - key: cppcoreguidelines-narrowing-conversions.PedanticMode
-    value: 'true'
+    value: true

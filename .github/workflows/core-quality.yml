@@ -34,8 +34,24 @@ jobs:
       run: |
         cd core
         echo "Running clang-tidy with warnings as errors..."
-        find src include -name "*.c" -o -name "*.h" | \
-          xargs clang-tidy -warnings-as-errors='*' \
+        # First check if directories exist
+        if [ ! -d "src" ] || [ ! -d "include" ]; then
+          echo "Error: src or include directories not found in core/"
+          ls -la
+          exit 1
+        fi
+        # Find all C source and header files
+        FILES=$(find src include \( -name "*.c" -o -name "*.h" \) -print)
+        if [ -z "$FILES" ]; then
+          echo "Error: No C/C++ files found to check"
+          exit 1
+        fi
+        echo "Found files to check:"
+        echo "$FILES" | head -10
+        echo "..."
+        # Run clang-tidy on all files
+        # Use -0 with xargs to handle filenames with spaces properly
+        echo "$FILES" | tr '\n' '\0' | xargs -0 clang-tidy -warnings-as-errors='*' \
           -header-filter='.*' \
           -- -I./include -DGITMIND_CORE_BUILD
     

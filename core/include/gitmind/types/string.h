@@ -77,8 +77,12 @@ static inline const char* gm_string_data(const gm_string_t* str) {
 }
 
 static inline bool gm_string_view_equals(gm_string_view_t a, gm_string_view_t b) {
-    if (a.length != b.length) return false;
-    if (a.data == b.data) return true;
+    if (a.length != b.length) {
+        return false;
+    }
+    if (a.data == b.data) {
+        return true;
+    }
     return memcmp(a.data, b.data, a.length) == 0;
 }
 
