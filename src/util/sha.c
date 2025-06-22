@@ -2,11 +2,14 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind.h"
+
 #include "gitmind/constants_internal.h"
-#include "gm_mem.h"
 
 #include <git2.h>
+
 #include <string.h>
+
+#include "gm_mem.h"
 
 /* Git index constants */
 #define GIT_INDEX_STAGE_DEFAULT 0
@@ -19,7 +22,7 @@ static int get_git_index(gm_context_t *ctx, git_index **index) {
 
 /* Look up path in index (Single Responsibility) */
 static const git_index_entry *find_path_entry(git_index *index,
-                                               const char *path) {
+                                              const char *path) {
     return git_index_get_bypath(index, path, GIT_INDEX_STAGE_DEFAULT);
 }
 

@@ -2,17 +2,18 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind.h"
+
 #include "gitmind/constants_internal.h"
-#include "../util/gm_mem.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
-/* Half-precision float constants */
-#define HALF_FLOAT_ONE 0x3C00 /* 1.0 in IEEE-754 half */
-#define DEFAULT_CONFIDENCE 100 /* Default confidence percentage */
+#include "../util/gm_mem.h"
 
+/* Half-precision float constants */
+#define HALF_FLOAT_ONE 0x3C00  /* 1.0 in IEEE-754 half */
+#define DEFAULT_CONFIDENCE 100 /* Default confidence percentage */
 
 /* Get current timestamp in milliseconds */
 static uint64_t get_timestamp(gm_context_t *ctx) {
@@ -35,7 +36,7 @@ static int resolve_sha(gm_context_t *ctx, const char *path, uint8_t *sha) {
 static void init_edge_defaults(gm_edge_t *edge) {
     /* Zero initialize */
     gm_memset(edge, 0, sizeof(gm_edge_t));
-    
+
     /* Set defaults */
     edge->confidence = DEFAULT_CONFIDENCE;
 }
@@ -45,7 +46,7 @@ static int populate_edge(gm_edge_t *edge, gm_context_t *ctx,
                          const char *src_path, const char *tgt_path,
                          gm_rel_type_t rel_type) {
     int result;
-    
+
     /* Resolve SHAs */
     result = resolve_sha(ctx, src_path, edge->src_sha);
     if (result != GM_OK) {
@@ -55,13 +56,13 @@ static int populate_edge(gm_edge_t *edge, gm_context_t *ctx,
     if (result != GM_OK) {
         return result;
     }
-    
+
     /* Set fields */
     gm_strlcpy(edge->src_path, src_path, GM_PATH_MAX);
     gm_strlcpy(edge->tgt_path, tgt_path, GM_PATH_MAX);
     edge->rel_type = rel_type;
     edge->timestamp = get_timestamp(ctx) / MILLIS_PER_SECOND;
-    
+
     return gm_ulid_generate(edge->ulid);
 }
 
@@ -113,12 +114,10 @@ static const char *get_rel_type_string(gm_rel_type_t rel_type) {
     }
 }
 
-
 /* Build format string safely */
 static int build_format_string(char *buffer, size_t len, const char *type_str,
                                const char *src, const char *tgt) {
-    int written = gm_snprintf(buffer, len, "%s: %s -> %s", 
-                              type_str, src, tgt);
+    int written = gm_snprintf(buffer, len, "%s: %s -> %s", type_str, src, tgt);
     return (written > 0 && written < (int)len) ? written : -1;
 }
 
@@ -132,8 +131,8 @@ int gm_edge_format(const gm_edge_t *edge, char *buffer, size_t len) {
     const char *type_str = get_rel_type_string(edge->rel_type);
 
     /* Build formatted string */
-    int result = build_format_string(buffer, len, type_str, 
-                                     edge->src_path, edge->tgt_path);
-    
+    int result = build_format_string(buffer, len, type_str, edge->src_path,
+                                     edge->tgt_path);
+
     return (result > 0) ? GM_OK : GM_ERROR;
 }

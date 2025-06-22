@@ -2,11 +2,13 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind.h"
+
 #include "gitmind/cbor_common.h"
 #include "gitmind/constants_cbor.h"
-#include "../util/gm_mem.h"
 
 #include <string.h>
+
+#include "../util/gm_mem.h"
 
 /*
  * Extended CBOR decoder with consumed bytes tracking
@@ -14,9 +16,10 @@
  */
 
 /* Validate CBOR array header (SRP: validate header only) */
-/* NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - buffer_len vs expected_size */
+/* NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - buffer_len vs
+ * expected_size */
 static int validate_array_header(const uint8_t *buffer, size_t buffer_len,
-                                size_t expected_size) {
+                                 size_t expected_size) {
     if (buffer_len < 1) {
         return GM_INVALID_ARG;
     }
@@ -32,13 +35,13 @@ static int validate_array_header(const uint8_t *buffer, size_t buffer_len,
 
 /* Decode single SHA field (SRP: decode one SHA) */
 static int decode_sha_field(const uint8_t *buffer, size_t *offset,
-                           uint8_t *sha) {
+                            uint8_t *sha) {
     return gm_cbor_read_bytes(buffer, offset, sha, GM_SHA1_SIZE);
 }
 
 /* Decode relationship type (SRP: decode one field) */
 static int decode_rel_type(const uint8_t *buffer, size_t *offset,
-                          uint16_t *rel_type) {
+                           uint16_t *rel_type) {
     uint64_t temp;
     if (gm_cbor_read_uint(buffer, offset, &temp) != GM_OK) {
         return GM_INVALID_ARG;
@@ -49,7 +52,7 @@ static int decode_rel_type(const uint8_t *buffer, size_t *offset,
 
 /* Decode confidence (SRP: decode one field) */
 static int decode_confidence(const uint8_t *buffer, size_t *offset,
-                            uint16_t *confidence) {
+                             uint16_t *confidence) {
     uint64_t temp;
     if (gm_cbor_read_uint(buffer, offset, &temp) != GM_OK) {
         return GM_INVALID_ARG;
@@ -60,13 +63,12 @@ static int decode_confidence(const uint8_t *buffer, size_t *offset,
 
 /* Decode timestamp (SRP: decode one field) */
 static int decode_timestamp(const uint8_t *buffer, size_t *offset,
-                           uint64_t *timestamp) {
+                            uint64_t *timestamp) {
     return gm_cbor_read_uint(buffer, offset, timestamp);
 }
 
 /* Decode single path (SRP: decode one path) */
-static int decode_path(const uint8_t *buffer, size_t *offset,
-                      char *path) {
+static int decode_path(const uint8_t *buffer, size_t *offset, char *path) {
     return gm_cbor_read_text(buffer, offset, path, GM_PATH_MAX);
 }
 
@@ -76,8 +78,8 @@ static void init_edge(gm_edge_t *edge) {
 }
 
 /* Helper: Decode all SHAs */
-static int decode_all_shas(const uint8_t *buffer, size_t *offset, 
-                          gm_edge_t *edge) {
+static int decode_all_shas(const uint8_t *buffer, size_t *offset,
+                           gm_edge_t *edge) {
     int result = decode_sha_field(buffer, offset, edge->src_sha);
     if (result != GM_OK) {
         return result;
@@ -87,23 +89,23 @@ static int decode_all_shas(const uint8_t *buffer, size_t *offset,
 
 /* Helper: Decode all metadata */
 static int decode_all_metadata(const uint8_t *buffer, size_t *offset,
-                              gm_edge_t *edge) {
+                               gm_edge_t *edge) {
     int result = decode_rel_type(buffer, offset, &edge->rel_type);
     if (result != GM_OK) {
         return result;
     }
-    
+
     result = decode_confidence(buffer, offset, &edge->confidence);
     if (result != GM_OK) {
         return result;
     }
-    
+
     return decode_timestamp(buffer, offset, &edge->timestamp);
 }
 
 /* Helper: Decode all paths */
 static int decode_all_paths(const uint8_t *buffer, size_t *offset,
-                           gm_edge_t *edge) {
+                            gm_edge_t *edge) {
     int result = decode_path(buffer, offset, edge->src_path);
     if (result != GM_OK) {
         return result;
@@ -113,7 +115,7 @@ static int decode_all_paths(const uint8_t *buffer, size_t *offset,
 
 /* Main decoder with consumed bytes tracking */
 int gm_edge_decode_cbor_ex(const uint8_t *buffer, size_t len, gm_edge_t *edge,
-                          size_t *consumed) {
+                           size_t *consumed) {
     if (!buffer || !edge || !consumed || len == 0) {
         return GM_INVALID_ARG;
     }
