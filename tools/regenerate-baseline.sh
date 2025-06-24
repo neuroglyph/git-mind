@@ -28,7 +28,7 @@ docker run --rm -t \
     grep -E "^/.*core/|^core/" clang-tidy-report-full.txt > clang-tidy-report.txt || true
     
     # Create baseline
-    python3 tools/parse_warnings.py create-baseline clang-tidy-report.txt tools/baseline_grouped.txt
+    python3 tools/count_warnings.py create-baseline clang-tidy-report.txt tools/baseline_count.txt
     
-    echo "✅  Baseline regenerated with $(wc -l < clang-tidy-report.txt) warnings"
+    echo "✅  Baseline regenerated"
 '
