@@ -445,4 +445,3 @@
 /Users/james/git/git-mind/core/include/gitmind/utf8/validate.h:54:42: warning: parameter name 's' is too short, expected at least 3 characters [readability-identifier-length]
 /Users/james/git/git-mind/core/include/gitmind/utf8/validate.h:67:57: warning: parameter name 's' is too short, expected at least 3 characters [readability-identifier-length]
 /Users/james/git/git-mind/core/include/gitmind/utf8/validate.h:76:55: warning: parameter name 's' is too short, expected at least 3 characters [readability-identifier-length]
-/Users/james/git/git-mind/core/include/gitmind/types/string.h:36:15: error: invalid case style for typedef 'gm_result_string' [readability-identifier-naming,-warnings-as-errors]

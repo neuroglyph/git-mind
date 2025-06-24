@@ -30,6 +30,6 @@ jobs:
           # Filter to just project warnings
           grep -E "^/.*core/|^core/" clang-tidy-report-full.txt > clang-tidy-report.txt || true
       - name: Enforce no new warnings
-        run: bash tools/enforce_no_new_warnings.sh clang-tidy-report.txt tools/baseline.txt
+        run: python3 tools/parse_warnings.py check clang-tidy-report.txt tools/baseline_grouped.txt
       - run: cppcheck --enable=all --inconclusive --quiet src
       - run: python tools/run_fuzz.py 60

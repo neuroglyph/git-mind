@@ -23,9 +23,9 @@ clang-tidy -quiet -p build-push --config-file=quality/.clang-tidy \
 # Filter to just project warnings
 grep -E "^/.*core/|^core/" /tmp/clang-tidy-report-full.txt > /tmp/clang-tidy-report.txt || true
 
-# Enforce no new warnings (EXACTLY like CI)
+# Enforce no new warnings using grouped baseline
 echo "⚖️ Checking for new warnings..."
-bash tools/enforce_no_new_warnings.sh /tmp/clang-tidy-report.txt tools/baseline.txt || {
+python3 tools/parse_warnings.py check /tmp/clang-tidy-report.txt tools/baseline_grouped.txt || {
     echo "❌ New warnings detected! Fix them before pushing."
     exit 1
 }
