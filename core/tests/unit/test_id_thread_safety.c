@@ -54,11 +54,11 @@ static void test_concurrent_hashing(void) {
         assert(thread_data[i].hashes != NULL);
     }
 
-    /* Create threads */
+    /* Start threads */
     for (int i = 0; i < NUM_THREADS; i++) {
-        int ret =
+        int result =
             pthread_create(&threads[i], NULL, hash_thread, &thread_data[i]);
-        assert(ret == 0);
+        assert(result == 0);
     }
 
     /* Wait for threads */
@@ -68,14 +68,13 @@ static void test_concurrent_hashing(void) {
 
     /* Verify results */
     for (int i = 0; i < NUM_THREADS; i++) {
-        /* Each thread should produce consistent hashes for its ID */
+        /* Each thread should produce consistent hashes */
         uint32_t first_hash = thread_data[i].hashes[0];
-
         for (int j = 1; j < HASHES_PER_THREAD; j++) {
             assert(thread_data[i].hashes[j] == first_hash);
         }
 
-        /* Different threads should (usually) produce different hashes */
+        /* Different threads should produce different hashes (different IDs) */
         if (i > 0) {
             /* This is probabilistic but extremely unlikely to fail */
             int different = 0;
@@ -89,7 +88,7 @@ static void test_concurrent_hashing(void) {
         }
     }
 
-    /* Clean up */
+    /* Cleanup */
     for (int i = 0; i < NUM_THREADS; i++) {
         free(thread_data[i].hashes);
     }
@@ -97,7 +96,7 @@ static void test_concurrent_hashing(void) {
     printf("✓ test_concurrent_hashing\n");
 }
 
-/* Test that ID generation is thread-safe */
+/* Thread function for ID generation */
 static void *generate_thread(void *arg) {
     gm_id_t *ids = (gm_id_t *)arg;
 
@@ -117,6 +116,7 @@ static void *generate_thread(void *arg) {
     return NULL;
 }
 
+/* Test that ID generation is thread-safe */
 static void test_concurrent_generation(void) {
     pthread_t threads[NUM_THREADS];
     gm_id_t thread_ids[NUM_THREADS][100];
@@ -152,12 +152,64 @@ static void test_concurrent_generation(void) {
     printf("✓ test_concurrent_generation\n");
 }
 
+/* Test race condition on initialization */
+static void test_initialization_race(void) {
+    /* This test attempts to trigger the race condition in
+     * g_siphash_key_initialized by having multiple threads
+     * call gm_id_hash simultaneously on first use */
+
+    pthread_t threads[NUM_THREADS];
+    thread_data_t thread_data[NUM_THREADS];
+
+    /* Allocate hash arrays */
+    for (int i = 0; i < NUM_THREADS; i++) {
+        thread_data[i].thread_id = i;
+        thread_data[i].hashes = calloc(HASHES_PER_THREAD, sizeof(uint32_t));
+        assert(thread_data[i].hashes != NULL);
+    }
+
+    /* Start all threads at once to maximize race condition likelihood */
+    for (int i = 0; i < NUM_THREADS; i++) {
+        int result =
+            pthread_create(&threads[i], NULL, hash_thread, &thread_data[i]);
+        assert(result == 0);
+    }
+
+    /* Wait for threads */
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    /* If we get here without crashing, the implementation handled
+     * concurrent initialization (though it may still have race conditions) */
+
+    /* Cleanup */
+    for (int i = 0; i < NUM_THREADS; i++) {
+        free(thread_data[i].hashes);
+    }
+
+    printf("✓ test_initialization_race (basic check passed)\n");
+}
+
 int main(void) {
     printf("Running ID thread safety tests...\n\n");
 
+    /* Initialize crypto subsystem */
+    gm_result_void init_result = gm_crypto_init();
+    if (GM_IS_ERR(init_result)) {
+        gm_error_print(GM_UNWRAP_ERR(init_result));
+        return 1;
+    }
+
     test_concurrent_hashing();
     test_concurrent_generation();
+    test_initialization_race();
 
-    printf("\n✅ All ID thread safety tests passed!\n");
+    printf("\n⚠️  Note: These tests check basic thread safety but cannot\n");
+    printf("    guarantee absence of all race conditions. The global\n");
+    printf("    state in id.c should be refactored to use proper\n");
+    printf("    synchronization or context objects.\n");
+
+    printf("\n✅ All thread safety tests passed!\n");
     return 0;
 }

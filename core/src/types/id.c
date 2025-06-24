@@ -44,7 +44,6 @@ static void ensure_siphash_key_initialized(void) {
         g_siphash_key_initialized = true;
     }
 }
-
 /* Hash function for hash tables using SipHash-2-4 */
 gm_result_u32 gm_id_hash(gm_id_t identifier) {
     /* Ensure key is initialized - this can fail if random generation fails */
