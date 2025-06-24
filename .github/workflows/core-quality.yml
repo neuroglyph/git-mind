@@ -19,7 +19,8 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y clang clang-tidy libsodium-dev build-essential
+        sudo apt-get install -y clang clang-tidy libsodium-dev build-essential python3-pip
+        pip3 install meson ninja
     
     - name: Check for TODOs/FIXMEs
       run: |
@@ -32,80 +33,68 @@ jobs:
     
     - name: Run clang-tidy
       run: |
-        cd core
         echo "Running clang-tidy with warnings as errors..."
-        # First check if directories exist
-        if [ ! -d "src" ] || [ ! -d "include" ]; then
-          echo "Error: src or include directories not found in core/"
-          ls -la
-          exit 1
-        fi
-        # Find all C source and header files
-        echo "Looking for files in core directory:"
-        ls -la
-        FILES=$(find . -path ./tests -prune -o \( -name "*.c" -o -name "*.h" \) -type f -print)
+        # Setup build for compile_commands.json
+        CC=clang meson setup build-tidy
+        # Find all C source and header files in core/
+        FILES=$(find core -name "*.c" -o -name "*.h" | grep -v "tests/")
         if [ -z "$FILES" ]; then
           echo "Error: No C/C++ files found to check"
-          echo "Directory structure:"
-          find . -type d | head -20
           exit 1
         fi
         echo "Found files to check:"
         echo "$FILES" | head -10
         echo "..."
         # Run clang-tidy on all files
-        # Process files one by one to avoid empty xargs issue
         for file in $FILES; do
           echo "Checking: $file"
-          clang-tidy -warnings-as-errors='*' -header-filter='.*' "$file" -- -I./include -DGITMIND_CORE_BUILD
+          clang-tidy -warnings-as-errors='*' -p build-tidy "$file"
         done
     
     - name: Build with Address Sanitizer
       run: |
-        cd core
-        make clean
+        rm -rf build-asan
         echo "Building with AddressSanitizer..."
-        CC=clang CFLAGS="-Wall -Wextra -Werror -std=gnu11 -O2 -fsanitize=address -fno-omit-frame-pointer -g" make all
+        CC=clang CFLAGS="-fsanitize=address -fno-omit-frame-pointer -g" meson setup build-asan -Db_sanitize=address
+        ninja -C build-asan
     
     - name: Run tests with Address Sanitizer
       run: |
-        cd core
         echo "Running tests with AddressSanitizer..."
-        ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 make test
+        ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 ninja -C build-asan test
     
     - name: Build with Undefined Behavior Sanitizer
       run: |
-        cd core
-        make clean
+        rm -rf build-ubsan
         echo "Building with UBSanitizer..."
-        CC=clang CFLAGS="-Wall -Wextra -Werror -std=gnu11 -O2 -fsanitize=undefined -fno-omit-frame-pointer -g" make all
+        CC=clang CFLAGS="-fsanitize=undefined -fno-omit-frame-pointer -g" meson setup build-ubsan -Db_sanitize=undefined
+        ninja -C build-ubsan
     
     - name: Run tests with Undefined Behavior Sanitizer
       run: |
-        cd core
         echo "Running tests with UBSanitizer..."
-        UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 make test
+        UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ninja -C build-ubsan test
     
     - name: Build with Memory Sanitizer (if available)
       continue-on-error: true
       run: |
-        cd core
         if command -v clang-14 &> /dev/null; then
-          make clean
+          rm -rf build-msan
           echo "Building with MemorySanitizer..."
-          CC=clang-14 CFLAGS="-Wall -Wextra -Werror -std=gnu11 -O2 -fsanitize=memory -fno-omit-frame-pointer -g" make all
-          MSAN_OPTIONS=halt_on_error=1 make test
+          CC=clang-14 CFLAGS="-fsanitize=memory -fno-omit-frame-pointer -g" meson setup build-msan -Db_sanitize=memory
+          ninja -C build-msan
+          MSAN_OPTIONS=halt_on_error=1 ninja -C build-msan test
         else
           echo "MemorySanitizer requires clang-14+, skipping..."
         fi
     
     - name: Standard build and test
       run: |
-        cd core
-        make clean
+        rm -rf build-standard
         echo "Running standard build..."
-        make all
-        make test
+        CC=clang meson setup build-standard
+        ninja -C build-standard
+        ninja -C build-standard test
     
     - name: Install coverage tools
       run: |
@@ -113,9 +102,12 @@ jobs:
     
     - name: Run coverage analysis
       run: |
-        cd core
+        rm -rf build-coverage
         echo "Running coverage analysis..."
-        make coverage-text || {
+        CC=clang meson setup build-coverage -Db_coverage=true
+        ninja -C build-coverage test
+        cd build-coverage
+        gcovr --root .. --html-details coverage.html --print-summary --fail-under-line 80 --fail-under-branch 70 || {
           echo "❌ Coverage requirements not met!"
           echo "Minimum line coverage: 80%"
           echo "Minimum branch coverage: 70%"
@@ -127,4 +119,4 @@ jobs:
       if: always()
       with:
         name: coverage-report
-        path: core/build/coverage.html
+        path: build-coverage/coverage.html

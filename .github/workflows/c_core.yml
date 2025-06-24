@@ -7,21 +7,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install LLVM 20
+      - name: Install LLVM 20 and build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget gnupg lsb-release
+          sudo apt-get install -y wget gnupg lsb-release python3-pip
           wget -O - https://apt.llvm.org/llvm.sh | sudo bash -s -- 20
           sudo apt-get install -y clang-20 clang-tidy-20 bear cppcheck libubsan0 make libsodium-dev
           sudo ln -sf /usr/bin/clang-tidy-20 /usr/local/bin/clang-tidy
           sudo ln -sf /usr/bin/clang++-20    /usr/local/bin/clang++
           sudo ln -sf /usr/bin/clang-20      /usr/local/bin/clang
+          pip3 install meson ninja
       - name: Build & capture compile DB
         run: |
-          cd core
-          make clean || true
-          bear -- make all
-          mv compile_commands.json ../
+          CC=clang meson setup build
+          ninja -C build
+          cp build/compile_commands.json .
       - name: clang-tidy (diff-guard)
         run: |
           clang-tidy -quiet -p . --config-file core/.clang-tidy \
