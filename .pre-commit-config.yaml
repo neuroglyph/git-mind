@@ -1,3 +1,4 @@
+# Requires clang-tidy 20.x - see docs/DEV_SETUP.md
 repos:
 - repo: https://github.com/pre-commit/mirrors-clang-format
   rev: v18.1.8
