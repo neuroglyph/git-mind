@@ -5,8 +5,16 @@
 #include "gitmind/crypto/sha256.h"
 #include "gitmind/crypto/random.h"
 #include "gitmind/error.h"
+#include "gitmind/security/memory.h"
 #include <sodium.h>
 #include <string.h>
+
+/* Test backend constants */
+#define TEST_HASH_LENGTH_HEADER_SIZE 4  /* Bytes used to store length in test hash */
+#define TEST_HASH_MAX_DATA_BYTES (GM_SHA256_DIGEST_SIZE - TEST_HASH_LENGTH_HEADER_SIZE)
+#define BITS_PER_BYTE 8
+#define BYTE_MASK 0xFF
+#define U32_HIGH_SHIFT 32
 
 /* Global backend instance */
 static gm_crypto_backend_t* g_backend = NULL;
@@ -42,7 +50,7 @@ static uint32_t libsodium_random_u32(void) {
 }
 
 static uint64_t libsodium_random_u64(void) {
-    return ((uint64_t)randombytes_random() << 32) | randombytes_random();
+    return ((uint64_t)randombytes_random() << U32_HIGH_SHIFT) | randombytes_random();
 }
 
 /* Libsodium backend instance */
@@ -61,19 +69,21 @@ static gm_crypto_backend_t libsodium_backend = {
 /* Test backend implementation (deterministic) */
 static int test_sha256(const void* data, size_t len, uint8_t out[GM_SHA256_DIGEST_SIZE]) {
     /* Simple deterministic "hash" for testing */
-    memset(out, 0, GM_SHA256_DIGEST_SIZE);
+    GM_MEMSET_SAFE(out, GM_SHA256_DIGEST_SIZE, 0, GM_SHA256_DIGEST_SIZE);
     
     /* Mix in length */
-    out[0] = (uint8_t)(len & 0xFF);
-    out[1] = (uint8_t)((len >> 8) & 0xFF);
-    out[2] = (uint8_t)((len >> 16) & 0xFF);
-    out[3] = (uint8_t)((len >> 24) & 0xFF);
+    out[0] = (uint8_t)(len & BYTE_MASK);
+    out[1] = (uint8_t)((len >> BITS_PER_BYTE) & BYTE_MASK);
+    out[2] = (uint8_t)((len >> (2 * BITS_PER_BYTE)) & BYTE_MASK);
+    out[3] = (uint8_t)((len >> (3 * BITS_PER_BYTE)) & BYTE_MASK);
     
     /* Mix in first few bytes of data */
     if (data && len > 0) {
         const uint8_t* bytes = (const uint8_t*)data;
-        size_t to_copy = len < 28 ? len : 28;
-        memcpy(out + 4, bytes, to_copy);
+        size_t to_copy = len < TEST_HASH_MAX_DATA_BYTES ? len : TEST_HASH_MAX_DATA_BYTES;
+        GM_MEMCPY_SAFE(out + TEST_HASH_LENGTH_HEADER_SIZE, 
+                       GM_SHA256_DIGEST_SIZE - TEST_HASH_LENGTH_HEADER_SIZE, 
+                       bytes, to_copy);
     }
     
     return 0;
@@ -81,7 +91,7 @@ static int test_sha256(const void* data, size_t len, uint8_t out[GM_SHA256_DIGES
 
 static int test_sha256_init(gm_sha256_ctx_t* ctx) {
     /* Clear context */
-    memset(ctx, 0, sizeof(*ctx));
+    GM_MEMSET_SAFE(ctx, sizeof(*ctx), 0, sizeof(*ctx));
     return 0;
 }
 
@@ -96,8 +106,8 @@ static int test_sha256_update(gm_sha256_ctx_t* ctx, const void* data, size_t len
 static int test_sha256_final(gm_sha256_ctx_t* ctx, uint8_t out[GM_SHA256_DIGEST_SIZE]) {
     /* Output based on total length */
     uint64_t* total = (uint64_t*)ctx;
-    memset(out, 0, GM_SHA256_DIGEST_SIZE);
-    memcpy(out, total, sizeof(*total));
+    GM_MEMSET_SAFE(out, GM_SHA256_DIGEST_SIZE, 0, GM_SHA256_DIGEST_SIZE);
+    GM_MEMCPY_SAFE(out, GM_SHA256_DIGEST_SIZE, total, sizeof(*total));
     return 0;
 }
 
@@ -107,7 +117,7 @@ static int test_random_bytes(void* buf, size_t size) {
     /* Fill with incrementing pattern */
     uint8_t* bytes = (uint8_t*)buf;
     for (size_t i = 0; i < size; i++) {
-        bytes[i] = (uint8_t)(test_counter++ & 0xFF);
+        bytes[i] = (uint8_t)(test_counter++ & BYTE_MASK);
     }
     return 0;
 }

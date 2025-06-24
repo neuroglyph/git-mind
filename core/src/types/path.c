@@ -5,24 +5,25 @@
 #include "gitmind/types/string.h"
 #include "gitmind/result.h"
 #include "gitmind/error.h"
+#include "gitmind/security/memory.h"
 #include <string.h>
 #include <stdlib.h>
 
 /* Path constants */
-static const char path_sep_unix = '/';
-static const char path_sep_win = '\\';
+static const char PATH_SEP_UNIX = '/';
+static const char PATH_SEP_WIN = '\\';
 #define PATH_CURRENT_DIR "."
 #define PATH_PARENT_DIR ".."
 
 /* Path numeric constants */
 enum {
-    PATH_MAX_COMPONENTS = 255,
-    PATH_MAX_LENGTH = 4096,
-    SYMLINK_EXT_LEN = 4
+    GM_GM_PATH_MAX_COMPONENTS = 255,
+    GM_GM_PATH_MAX_LENGTH = 4096,
+    GM_GM_SYMLINK_EXT_LEN = 4
 };
 
 /* Path separator character constants */
-static const char symlink_suffix_macos = '@';
+static const char SYMLINK_SUFFIX_MACOS = '@';
 #define PATH_ENCODED_PARENT_1 "%2e%2e"  /* URL encoded .. */
 #define PATH_ENCODED_PARENT_2 "%2E%2E"  /* URL encoded .. */
 #define PATH_ENCODED_DOT_1 "%2e"       /* URL encoded . */
@@ -93,25 +94,25 @@ static inline gm_result_string gm_err_string(gm_error_t* e) {
 /* Detect path separator */
 static char detect_separator(const char* str) {
     /* Look for first separator */
-    const char* unix_sep = strchr(str, path_sep_unix);
-    const char* win_sep = strchr(str, path_sep_win);
+    const char* unix_sep = strchr(str, PATH_SEP_UNIX);
+    const char* win_sep = strchr(str, PATH_SEP_WIN);
     
     if (unix_sep && !win_sep) {
-        return path_sep_unix;
+        return PATH_SEP_UNIX;
     }
     if (win_sep && !unix_sep) {
-        return path_sep_win;
+        return PATH_SEP_WIN;
     }
     if (unix_sep && win_sep) {
         /* Use whichever comes first */
-        return (unix_sep < win_sep) ? path_sep_unix : path_sep_win;
+        return (unix_sep < win_sep) ? PATH_SEP_UNIX : PATH_SEP_WIN;
     }
     
     /* Default to system separator */
 #ifdef _WIN32
-    return path_sep_win;
+    return PATH_SEP_WIN;
 #else
-    return path_sep_unix;
+    return PATH_SEP_UNIX;
 #endif
 }
 
@@ -121,15 +122,15 @@ static bool is_absolute_path(const char* str, char separator) {
         return false;
     }
     
-    if (separator == path_sep_unix) {
-        return str[0] == path_sep_unix;
+    if (separator == PATH_SEP_UNIX) {
+        return str[0] == PATH_SEP_UNIX;
     }
     
     /* Windows: C:\ or \\server\share */
-    if (str[0] == path_sep_win && str[1] == path_sep_win) {
+    if (str[0] == PATH_SEP_WIN && str[1] == PATH_SEP_WIN) {
         return true;  /* UNC path */
     }
-    if (str[1] == ':' && str[2] == path_sep_win) {
+    if (str[1] == ':' && str[2] == PATH_SEP_WIN) {
         return true;  /* Drive letter */
     }
     return false;
@@ -366,9 +367,8 @@ static size_t count_path_components(const char* str, char sep) {
 static char* copy_component(const char* start, size_t len) {
     char* comp = malloc(len + 1);
     if (comp) {
-        if (len > 0 && len <= PATH_MAX_LENGTH) {
-            /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) */
-            memcpy(comp, start, len);
+        if (len > 0 && len <= GM_PATH_MAX_LENGTH) {
+            GM_MEMCPY_SAFE(comp, len + 1, start, len);
         }
         comp[len] = '\0';
     }
@@ -665,13 +665,13 @@ static gm_result_void check_symlink_pattern(const char* comp) {
     size_t comp_len = strlen(comp);
     
     /* Check for .lnk extension (Windows) */
-    if (comp_len > SYMLINK_EXT_LEN && 
-        strcmp(comp + comp_len - SYMLINK_EXT_LEN, SYMLINK_EXT_WINDOWS) == 0) {
+    if (comp_len > GM_SYMLINK_EXT_LEN && 
+        strcmp(comp + comp_len - GM_SYMLINK_EXT_LEN, SYMLINK_EXT_WINDOWS) == 0) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_PATH, ERR_MSG_SYMLINK_LNK));
     }
     
     /* Check for @ suffix (macOS Finder symlink indicator) */
-    if (comp_len > 1 && comp[comp_len - 1] == symlink_suffix_macos) {
+    if (comp_len > 1 && comp[comp_len - 1] == SYMLINK_SUFFIX_MACOS) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_PATH, ERR_MSG_SYMLINK_AT));
     }
     
@@ -894,8 +894,8 @@ static const struct {
     bool allow_relative;
     bool allow_symlinks;
     bool allow_hidden;
-} default_path_rules = {
-    .max_length = PATH_MAX_LENGTH,
+} DEFAULT_PATH_RULES = {
+    .max_length = GM_PATH_MAX_LENGTH,
     .allow_traversal = false,
     .allow_absolute = true,
     .allow_relative = true,
@@ -914,10 +914,10 @@ gm_result_void gm_path_validate(const gm_path_t* path, const gm_path_rules_t* ru
     
     /* Use default rules if none provided */
     /* For now, we use hardcoded defaults since gm_path_rules_t is not yet defined */
-    size_t max_length = default_path_rules.max_length;
-    bool allow_traversal = default_path_rules.allow_traversal;
-    bool allow_absolute = default_path_rules.allow_absolute;
-    bool allow_relative = default_path_rules.allow_relative;
+    size_t max_length = DEFAULT_PATH_RULES.max_length;
+    bool allow_traversal = DEFAULT_PATH_RULES.allow_traversal;
+    bool allow_absolute = DEFAULT_PATH_RULES.allow_absolute;
+    bool allow_relative = DEFAULT_PATH_RULES.allow_relative;
     
     /* Suppress unused parameter warning */
     (void)rules;
@@ -953,14 +953,14 @@ gm_result_void gm_path_validate(const gm_path_t* path, const gm_path_rules_t* ru
     
     /* Validate path components */
     gm_result_void comp_res = validate_path_components(str, path->separator,
-                                                     default_path_rules.allow_hidden,
-                                                     default_path_rules.allow_symlinks);
+                                                     DEFAULT_PATH_RULES.allow_hidden,
+                                                     DEFAULT_PATH_RULES.allow_symlinks);
     if (GM_IS_ERR(comp_res)) {
         return comp_res;
     }
     
     /* Check for full path symlink patterns if not allowed */
-    if (!default_path_rules.allow_symlinks && strstr(str, SYMLINK_ARROW_SPACED)) {
+    if (!DEFAULT_PATH_RULES.allow_symlinks && strstr(str, SYMLINK_ARROW_SPACED)) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_PATH, 
                                    ERR_MSG_SYMLINK_GENERIC));
     }
@@ -1025,7 +1025,7 @@ bool gm_path_is_safe(const gm_path_t* path) {
     }
     
     /* Check length limit */
-    if (len > PATH_MAX_LENGTH) {
+    if (len > GM_PATH_MAX_LENGTH) {
         return false;
     }
     

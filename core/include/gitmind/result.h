@@ -6,6 +6,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 /* Forward declaration */
 typedef struct gm_error gm_error_t;
@@ -36,6 +37,8 @@ GM_RESULT_DEF(gm_result_ptr, void*);
 GM_RESULT_DEF(gm_result_int, int);
 GM_RESULT_DEF(gm_result_bool, bool);
 GM_RESULT_DEF(gm_result_size, size_t);
+GM_RESULT_DEF(gm_result_u32, uint32_t);
+GM_RESULT_DEF(gm_result_u64, uint64_t);
 
 /* Legacy name for compatibility during migration */
 typedef gm_result_ptr gm_result_t;
@@ -61,6 +64,10 @@ static inline gm_result_size gm_ok_size(size_t v) {
     return (gm_result_size){ .ok = true, .u.val = v };
 }
 
+static inline gm_result_u32 gm_ok_u32(uint32_t v) {
+    return (gm_result_u32){ .ok = true, .u.val = v };
+}
+
 /* Error constructors */
 static inline gm_result_void gm_err_void(gm_error_t* e) {
     return (gm_result_void){ .ok = false, .u.err = e };
@@ -80,6 +87,18 @@ static inline gm_result_bool gm_err_bool(gm_error_t* e) {
 
 static inline gm_result_size gm_err_size(gm_error_t* e) {
     return (gm_result_size){ .ok = false, .u.err = e };
+}
+
+static inline gm_result_u32 gm_err_u32(gm_error_t* e) {
+    return (gm_result_u32){ .ok = false, .u.err = e };
+}
+
+static inline gm_result_u64 gm_ok_u64(uint64_t v) {
+    return (gm_result_u64){ .ok = true, .u.val = v };
+}
+
+static inline gm_result_u64 gm_err_u64(gm_error_t* e) {
+    return (gm_result_u64){ .ok = false, .u.err = e };
 }
 
 /**

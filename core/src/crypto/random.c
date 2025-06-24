@@ -7,13 +7,13 @@
 #include <sodium.h>
 
 /* Helper to create error result for u32 */
-static inline gm_result_u32 gm_err_u32(gm_error_t* e) {
-    return (gm_result_u32){ .ok = false, .u.err = e };
+static inline gm_result_u32 gm_err_u32(gm_error_t* err) {
+    return (gm_result_u32){ .ok = false, .u.err = err };
 }
 
 /* Helper to create error result for u64 */
-static inline gm_result_u64 gm_err_u64(gm_error_t* e) {
-    return (gm_result_u64){ .ok = false, .u.err = e };
+static inline gm_result_u64 gm_err_u64(gm_error_t* err) {
+    return (gm_result_u64){ .ok = false, .u.err = err };
 }
 
 gm_result_void gm_random_bytes(void* buf, size_t size) {

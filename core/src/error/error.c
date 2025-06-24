@@ -3,6 +3,7 @@
 
 #include "gitmind/error.h"
 #include "gitmind/result.h"
+#include "gitmind/security/memory.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,7 +63,7 @@ gm_error_t* gm_error_new(int32_t code, const char* fmt, ...) {
         return NULL; /* Can't allocate error to report allocation failure */
     }
     
-    memset(err, 0, sizeof(gm_error_t));
+    GM_MEMSET_SAFE(err, sizeof(gm_error_t), 0, sizeof(gm_error_t));
     err->code = code;
     
     /* Format message with SSO */
@@ -88,7 +89,7 @@ gm_error_t* gm_error_new_at(
         return NULL;
     }
     
-    memset(err, 0, sizeof(gm_error_t));
+    GM_MEMSET_SAFE(err, sizeof(gm_error_t), 0, sizeof(gm_error_t));
     err->code = code;
     err->file = file; /* Static string, no copy needed */
     err->line = line;
@@ -117,7 +118,7 @@ gm_error_t* gm_error_wrap(
         return NULL;
     }
     
-    memset(err, 0, sizeof(gm_error_t));
+    GM_MEMSET_SAFE(err, sizeof(gm_error_t), 0, sizeof(gm_error_t));
     err->code = code;
     err->cause = cause; /* Take ownership */
     
@@ -162,24 +163,24 @@ char* gm_error_format(const gm_error_t* error) {
     
     /* First pass: calculate exact size needed */
     size_t total_size = 1; /* for null terminator */
-    const gm_error_t* e = error;
-    while (e) {
-        const char* msg = get_error_message(e);
+    const gm_error_t* err = error;
+    while (err) {
+        const char* msg = get_error_message(err);
         
-        if (e->file && e->func) {
+        if (err->file && err->func) {
             /* Format: "[code] message (file:line in func)\n" */
             total_size += snprintf(NULL, 0, "[%d] %s (%s:%d in %s)\n",
-                                 e->code, msg, e->file, e->line, e->func);
+                                 err->code, msg, err->file, err->line, err->func);
         } else {
             /* Format: "[code] message\n" */
-            total_size += snprintf(NULL, 0, "[%d] %s\n", e->code, msg);
+            total_size += snprintf(NULL, 0, "[%d] %s\n", err->code, msg);
         }
         
-        if (e->cause) {
+        if (err->cause) {
             total_size += strlen("  caused by: ");
         }
         
-        e = e->cause;
+        err = err->cause;
     }
     
     /* Allocate exact size */
@@ -190,29 +191,29 @@ char* gm_error_format(const gm_error_t* error) {
     
     /* Second pass: format into buffer */
     size_t offset = 0;
-    e = error;
-    while (e && offset < total_size - 1) {
+    err = error;
+    while (err && offset < total_size - 1) {
         int written;
         
-        const char* msg = get_error_message(e);
+        const char* msg = get_error_message(err);
         
-        if (e->file && e->func) {
+        if (err->file && err->func) {
             written = snprintf(
                 buffer + offset, 
                 total_size - offset,
                 "[%d] %s (%s:%d in %s)\n",
-                e->code,
+                err->code,
                 msg,
-                e->file,
-                e->line,
-                e->func
+                err->file,
+                err->line,
+                err->func
             );
         } else {
             written = snprintf(
                 buffer + offset, 
                 total_size - offset,
                 "[%d] %s\n",
-                e->code,
+                err->code,
                 msg
             );
         }
@@ -223,8 +224,8 @@ char* gm_error_format(const gm_error_t* error) {
             break;
         }
         
-        e = e->cause;
-        if (e && offset < total_size - 1) {
+        err = err->cause;
+        if (err && offset < total_size - 1) {
             written = snprintf(
                 buffer + offset,
                 total_size - offset,

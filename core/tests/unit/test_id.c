@@ -43,8 +43,15 @@ static void test_id_hex_conversion(void) {
     gm_id_t id = GM_UNWRAP(id_result);
     
     char hex[GM_ID_HEX_SIZE];
-    gm_id_to_hex(id, hex);
+    gm_result_void hex_result = gm_id_to_hex(id, hex, sizeof(hex));
+    assert(GM_IS_OK(hex_result));
     assert(strlen(hex) == GM_ID_HEX_CHARS); /* SHA-256 hex representation */
+    
+    /* Test buffer too small */
+    char small_buf[10];
+    gm_result_void small_result = gm_id_to_hex(id, small_buf, sizeof(small_buf));
+    assert(GM_IS_ERR(small_result));
+    assert(GM_UNWRAP_ERR(small_result)->code == GM_ERR_BUFFER_TOO_SMALL);
     
     /* Parse back */
     gm_result_id result = gm_id_from_hex(hex);
@@ -190,8 +197,13 @@ static void test_id_hash(void) {
     memset(id2.bytes, 0xAA, GM_ID_SIZE);
     id2.bytes[GM_ID_SIZE - 1] = 0xBB;  /* Only last byte different */
     
-    uint32_t hash1 = gm_id_hash(id1);
-    uint32_t hash2 = gm_id_hash(id2);
+    gm_result_u32 hash1_result = gm_id_hash(id1);
+    assert(GM_IS_OK(hash1_result));
+    uint32_t hash1 = GM_UNWRAP(hash1_result);
+    
+    gm_result_u32 hash2_result = gm_id_hash(id2);
+    assert(GM_IS_OK(hash2_result));
+    uint32_t hash2 = GM_UNWRAP(hash2_result);
     
     /* Hashes should be different (SipHash uses all bytes) */
     assert(hash1 != hash2);
@@ -202,15 +214,23 @@ static void test_id_hash(void) {
     memset(id4.bytes, 0xCC, GM_ID_SIZE);
     id4.bytes[0] = 0xDD;  /* Only first byte different */
     
-    uint32_t hash3 = gm_id_hash(id3);
-    uint32_t hash4 = gm_id_hash(id4);
+    gm_result_u32 hash3_result = gm_id_hash(id3);
+    assert(GM_IS_OK(hash3_result));
+    uint32_t hash3 = GM_UNWRAP(hash3_result);
+    
+    gm_result_u32 hash4_result = gm_id_hash(id4);
+    assert(GM_IS_OK(hash4_result));
+    uint32_t hash4 = GM_UNWRAP(hash4_result);
     
     /* Hashes should be different */
     assert(hash3 != hash4);
     
     /* Test that same ID produces same hash */
-    assert(gm_id_hash(id1) == hash1);
-    assert(gm_id_hash(id2) == hash2);
+    gm_result_u32 rehash1 = gm_id_hash(id1);
+    assert(GM_IS_OK(rehash1) && GM_UNWRAP(rehash1) == hash1);
+    
+    gm_result_u32 rehash2 = gm_id_hash(id2);
+    assert(GM_IS_OK(rehash2) && GM_UNWRAP(rehash2) == hash2);
     
     printf("✓ test_id_hash\n");
 }

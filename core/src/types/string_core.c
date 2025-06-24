@@ -3,6 +3,7 @@
 
 #include "gitmind/types/string.h"
 #include "gitmind/error.h"
+#include "gitmind/security/memory.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -51,7 +52,7 @@ gm_result_string gm_string_new_n(const char* str, size_t len) {
     }
     
     if (str && len > 0) {
-        memcpy(s.data, str, len);
+        GM_MEMCPY_SAFE(s.data, s.capacity, str, len);
     }
     s.data[len] = '\0';
     
@@ -116,10 +117,10 @@ gm_result_string gm_string_concat(const gm_string_t* a, const gm_string_t* b) {
     
     gm_string_t s = GM_UNWRAP(result);
     if (a && len_a > 0) {
-        memcpy(s.data, a->data, len_a);
+        GM_MEMCPY_SAFE(s.data, s.capacity, a->data, len_a);
     }
     if (b && len_b > 0) {
-        memcpy(s.data + len_a, b->data, len_b);
+        GM_MEMCPY_SAFE(s.data + len_a, s.capacity - len_a, b->data, len_b);
     }
     s.data[total] = '\0';
     s.length = total;
@@ -156,7 +157,7 @@ gm_result_void gm_string_append_n(gm_string_t* str, const char* suffix, size_t l
         str->capacity = new_cap;
     }
     
-    memcpy(str->data + str->length, suffix, len);
+    GM_MEMCPY_SAFE(str->data + str->length, str->capacity - str->length, suffix, len);
     str->length = new_len;
     str->data[new_len] = '\0';
     

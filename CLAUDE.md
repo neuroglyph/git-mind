@@ -1,372 +1,373 @@
-# Instructions for Claude and AI Assistants
+# 🚫 STOP! Read This Before Writing ANY Code
 
-This file contains important instructions for Claude and other AI assistants working on the git-mind project.
+## 🔥 The Great Migration Context
 
-## 🚀 Quick Reference
+We are fixing **11,951 compiler warnings** caused by years of:
+- "TODO: implement later" 
+- Magic numbers everywhere
+- Placeholder implementations
+- "Quick fixes" that became permanent
+- Functions that "mostly work"
 
-### Most Important Rules
-1. **NEVER commit without permission** - Always ask first!
-2. **MIND-UCLA v1.0 license** - Not Apache, not MIT!
-3. **All Git operations in Docker/temp dirs** - Never in working repo
-4. **SPDX headers on all new files** - See examples below
-5. **Test everything in Docker** - Use `make test`
+**YOUR MISSION**: Build foundations with ZERO warnings, ZERO shortcuts, ZERO excuses.
 
-### Common Commands
-```bash
-# Run tests
-make test
+## ❌ FORBIDDEN: Things That Got Us Into This Mess
 
-# Build in Docker
-make docker-build
-
-# Check implementation status
-cat TASKLIST.md
-
-# GitHub issue management
-gh issue list --assignee @me
-gh issue view <number>
-gh issue edit <number> --add-assignee @me
-gh issue close <number>
-```
-
-### Decision Flowchart (Simple)
-```mermaid
-graph TD
-    A[New Task] --> B{Have GitHub Issue #?}
-    B -->|Yes| C[Check if valid:<br/>- Open<br/>- Assigned to me or unassigned]
-    B -->|No| D[Try to find one:<br/>gh issue list]
-    
-    C --> E{Valid?}
-    D --> F{Found one?}
-    
-    E -->|Yes| G[Claim if needed]
-    E -->|No| H[⚠️ Work untracked]
-    F -->|Yes| C
-    F -->|No| H
-    
-    G --> I[Do the work]
-    H --> I
-    
-    I --> J[Complete task]
-    J --> K{Had issue?}
-    
-    K -->|Yes| L[Update/close issue]
-    K -->|No| M[Done]
-    
-    L --> M
-```
-
-### Task Implementation Guide
-When working on a task:
-1. **Multiple steps?** → Use TodoWrite
-2. **Git operation?** → Use Docker/temp dir (NEVER working repo!)
-3. **New file?** → Add SPDX header
-4. **Need tests?** → Write test first (TDD)
-5. **Test behavior** → Not stdout/implementation
-
-## Project Overview
-
-- **Project Name**: git-mind
-- **CLI Name**: git-mind
-- **License**: MIND-UCLA v1.0 (NOT APACHE 2.0! NOT MIT!)
-- **Copyright**: © 2025 J. Kirby Ross / Neuroglyph Collective
-- **Repository**: https://github.com/neuroglyph/git-mind
-
-## 📋 Table of Contents
-
-1. [Quick Reference](#-quick-reference)
-2. [Project Overview](#project-overview)
-3. [Critical Rules](#critical-rules)
-4. [Development Practices](#development-practices)
-5. [Testing Guidelines](#testing-guidelines)
-6. [Technical Details](#technical-details)
-7. [AI Collaboration](#ai-collaboration)
-8. [Common Tasks](#common-tasks)
-9. [Quick Examples](#quick-examples)
-
-## Development Tools and Techniques
-
-- Use mermaid diagrams to illustrate complex ideas in Markdown, github issues (it can make git graphs too) also svg
-- Track tasks via gh issues and organize them into milestones
-
-## Critical Rules
-
-### 1. NEVER Make Git Commits or Operations in Working Repo
-- The user will explicitly ask if they want commits made
-- Default to NO commits unless specifically requested
-- NEVER run git operations in the working repository
-- All git operations must be in Docker containers or temp directories
-- This is a hard rule with no exceptions
-
-### 2. Code Quality Standards
-- **NO MAGIC NUMBERS** - All numeric constants must be #defined
-- **NO MAGIC STRINGS** - All string literals must be #defined constants
-- **Silent by default** - Library functions output nothing unless error
-- **--verbose** - Main.c controls verbose output based on flag
-- **--porcelain** - Machine-readable output controlled by main.c
-- **SRP** - Each function/module has ONE responsibility
-- **DI** - Use dependency injection for testability
-- **KISS** - Simplest solution that works
-- **YAGNI** - Don't add features until needed
-
-### 3. License Headers (SPDX)
-
-All new files MUST include SPDX headers:
-
-#### Source Code Files (.h, .c, .sh, etc.)
+### 1. NO Placeholder Implementations
 ```c
-/* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
-/* © 2025 J. Kirby Ross / Neuroglyph Collective */
+// ❌ FORBIDDEN - This is how we got 11,951 warnings!
+static void sha256(const void* data, size_t len, uint8_t out[32]) {
+    /* TODO: Use real SHA256 implementation */
+    memset(out, 0, 32);  // "temporary" for 5 years...
+}
+
+// ✅ REQUIRED - Implement it properly or don't ship it!
+static int sha256(const void* data, size_t len, uint8_t out[32]) {
+    if (!data || !out) return GM_ERR_INVALID_ARGUMENT;
+    return git_hash_buf(out, data, len, GIT_HASH_SHA256);
+}
 ```
 
-#### Shell Scripts
-```bash
-#!/bin/bash
-# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0
+### 2. NO Magic Numbers EVER
+```c
+// ❌ FORBIDDEN - Magic numbers killed this codebase!
+typedef struct gm_id {
+    uint8_t bytes[32];  // What's 32? SHA256? MD5? Random?
+} gm_id_t;
+
+void gm_id_to_hex(gm_id_t id, char out[65]);  // Why 65?
+
+// ✅ REQUIRED - Define EVERYTHING!
+#define GM_ID_SIZE 32           /* SHA-256 digest size in bytes */
+#define GM_ID_HEX_SIZE 65       /* 32 bytes * 2 + null terminator */
+
+typedef struct gm_id {
+    uint8_t bytes[GM_ID_SIZE];
+} gm_id_t;
+
+void gm_id_to_hex(gm_id_t id, char out[GM_ID_HEX_SIZE]);
 ```
 
-#### Configuration Files (Dockerfile, Makefile, .yml, .toml, .json)
-```yaml
-# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0
+### 3. NO Fake Implementations
+```c
+// ❌ FORBIDDEN - "Works for testing" = doesn't work!
+gm_id_t gm_id_generate(void) {
+    static uint32_t counter = 0;
+    counter++;  // "random enough for now"... NO!
+}
+
+// ✅ REQUIRED - Use proper implementations!
+gm_result_id gm_id_generate(void) {
+    gm_id_t id;
+    if (RAND_bytes(id.bytes, GM_ID_SIZE) != 1) {
+        return gm_err_id(GM_ERROR(GM_ERR_CRYPTO_FAILED, 
+                                  "Failed to generate random ID"));
+    }
+    return gm_ok_id(id);
+}
 ```
 
-#### Markdown Files (optional but encouraged)
-```markdown
-<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
-<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+### 4. NO Functions Without Error Handling
+```c
+// ❌ FORBIDDEN - Can't report failure = will fail silently!
+gm_id_t gm_id_from_data(const void* data, size_t len);
+
+// ✅ REQUIRED - Everything can fail!
+gm_result_id gm_id_from_data(const void* data, size_t len);
 ```
 
-### 4. License Information
-- This project uses **MIND-UCLA v1.0** exclusively
+### 5. NO Incomplete Implementations
+```c
+// ❌ FORBIDDEN - Declared but not implemented = lies!
+gm_result_string gm_string_trim(const gm_string_t* str);  
+// Implementation: ¯\_(ツ)_/¯
 
-## Development Practices
-
-#### Development Philosophy
-- **TDD (Test-Driven Development)**: Write tests first, then implementation
-- **SOLID Principles**: Single responsibility, Open/closed, Liskov substitution, Interface segregation, Dependency inversion
-- **KISS**: Keep It Simple, Stupid - avoid unnecessary complexity
-- **YAGNI**: You Aren't Gonna Need It - don't add functionality until needed
-- **Test Double-Friendly Design**: Use dependency injection and traits to enable test doubles when needed
-
-#### Testing
-- ALWAYS run, build, or test in Docker NO MATTER WHAT
-- Use `make test` to run the full test suite
-- Pre-push hooks enforce test passing
-- Write tests BEFORE implementation (TDD)
-- Each function should have corresponding tests
-- **Always use real Git repos in tests** - our entire stack relies on Git
-- **NEVER run Git operations in the actual working repo** - only in Docker/temp dirs
-- Create temporary Git repositories for each test
-- All Git operations must be isolated from the working repository
-- Use dependency injection for clean architecture
-- Test doubles are only for contriving edge cases, not replacing Git
-- **Always test behavior, not implementation** - Tests verify what the system does, not how
-- **One test file per component** - Each test file focuses on testing one component's behavior
-
-##### Test Strategy - Three Levels
-Always have these three levels of tests, all focused on behavior:
-1. **Unit Tests** - Test individual components in isolation
-   - Located in `tests/unit/` directory
-   - Test single functions/modules in isolation
-   - Fast, focused on one thing
-2. **Integration Tests** - Test components working together
-   - Located in `tests/` directory
-   - Test command behavior, file I/O, Git operations
-   - Use real Git repos, real file systems
-3. **End-to-End Tests** - Test complete user workflows
-   - Also in `tests/` directory
-   - Test full CLI commands from user perspective
-   - Verify entire features work as users expect
-
-**Every user story in `design/features/` should have corresponding end-to-end tests**
-   
-- **Every acceptance criteria should have its own specific test**
-
-- **Tests should be organized by USER STORY by FEATURE** and should verify the user story's acceptance criteria
-
-##### Testing Principles - NEVER Test stdout/stderr
-- **NEVER test stdout/stderr output** - This is brittle and couples tests to implementation
-- Testing stdout is just spying by another name - it violates behavior testing
-- Instead, use proper return types:
-  - Commands return `CommandResult<T>` with exit code and optional value
-  - Tests check the exit code and returned values directly
-  - The CLI layer handles printing - tests verify behavior, not output
-- Example: Don't test "No links found" string, test that `list()` returns empty Vec
-
-##### Definition of Done for Features
-A feature is only complete when:
-1. All acceptance criteria from `design/features/F*.md` have corresponding tests
-2. Tests pass at all three levels (unit, integration, end-to-end)
-3. User story is demonstrable through end-to-end tests
-4. Documentation is updated
-5. Code follows project conventions
-6. TASKLIST.md has been updated
-
-#### Code Style
-- Keep functions small and focused (SOLID)
-- Avoid premature optimization (YAGNI)
-- **Single Responsibility Principle** - Each module/struct has one reason to change
-
-## Technical Details
-
-#### Storage Model
-- Links stored in `.gitmind/links/` directory
-- Format: `LINK_TYPE: source -> target  # ts:timestamp`
-- Files named by SHA of content
-- **Git IS the database** - no external storage
-- Every operation uses Git's content-addressable storage
-- Testing must use real Git operations to be valid
-
-#### Architecture
-- CLI first approach (no server required)
-- Optional daemon for web UI
-- Distributed by design
-- Content-addressable storage
-
-### Important Files to Read
-When starting work, always check:
-1. `TASKLIST.md` - Current implementation status
-2. `README.md` - Project overview (root)
-
-## AI Collaboration
-
-### Attribution System
-
-#### When Creating Edges
-AI assistants MUST properly attribute edges they create:
-
-```bash
-# Set environment variables before creating edges
-export GIT_MIND_SOURCE=claude  # or 'gpt' for other AIs
-export GIT_MIND_AUTHOR=claude@anthropic
-export GIT_MIND_SESSION=conversation_id
-
-# Create edge with confidence score
-git mind link src/a.c src/b.c --type depends_on --confidence 0.85
+// ✅ REQUIRED - Implement it NOW or remove from header!
 ```
 
-#### Confidence Guidelines
-- **1.0**: Only for human-created edges or absolute certainty
-- **0.9-0.99**: Very high confidence (obvious relationship)
-- **0.7-0.89**: Good confidence (likely relationship)
-- **0.5-0.69**: Moderate confidence (possible relationship)
-- **< 0.5**: Low confidence (speculative)
+## 📋 Migration Rules (NO EXCEPTIONS!)
 
-#### Review Workflow
-When suggesting edges:
-1. Always mark as pending unless explicitly told to commit
-2. Group related edges with same session_id
-3. Provide reasoning for relationships
-4. Accept human feedback gracefully
+### Starting ANY New File
+1. **Read these first**:
+   - `docs/enforcer/ROADMAP_TO_REFACTORING.md` - The plan
+   - `TASKLIST.md` - Current status and TODOs
+   - `TO_THE_NEXT_CLAUDE.md` - Handoff notes
 
-## Common Tasks
-
-### Adding a New Source File
-1. Add SPDX header (see above)
-2. Follow project conventions
-3. Add tests
-4. Update documentation if needed
-
-### Updating Documentation
-1. Add SPDX headers to new docs
-2. Keep technical docs in `/design/` or `/docs/` (user docs)
-3. Update `TASKLIST.md` when completing tasks
-
-### Working with Git
-1. NEVER commit without explicit permission
-2. Use conventional commits when asked to commit or suggest commit messages
-3. Run tests before any push (automatic via hooks)
-5. When asked for commit messages, provide them in this format:
-   ```bash
-   git add <files> && git commit -m "type(scope): message"
+2. **Every file MUST have**:
+   ```c
+   /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
+   /* © 2025 J. Kirby Ross / Neuroglyph Collective */
    ```
-6. Suggest commits after completing each task from TASKLIST.md
-7. Keep TASKLIST.md up-to-date as tasks are completed
 
-### Tech Design and Feature Tracking
-- Whenever we make a significant tech design decision, document it in `design/decisions`
-- Whenever we complete a feature, update the document in `design/features` to reflect its status
+3. **Before writing ANY code**:
+   - ❓ Can this function fail? → Return `gm_result_*`
+   - 🔢 Any numbers? → `#define` them with descriptive names
+   - 🧪 Where's the test? → Write test FIRST
+   - 🐳 Build locally? → NO! Use `make test-core`
 
-## Development Workflow Example
+### Code Quality Checklist (EVERY Function)
+- [ ] NO magic numbers (all constants defined)
+- [ ] NO magic strings (all strings defined)
+- [ ] NO TODO comments (implement it or delete it)
+- [ ] NO placeholder code (real implementation only)
+- [ ] NO missing error handling (use Result types)
+- [ ] NO untested code (TDD - test first!)
+- [ ] NO local builds (Docker only via make)
+- [ ] NO warnings (not even one!)
 
-When implementing a new feature:
-1. **Start with tests** (TDD)
-2. **Design with DI** for testability
-3. **Write minimal code** to make tests pass (KISS)
-4. **Use real Git repos** in tests, test doubles only when needed, work from temporary directories
-5. **Refactor** if needed while keeping tests green
-6. **Don't add extra features** (YAGNI)
-7. **Keep each module focused** on one responsibility (SRP)
+## 🏗️ Current Architecture Rules
 
-### Logging and Journal
-- Leave your impressions or thoughts in `.claude/claude-mind/YYYY-MM-DD/` directory
-- Always use today's actual date (double-check to avoid date errors!)
-- Create per-session files to avoid merge conflicts:
-  - Format: `HH:MM-topic-sessionID.md` (e.g., `14:45-web-viz-abc123.md`)
-  - Use first 6 chars of conversation ID for sessionID
-- Use posix timestamps (e.g., `1749941840`)
-- Your "Collaborator" identity comes from `git config user.name` and `git config user.email`, but protected i.e. "[J. Kirby Ross](james@flyingrobots.dev)"
-- Include session metadata at the start of each file:
-  ```markdown
-  # Claude Development Journal
-  
-  ## Session: 1749941840
-  **Collaborator**: [J. Kirby Ross](james@flyingrobots.dev)
-  **Topics**: Web visualization, Help system  
-  **Conversation**: abc123def456 (first 12 chars)
-  
-  ### 14:45 UTC - Initial Thoughts
-  [content...]
-  ```
-- This is your dev journal - feel free to write freely when you get ideas or insights
-- Create an `index.md` in each day's directory summarizing sessions
+### core/ Directory (New Clean Code)
+- **ZERO warnings policy** - Not negotiable
+- **Everything in Docker** - `make test-core`
+- **Result types everywhere** - Use `GM_RESULT_DEF`
+- **No magic anything** - Define all constants
+- **Complete implementations** - No placeholders
 
-## Quick Examples
+### src/ Directory (Legacy Quarantine)
+- **DO NOT TOUCH** - 11,951 warnings
+- **DO NOT MODIFY** - Enforcer will block you
+- **DO NOT FIX** - Rewrite in core/ instead
+- **DO NOT BUILD** - It's broken on purpose
 
-### Creating a New C File
-```c
-/* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
-/* © 2025 J. Kirby Ross / Neuroglyph Collective */
+## 🛠️ Required Development Flow
 
-#include "git_mind.h"
-
-// Define constants - NO MAGIC STRINGS/NUMBERS!
-#define MAX_BUFFER_SIZE 1024
-#define ERROR_MSG "Operation failed"
-
-// Single responsibility function
-int process_data(const char* input, char* output) {
-    // Implementation here
-    return 0;
-}
-```
-
-### Writing Tests (TDD Example)
-```c
-// tests/test_process.c
-void test_process_data_handles_empty_input() {
-    char output[MAX_BUFFER_SIZE];
-    int result = process_data("", output);
-    assert(result == 0);
-    assert(strlen(output) == 0);
-}
-```
-
-### Suggesting a Commit
+### 1. Check Current State
 ```bash
-# After completing a task:
-git add src/process.c tests/test_process.c
-git commit -m "feat(process): add data processing with empty input handling"
+cat TASKLIST.md              # What needs doing?
+cat TO_THE_NEXT_CLAUDE.md    # Any handoff notes?
 ```
 
----
-## 💡 Final Reminders
+### 2. Implement Feature
+```bash
+# 1. Write test first (TDD)
+vim core/tests/unit/test_feature.c
 
-- **MIND-UCLA v1.0**, not Apache 2.0, not MIT!
-- **No commits without permission!**
-- **SPDX headers on all new files!**
-- **Test everything in Docker!**
-- We now depend on **libgit2** for robust Git operations
+# 2. Run test (it should fail)
+make test-core
+
+# 3. Implement feature
+vim core/src/feature.c
+
+# 4. Run test (it should pass)
+make test-core
+
+# 5. Check for warnings
+make check-core
+```
+
+### 3. Common Commands
+```bash
+make test-core     # Run core/ tests in Docker
+make dev          # Get Docker shell
+make check        # Run quality checks
+```
+
+## 🚨 Error Handling Patterns
+
+### ALWAYS Use Result Types
+```c
+// Define result type for your return value
+GM_RESULT_DEF(gm_result_widget, widget_t*);
+
+// Functions that can fail MUST return results
+gm_result_widget create_widget(const char* name) {
+    if (!name) {
+        return gm_err_widget(GM_ERROR(GM_ERR_INVALID_ARGUMENT, 
+                                      "Widget name cannot be NULL"));
+    }
+    
+    widget_t* w = malloc(sizeof(widget_t));
+    if (!w) {
+        return gm_err_widget(GM_ERROR(GM_ERR_OUT_OF_MEMORY,
+                                      "Failed to allocate widget"));
+    }
+    
+    return gm_ok_widget(w);
+}
+```
+
+### ALWAYS Check Results
+```c
+gm_result_widget result = create_widget("test");
+if (GM_IS_ERR(result)) {
+    gm_error_print(GM_UNWRAP_ERR(result));
+    return -1;
+}
+widget_t* w = GM_UNWRAP(result);
+```
+
+## 📏 Constant Definition Rules
+
+### For Every Number
+```c
+// ❌ NEVER
+char buffer[256];
+if (count > 15) { }
+
+// ✅ ALWAYS
+#define BUFFER_SIZE 256
+#define MAX_ITEM_COUNT 15
+
+char buffer[BUFFER_SIZE];
+if (count > MAX_ITEM_COUNT) { }
+```
+
+### For Every String
+```c
+// ❌ NEVER
+return GM_ERROR(code, "Operation failed");
+
+// ✅ ALWAYS
+#define ERR_MSG_OPERATION_FAILED "Operation failed"
+return GM_ERROR(code, ERR_MSG_OPERATION_FAILED);
+```
+
+## 🧪 Testing Requirements
+
+### Test-Driven Development (TDD)
+1. **Write test first** - It will fail
+2. **Write minimal code** - Make test pass
+3. **Refactor** - Keep tests green
+4. **NO untested code** - 100% coverage
+
+### Test Naming
+```c
+// Test file: test_<module>.c
+// Test function: test_<module>_<scenario>
+
+void test_string_new_handles_null(void) {
+    gm_result_string result = gm_string_new(NULL);
+    assert(GM_IS_OK(result));  // Should create empty string
+    // ...
+}
+```
+
+## 🔥 The Enforcer Is Watching
+
+Remember:
+- Pre-commit hooks block changes to src/
+- CI runs quality checks on all code
+- One warning = build fails
+- One TODO = code review fails
+
+## 💀 Examples of What Created 11,951 Warnings
+
+```c
+// 1. Magic numbers everywhere
+write(fd, buffer, 4096);  // What's 4096?
+
+// 2. No error handling
+void* ptr = malloc(size);  // What if it fails?
+strcpy(dst, src);         // What if dst too small?
+
+// 3. Placeholder code
+// TODO: Implement this properly
+return 0;  // Just return success for now...
+
+// 4. Copy-paste programming
+// Copied from StackOverflow, not sure how it works...
+
+// 5. "Temporary" hacks
+#ifdef QUICK_HACK  // Added in 2019, still here...
+```
+
+## ✅ Final Checklist Before ANY Push
+
+- [ ] Read `TASKLIST.md` for current state
+- [ ] All tests pass in Docker (`make test-core`)
+- [ ] Zero compiler warnings
+- [ ] No magic numbers or strings
+- [ ] No TODO comments
+- [ ] No placeholder implementations
+- [ ] All functions have error handling
+- [ ] All public functions have tests
+- [ ] Code follows patterns in specs
+
+## 🎯 Remember Your Mission
+
+You're not just writing code. You're:
+1. **Fixing 11,951 warnings** from bad habits
+2. **Building foundations** for the next decade
+3. **Setting the standard** for quality
+
+Every shortcut you take today becomes someone else's nightmare tomorrow.
+
+**Build it right, or don't build it at all.**
 
 ---
-*Last updated: June 2025*
+*The price of excellence is eternal vigilance against the temptation to write "good enough" code.*
+## 🔥 Lessons Learned (2025-06-22 Session)
+
+### 1. **Error Result Helpers Are Essential**
+When defining custom result types with `GM_RESULT_DEF`, always create helper functions:
+```c
+/* Define the result type */
+GM_RESULT_DEF(gm_result_string, gm_string_t);
+
+/* ALWAYS add this helper */
+static inline gm_result_string gm_err_string(gm_error_t* e) {
+    return (gm_result_string){ .ok = false, .u.err = e };
+}
+```
+Without these helpers, you'll get cryptic compiler errors about incompatible types.
+
+### 2. **SipHash Requires Proper libsodium Constants**
+When using SipHash-2-4, use the proper constants:
+```c
+/* ✅ CORRECT */
+uint8_t key[crypto_shorthash_siphash24_KEYBYTES];
+uint8_t out[crypto_shorthash_siphash24_BYTES];
+crypto_shorthash_siphash24(out, data, len, key);
+
+/* ❌ WRONG - leads to confusing errors */
+uint64_t hash = crypto_shorthash_siphash24(data, len, key);
+```
+
+### 3. **SSO Implementation Requires va_list Copying**
+When implementing SSO for error messages, you can't use va_list twice:
+```c
+/* ❌ WRONG - undefined behavior */
+int len = vsnprintf(temp, sizeof(temp), fmt, args);
+vsnprintf(final, len + 1, fmt, args);  /* args already consumed\! */
+
+/* ✅ CORRECT - use va_copy */
+va_list args_copy;
+va_copy(args_copy, args);
+int len = vsnprintf(temp, sizeof(temp), fmt, args);
+vsnprintf(final, len + 1, fmt, args_copy);
+va_end(args_copy);
+```
+
+### 4. **Always Suppress Unused Parameter Warnings**
+In implementations where parameters are reserved for future use:
+```c
+void function(void* unused_param) {
+    (void)unused_param;  /* Suppress warning */
+    /* Implementation */
+}
+```
+
+### 5. **Makefile Dependencies Are Transitive**
+When modules depend on each other, ALL transitive dependencies must be linked:
+```c
+/* If path uses string, string uses crypto, crypto uses error... */
+/* Then path tests need ALL of them: */
+$(CC) test_path.c $(PATH_OBJS) $(STRING_OBJS) $(CRYPTO_OBJS) $(ERROR_OBJS)
+```
+
+### 6. **Test Helper Functions for Internal Access**
+When testing modules with opaque types, create test-specific accessors:
+```c
+/* In test file only */
+static const char* test_get_error_message(const gm_error_t* err) {
+    return err->heap_alloc ? err->msg.heap : err->msg.small;
+}
+```
+
+### 7. **Crypto DI Enables Deterministic Testing**
+Always abstract crypto behind an interface:
+- Production uses real crypto (libsodium)
+- Tests use deterministic implementations
+- Switch backends at runtime for different scenarios
+EOF < /dev/null

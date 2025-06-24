@@ -8,8 +8,7 @@
 #include <stddef.h>
 #include "gitmind/result.h"
 
-/* Define result types for random operations */
-GM_RESULT_DEF(gm_result_u32, uint32_t);
+/* Result types for random operations (u32/u64) are now defined in result.h */
 GM_RESULT_DEF(gm_result_u64, uint64_t);
 
 /**

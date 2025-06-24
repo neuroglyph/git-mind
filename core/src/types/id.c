@@ -2,71 +2,53 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind/types/id.h"
+#include "gitmind/types/id_context.h"
 #include "gitmind/error.h"
 #include "gitmind/crypto/sha256.h"
 #include "gitmind/crypto/random.h"
+#include "gitmind/security/memory.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <sodium.h>
 
 /* Compare two IDs */
-bool gm_id_equal(gm_id_t a, gm_id_t b) {
-    return memcmp(a.bytes, b.bytes, GM_ID_SIZE) == 0;
+bool gm_id_equal(gm_id_t id_a, gm_id_t id_b) {
+    return memcmp(id_a.bytes, id_b.bytes, GM_ID_SIZE) == 0;
 }
 
 /* Compare IDs for ordering */
-int gm_id_compare(gm_id_t a, gm_id_t b) {
-    return memcmp(a.bytes, b.bytes, GM_ID_SIZE);
+int gm_id_compare(gm_id_t id_a, gm_id_t id_b) {
+    return memcmp(id_a.bytes, id_b.bytes, GM_ID_SIZE);
 }
 
-/* SipHash key - initialized once at startup */
-static uint8_t g_siphash_key[crypto_shorthash_siphash24_KEYBYTES];
-static bool g_siphash_key_initialized = false;
+/* 
+ * Thread-safe ID operations now use context-based approach.
+ * The global state has been moved to gm_id_context_t.
+ * See id_context.h for the new thread-safe implementation.
+ */
 
-/* Initialize SipHash key with random data */
-static void ensure_siphash_key_initialized(void) {
-    if (!g_siphash_key_initialized) {
-        /* Generate random key - this is best effort, if it fails we use zeros */
-        gm_result_void result = gm_random_bytes(g_siphash_key, sizeof(g_siphash_key));
-        if (GM_IS_ERR(result)) {
-            /* If random generation fails, use a deterministic fallback */
-            /* This is still better than hardcoded constant */
-            for (size_t i = 0; i < sizeof(g_siphash_key); i++) {
-                g_siphash_key[i] = (uint8_t)(i ^ 0xAA);
-            }
-        }
-        g_siphash_key_initialized = true;
-    }
+/* Helper to create error result for u32 */
+static inline gm_result_u32 gm_err_u32(gm_error_t* err) {
+    return (gm_result_u32){ .ok = false, .u.err = err };
 }
 
 /* Hash function for hash tables using SipHash-2-4 */
-uint32_t gm_id_hash(gm_id_t id) {
-    /* Ensure key is initialized */
-    ensure_siphash_key_initialized();
+gm_result_u32 gm_id_hash(gm_id_t identifier) {
+    /* Get the default context (thread-safe) */
+    gm_id_context_t* ctx = gm_id_context_get_default();
+    if (!ctx) {
+        return gm_err_u32(GM_ERROR(GM_ERR_INVALID_STATE, 
+                                  "Failed to get ID context"));
+    }
     
-    /* SipHash produces 8-byte output */
-    uint8_t hash_output[crypto_shorthash_siphash24_BYTES];
-    
-    /* Compute SipHash-2-4 of the ID bytes */
-    crypto_shorthash_siphash24(
-        hash_output,           /* output buffer */
-        id.bytes,             /* input data */
-        GM_ID_SIZE,           /* input length */
-        g_siphash_key         /* 128-bit key */
-    );
-    
-    /* Convert 8-byte output to uint64_t */
-    uint64_t hash64;
-    memcpy(&hash64, hash_output, sizeof(hash64));
-    
-    /* Mix upper and lower halves for better distribution */
-    return (uint32_t)(hash64 ^ (hash64 >> 32));
+    /* Use context-based hash function */
+    return gm_id_hash_with_context(ctx, identifier);
 }
 
 /* Helper to create error result for ID */
-static inline gm_result_id gm_err_id(gm_error_t* e) {
-    return (gm_result_id){ .ok = false, .u.err = e };
+static inline gm_result_id gm_err_id(gm_error_t* err) {
+    return (gm_result_id){ .ok = false, .u.err = err };
 }
 
 /* Create ID from data */
@@ -103,21 +85,41 @@ gm_result_id gm_id_generate(void) {
     return (gm_result_id){ .ok = true, .u.val = id };
 }
 
-/* Convert ID to hex string */
-void gm_id_to_hex(gm_id_t id, char out[GM_ID_HEX_SIZE]) {
-    static const char hex[] = "0123456789abcdef";
+/* Hex conversion constants */
+#define HEX_CHARS_PER_BYTE 2
+#define HIGH_NIBBLE_SHIFT 4
+#define LOW_NIBBLE_MASK 0x0F
+#define HEX_DIGIT_STRING "0123456789abcdef"
+#define HEX_FORMAT_2X "%2x"
+
+/* Convert ID to hex string (safe version with buffer size check) */
+gm_result_void gm_id_to_hex(gm_id_t identifier, char* out, size_t out_size) {
+    if (!out) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL output buffer"));
+    }
+    
+    if (out_size < GM_ID_HEX_SIZE) {
+        return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, 
+                                   "Buffer too small: need %zu bytes, got %zu",
+                                   (size_t)GM_ID_HEX_SIZE, out_size));
+    }
+    
+    static const char hex[] = HEX_DIGIT_STRING;
     
     for (int i = 0; i < GM_ID_SIZE; i++) {
-        out[i * 2]     = hex[id.bytes[i] >> 4];
-        out[i * 2 + 1] = hex[id.bytes[i] & 0x0F];
+        size_t hex_offset = (size_t)i * HEX_CHARS_PER_BYTE;
+        out[hex_offset]     = hex[identifier.bytes[i] >> HIGH_NIBBLE_SHIFT];
+        out[hex_offset + 1] = hex[identifier.bytes[i] & LOW_NIBBLE_MASK];
     }
     out[GM_ID_HEX_CHARS] = '\0';
+    
+    return gm_ok_void();
 }
 
 /* Parse hex string to ID */
 gm_result_id gm_id_from_hex(const char* hex) {
     gm_id_t id;
-    memset(&id, 0, sizeof(id));
+    GM_MEMSET_SAFE(&id, sizeof(id), 0, sizeof(id));
     
     if (!hex || strlen(hex) != GM_ID_HEX_CHARS) {
         return (gm_result_id){
@@ -129,11 +131,11 @@ gm_result_id gm_id_from_hex(const char* hex) {
     
     for (int i = 0; i < GM_ID_SIZE; i++) {
         unsigned int byte;
-        if (sscanf(hex + i * 2, "%2x", &byte) != 1) {
+        if (sscanf(hex + (size_t)i * HEX_CHARS_PER_BYTE, HEX_FORMAT_2X, &byte) != 1) {
             return (gm_result_id){
                 .ok = false,
                 .u.err = GM_ERROR(GM_ERR_INVALID_FORMAT,
-                                 "Invalid hex character at position %d", i * 2)
+                                 "Invalid hex character at position %d", (int)(i * HEX_CHARS_PER_BYTE))
             };
         }
         id.bytes[i] = (uint8_t)byte;
@@ -143,8 +145,8 @@ gm_result_id gm_id_from_hex(const char* hex) {
 }
 
 /* Helper to create error result for session ID */
-static inline gm_result_session_id gm_err_session_id(gm_error_t* e) {
-    return (gm_result_session_id){ .ok = false, .u.err = e };
+static inline gm_result_session_id gm_err_session_id(gm_error_t* err) {
+    return (gm_result_session_id){ .ok = false, .u.err = err };
 }
 
 /* Generate session ID */
