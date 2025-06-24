@@ -8,5 +8,5 @@ RUN apt-get update && \
     ln -sf /usr/bin/clang-tidy-20 /usr/local/bin/clang-tidy && \
     ln -sf /usr/bin/clang++-20    /usr/local/bin/clang++ && \
     ln -sf /usr/bin/clang-20      /usr/local/bin/clang && \
-    pip3 install --break-system-packages meson ninja
+    pip3 install meson ninja
 WORKDIR /workspace
