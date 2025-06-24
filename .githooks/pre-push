@@ -1,31 +1,44 @@
 #!/bin/bash
-# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0
-# © 2025 J. Kirby Ross / Neuroglyph Collective
+# Pre-push hook that runs THE EXACT SAME CHECKS AS CI
+# If this passes, CI will pass. Period.
 
-# Pre-push hook - run tests before pushing
+set -e
 
-echo "🚀 Running pre-push checks..."
+# Add LLVM to PATH if on Mac
+export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
 
-# Ensure Docker image is built with optimizations
-export COMPOSE_BAKE=true
-export DOCKER_BUILDKIT=1
+echo "🛡️ Running CI checks locally before push..."
 
-# Run CI quality checks (exactly like GitHub Actions)
-echo "🔍 Running CI quality checks (exactly like GitHub Actions)..."
-if ! make ci-quality; then
-    echo "❌ CI quality checks failed!"
-    echo "This runs the EXACT same checks as GitHub Actions."
-    echo "Fix all issues before pushing to avoid CI failures."
+# 1. Build with meson
+echo "📦 Building with meson..."
+meson setup build-push >/dev/null 2>&1 || true
+ninja -C build-push
+
+# 2. Run clang-tidy with baseline enforcement (EXACTLY like CI)
+echo "🔍 Running clang-tidy diff-guard..."
+clang-tidy -quiet -p build-push --config-file=quality/.clang-tidy \
+    $(git ls-files 'core/**/*.c' 'core/**/*.h') \
+    | tee /tmp/clang-tidy-report-full.txt || true
+
+# Filter to just project warnings
+grep -E "^/.*core/|^core/" /tmp/clang-tidy-report-full.txt > /tmp/clang-tidy-report.txt || true
+
+# Enforce no new warnings (EXACTLY like CI)
+echo "⚖️ Checking for new warnings..."
+bash tools/enforce_no_new_warnings.sh /tmp/clang-tidy-report.txt tools/baseline.txt || {
+    echo "❌ New warnings detected! Fix them before pushing."
     exit 1
-fi
+}
 
-# Run tests
-echo "🧪 Running tests..."
-if ! make test; then
-    echo "❌ Tests failed!"
-    echo "All tests must pass before pushing."
+# 3. Run tests with sanitizers
+echo "🧪 Running tests with sanitizers..."
+rm -rf build-asan
+CC=clang CFLAGS="-fsanitize=address -fno-omit-frame-pointer -g" meson setup build-asan -Db_sanitize=address
+ninja -C build-asan
+ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 \
+    ninja -C build-asan test || {
+    echo "❌ Address sanitizer tests failed!"
     exit 1
-fi
+}
 
-echo "✅ All pre-push checks passed!"
-echo "Pushing to remote..."
+echo "✅ All CI checks passed! Safe to push."
