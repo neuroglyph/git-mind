@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Quick pre-push check - just the essentials
+set -euo pipefail
+
+echo "🚀 Running quick pre-push checks..."
+
+# Local checks (no Docker)
+echo "→ Checking for TODOs..."
+if grep -nE "(TODO|FIXME|XXX)" $(find core -name "*.c" -o -name "*.h" 2>/dev/null); then
+    echo "❌ NO TODOs ALLOWED"
+    exit 1
+fi
+
+echo "→ Quick build test..."
+if [ ! -d build-quick ]; then
+    CC=clang meson setup build-quick >/dev/null 2>&1
+fi
+ninja -C build-quick >/dev/null
+
+echo "✅ Quick checks passed!"

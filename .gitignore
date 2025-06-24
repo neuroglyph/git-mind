@@ -196,3 +196,5 @@ docs/audits/
 docs/hn-demo/
 docs/engineering/
 archive/
+build-container/
+clang-tidy-report*.txt

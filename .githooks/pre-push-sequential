@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "🔥 Running CI checks before push (sequential mode)..."
+
+IMAGE=gitmind-ci:latest
+
+# Quick checks first
+echo "→ Checking for TODOs..."
+if grep -nE "(TODO|FIXME|XXX)" $(find core -name "*.c" -o -name "*.h" 2>/dev/null); then
+    echo "❌ NO TODOs ALLOWED"
+    exit 1
+fi
+echo "✅ No TODOs found"
+
+# Run all checks in Docker sequentially
+docker run --rm -t -v "$PWD":/workspace -w /workspace $IMAGE bash -c '
+    set -e
+    
+    echo "→ Running clang-tidy..."
+    CC=clang meson setup build
+    ninja -C build
+    cp build/compile_commands.json .
+    clang-tidy -quiet -p . --config-file=quality/.clang-tidy \
+        $(git ls-files "core/**/*.c" "core/**/*.h") \
+        | tee clang-tidy-report-full.txt || true
+    grep -E "^/.*core/|^core/" clang-tidy-report-full.txt > clang-tidy-report.txt || true
+    python3 tools/count_warnings.py check clang-tidy-report.txt tools/baseline_count.txt
+    
+    echo "→ Running cppcheck..."
+    cppcheck --enable=all --inconclusive --quiet src
+    
+    echo "→ Running ASAN tests..."
+    rm -rf build-asan
+    CC=clang CFLAGS="-fsanitize=address -fno-omit-frame-pointer -g" \
+        meson setup build-asan -Db_sanitize=address
+    ninja -C build-asan
+    ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 \
+        ninja -C build-asan test
+    
+    echo "→ Running UBSAN tests..."
+    rm -rf build-ubsan
+    CC=clang CFLAGS="-fsanitize=undefined -fno-omit-frame-pointer -g" \
+        meson setup build-ubsan -Db_sanitize=undefined
+    ninja -C build-ubsan
+    UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+        ninja -C build-ubsan test
+    
+    echo "→ Running standard tests..."
+    rm -rf build-standard
+    CC=clang meson setup build-standard
+    ninja -C build-standard
+    ninja -C build-standard test
+    
+    echo "→ Running coverage analysis..."
+    rm -rf build-coverage
+    CC=clang meson setup build-coverage -Db_coverage=true
+    ninja -C build-coverage test
+    cd build-coverage
+    gcovr --root .. --print-summary --fail-under-line 80 --fail-under-branch 70 || {
+        echo "❌ Coverage requirements not met! (80% line, 70% branch required)"
+        exit 1
+    }
+    
+    echo "→ Running fuzzing..."
+    cd /workspace
+    python tools/run_fuzz.py 60
+    
+    echo "✅ ALL CHECKS PASSED!"
+'

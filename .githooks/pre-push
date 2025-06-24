@@ -1,31 +1,21 @@
-#!/bin/bash
-# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0
-# © 2025 J. Kirby Ross / Neuroglyph Collective
+#!/usr/bin/env bash
+# Wrapper to choose between quick and full CI checks
 
-# Pre-push hook - run tests before pushing
+# Use GITMIND_PUSH_MODE environment variable or default to "full"
+# Options: quick, full
+MODE="${GITMIND_PUSH_MODE:-full}"
 
-echo "🚀 Running pre-push checks..."
-
-# Ensure Docker image is built with optimizations
-export COMPOSE_BAKE=true
-export DOCKER_BUILDKIT=1
-
-# Run CI quality checks (exactly like GitHub Actions)
-echo "🔍 Running CI quality checks (exactly like GitHub Actions)..."
-if ! make ci-quality; then
-    echo "❌ CI quality checks failed!"
-    echo "This runs the EXACT same checks as GitHub Actions."
-    echo "Fix all issues before pushing to avoid CI failures."
-    exit 1
-fi
-
-# Run tests
-echo "🧪 Running tests..."
-if ! make test; then
-    echo "❌ Tests failed!"
-    echo "All tests must pass before pushing."
-    exit 1
-fi
-
-echo "✅ All pre-push checks passed!"
-echo "Pushing to remote..."
+case "$MODE" in
+    quick)
+        echo "⚡ Using quick mode (set GITMIND_PUSH_MODE=full for complete CI)"
+        exec "$(dirname "$0")/pre-push-quick" "$@"
+        ;;
+    full)
+        # Default - run everything since all branches become PRs
+        exec "$(dirname "$0")/pre-push-docker" "$@"
+        ;;
+    *)
+        echo "❌ Unknown GITMIND_PUSH_MODE: $MODE (use: quick or full)"
+        exit 1
+        ;;
+esac
