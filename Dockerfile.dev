@@ -8,6 +8,8 @@ RUN apt-get update && apt-get install -y \
     git \
     libgit2-dev \
     libgit2-1.1 \
+    libsodium-dev \
+    libsodium23 \
     pkg-config \
     valgrind \
     wget \

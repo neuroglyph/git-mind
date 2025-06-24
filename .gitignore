@@ -60,6 +60,8 @@ Thumbs.db
 # Claude
 .claude/
 # CLAUDE.md is intentionally tracked for AI assistant instructions
+TO_THE_NEXT_CLAUDE.md
+Review.md
 
 # Obsidian
 .obsidian/
