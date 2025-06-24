@@ -8,6 +8,7 @@
 #include "gitmind/error.h"
 #include "gitmind/security/memory.h"
 
+#include <pthread.h>
 #include <sodium.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -25,35 +26,26 @@ int gm_id_compare(gm_id_t id_a, gm_id_t id_b) {
 
 /* SipHash key - initialized once at startup */
 static uint8_t g_siphash_key[crypto_shorthash_siphash24_KEYBYTES];
-static bool g_siphash_key_initialized = false;
+static pthread_once_t g_siphash_key_once = PTHREAD_ONCE_INIT;
 
-/* Initialize SipHash key with random data */
-static void ensure_siphash_key_initialized(void) {
-    if (!g_siphash_key_initialized) {
-        /* Generate random key - this is best effort, if it fails we use zeros
-         */
-        gm_result_void result =
-            gm_random_bytes(g_siphash_key, sizeof(g_siphash_key));
-        if (GM_IS_ERR(result)) {
-            /* If random generation fails, use a deterministic fallback */
-            /* This is still better than hardcoded constant */
-            for (size_t i = 0; i < sizeof(g_siphash_key); i++) {
-                g_siphash_key[i] = (uint8_t)(i ^ 0xAA);
-            }
+/* Initialize SipHash key with random data - called once by pthread_once */
+static void init_siphash_key(void) {
+    /* Generate random key - this is best effort, if it fails we use fallback */
+    gm_result_void result =
+        gm_random_bytes(g_siphash_key, sizeof(g_siphash_key));
+    if (GM_IS_ERR(result)) {
+        /* If random generation fails, use a deterministic fallback */
+        /* This is still better than hardcoded constant */
+        for (size_t i = 0; i < sizeof(g_siphash_key); i++) {
+            g_siphash_key[i] = (uint8_t)(i ^ 0xAA);
         }
-        g_siphash_key_initialized = true;
+        gm_error_free(GM_UNWRAP_ERR(result));
     }
 }
 /* Hash function for hash tables using SipHash-2-4 */
 gm_result_u32 gm_id_hash(gm_id_t identifier) {
-    /* Ensure key is initialized - this can fail if random generation fails */
-    ensure_siphash_key_initialized();
-
-    /* Check if initialization actually succeeded */
-    if (!g_siphash_key_initialized) {
-        return gm_err_u32(
-            GM_ERROR(GM_ERR_INVALID_STATE, "Failed to initialize SipHash key"));
-    }
+    /* Ensure key is initialized exactly once, thread-safe */
+    pthread_once(&g_siphash_key_once, init_siphash_key);
 
     /* SipHash produces 8-byte output */
     uint8_t hash_output[crypto_shorthash_siphash24_BYTES];
