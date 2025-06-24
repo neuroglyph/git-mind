@@ -1,202 +1,90 @@
-/workspace/core/src/error/error.c:19:15: error: Call to function 'vsnprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'vsnprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/src/error/error.c:19:15: note: Call to function 'vsnprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'vsnprintf_s' in case of C11
-/workspace/core/src/error/error.c:34:9: error: Call to function 'vsnprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'vsnprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/src/error/error.c:34:9: note: Call to function 'vsnprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'vsnprintf_s' in case of C11
-/workspace/core/src/error/error.c:40:13: error: Call to function 'vsnprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'vsnprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/src/error/error.c:40:13: note: Call to function 'vsnprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'vsnprintf_s' in case of C11
-/workspace/core/src/error/error.c:44:13: error: Call to function 'vsnprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'vsnprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/src/error/error.c:44:13: note: Call to function 'vsnprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'vsnprintf_s' in case of C11
-/workspace/core/src/error/error.c:135:6: error: function 'gm_error_free' is within a recursive call chain [misc-no-recursion,-warnings-as-errors]
-/workspace/core/src/error/error.c:135:6: note: example recursive call chain, starting from function 'gm_error_free'
-/workspace/core/src/error/error.c:147:9: note: Frame #1: function 'gm_error_free' calls function 'gm_error_free' here:
-/workspace/core/src/error/error.c:147:9: note: ... which was the starting point of the recursive call chain; there may be other cycles
-/workspace/core/src/error/error.c:159:7: error: function 'gm_error_format' has cognitive complexity of 26 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
-/workspace/core/src/error/error.c:160:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/src/error/error.c:167:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/src/error/error.c:170:9: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/src/error/error.c:170:23: note: +1
-/workspace/core/src/error/error.c:174:11: note: +1, nesting level increased to 2
-/workspace/core/src/error/error.c:179:9: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/src/error/error.c:188:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/src/error/error.c:195:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/src/error/error.c:195:16: note: +1
-/workspace/core/src/error/error.c:200:9: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/src/error/error.c:200:23: note: +1
-/workspace/core/src/error/error.c:211:11: note: +1, nesting level increased to 2
-/workspace/core/src/error/error.c:221:9: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/src/error/error.c:221:25: note: +1
-/workspace/core/src/error/error.c:223:11: note: +1, nesting level increased to 2
-/workspace/core/src/error/error.c:228:9: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/src/error/error.c:228:17: note: +1
-/workspace/core/src/error/error.c:234:13: note: +3, including nesting penalty of 2, nesting level increased to 3
-/workspace/core/src/error/error.c:234:29: note: +1
-/workspace/core/src/error/error.c:172:27: error: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/src/error/error.c:172:27: note: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11
-/workspace/core/src/error/error.c:176:27: error: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/src/error/error.c:176:27: note: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11
-/workspace/core/src/error/error.c:201:23: error: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/src/error/error.c:201:23: note: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11
-/workspace/core/src/error/error.c:212:23: error: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/src/error/error.c:212:23: note: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11
-/workspace/core/src/error/error.c:229:23: error: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/src/error/error.c:229:23: note: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11
-/workspace/core/src/types/id.c:165:13: error: Call to function 'sscanf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'sscanf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/src/types/id.c:165:13: note: Call to function 'sscanf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'sscanf_s' in case of C11
-/workspace/core/src/types/path.c:15:19: error: invalid case style for variable 'PATH_SEP_UNIX' [readability-identifier-naming,-warnings-as-errors]
-/workspace/core/src/types/path.c:16:19: error: invalid case style for variable 'PATH_SEP_WIN' [readability-identifier-naming,-warnings-as-errors]
-/workspace/core/src/types/path.c:28:19: error: invalid case style for variable 'SYMLINK_SUFFIX_MACOS' [readability-identifier-naming,-warnings-as-errors]
-/workspace/core/src/types/path.c:917:3: error: invalid case style for variable 'DEFAULT_PATH_RULES' [readability-identifier-naming,-warnings-as-errors]
-/workspace/core/src/types/string_core.c:15:29: error: 2 adjacent parameters of 'next_capacity' of similar type ('size_t') are easily swapped by mistake [bugprone-easily-swappable-parameters,-warnings-as-errors]
-/workspace/core/src/types/string_core.c:15:36: note: the first parameter in the range is 'current'
-/workspace/core/src/types/string_core.c:15:52: note: the last parameter in the range is 'needed'
-/workspace/core/src/types/string_core.c:118:31: error: Potential memory leak [clang-analyzer-unix.Malloc,-warnings-as-errors]
-/workspace/core/src/types/string_core.c:109:20: note: Assuming 'a' is null
-/workspace/core/src/types/string_core.c:109:20: note: '?' condition is false
-/workspace/core/src/types/string_core.c:110:20: note: Assuming 'b' is null
-/workspace/core/src/types/string_core.c:110:20: note: '?' condition is false
-/workspace/core/src/types/string_core.c:113:31: note: Calling 'gm_string_with_capacity'
-/workspace/core/src/types/string_core.c:66:18: note: 'capacity' is > 0
-/workspace/core/src/types/string_core.c:66:18: note: '?' condition is true
-/workspace/core/src/types/string_core.c:68:14: note: Memory is allocated
-/workspace/core/src/types/string_core.c:69:9: note: Assuming field 'data' is non-null
-/workspace/core/src/types/string_core.c:69:5: note: Taking false branch
-/workspace/core/src/types/string_core.c:113:31: note: Returned allocated memory
-/workspace/core/src/types/string_core.c:114:9: note: Field 'ok' is true
-/workspace/core/include/gitmind/result.h:110:28: note: expanded from macro 'GM_IS_ERR'
-/workspace/core/src/types/string_core.c:114:5: note: Taking false branch
-/workspace/core/src/types/string_core.c:118:31: note: Potential memory leak
-/workspace/core/src/utf8/validate.c:36:22: error: invalid case style for variable 'UTF8D' [readability-identifier-naming,-warnings-as-errors]
-/workspace/core/src/utf8/validate.c:70:17: error: integer literal has suffix 'u', which is not uppercase [readability-uppercase-literal-suffix,-warnings-as-errors]
-/workspace/core/src/utf8/validate.c:80:39: error: 2 adjacent parameters of 'state_to_error' of similar type ('uint32_t') are easily swapped by mistake [bugprone-easily-swappable-parameters,-warnings-as-errors]
-/workspace/core/src/utf8/validate.c:80:48: note: the first parameter in the range is 'state'
-/workspace/core/src/utf8/validate.c:80:64: note: the last parameter in the range is 'codep'
-/workspace/core/tests/unit/test_id.c:195:5: error: multiple declarations in a single statement reduces readability [readability-isolate-declaration,-warnings-as-errors]
-/workspace/core/tests/unit/test_id.c:196:5: error: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/tests/unit/test_id.c:196:5: note: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11
-/workspace/core/tests/unit/test_id.c:197:5: error: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/tests/unit/test_id.c:197:5: note: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11
-/workspace/core/tests/unit/test_id.c:212:5: error: multiple declarations in a single statement reduces readability [readability-isolate-declaration,-warnings-as-errors]
-/workspace/core/tests/unit/test_id.c:213:5: error: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/tests/unit/test_id.c:213:5: note: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11
-/workspace/core/tests/unit/test_id.c:214:5: error: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/tests/unit/test_id.c:214:5: note: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11
-/workspace/core/tests/unit/test_random.c:66:23: error: statement should be inside braces [readability-braces-around-statements,-warnings-as-errors]
-/workspace/core/tests/unit/test_random.c:76:13: error: function 'test_random_u64' has cognitive complexity of 20 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
-/workspace/core/tests/unit/test_random.c:78:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:78:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:78:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:78:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:82:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:82:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:82:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:82:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:86:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:86:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:86:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:86:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:89:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:89:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:89:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:89:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:90:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:90:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:90:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:90:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:96:13: error: function 'test_entropy_quality' has cognitive complexity of 23 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
-/workspace/core/tests/unit/test_random.c:100:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:100:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:100:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:100:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:106:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:107:9: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:108:13: note: +3, including nesting penalty of 2, nesting level increased to 3
-/workspace/core/tests/unit/test_random.c:110:15: note: +1, nesting level increased to 3
-/workspace/core/tests/unit/test_random.c:122:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:122:30: note: +1
-/workspace/core/tests/unit/test_random.c:122:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:122:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:122:30: note: +1
-/workspace/core/tests/unit/test_random.c:122:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:123:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:123:29: note: +1
-/workspace/core/tests/unit/test_random.c:123:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_random.c:123:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_random.c:123:29: note: +1
-/workspace/core/tests/unit/test_random.c:123:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:20:9: error: Call to function 'sscanf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'sscanf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/tests/unit/test_sha256.c:20:9: note: Call to function 'sscanf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'sscanf_s' in case of C11
-/workspace/core/tests/unit/test_sha256.c:36:13: error: function 'test_sha256_vectors' has cognitive complexity of 17 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
-/workspace/core/tests/unit/test_sha256.c:53:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:63:9: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:63:9: note: nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:63:9: note: +3, including nesting penalty of 2, nesting level increased to 3
-/workspace/core/tests/unit/test_sha256.c:63:9: note: +1, nesting level increased to 3
-/workspace/core/tests/unit/test_sha256.c:66:9: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:72:13: note: +3, including nesting penalty of 2, nesting level increased to 3
-/workspace/core/tests/unit/test_sha256.c:72:13: note: nesting level increased to 3
-/workspace/core/tests/unit/test_sha256.c:72:13: note: +4, including nesting penalty of 3, nesting level increased to 4
-/workspace/core/tests/unit/test_sha256.c:72:13: note: +1, nesting level increased to 4
-/workspace/core/tests/unit/test_sha256.c:80:13: error: function 'test_sha256_streaming' has cognitive complexity of 32 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
-/workspace/core/tests/unit/test_sha256.c:88:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:88:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:88:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:88:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:93:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:93:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:93:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:93:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:96:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:96:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:96:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:96:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:99:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:99:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:99:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:99:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:102:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:102:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:102:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:102:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:105:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:105:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:105:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:105:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:108:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:108:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:108:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:108:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:111:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:111:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:111:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:111:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:80:13: error: function 'test_sha256_streaming' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
-/workspace/core/tests/unit/test_sha256.c:80:13: note: 52 statements (threshold 50)
-/workspace/core/tests/unit/test_sha256.c:117:13: error: function 'test_sha256_edge_cases' has cognitive complexity of 24 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
-/workspace/core/tests/unit/test_sha256.c:123:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:123:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:123:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:123:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:129:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:129:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:129:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:129:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:134:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:134:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:134:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:134:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:139:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:139:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:139:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:139:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:144:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:144:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:144:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:144:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:149:5: note: +1, including nesting penalty of 0, nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:149:5: note: nesting level increased to 1
-/workspace/core/tests/unit/test_sha256.c:149:5: note: +2, including nesting penalty of 1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:149:5: note: +1, nesting level increased to 2
-/workspace/core/tests/unit/test_sha256.c:127:5: error: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
-/workspace/core/tests/unit/test_sha256.c:127:5: note: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11
-/workspace/core/tests/unit/test_utf8.c:262:19: note: make conversion explicit to silence this warning
-/workspace/core/tests/unit/test_utf8.c:262:19: note: perform multiplication in a wider type
+core/tests/unit/test_utf8.c:219:13: error: function 'test_utf8_streaming' has cognitive complexity of 52 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_utf8.c:219:13: error: function 'test_utf8_streaming' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_utf8.c:262:19: error: performing an implicit widening conversion to type 'size_t' (aka 'unsigned long') of a multiplication performed in type 'int' [bugprone-implicit-widening-of-multiplication-result,-warnings-as-errors]
+core/tests/unit/test_sha256.c:20:9: error: 'sscanf' used to convert a string to an unsigned integer value, but function will not report conversion errors; consider using 'strtoul' instead [cert-err34-c,-warnings-as-errors]
+core/tests/unit/test_sha256.c:20:9: error: Call to function 'sscanf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'sscanf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/tests/unit/test_sha256.c:36:13: error: function 'test_sha256_vectors' has cognitive complexity of 17 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_sha256.c:80:13: error: function 'test_sha256_streaming' has cognitive complexity of 32 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_sha256.c:80:13: error: function 'test_sha256_streaming' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_sha256.c:117:13: error: function 'test_sha256_edge_cases' has cognitive complexity of 24 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_sha256.c:127:5: error: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/tests/unit/test_crypto_backend.c:13:13: error: function 'test_backend_switch' has cognitive complexity of 64 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_crypto_backend.c:13:13: error: function 'test_backend_switch' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_crypto_backend.c:65:13: error: function 'test_deterministic_random' has cognitive complexity of 51 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_crypto_backend.c:65:13: error: function 'test_deterministic_random' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_crypto_backend.c:110:13: error: function 'test_streaming_hash' has cognitive complexity of 64 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_crypto_backend.c:110:13: error: function 'test_streaming_hash' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_id.c:12:13: error: function 'test_id_from_string' has cognitive complexity of 24 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_id.c:40:13: error: function 'test_id_hex_conversion' has cognitive complexity of 28 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_id.c:87:13: error: function 'test_typed_ids' has cognitive complexity of 32 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_id.c:87:13: error: function 'test_typed_ids' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_id.c:156:13: error: function 'test_id_from_data' has cognitive complexity of 28 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_id.c:193:13: error: function 'test_id_hash' has cognitive complexity of 36 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_id.c:193:13: error: function 'test_id_hash' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_id.c:195:5: error: multiple declarations in a single statement reduces readability [readability-isolate-declaration,-warnings-as-errors]
+core/tests/unit/test_id.c:196:5: error: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/tests/unit/test_id.c:197:5: error: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/tests/unit/test_id.c:212:5: error: multiple declarations in a single statement reduces readability [readability-isolate-declaration,-warnings-as-errors]
+core/tests/unit/test_id.c:213:5: error: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/tests/unit/test_id.c:214:5: error: Call to function 'memset' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'memset_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/tests/unit/test_error.c:18:13: error: function 'test_error_new' has cognitive complexity of 16 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_error.c:31:13: error: function 'test_error_with_location' has cognitive complexity of 24 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_error.c:46:13: error: function 'test_error_chain' has cognitive complexity of 16 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_error.c:71:13: error: function 'test_result_error' has cognitive complexity of 16 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_error.c:101:13: error: function 'test_try_macro' has cognitive complexity of 16 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_error.c:117:13: error: function 'test_error_format' has cognitive complexity of 16 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_error.c:133:13: error: function 'test_error_sso' has cognitive complexity of 52 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_error.c:133:13: error: function 'test_error_sso' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_id_thread_safety.c:45:13: error: function 'test_concurrent_hashing' has cognitive complexity of 44 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_id_thread_safety.c:45:13: error: function 'test_concurrent_hashing' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_id_thread_safety.c:118:13: error: function 'test_concurrent_generation' has cognitive complexity of 42 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_random.c:14:13: error: function 'test_random_bytes' has cognitive complexity of 28 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_random.c:46:13: error: function 'test_random_u32' has cognitive complexity of 19 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_random.c:66:23: error: statement should be inside braces [readability-braces-around-statements,-warnings-as-errors]
+core/tests/unit/test_random.c:76:13: error: function 'test_random_u64' has cognitive complexity of 20 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_random.c:96:13: error: function 'test_entropy_quality' has cognitive complexity of 23 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_path.c:11:13: error: function 'test_path_new' has cognitive complexity of 48 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_path.c:11:13: error: function 'test_path_new' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_path.c:56:13: error: function 'test_path_join' has cognitive complexity of 42 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_path.c:56:13: error: function 'test_path_join' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_path.c:116:13: error: function 'test_path_dirname' has cognitive complexity of 36 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_path.c:116:13: error: function 'test_path_dirname' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_path.c:164:13: error: function 'test_path_basename' has cognitive complexity of 36 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_path.c:164:13: error: function 'test_path_basename' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_path.c:212:13: error: function 'test_path_safety' has cognitive complexity of 32 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_path.c:212:13: error: function 'test_path_safety' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_path.c:243:13: error: function 'test_path_extension' has cognitive complexity of 32 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_path.c:276:13: error: function 'test_path_compare' has cognitive complexity of 38 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_path.c:276:13: error: function 'test_path_compare' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_path.c:312:13: error: function 'test_path_canonicalize' has cognitive complexity of 16 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_string.c:12:13: error: function 'test_string_new' has cognitive complexity of 16 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_string.c:26:13: error: function 'test_string_empty' has cognitive complexity of 16 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_string.c:40:13: error: function 'test_string_append' has cognitive complexity of 24 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_string.c:64:13: error: function 'test_string_view' has cognitive complexity of 24 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_string.c:89:13: error: function 'test_string_compare' has cognitive complexity of 30 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_string.c:116:13: error: function 'test_string_concat' has cognitive complexity of 18 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_string.c:158:13: error: function 'test_string_substring' has cognitive complexity of 44 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/tests/unit/test_string.c:158:13: error: function 'test_string_substring' exceeds recommended size/complexity thresholds [readability-function-size,-warnings-as-errors]
+core/tests/unit/test_string.c:202:13: error: function 'test_string_trim' has cognitive complexity of 23 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/src/types/string_core.c:15:29: error: 2 adjacent parameters of 'next_capacity' of similar type ('size_t') are easily swapped by mistake [bugprone-easily-swappable-parameters,-warnings-as-errors]
+core/src/types/string_core.c:118:31: error: Potential memory leak [clang-analyzer-unix.Malloc,-warnings-as-errors]
+core/src/types/path.c:15:19: error: invalid case style for variable 'PATH_SEP_UNIX' [readability-identifier-naming,-warnings-as-errors]
+core/src/types/path.c:16:19: error: invalid case style for variable 'PATH_SEP_WIN' [readability-identifier-naming,-warnings-as-errors]
+core/src/types/path.c:28:19: error: invalid case style for variable 'SYMLINK_SUFFIX_MACOS' [readability-identifier-naming,-warnings-as-errors]
+core/src/types/path.c:917:3: error: invalid case style for variable 'DEFAULT_PATH_RULES' [readability-identifier-naming,-warnings-as-errors]
+core/src/types/id.c:165:13: error: 'sscanf' used to convert a string to an unsigned integer value, but function will not report conversion errors; consider using 'strtoul' instead [cert-err34-c,-warnings-as-errors]
+core/src/types/id.c:165:13: error: Call to function 'sscanf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'sscanf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/src/utf8/validate.c:36:22: error: invalid case style for variable 'UTF8D' [readability-identifier-naming,-warnings-as-errors]
+core/src/utf8/validate.c:70:17: error: integer literal has suffix 'u', which is not uppercase [readability-uppercase-literal-suffix,-warnings-as-errors]
+core/src/utf8/validate.c:80:39: error: 2 adjacent parameters of 'state_to_error' of similar type ('uint32_t') are easily swapped by mistake [bugprone-easily-swappable-parameters,-warnings-as-errors]
+core/src/error/error.c:19:15: error: Call to function 'vsnprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'vsnprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/src/error/error.c:34:9: error: Call to function 'vsnprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'vsnprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/src/error/error.c:40:13: error: Call to function 'vsnprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'vsnprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/src/error/error.c:44:13: error: Call to function 'vsnprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'vsnprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/src/error/error.c:135:6: error: function 'gm_error_free' is within a recursive call chain [misc-no-recursion,-warnings-as-errors]
+core/src/error/error.c:159:7: error: function 'gm_error_format' has cognitive complexity of 26 (threshold 15) [readability-function-cognitive-complexity,-warnings-as-errors]
+core/src/error/error.c:172:27: error: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/src/error/error.c:176:27: error: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/src/error/error.c:201:23: error: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/src/error/error.c:212:23: error: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]
+core/src/error/error.c:229:23: error: Call to function 'snprintf' is insecure as it does not provide security checks introduced in the C11 standard. Replace with analogous functions that support length arguments or provides boundary checks such as 'snprintf_s' in case of C11 [clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-warnings-as-errors]

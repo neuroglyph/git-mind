@@ -45,6 +45,7 @@ ALL_OBJS = $(ERROR_OBJS) $(TYPES_OBJS) $(CRYPTO_OBJS) $(UTF8_OBJS)
 # Test files
 TEST_ERROR = $(TEST_DIR)/unit/test_error.c
 TEST_ID = $(TEST_DIR)/unit/test_id.c
+TEST_ID_THREAD_SAFETY = $(TEST_DIR)/unit/test_id_thread_safety.c
 TEST_STRING = $(TEST_DIR)/unit/test_string.c
 TEST_PATH = $(TEST_DIR)/unit/test_path.c
 TEST_SHA256 = $(TEST_DIR)/unit/test_sha256.c
@@ -74,6 +75,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 test: dirs $(ALL_OBJS)
 	$(CC) $(CFLAGS) $(TEST_ERROR) $(ERROR_OBJS) -o $(BIN_DIR)/test_error $(LDFLAGS)
 	$(CC) $(CFLAGS) $(TEST_ID) $(TYPES_OBJS) $(CRYPTO_OBJS) $(UTF8_OBJS) $(ERROR_OBJS) -o $(BIN_DIR)/test_id $(LDFLAGS)
+	$(CC) $(CFLAGS) $(TEST_ID_THREAD_SAFETY) $(TYPES_OBJS) $(CRYPTO_OBJS) $(UTF8_OBJS) $(ERROR_OBJS) -o $(BIN_DIR)/test_id_thread_safety $(LDFLAGS) -lpthread
 	$(CC) $(CFLAGS) $(TEST_STRING) $(TYPES_OBJS) $(CRYPTO_OBJS) $(UTF8_OBJS) $(ERROR_OBJS) -o $(BIN_DIR)/test_string $(LDFLAGS)
 	$(CC) $(CFLAGS) $(TEST_PATH) $(TYPES_OBJS) $(CRYPTO_OBJS) $(UTF8_OBJS) $(ERROR_OBJS) -o $(BIN_DIR)/test_path $(LDFLAGS)
 	$(CC) $(CFLAGS) $(TEST_SHA256) $(CRYPTO_OBJS) $(ERROR_OBJS) -o $(BIN_DIR)/test_sha256 $(LDFLAGS)
@@ -83,6 +85,7 @@ test: dirs $(ALL_OBJS)
 	@echo "Running tests..."
 	@$(BIN_DIR)/test_error
 	@$(BIN_DIR)/test_id
+	@$(BIN_DIR)/test_id_thread_safety
 	@$(BIN_DIR)/test_string
 	@$(BIN_DIR)/test_path
 	@$(BIN_DIR)/test_sha256

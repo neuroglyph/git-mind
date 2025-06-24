@@ -7,9 +7,10 @@ repos:
   hooks:
     - id: iwyu
       name: include-what-you-use
-      entry: iwyu_tool -p build
+      entry: iwyu_tool -p .
       language: system
       files: \.(c|h)$
+      exclude: ^core/
       pass_filenames: false
 - repo: https://github.com/Yelp/detect-secrets
   rev: v1.4.0
