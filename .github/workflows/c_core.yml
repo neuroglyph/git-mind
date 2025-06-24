@@ -24,7 +24,7 @@ jobs:
           cp build/compile_commands.json .
       - name: clang-tidy (diff-guard)
         run: |
-          clang-tidy -quiet -p . --config-file core/.clang-tidy \
+          clang-tidy -quiet -p . --config-file=quality/.clang-tidy \
             $(git ls-files 'core/**/*.c' 'core/**/*.h') \
             | tee clang-tidy-report-full.txt || true
           # Filter to just project warnings
