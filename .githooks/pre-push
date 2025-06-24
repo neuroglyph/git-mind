@@ -1,33 +1,21 @@
 #!/usr/bin/env bash
 # Wrapper to choose between quick and full CI checks
 
-# Use GITMIND_PUSH_MODE environment variable or default to "smart"
-# Options: quick, full, smart
-MODE="${GITMIND_PUSH_MODE:-smart}"
-
-# In smart mode, only run full CI for main/dev branches
-if [[ "$MODE" == "smart" ]]; then
-    # Check if we're pushing to main or dev
-    while read local_ref local_sha remote_ref remote_sha; do
-        if [[ "$remote_ref" =~ ^refs/heads/(main|dev|master)$ ]]; then
-            MODE="full"
-            break
-        else
-            MODE="quick"
-        fi
-    done
-fi
+# Use GITMIND_PUSH_MODE environment variable or default to "full"
+# Options: quick, full
+MODE="${GITMIND_PUSH_MODE:-full}"
 
 case "$MODE" in
     quick)
-        echo "📝 Using quick mode (set GITMIND_PUSH_MODE=full for complete CI)"
+        echo "⚡ Using quick mode (set GITMIND_PUSH_MODE=full for complete CI)"
         exec "$(dirname "$0")/pre-push-quick" "$@"
         ;;
     full)
+        # Default - run everything since all branches become PRs
         exec "$(dirname "$0")/pre-push-full" "$@"
         ;;
     *)
-        echo "❌ Unknown GITMIND_PUSH_MODE: $MODE (use: quick, full, or smart)"
+        echo "❌ Unknown GITMIND_PUSH_MODE: $MODE (use: quick or full)"
         exit 1
         ;;
 esac
