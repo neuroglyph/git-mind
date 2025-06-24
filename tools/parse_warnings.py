@@ -15,9 +15,24 @@ def parse_warnings(input_file):
             match = re.match(pattern, line.strip())
             if match:
                 filepath = match.group(1)
-                # Normalize path - remove ./ prefix
-                filepath = filepath.replace('/Users/james/git/git-mind/core/./', '/Users/james/git/git-mind/core/')
-                filepath = filepath.replace('./', '')
+                
+                # Normalize to repo-relative paths
+                if '/git-mind/git-mind/' in filepath:
+                    # CI has duplicated path: /path/to/git-mind/git-mind/core/...
+                    filepath = filepath.split('/git-mind/git-mind/', 1)[1]
+                elif '/git-mind/' in filepath:
+                    # Local path: /path/to/git-mind/core/...
+                    filepath = filepath.split('/git-mind/', 1)[1]
+                elif filepath.startswith('./'):
+                    # Remove ./ prefix
+                    filepath = filepath[2:]
+                elif filepath.startswith('../'):
+                    # Handle relative paths that go up
+                    filepath = filepath
+                # If it's already relative (like core/...), keep it as is
+                
+                # Clean up any ./ in the middle of paths
+                filepath = filepath.replace('/./', '/')
                 
                 warning_type = match.group(6)  # The [warning-name] part
                 key = f"{filepath}:{warning_type}"
