@@ -377,7 +377,7 @@ Always abstract crypto behind an interface:
 
 | Priority | Branch Name | Ticket | Objective | Status |
 |----------|-------------|--------|-----------|---------|
-| P0 | `hotfix/result-unification` | #HFX-001 | Purge duplicate gm_result_* typedefs from random.h | 🟡 IN PROGRESS |
+| P0 | `hotfix/result-unification` | #HFX-001 | Purge duplicate gm_result_* typedefs from random.h | ✅ COMPLETE |
 | P0 | `feat/id_context` | #FTR-002 | Finish thread-safe ID context; TSAN must run clean | ⏳ PENDING |
 | P1 | `refactor/solid-fixes-01` | #RFC-003 | Convert remaining 12 void functions to gm_result_* | ⏳ PENDING |
 | P1 | `refactor/path-modular` | #RFC-004 | Split path.c into 4 SRP modules | ⏳ PENDING |
@@ -430,11 +430,16 @@ Always abstract crypto behind an interface:
 ### 6. PR Progress Log
 
 #### PR #127 - hotfix/result-unification (2025-06-24)
-- **Status**: 🟡 IN PROGRESS
-- **Warnings removed**: TBD
+- **Status**: ✅ READY FOR PR
+- **Warnings removed**: 0 (hotfix - no warning reduction)
 - **Baseline before**: 202
-- **Baseline after**: TBD
-- **Notes**: Starting with duplicate typedef removal
+- **Baseline after**: 202
+- **Changes**:
+  - Removed duplicate `gm_result_u64` typedef from random.h
+  - Removed duplicate `gm_err_u32/u64` helpers from id.c, random.c, id_context.c
+  - Fixed missing includes and undefined macros in id_context.c
+  - Fixed thread safety test bugs (ID generation, buffer overflow)
+- **Tests**: All passing ✅
 
 ---
 *Lieutenant DevOps reporting. Updates posted after each PR merge.*
