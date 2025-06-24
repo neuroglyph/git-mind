@@ -87,7 +87,7 @@ gm_result_string gm_string_trim(const gm_string_t* str);
 
 ## 🎯 Current Mission Status
 
-**ACTIVE BRANCH**: `main`  
+**WORKFLOW**: Create feature branches off `main`  
 **BUILD SYSTEM**: meson + ninja (Makefiles deprecated)
 **BASELINE**: 410 warnings to eliminate
 
