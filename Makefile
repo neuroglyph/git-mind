@@ -1,170 +1,18 @@
-# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0
-# © 2025 J. Kirby Ross / Neuroglyph Collective
+# Makefile (tiny shim, lives at repo root)
+.DEFAULT_GOAL := all
+MESON_ARGS ?=
+NINJA_ARGS ?=
+builddir   ?= build
 
-# 🐳 DOCKER-ENFORCED MAKEFILE 🐳
-# This Makefile ALWAYS runs commands in Docker
-# Direct compilation on host is IMPOSSIBLE!
-#
-# ⚠️ MIGRATION IN PROGRESS ⚠️
-# - Legacy src/ code: 11,951 warnings (build disabled)
-# - New core/ code: 0 warnings (being built)
-# - Tests: Temporarily disabled
-# - Quality checks: Disabled for legacy, enforced for new
+all:
+	@meson setup $(builddir) $(MESON_ARGS) >/dev/null 2>&1 || true
+	ninja -C $(builddir) $(NINJA_ARGS)
 
-.PHONY: all
-all: help
+test:
+	@meson setup $(builddir) $(MESON_ARGS) >/dev/null 2>&1 || true
+	ninja -C $(builddir) test
 
-.PHONY: help
-help:
-	@echo "🐳 ALL COMMANDS RUN IN DOCKER AUTOMATICALLY 🐳"
-	@echo ""
-	@echo "Usage:"
-	@echo "  make dev     - Start development environment"
-	@echo "  make test    - Run all tests in Docker"
-	@echo "  make build   - Build release binary in Docker"
-	@echo "  make clean   - Clean build artifacts"
-	@echo "  make shell   - Get a shell in the dev container"
-	@echo ""
-	@echo "Examples:"
-	@echo "  make test              # Run full test suite"
-	@echo "  make dev               # Start coding environment"
-	@echo "  make build             # Create release binary"
-	@echo ""
-	@echo "✅ Direct compilation is IMPOSSIBLE - everything runs in Docker!"
-
-# Special case: dev gives you a shell
-.PHONY: dev
-dev:
-	@echo "🐳 Starting development environment..."
-	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm dev bash
-
-# Special case: shell is an alias for dev
-.PHONY: shell
-shell: dev
-
-# Special case: clean should work on host to remove artifacts
-.PHONY: clean
 clean:
-	@echo "🧹 Cleaning build artifacts..."
-	@rm -rf git-mind build/
-	@docker compose down 2>/dev/null || true
+	rm -rf $(builddir)
 
-# Build the new journal-based implementation
-# MIGRATION NOTE: Legacy build disabled - focusing on core/ rebuild
-.PHONY: build
-build:
-	@echo "🔨 Building git-mind (MIGRATION MODE)..."
-	@echo "⚠️  Legacy build disabled - src/ has broken dependencies"
-	@echo "⚠️  Focus on implementing clean foundations in core/"
-	@echo "✅ Build will be re-enabled when core/ is ready"
-
-# Run tests SAFELY in Docker
-# MIGRATION NOTE: Legacy tests disabled - build broken after file moves
-.PHONY: test
-test: test-core
-	@echo "🧪 Testing (MIGRATION MODE)..."
-	@echo "⚠️  Legacy tests disabled - focusing on clean core/ rebuild"
-	@echo "✅ Running new core tests instead..."
-
-# Run tests on new core/ implementation
-.PHONY: test-core
-test-core:
-	@echo "🧪 Running core tests in Docker..."
-	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "cd /workspace/core && make test"
-
-# Run tests EXACTLY like GitHub Actions CI
-# MIGRATION NOTE: Build disabled - legacy src/ is broken after moving files back
-.PHONY: test-ci
-test-ci:
-	@echo "🧪 Running CI simulation (EXACTLY like GitHub Actions)..."
-	@echo "⚠️  MIGRATION MODE: Legacy build and tests disabled"
-	@echo "⚠️  Focus on building clean foundations in core/"
-	@echo "✅ CI simulation completed (migration mode)!"
-
-# Run FULL CI check (tests + code quality) EXACTLY like GitHub Actions
-.PHONY: ci-full
-ci-full:
-	@echo "🚀 Running FULL CI simulation (tests + code quality)..."
-	@echo "Step 1/2: Running code quality checks..."
-	@$(MAKE) ci-quality
-	@echo ""
-	@echo "Step 2/2: Running tests..."
-	@$(MAKE) test-ci
-	@echo ""
-	@echo "✅ FULL CI simulation passed! Safe to push."
-
-# Run code quality checks EXACTLY like GitHub Actions
-# MIGRATION NOTE: Temporarily disabled for legacy src/ code (11,951 warnings)
-# Will be re-enabled for new core/ code with zero-warnings policy
-.PHONY: ci-quality
-ci-quality:
-	@echo "🔍 Running code quality checks (EXACTLY like GitHub Actions)..."
-	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "\
-		echo '=== Installing quality tools ===' && \
-		apt-get update -qq && apt-get install -y -qq clang-format clang-tidy cppcheck python3-pip >/dev/null 2>&1 && \
-		pip3 install lizard flawfinder --quiet && \
-		echo '=== Running clang-format ===' && \
-		find /workspace/src -name '*.c' -o -name '*.h' | xargs clang-format --dry-run --Werror && \
-		echo '✓ clang-format passed' && \
-		echo '=== Running clang-tidy ===' && \
-		echo '⚠️  TEMPORARILY SKIPPING clang-tidy on legacy src/ (11,000+ warnings)' && \
-		echo '✓ clang-tidy skipped for migration' && \
-		echo '=== Running cppcheck ===' && \
-		echo '⚠️  TEMPORARILY SKIPPING cppcheck on legacy src/ (11,000+ warnings)' && \
-		echo '✓ cppcheck skipped for migration' && \
-		echo '=== Running custom checks ===' && \
-		echo '⚠️  TEMPORARILY SKIPPING custom checks on legacy src/ during migration' && \
-		echo '✓ All legacy checks skipped' && \
-		echo '' && \
-		echo '📌 NOTE: Quality checks will be re-enabled for core/ code' && \
-		echo '📌 Legacy src/ has 11,951 warnings - being rewritten' && \
-		echo '' && \
-		echo '=== All quality checks passed (legacy code exempted) ==='"
-
-# Run E2E tests
-.PHONY: test-e2e
-test-e2e:
-	@echo "🧪 Running E2E tests in Docker..."
-	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "make -C /workspace/src && cd /tmp && cp -r /workspace/tests . && cp /workspace/build/bin/git-mind . && cd tests/e2e && ./run_all_tests.sh"
-
-# Code quality checks
-.PHONY: lint
-lint:
-	@echo "🔍 Running code quality checks..."
-	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "cd /workspace && ./tools/code-quality/lint.sh"
-
-.PHONY: check-quality
-check-quality:
-	@echo "🔍 Running all quality checks (v2 - using standard tools)..."
-	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "cd /workspace && chmod +x ./tools/code-quality/*.sh && ./tools/code-quality/run-all-checks-v2.sh"
-
-.PHONY: check-quality-legacy
-check-quality-legacy:
-	@echo "🔍 Running legacy custom checks..."
-	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "cd /workspace && ./tools/code-quality/run-all-checks.sh"
-
-.PHONY: format
-format:
-	@echo "🎨 Formatting code with clang-format..."
-	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm -T dev bash -c "find /workspace/src -name '*.c' -o -name '*.h' | xargs clang-format -i"
-	@echo "✅ Code formatted!"
-
-.PHONY: fix-tech-debt
-fix-tech-debt:
-	@echo "📋 Technical Debt Task List:"
-	@echo ""
-	@cat TECH_DEBT_TASKLIST.md | head -50
-	@echo ""
-	@echo "... (see TECH_DEBT_TASKLIST.md for full list)"
-
-# Install git hooks
-.PHONY: install-hooks
-install-hooks:
-	@echo "🪝 Installing git hooks..."
-	@git config core.hooksPath .githooks
-	@chmod +x .githooks/*
-	@echo "✅ Git hooks installed!"
-
-# Everything else gets forwarded to Docker
-%:
-	@COMPOSE_BAKE=true DOCKER_BUILDKIT=1 docker compose run --rm dev make -f Makefile.docker $@
+.PHONY: all test clean
