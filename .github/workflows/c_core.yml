@@ -1,0 +1,14 @@
+name: C-Core Gate
+on: [pull_request]
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install clang clang-tidy cppcheck libubsan0
+      - run: make sanitize
+      - run: make test
+      - run: clang-tidy -p build $(git ls-files '*.c' '*.h') | tee clang-tidy-report.txt
+      - run: bash tools/enforce_no_new_warnings.sh clang-tidy-report.txt baseline.txt
+      - run: cppcheck --enable=all --inconclusive --quiet src
+      - run: python tools/run_fuzz.py 60
