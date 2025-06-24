@@ -370,4 +370,70 @@ Always abstract crypto behind an interface:
 - Production uses real crypto (libsodium)
 - Tests use deterministic implementations
 - Switch backends at runtime for different scenarios
-EOF < /dev/null
+
+## 🎖️ LIEUTENANT DEVOPS BATTLE ORDERS (2025-06-24)
+
+### 1. Branch & Ticket Priority Queue
+
+| Priority | Branch Name | Ticket | Objective | Status |
+|----------|-------------|--------|-----------|---------|
+| P0 | `hotfix/result-unification` | #HFX-001 | Purge duplicate gm_result_* typedefs from random.h | 🟡 IN PROGRESS |
+| P0 | `feat/id_context` | #FTR-002 | Finish thread-safe ID context; TSAN must run clean | ⏳ PENDING |
+| P1 | `refactor/solid-fixes-01` | #RFC-003 | Convert remaining 12 void functions to gm_result_* | ⏳ PENDING |
+| P1 | `refactor/path-modular` | #RFC-004 | Split path.c into 4 SRP modules | ⏳ PENDING |
+
+**Rule**: Work one branch at a time; keep PRs laser-focused.
+
+### 2. Baseline Reduction Strategy
+
+**Current Baseline**: 202 warnings (as of 2025-06-24)
+
+**Minimum reduction per PR**: -10 warnings
+
+**Easy wins to target first**:
+- Replace `vsnprintf` / `snprintf` / `sscanf` / `memset` with secure variants
+- Extract helper functions to reduce cognitive complexity below 15
+- Fix identifier naming (PATH_SEP_UNIX, DEFAULT_PATH_RULES, etc.)
+- Fix `bugprone-easily-swappable-parameters` (often kills 3-4 lines)
+
+### 3. CI/Pre-commit Discipline
+
+- ✅ All hooks must pass before pushing
+- ✅ CI must stay green; any new warning above baseline = auto-fail
+- ✅ Update `tools/baseline.txt` ONLY by deleting lines (never add)
+- ✅ No `.clang-tidy` or pipeline edits without Central Command approval
+
+### 4. Commit & PR Protocol
+
+1. **Branch from latest main**
+2. **Follow commit style**:
+   ```
+   <type>(<scope>): <summary>
+   
+   e.g. fix(result): remove duplicate u64 typedef
+   ```
+3. **Open PR with**:
+   - Link to ticket ID
+   - Checklist:
+     - [ ] ≥10 warnings removed
+     - [ ] baseline.txt updated
+     - [ ] CI green
+4. **No merges until reviews pass**
+
+### 5. Progress Timeline
+
+- **Today EOD**: Open PR for `hotfix/result-unification`
+- **Next 48h**: Merge hotfix and `feat/id_context`
+- **End of week**: Knock baseline under 150 with `solid-fixes-01`
+
+### 6. PR Progress Log
+
+#### PR #127 - hotfix/result-unification (2025-06-24)
+- **Status**: 🟡 IN PROGRESS
+- **Warnings removed**: TBD
+- **Baseline before**: 202
+- **Baseline after**: TBD
+- **Notes**: Starting with duplicate typedef removal
+
+---
+*Lieutenant DevOps reporting. Updates posted after each PR merge.*
