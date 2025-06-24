@@ -38,7 +38,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Running sanitizer tests in Docker (macOS detected)..."
     docker run --rm -v "$(pwd):/workspace" -w /workspace ubuntu:22.04 bash -c "
         apt-get update && apt-get install -y clang clang-tidy libsodium-dev build-essential python3-pip
-        pip3 install --break-system-packages meson ninja
+        pip3 install meson ninja
         CC=clang CFLAGS='-fsanitize=address -fno-omit-frame-pointer -g' meson setup build-asan -Db_sanitize=address
         ninja -C build-asan
         ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 ninja -C build-asan test
