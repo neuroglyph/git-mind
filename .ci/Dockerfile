@@ -1,4 +1,6 @@
 FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
 RUN apt-get update && \
     apt-get install -y wget gnupg lsb-release python3-pip pkg-config software-properties-common && \
     wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 20 && \
