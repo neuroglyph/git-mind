@@ -1,0 +1,370 @@
+[
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "-c",
+            "-o",
+            "build/obj/error/error.o",
+            "src/error/error.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/src/error/error.c",
+        "output": "/workspace/core/build/obj/error/error.o"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "-c",
+            "-o",
+            "build/obj/types/id.o",
+            "src/types/id.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/src/types/id.c",
+        "output": "/workspace/core/build/obj/types/id.o"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "-c",
+            "-o",
+            "build/obj/types/string.o",
+            "src/types/string.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/src/types/string.c",
+        "output": "/workspace/core/build/obj/types/string.o"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "-c",
+            "-o",
+            "build/obj/types/string_core.o",
+            "src/types/string_core.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/src/types/string_core.c",
+        "output": "/workspace/core/build/obj/types/string_core.o"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "-c",
+            "-o",
+            "build/obj/types/string_utf8.o",
+            "src/types/string_utf8.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/src/types/string_utf8.c",
+        "output": "/workspace/core/build/obj/types/string_utf8.o"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "-c",
+            "-o",
+            "build/obj/types/path.o",
+            "src/types/path.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/src/types/path.c",
+        "output": "/workspace/core/build/obj/types/path.o"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "-c",
+            "-o",
+            "build/obj/crypto/sha256.o",
+            "src/crypto/sha256.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/src/crypto/sha256.c",
+        "output": "/workspace/core/build/obj/crypto/sha256.o"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "-c",
+            "-o",
+            "build/obj/crypto/random.o",
+            "src/crypto/random.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/src/crypto/random.c",
+        "output": "/workspace/core/build/obj/crypto/random.o"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "-c",
+            "-o",
+            "build/obj/crypto/backend.o",
+            "src/crypto/backend.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/src/crypto/backend.c",
+        "output": "/workspace/core/build/obj/crypto/backend.o"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "-c",
+            "-o",
+            "build/obj/utf8/validate.o",
+            "src/utf8/validate.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/src/utf8/validate.c",
+        "output": "/workspace/core/build/obj/utf8/validate.o"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-c",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "build/obj/error/error.o",
+            "-o",
+            "build/bin/test_error",
+            "tests/unit/test_error.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/tests/unit/test_error.c",
+        "output": "/workspace/core/build/bin/test_error"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-c",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "build/obj/types/id.o",
+            "build/obj/types/string.o",
+            "build/obj/types/string_core.o",
+            "build/obj/types/string_utf8.o",
+            "build/obj/types/path.o",
+            "build/obj/crypto/sha256.o",
+            "build/obj/crypto/random.o",
+            "build/obj/crypto/backend.o",
+            "build/obj/utf8/validate.o",
+            "build/obj/error/error.o",
+            "-o",
+            "build/bin/test_id",
+            "tests/unit/test_id.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/tests/unit/test_id.c",
+        "output": "/workspace/core/build/bin/test_id"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-c",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "build/obj/types/id.o",
+            "build/obj/types/string.o",
+            "build/obj/types/string_core.o",
+            "build/obj/types/string_utf8.o",
+            "build/obj/types/path.o",
+            "build/obj/crypto/sha256.o",
+            "build/obj/crypto/random.o",
+            "build/obj/crypto/backend.o",
+            "build/obj/utf8/validate.o",
+            "build/obj/error/error.o",
+            "-o",
+            "build/bin/test_string",
+            "tests/unit/test_string.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/tests/unit/test_string.c",
+        "output": "/workspace/core/build/bin/test_string"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-c",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "build/obj/types/id.o",
+            "build/obj/types/string.o",
+            "build/obj/types/string_core.o",
+            "build/obj/types/string_utf8.o",
+            "build/obj/types/path.o",
+            "build/obj/crypto/sha256.o",
+            "build/obj/crypto/random.o",
+            "build/obj/crypto/backend.o",
+            "build/obj/utf8/validate.o",
+            "build/obj/error/error.o",
+            "-o",
+            "build/bin/test_path",
+            "tests/unit/test_path.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/tests/unit/test_path.c",
+        "output": "/workspace/core/build/bin/test_path"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-c",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "build/obj/crypto/sha256.o",
+            "build/obj/crypto/random.o",
+            "build/obj/crypto/backend.o",
+            "build/obj/error/error.o",
+            "-o",
+            "build/bin/test_sha256",
+            "tests/unit/test_sha256.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/tests/unit/test_sha256.c",
+        "output": "/workspace/core/build/bin/test_sha256"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-c",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "build/obj/crypto/sha256.o",
+            "build/obj/crypto/random.o",
+            "build/obj/crypto/backend.o",
+            "build/obj/error/error.o",
+            "-o",
+            "build/bin/test_random",
+            "tests/unit/test_random.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/tests/unit/test_random.c",
+        "output": "/workspace/core/build/bin/test_random"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-c",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "build/obj/utf8/validate.o",
+            "-o",
+            "build/bin/test_utf8",
+            "tests/unit/test_utf8.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/tests/unit/test_utf8.c",
+        "output": "/workspace/core/build/bin/test_utf8"
+    },
+    {
+        "arguments": [
+            "/usr/bin/cc",
+            "-c",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-std=gnu11",
+            "-O2",
+            "-I./include",
+            "build/obj/crypto/sha256.o",
+            "build/obj/crypto/random.o",
+            "build/obj/crypto/backend.o",
+            "build/obj/error/error.o",
+            "-o",
+            "build/bin/test_crypto_backend",
+            "tests/unit/test_crypto_backend.c"
+        ],
+        "directory": "/workspace/core",
+        "file": "/workspace/core/tests/unit/test_crypto_backend.c",
+        "output": "/workspace/core/build/bin/test_crypto_backend"
+    }
+]

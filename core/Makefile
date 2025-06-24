@@ -30,7 +30,7 @@ BIN_DIR = $(BUILD_DIR)/bin
 
 # Source files
 ERROR_SRCS = $(SRC_DIR)/error/error.c
-TYPES_SRCS = $(SRC_DIR)/types/id.c $(SRC_DIR)/types/id_context.c $(SRC_DIR)/types/string.c $(SRC_DIR)/types/string_core.c $(SRC_DIR)/types/string_utf8.c $(SRC_DIR)/types/path.c
+TYPES_SRCS = $(SRC_DIR)/types/id.c $(SRC_DIR)/types/string.c $(SRC_DIR)/types/string_core.c $(SRC_DIR)/types/string_utf8.c $(SRC_DIR)/types/path.c
 CRYPTO_SRCS = $(SRC_DIR)/crypto/sha256.c $(SRC_DIR)/crypto/random.c $(SRC_DIR)/crypto/backend.c
 UTF8_SRCS = $(SRC_DIR)/utf8/validate.c
 ALL_SRCS = $(ERROR_SRCS) $(TYPES_SRCS) $(CRYPTO_SRCS) $(UTF8_SRCS)
@@ -51,7 +51,6 @@ TEST_SHA256 = $(TEST_DIR)/unit/test_sha256.c
 TEST_RANDOM = $(TEST_DIR)/unit/test_random.c
 TEST_UTF8 = $(TEST_DIR)/unit/test_utf8.c
 TEST_CRYPTO_BACKEND = $(TEST_DIR)/unit/test_crypto_backend.c
-TEST_ID_THREAD_SAFETY = $(TEST_DIR)/unit/test_id_thread_safety.c
 
 # Targets
 .PHONY: all clean test test-all
@@ -81,7 +80,6 @@ test: dirs $(ALL_OBJS)
 	$(CC) $(CFLAGS) $(TEST_RANDOM) $(CRYPTO_OBJS) $(ERROR_OBJS) -o $(BIN_DIR)/test_random $(LDFLAGS)
 	$(CC) $(CFLAGS) $(TEST_UTF8) $(UTF8_OBJS) -o $(BIN_DIR)/test_utf8 $(LDFLAGS)
 	$(CC) $(CFLAGS) $(TEST_CRYPTO_BACKEND) $(CRYPTO_OBJS) $(ERROR_OBJS) -o $(BIN_DIR)/test_crypto_backend $(LDFLAGS)
-	$(CC) $(CFLAGS) $(TEST_ID_THREAD_SAFETY) $(TYPES_OBJS) $(CRYPTO_OBJS) $(UTF8_OBJS) $(ERROR_OBJS) -o $(BIN_DIR)/test_id_thread_safety $(LDFLAGS) -lpthread
 	@echo "Running tests..."
 	@$(BIN_DIR)/test_error
 	@$(BIN_DIR)/test_id
@@ -91,7 +89,6 @@ test: dirs $(ALL_OBJS)
 	@$(BIN_DIR)/test_random
 	@$(BIN_DIR)/test_utf8
 	@$(BIN_DIR)/test_crypto_backend
-	@$(BIN_DIR)/test_id_thread_safety
 
 clean:
 	rm -rf $(BUILD_DIR)
