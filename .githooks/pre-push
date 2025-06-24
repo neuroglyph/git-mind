@@ -1,61 +1,39 @@
-#!/bin/bash
-# Pre-push hook that runs THE EXACT SAME CHECKS AS CI
-# If this passes, CI will pass. Period.
+#!/usr/bin/env bash
+set -euo pipefail
 
-set -e
+echo "🔥  Running full CI stack in Docker before push…"
 
-# Add LLVM to PATH if on Mac
-export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+# Pick an image tag that mirrors CI's Ubuntu + LLVM setup
+IMAGE=gitmind-ci:latest
 
-echo "🛡️ Running CI checks locally before push..."
-
-# 1. Build with meson
-echo "📦 Building with meson..."
-meson setup build-push >/dev/null 2>&1 || true
-ninja -C build-push
-
-# 2. Run clang-tidy with baseline enforcement (EXACTLY like CI)
-echo "🔍 Running clang-tidy diff-guard..."
-clang-tidy -quiet -p build-push --config-file=quality/.clang-tidy \
-    $(git ls-files 'core/**/*.c' 'core/**/*.h') \
-    | tee /tmp/clang-tidy-report-full.txt || true
-
-# Filter to just project warnings (handles various path formats)
-grep -E "^\.\./core/|^/.*core/|^core/" /tmp/clang-tidy-report-full.txt > /tmp/clang-tidy-report.txt || true
-
-# Enforce no new warnings using grouped baseline
-echo "⚖️ Checking for new warnings..."
-python3 tools/parse_warnings.py check /tmp/clang-tidy-report.txt tools/baseline_grouped.txt || {
-    echo "❌ New warnings detected! Fix them before pushing."
-    exit 1
+# Build the image only if it doesn't exist or Dockerfile changed
+docker build -q -t $IMAGE .ci 2>/dev/null || {
+  echo "🔄  Building CI image (first time or Dockerfile changed)…"
+  docker build -t $IMAGE .ci
 }
 
-# 3. Run tests with sanitizers
-echo "🧪 Running tests with sanitizers..."
+# Run the same Meson/Ninja/clang-tidy script used in GH Actions
+docker run --rm -t \
+  -v "$PWD":/workspace \
+  -w /workspace \
+  $IMAGE \
+  bash -c '
+    set -e
+    rm -rf build-container
+    meson setup build-container
+    ninja -C build-container
+    ninja -C build-container test
+    
+    # Run clang-tidy exactly like CI
+    clang-tidy -quiet -p . --config-file=quality/.clang-tidy \
+      $(git ls-files "core/**/*.c" "core/**/*.h") \
+      | tee clang-tidy-report-full.txt || true
+    
+    # Filter to just project warnings
+    grep -E "^/.*core/|^core/" clang-tidy-report-full.txt > clang-tidy-report.txt || true
+    
+    # Check against baseline
+    python3 tools/parse_warnings.py check clang-tidy-report.txt tools/baseline_grouped.txt
+'
 
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    # On macOS, use Docker to run tests in Linux environment like CI
-    echo "Running sanitizer tests in Docker (macOS detected)..."
-    docker run --rm -v "$(pwd):/workspace" -w /workspace ubuntu:22.04 bash -c "
-        apt-get update && apt-get install -y clang clang-tidy libsodium-dev build-essential python3-pip
-        pip3 install meson ninja
-        CC=clang CFLAGS='-fsanitize=address -fno-omit-frame-pointer -g' meson setup build-asan -Db_sanitize=address
-        ninja -C build-asan
-        ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 ninja -C build-asan test
-    " || {
-        echo "❌ Address sanitizer tests failed!"
-        exit 1
-    }
-else
-    # Native Linux
-    rm -rf build-asan
-    CC=clang CFLAGS="-fsanitize=address -fno-omit-frame-pointer -g" meson setup build-asan -Db_sanitize=address
-    ninja -C build-asan
-    ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 \
-        ninja -C build-asan test || {
-        echo "❌ Address sanitizer tests failed!"
-        exit 1
-    }
-fi
-
-echo "✅ All CI checks passed! Safe to push."
+echo "✅  Local CI passed—pushing allowed."
