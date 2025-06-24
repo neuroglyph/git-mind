@@ -1,6 +1,6 @@
 FROM ubuntu:22.04
 RUN apt-get update && \
-    apt-get install -y wget gnupg lsb-release python3-pip pkg-config && \
+    apt-get install -y wget gnupg lsb-release python3-pip pkg-config software-properties-common && \
     wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 20 && \
     apt-get install -y clang-20 clang-tidy-20 cppcheck libsodium-dev git ninja-build gcovr && \
     ln -sf /usr/bin/clang-tidy-20 /usr/local/bin/clang-tidy && \
