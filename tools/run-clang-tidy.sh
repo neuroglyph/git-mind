@@ -1,6 +1,6 @@
 #!/bin/bash
 # Run clang-tidy EXACTLY the same way everywhere
-# This ensures CI, pre-push hooks, and manual runs all produce identical results
+# This ensures CI and manual runs produce identical results
 
 set -e
 
@@ -16,7 +16,7 @@ fi
 
 echo "Running clang-tidy..."
 
-# Run clang-tidy EXACTLY like CI and pre-push
+# Run clang-tidy EXACTLY like CI
 clang-tidy -quiet -p build-push --config-file=quality/.clang-tidy \
     $(git ls-files 'core/**/*.c' 'core/**/*.h') \
     | tee /tmp/clang-tidy-report-full.txt || true
