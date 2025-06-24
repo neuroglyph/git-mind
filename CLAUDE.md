@@ -406,6 +406,7 @@ Always abstract crypto behind an interface:
 ### 4. Commit & PR Protocol
 
 1. **Branch from latest main**
+
 2. **Follow commit style**:
    ```
    <type>(<scope>): <summary>
