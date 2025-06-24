@@ -96,6 +96,7 @@ test: dirs $(ALL_OBJS)
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f *.gcda *.gcno *.gcov
+	rm -f compile_commands.json
 	find . -name "*.gcda" -o -name "*.gcno" -o -name "*.gcov" | xargs rm -f
 
 coverage: clean
