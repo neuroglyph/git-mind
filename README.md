@@ -2,6 +2,8 @@
 
 > **⚠️ MAJOR REWRITE IN PROGRESS**: This project is undergoing a complete architectural overhaul to fix 11,951 code quality warnings and establish proper foundations. Not production-ready. See [The Great Migration](#the-great-migration) below.
 
+![git-mind](./assets/images/wide-logo.png)
+
 ## What is git-mind?
 
 A Git-native tool for versioning your understanding of code, not just the code itself.
