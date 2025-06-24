@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "🔥 Running CI checks before push..."
+
+IMAGE=gitmind-ci:latest
+
+# Build Docker image if needed
+if ! docker image inspect $IMAGE >/dev/null 2>&1; then
+    echo "🔄 Building CI image (one-time setup)..."
+    echo "📦 This will take 2-3 minutes the first time..."
+    docker build -t $IMAGE .ci || exit 1
+fi
+
+# Run all checks in Docker
+docker run --rm -t -v "$PWD":/workspace -w /workspace $IMAGE bash /workspace/.githooks/pre-push-orchestrator.sh

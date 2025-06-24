@@ -12,7 +12,7 @@ case "$MODE" in
         ;;
     full)
         # Default - run everything since all branches become PRs
-        exec "$(dirname "$0")/pre-push-full" "$@"
+        exec "$(dirname "$0")/pre-push-docker" "$@"
         ;;
     *)
         echo "❌ Unknown GITMIND_PUSH_MODE: $MODE (use: quick or full)"
