@@ -30,9 +30,24 @@ python3 tools/parse_warnings.py check /tmp/clang-tidy-report.txt tools/baseline_
     exit 1
 }
 
-# 3. Run tests with sanitizers (optional - only if requested)
-if [ "${RUN_SANITIZERS:-}" = "1" ]; then
-    echo "🧪 Running tests with sanitizers..."
+# 3. Run tests with sanitizers
+echo "🧪 Running tests with sanitizers..."
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # On macOS, use Docker to run tests in Linux environment like CI
+    echo "Running sanitizer tests in Docker (macOS detected)..."
+    docker run --rm -v "$(pwd):/workspace" -w /workspace ubuntu:22.04 bash -c "
+        apt-get update && apt-get install -y clang-20 meson ninja-build pkg-config libsodium-dev wget gnupg lsb-release
+        wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 20
+        CC=clang-20 CFLAGS='-fsanitize=address -fno-omit-frame-pointer -g' meson setup build-asan -Db_sanitize=address
+        ninja -C build-asan
+        ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 ninja -C build-asan test
+    " || {
+        echo "❌ Address sanitizer tests failed!"
+        exit 1
+    }
+else
+    # Native Linux
     rm -rf build-asan
     CC=clang CFLAGS="-fsanitize=address -fno-omit-frame-pointer -g" meson setup build-asan -Db_sanitize=address
     ninja -C build-asan
@@ -41,8 +56,6 @@ if [ "${RUN_SANITIZERS:-}" = "1" ]; then
         echo "❌ Address sanitizer tests failed!"
         exit 1
     }
-else
-    echo "ℹ️  Skipping sanitizer tests (set RUN_SANITIZERS=1 to enable)"
 fi
 
 echo "✅ All CI checks passed! Safe to push."
