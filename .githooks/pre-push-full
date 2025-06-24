@@ -7,12 +7,13 @@ echo "🔥 Running CI checks before push..."
 IMAGE=gitmind-ci:latest
 if ! docker image inspect $IMAGE >/dev/null 2>&1; then
     echo "🔄 Building CI image (one-time setup)..."
-    docker build -t $IMAGE .ci
+    echo "📦 This will take 2-3 minutes the first time..."
+    docker build -t $IMAGE .ci || exit 1
 else
     # Check if Dockerfile changed
     if [[ .ci/Dockerfile -nt ~/.gitmind-docker-build-time ]]; then
         echo "🔄 Dockerfile changed, rebuilding..."
-        docker build -t $IMAGE .ci
+        docker build -t $IMAGE .ci || exit 1
         touch ~/.gitmind-docker-build-time
     fi
 fi
@@ -155,6 +156,7 @@ pids+=("$(run_check "Fuzzing" '
 # Wait for all parallel checks
 echo ""
 echo "⏳ Waiting for all checks to complete..."
+echo "💡 Tip: tail -f /tmp/gitmind-check-*.log to watch progress"
 echo ""
 
 if wait_for_checks "${pids[@]}"; then
