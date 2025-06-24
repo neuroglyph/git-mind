@@ -31,9 +31,10 @@ run_check() {
     local cmd=$2
     local logfile="/tmp/gitmind-check-$name-$$.log"
     
-    echo "→ Starting $name..."
+    echo "→ Starting $name..." >&2
     docker run --rm -v $VOLUME_NAME:/workspace -w /workspace $IMAGE bash -c "$cmd" >$logfile 2>&1 &
-    echo "$! $name $logfile"
+    local pid=$!
+    echo "$pid $name $logfile"
 }
 
 # Function to wait for all checks and report results
