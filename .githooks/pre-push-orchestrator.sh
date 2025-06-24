@@ -33,6 +33,7 @@ fi
 echo "✅ No TODOs found"
 
 echo "→ Basic build check..."
+rm -rf build-quick
 CC=clang meson setup build-quick >/dev/null 2>&1
 ninja -C build-quick >/dev/null 2>&1
 echo "✅ Build successful"
@@ -44,6 +45,7 @@ echo "═══ Running Full CI Suite in Parallel ═══"
 # clang-tidy
 run_check "clang-tidy" '
     set -e
+    rm -rf build
     CC=clang meson setup build >/dev/null 2>&1
     ninja -C build >/dev/null 2>&1
     cp build/compile_commands.json .
@@ -62,6 +64,7 @@ run_check "cppcheck" '
 # ASAN
 run_check "ASAN" '
     set -e
+    rm -rf build-asan
     CC=clang CFLAGS="-fsanitize=address -fno-omit-frame-pointer -g" \
         meson setup build-asan -Db_sanitize=address >/dev/null 2>&1
     ninja -C build-asan >/dev/null 2>&1
@@ -72,6 +75,7 @@ run_check "ASAN" '
 # UBSAN
 run_check "UBSAN" '
     set -e
+    rm -rf build-ubsan
     CC=clang CFLAGS="-fsanitize=undefined -fno-omit-frame-pointer -g" \
         meson setup build-ubsan -Db_sanitize=undefined >/dev/null 2>&1
     ninja -C build-ubsan >/dev/null 2>&1
@@ -82,6 +86,7 @@ run_check "UBSAN" '
 # Standard tests
 run_check "Standard-Tests" '
     set -e
+    rm -rf build-standard
     CC=clang meson setup build-standard >/dev/null 2>&1
     ninja -C build-standard >/dev/null 2>&1
     ninja -C build-standard test
@@ -90,6 +95,7 @@ run_check "Standard-Tests" '
 # Coverage
 run_check "Coverage" '
     set -e
+    rm -rf build-coverage
     CC=clang meson setup build-coverage -Db_coverage=true >/dev/null 2>&1
     ninja -C build-coverage test >/dev/null 2>&1
     cd build-coverage
@@ -102,7 +108,7 @@ run_check "Coverage" '
 
 # Fuzzing
 run_check "Fuzzing" '
-    python tools/run_fuzz.py 60
+    python3 tools/run_fuzz.py 60
 '
 
 # Wait for all parallel checks
@@ -119,7 +125,11 @@ for pid in $(jobs -p); do
     else
         echo "❌ ${job_names[$pid]} FAILED"
         echo "--- Output from ${job_names[$pid]} ---"
-        cat "${job_logs[$pid]}"
+        if [ -s "${job_logs[$pid]}" ]; then
+            cat "${job_logs[$pid]}"
+        else
+            echo "(no output captured - check /tmp/check-${job_names[$pid]}.log)"
+        fi
         echo "--- End of ${job_names[$pid]} output ---"
         failed=1
     fi
