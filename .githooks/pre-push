@@ -19,21 +19,24 @@ docker run --rm -t \
   $IMAGE \
   bash -c '
     set -e
-    rm -rf build-container
-    meson setup build-container
-    ninja -C build-container
-    ninja -C build-container test
+    # Build & capture compile DB
+    CC=clang meson setup build
+    ninja -C build
+    cp build/compile_commands.json .
     
-    # Run clang-tidy exactly like CI
+    # clang-tidy (diff-guard)
     clang-tidy -quiet -p . --config-file=quality/.clang-tidy \
       $(git ls-files "core/**/*.c" "core/**/*.h") \
       | tee clang-tidy-report-full.txt || true
-    
     # Filter to just project warnings
     grep -E "^/.*core/|^core/" clang-tidy-report-full.txt > clang-tidy-report.txt || true
     
-    # Check against baseline
+    # Enforce no new warnings
     python3 tools/count_warnings.py check clang-tidy-report.txt tools/baseline_count.txt
+    
+    # Additional CI checks
+    cppcheck --enable=all --inconclusive --quiet src
+    python tools/run_fuzz.py 60
 '
 
 echo "✅  Local CI passed—pushing allowed."

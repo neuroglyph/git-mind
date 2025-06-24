@@ -54,6 +54,7 @@ static void test_id_hex_conversion(void) {
         gm_id_to_hex(id, small_buf, sizeof(small_buf));
     assert(GM_IS_ERR(small_result));
     assert(GM_UNWRAP_ERR(small_result)->code == GM_ERR_BUFFER_TOO_SMALL);
+    gm_error_free(GM_UNWRAP_ERR(small_result));
 
     /* Parse back */
     gm_result_id result = gm_id_from_hex(hex);

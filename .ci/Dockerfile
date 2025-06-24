@@ -1,7 +1,10 @@
 FROM ubuntu:22.04
 RUN apt-get update && \
-    apt-get install -y \
-        clang clang-tidy ninja-build libsodium-dev git \
-        python3 python3-pip pkg-config && \
-    pip3 install meson
+    apt-get install -y wget gnupg lsb-release python3-pip pkg-config && \
+    wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 20 && \
+    apt-get install -y clang-20 clang-tidy-20 cppcheck libsodium-dev git ninja-build && \
+    ln -sf /usr/bin/clang-tidy-20 /usr/local/bin/clang-tidy && \
+    ln -sf /usr/bin/clang++-20    /usr/local/bin/clang++ && \
+    ln -sf /usr/bin/clang-20      /usr/local/bin/clang && \
+    pip3 install --break-system-packages meson ninja
 WORKDIR /workspace
