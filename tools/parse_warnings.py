@@ -23,11 +23,14 @@ def parse_warnings(input_file):
                 elif '/git-mind/' in filepath:
                     # Local path: /path/to/git-mind/core/...
                     filepath = filepath.split('/git-mind/', 1)[1]
+                elif filepath.startswith('../core/'):
+                    # clang-tidy relative path: ../core/...
+                    filepath = filepath[3:]  # Remove ../
                 elif filepath.startswith('./'):
                     # Remove ./ prefix
                     filepath = filepath[2:]
                 elif filepath.startswith('../'):
-                    # Handle relative paths that go up
+                    # Handle other relative paths that go up
                     filepath = filepath
                 # If it's already relative (like core/...), keep it as is
                 

@@ -20,8 +20,8 @@ clang-tidy -quiet -p build-push --config-file=quality/.clang-tidy \
     $(git ls-files 'core/**/*.c' 'core/**/*.h') \
     | tee /tmp/clang-tidy-report-full.txt || true
 
-# Filter to just project warnings
-grep -E "^/.*core/|^core/" /tmp/clang-tidy-report-full.txt > /tmp/clang-tidy-report.txt || true
+# Filter to just project warnings (handles various path formats)
+grep -E "^\.\./core/|^/.*core/|^core/" /tmp/clang-tidy-report-full.txt > /tmp/clang-tidy-report.txt || true
 
 # Enforce no new warnings using grouped baseline
 echo "⚖️ Checking for new warnings..."
