@@ -13,12 +13,12 @@
 typedef struct gm_random_ops {
     int (*rand)(void);
     void (*srand)(unsigned int seed);
-    int (*rand_r)(unsigned int* seedp);
+    int (*rand_r)(unsigned int *seedp);
 } gm_random_ops_t;
 
 /**
  * Get default random operations (uses real system calls).
  */
-const gm_random_ops_t* gm_random_ops_default(void);
+const gm_random_ops_t *gm_random_ops_default(void);
 
 #endif /* GITMIND_RANDOM_OPS_H */
