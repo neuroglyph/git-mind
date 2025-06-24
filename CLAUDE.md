@@ -182,7 +182,19 @@ ninja -C build clean    # Clean build
 rm -rf build            # Full clean
 ```
 
-### 4. Pre-commit Hooks
+### 4. How We Gate Quality
+
+1. **Push whatever you want** - No pre-push hooks
+2. **GitHub Actions runs full CI** - Meson, clang-tidy, sanitizers, coverage
+3. **If CI fails, fix & force-push** - Simple and deterministic
+
+### 5. Optional Local Lint
+```bash
+# Quick local check before pushing (never blocks git push)
+alias gm-lint='meson setup build >/dev/null 2>&1 || true && ninja -C build && ninja -C build test'
+```
+
+### 6. Pre-commit Hooks
 - IWYU enforced via pre-commit
 - clang-format auto-fixes style
 - detect-secrets prevents leaks

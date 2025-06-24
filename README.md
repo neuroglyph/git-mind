@@ -2,6 +2,12 @@
 
 > **⚠️ MAJOR REWRITE IN PROGRESS**: This project is undergoing a complete architectural overhaul. We've reduced warnings from 11,951 to 410 and are migrating to meson/ninja build system. Not production-ready. See [The Great Migration](#the-great-migration) below.
 
+## How We Gate Quality
+
+1. **Push whatever you want** - No pre-push hooks
+2. **GitHub Actions runs full CI** - Meson, clang-tidy, sanitizers, coverage  
+3. **If CI fails, fix & force-push** - Simple and deterministic
+
 ![git-mind](./assets/images/wide-logo.png)
 
 ## What is git-mind?
