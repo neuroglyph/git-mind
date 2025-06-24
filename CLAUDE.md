@@ -370,9 +370,8 @@ Always abstract crypto behind an interface:
 - Production uses real crypto (libsodium)
 - Tests use deterministic implementations
 - Switch backends at runtime for different scenarios
-## 🎖️ LIEUTENANT DEVOPS BATTLE ORDERS (2025-06-24)
 
-### IMPORTANT: Main Branch is "new-foundation-part-01" (NOT "main")
+## 🎖️ LIEUTENANT DEVOPS BATTLE ORDERS (2025-06-24)
 
 ### 1. Branch & Ticket Priority Queue
 
@@ -406,7 +405,8 @@ Always abstract crypto behind an interface:
 
 ### 4. Commit & PR Protocol
 
-1. **Branch from latest new-foundation-part-01** (NOT main!)
+1. **Branch from latest main**
+
 2. **Follow commit style**:
    ```
    <type>(<scope>): <summary>
