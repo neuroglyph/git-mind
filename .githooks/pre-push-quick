@@ -12,10 +12,9 @@ if grep -nE "(TODO|FIXME|XXX)" $(find core -name "*.c" -o -name "*.h" 2>/dev/nul
 fi
 
 echo "→ Quick build test..."
-if [ -d build-quick ]; then
-    rm -rf build-quick
+if [ ! -d build-quick ]; then
+    CC=clang meson setup build-quick >/dev/null 2>&1
 fi
-CC=clang meson setup build-quick >/dev/null 2>&1
 ninja -C build-quick >/dev/null
 
 echo "✅ Quick checks passed!"

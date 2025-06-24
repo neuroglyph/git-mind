@@ -33,8 +33,9 @@ fi
 echo "✅ No TODOs found"
 
 echo "→ Basic build check..."
-rm -rf build-quick
-CC=clang meson setup build-quick >/dev/null 2>&1
+if [ ! -d build-quick ]; then
+    CC=clang meson setup build-quick >/dev/null 2>&1
+fi
 ninja -C build-quick >/dev/null 2>&1
 echo "✅ Build successful"
 
@@ -45,8 +46,9 @@ echo "═══ Running Full CI Suite in Parallel ═══"
 # clang-tidy
 run_check "clang-tidy" '
     set -e
-    rm -rf build
-    CC=clang meson setup build >/dev/null 2>&1
+    if [ ! -d build ]; then
+        CC=clang meson setup build >/dev/null 2>&1
+    fi
     ninja -C build >/dev/null 2>&1
     cp build/compile_commands.json .
     clang-tidy -quiet -p . --config-file=quality/.clang-tidy \
@@ -64,9 +66,10 @@ run_check "cppcheck" '
 # ASAN
 run_check "ASAN" '
     set -e
-    rm -rf build-asan
-    CC=clang CFLAGS="-fsanitize=address -fno-omit-frame-pointer -g" \
-        meson setup build-asan -Db_sanitize=address >/dev/null 2>&1
+    if [ ! -d build-asan ]; then
+        CC=clang CFLAGS="-fsanitize=address -fno-omit-frame-pointer -g" \
+            meson setup build-asan -Db_sanitize=address >/dev/null 2>&1
+    fi
     ninja -C build-asan >/dev/null 2>&1
     ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1 \
         ninja -C build-asan test
@@ -75,9 +78,10 @@ run_check "ASAN" '
 # UBSAN
 run_check "UBSAN" '
     set -e
-    rm -rf build-ubsan
-    CC=clang CFLAGS="-fsanitize=undefined -fno-omit-frame-pointer -g" \
-        meson setup build-ubsan -Db_sanitize=undefined >/dev/null 2>&1
+    if [ ! -d build-ubsan ]; then
+        CC=clang CFLAGS="-fsanitize=undefined -fno-omit-frame-pointer -g" \
+            meson setup build-ubsan -Db_sanitize=undefined >/dev/null 2>&1
+    fi
     ninja -C build-ubsan >/dev/null 2>&1
     UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
         ninja -C build-ubsan test
@@ -86,8 +90,9 @@ run_check "UBSAN" '
 # Standard tests
 run_check "Standard-Tests" '
     set -e
-    rm -rf build-standard
-    CC=clang meson setup build-standard >/dev/null 2>&1
+    if [ ! -d build-standard ]; then
+        CC=clang meson setup build-standard >/dev/null 2>&1
+    fi
     ninja -C build-standard >/dev/null 2>&1
     ninja -C build-standard test
 '
@@ -95,8 +100,9 @@ run_check "Standard-Tests" '
 # Coverage
 run_check "Coverage" '
     set -e
-    rm -rf build-coverage
-    CC=clang meson setup build-coverage -Db_coverage=true >/dev/null 2>&1
+    if [ ! -d build-coverage ]; then
+        CC=clang meson setup build-coverage -Db_coverage=true >/dev/null 2>&1
+    fi
     ninja -C build-coverage test >/dev/null 2>&1
     cd build-coverage
     gcovr --root .. --print-summary | grep -E "lines|branches"
