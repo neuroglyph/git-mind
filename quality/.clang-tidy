@@ -19,7 +19,9 @@ Checks: >
   -cppcoreguidelines-init-variables,
   -readability-isolate-declaration,
   -cppcoreguidelines-avoid-magic-numbers,
-  -readability-magic-numbers
+  -readability-magic-numbers,
+  -cppcoreguidelines-macro-to-enum,
+  -modernize-macro-to-enum
 
 WarningsAsErrors: >
   readability-function-size,
