@@ -6,7 +6,7 @@
 #include "gitmind/crypto/backend.h"
 #include "gitmind/error.h"
 
-#include <sodium.h>
+#include <sodium/randombytes.h>
 
 /* gm_err_u32 and gm_err_u64 are now defined in result.h */
 

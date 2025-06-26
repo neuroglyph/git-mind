@@ -7,7 +7,7 @@
 #include "gitmind/error.h"
 
 #include <assert.h>
-#include <sodium.h>
+#include <sodium/crypto_hash_sha256.h>
 #include <string.h>
 
 /* Ensure our context size is sufficient */
