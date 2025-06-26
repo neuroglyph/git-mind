@@ -9,7 +9,7 @@
 #include "gitmind/security/memory.h"
 
 #include <pthread.h>
-#include <sodium.h>
+#include <sodium/crypto_shorthash_siphash24.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
