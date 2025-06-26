@@ -7,6 +7,7 @@
 #include "gitmind/error.h"
 
 #include <sodium/randombytes.h>
+#include <stdint.h>
 
 /* gm_err_u32 and gm_err_u64 are now defined in result.h */
 
