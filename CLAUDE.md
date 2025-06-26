@@ -10,22 +10,25 @@
 ## 📍 Project Status (2025-06-27)
 
 **git-mind**: A Git-native tool for versioning your understanding of code
-- **Current warnings**: 353 (reduced from 401 → 388 → 375 → 363 → 353)
-- **Original warnings**: 11,951 → 410 → 401 → 353
+- **Current warnings**: 345 (reduced from 401 → 388 → 375 → 363 → 353 → 345)
+- **Original warnings**: 11,951 → 410 → 401 → 345
 - **Build system**: meson/ninja (Makefiles deprecated)
 - **Architecture**: Quarantined legacy code in `src/`, clean new code in `core/`
+- **Test separation**: Test backends isolated in `core/tests/backends/`
 
 ## 🎯 Current TODO List
 
 ### Immediate Tasks
-- [ ] Fix global const warnings in backend.c
+- [x] Fix global const warnings in backend.c - COMPLETE
+- [x] Evict test backend from production code - COMPLETE
+- [ ] Fix remaining global variables (g_siphash_key in id.c)
 - [ ] Fix naming convention violations for `gm_result_*` typedefs
-- [ ] Fix missing result.h includes (gm_result_void, gm_err_void, etc.)
+- [ ] Fix missing result.h includes in other files
 - [ ] Reduce function complexity below thresholds
 - [ ] Fix security warnings (unchecked return values)
 
 ### Next Up
-- [ ] Reduce warnings from 353 → 0
+- [ ] Reduce warnings from 345 → 0
 - [ ] Complete migration of remaining modules from `src/` to `core/`
 - [ ] Add Result types to remaining functions that can fail
 - [ ] Split path.c (1,156 lines) into smaller modules
@@ -37,6 +40,8 @@
 - [x] Replaced all sodium.h with specific headers (26 warnings eliminated)
 - [x] Added all missing stdint.h includes (22 warnings eliminated)
 - [x] Created check-warning-fix.sh script with celebratory messages
+- [x] Evicted test backend from production (test code now in core/tests/backends/)
+- [x] Made crypto backends const (API now returns const pointers)
 
 ## 🛠️ Development Workflow
 
@@ -87,22 +92,24 @@ ninja -C build test
 
 ```
 git-mind/
-├── core/           # New clean code (353 warnings)
+├── core/           # New clean code (345 warnings)
 │   ├── src/        # Implementation
 │   ├── include/    # Headers
 │   └── tests/      # Unit tests
 ├── src/            # Legacy code (11,951 warnings - DO NOT TOUCH)
 ├── tools/          # Build and CI tools
-│   ├── baseline_count.txt      # Current: 353
+│   ├── baseline_count.txt      # Current: 345
 │   ├── docker-clang-tidy.sh    # Run linting in CI environment
 │   └── check-warning-fix.sh    # Verify fixes & celebrate progress
+├── core/tests/backends/        # Test-only crypto backends
+│   └── test_backend.c          # Deterministic test implementation
 └── quality/        # Linting configs
     └── .clang-tidy # Strict checks (macro-to-enum disabled)
 ```
 
 ## 🚧 Known Issues
 
-### Clang-tidy Warnings (353 total)
+### Clang-tidy Warnings (345 total)
 1. **Global variables** (~20): Non-const globals that should be const
 2. **Missing includes** (~150): IWYU compliance (result.h, stdarg.h, etc.)
 3. **Naming violations** (~112): `gm_result_*` typedef case style
@@ -112,7 +119,7 @@ git-mind/
 7. **Misc** (~13): Recursion warnings, cognitive complexity
 
 ### CI Status
-- **c_core.yml**: Uses baseline_count.txt (353)
+- **c_core.yml**: Uses baseline_count.txt (345)
 - **core-quality.yml**: Runs full quality checks
 - Coverage: 83.1% line, 54.1% branch (needs 70% branch)
 
@@ -138,12 +145,14 @@ git-mind/
 - Eliminated all sodium.h warnings by using specific headers
 - Fixed all stdint.h missing include warnings 
 - Created check-warning-fix.sh script with celebratory emojis
-- Reduced warnings from 401 → 353 (48 warnings eliminated!)
-- Learned: Always run clang-tidy BEFORE naming branches
+- Evicted test backend from production code per Central Command
+- Made crypto backends const with API returning const pointers
+- Reduced warnings from 401 → 345 (56 warnings eliminated!)
+- Learned: Test code belongs in tests/, not production
 
 **Next Steps**:
-1. Fix global const warnings in backend.c
-2. Add missing result.h includes for error handling
+1. Fix g_siphash_key globals in id.c (use atomic operations)
+2. Add missing result.h includes in remaining files
 3. Fix parameter naming violations (3+ character names)
 4. Continue systematic warning reduction to zero
 
