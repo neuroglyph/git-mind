@@ -61,6 +61,12 @@
   },
   {
     "directory": "/workspace/build",
+    "command": "clang -Ilibgitmind_test_backend.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -fPIC -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o -MF libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o.d -o libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o -c ../core/tests/backends/test_backend.c",
+    "file": "../core/tests/backends/test_backend.c",
+    "output": "libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o"
+  },
+  {
+    "directory": "/workspace/build",
     "command": "clang -Itest_error.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_error.p/core_tests_unit_test_error.c.o -MF test_error.p/core_tests_unit_test_error.c.o.d -o test_error.p/core_tests_unit_test_error.c.o -c ../core/tests/unit/test_error.c",
     "file": "../core/tests/unit/test_error.c",
     "output": "test_error.p/core_tests_unit_test_error.c.o"
@@ -91,13 +97,13 @@
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Itest_sha256.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_sha256.p/core_tests_unit_test_sha256.c.o -MF test_sha256.p/core_tests_unit_test_sha256.c.o.d -o test_sha256.p/core_tests_unit_test_sha256.c.o -c ../core/tests/unit/test_sha256.c",
+    "command": "clang -Itest_sha256.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_sha256.p/core_tests_unit_test_sha256.c.o -MF test_sha256.p/core_tests_unit_test_sha256.c.o.d -o test_sha256.p/core_tests_unit_test_sha256.c.o -c ../core/tests/unit/test_sha256.c",
     "file": "../core/tests/unit/test_sha256.c",
     "output": "test_sha256.p/core_tests_unit_test_sha256.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Itest_random.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_random.p/core_tests_unit_test_random.c.o -MF test_random.p/core_tests_unit_test_random.c.o.d -o test_random.p/core_tests_unit_test_random.c.o -c ../core/tests/unit/test_random.c",
+    "command": "clang -Itest_random.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_random.p/core_tests_unit_test_random.c.o -MF test_random.p/core_tests_unit_test_random.c.o.d -o test_random.p/core_tests_unit_test_random.c.o -c ../core/tests/unit/test_random.c",
     "file": "../core/tests/unit/test_random.c",
     "output": "test_random.p/core_tests_unit_test_random.c.o"
   },
@@ -109,7 +115,7 @@
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Itest_crypto_backend.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o -MF test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o.d -o test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o -c ../core/tests/unit/test_crypto_backend.c",
+    "command": "clang -Itest_crypto_backend.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o -MF test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o.d -o test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o -c ../core/tests/unit/test_crypto_backend.c",
     "file": "../core/tests/unit/test_crypto_backend.c",
     "output": "test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o"
   }

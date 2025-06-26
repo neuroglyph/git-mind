@@ -45,15 +45,18 @@ typedef struct gm_crypto_backend {
 } gm_crypto_backend_t;
 
 /* Result type for backend operations */
-GM_RESULT_DEF(gm_result_backend, gm_crypto_backend_t *);
+GM_RESULT_DEF(gm_result_backend, const gm_crypto_backend_t *);
 
 /* Global backend management */
-gm_result_backend gm_crypto_set_backend(gm_crypto_backend_t *backend);
-gm_crypto_backend_t *gm_crypto_get_backend(void);
+gm_result_backend gm_crypto_set_backend(const gm_crypto_backend_t *backend);
+const gm_crypto_backend_t *gm_crypto_get_backend(void);
 
 /* Default backends */
-gm_crypto_backend_t *gm_crypto_backend_libsodium(void);
-gm_crypto_backend_t *gm_crypto_backend_test(void);
+const gm_crypto_backend_t *gm_crypto_backend_libsodium(void);
+
+#ifdef GITMIND_ENABLE_TEST_BACKEND
+const gm_crypto_backend_t *gm_crypto_backend_test(void);
+#endif
 
 /* Backend initialization */
 gm_result_void gm_crypto_init(void);

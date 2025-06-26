@@ -5,6 +5,7 @@
 
 #include "gitmind/crypto/sha256.h"
 #include "gitmind/error.h"
+#include "gitmind/result.h"
 #include "gitmind/security/memory.h"
 
 #include <sodium/crypto_hash_sha256.h>
@@ -13,17 +14,15 @@
 #include <stdint.h>
 #include <string.h>
 
-/* Test backend constants */
-#define TEST_HASH_LENGTH_HEADER_SIZE                                           \
-    4 /* Bytes used to store length in test hash */
-#define TEST_HASH_MAX_DATA_BYTES                                               \
-    (GM_SHA256_DIGEST_SIZE - TEST_HASH_LENGTH_HEADER_SIZE)
 #define BITS_PER_BYTE 8
 #define BYTE_MASK 0xFF
 #define U32_HIGH_SHIFT 32
 
-/* Global backend instance */
-static gm_crypto_backend_t *g_backend = NULL;
+/* Forward declaration for default backend */
+static const gm_crypto_backend_t libsodium_backend;
+
+/* Global backend instance - mutable to allow runtime backend switching */
+static const gm_crypto_backend_t *g_backend = &libsodium_backend; /* NOLINT(cppcoreguidelines-avoid-non-const-global-variables) */
 
 /* Libsodium backend implementation */
 static int libsodium_sha256_init(gm_sha256_ctx_t *ctx) {
@@ -64,7 +63,7 @@ static uint64_t libsodium_random_u64(void) {
 }
 
 /* Libsodium backend instance */
-static gm_crypto_backend_t libsodium_backend = {
+static const gm_crypto_backend_t libsodium_backend = {
     .name = "libsodium",
     .sha256_init = libsodium_sha256_init,
     .sha256_update = libsodium_sha256_update,
@@ -75,101 +74,14 @@ static gm_crypto_backend_t libsodium_backend = {
     .random_u64 = libsodium_random_u64,
     .context = NULL};
 
-/* Test backend implementation (deterministic) */
-static int test_sha256(const void *data, size_t len,
-                       uint8_t out[GM_SHA256_DIGEST_SIZE]) {
-    /* Simple deterministic "hash" for testing */
-    GM_MEMSET_SAFE(out, GM_SHA256_DIGEST_SIZE, 0, GM_SHA256_DIGEST_SIZE);
-
-    /* Mix in length */
-    out[0] = (uint8_t)(len & BYTE_MASK);
-    out[1] = (uint8_t)((len >> BITS_PER_BYTE) & BYTE_MASK);
-    out[2] = (uint8_t)((len >> (2 * BITS_PER_BYTE)) & BYTE_MASK);
-    out[3] = (uint8_t)((len >> (3 * BITS_PER_BYTE)) & BYTE_MASK);
-
-    /* Mix in first few bytes of data */
-    if (data && len > 0) {
-        const uint8_t *bytes = (const uint8_t *)data;
-        size_t to_copy =
-            len < TEST_HASH_MAX_DATA_BYTES ? len : TEST_HASH_MAX_DATA_BYTES;
-        GM_MEMCPY_SAFE(out + TEST_HASH_LENGTH_HEADER_SIZE,
-                       GM_SHA256_DIGEST_SIZE - TEST_HASH_LENGTH_HEADER_SIZE,
-                       bytes, to_copy);
-    }
-
-    return 0;
-}
-
-static int test_sha256_init(gm_sha256_ctx_t *ctx) {
-    /* Clear context */
-    GM_MEMSET_SAFE(ctx, sizeof(*ctx), 0, sizeof(*ctx));
-    return 0;
-}
-
-static int test_sha256_update(gm_sha256_ctx_t *ctx, const void *data,
-                              size_t len) {
-    /* For test backend, just track total length */
-    (void)data; /* Unused in test implementation */
-    uint64_t *total = (uint64_t *)ctx;
-    *total += len;
-    return 0;
-}
-
-static int test_sha256_final(gm_sha256_ctx_t *ctx,
-                             uint8_t out[GM_SHA256_DIGEST_SIZE]) {
-    /* Output based on total length */
-    uint64_t *total = (uint64_t *)ctx;
-    GM_MEMSET_SAFE(out, GM_SHA256_DIGEST_SIZE, 0, GM_SHA256_DIGEST_SIZE);
-    GM_MEMCPY_SAFE(out, GM_SHA256_DIGEST_SIZE, total, sizeof(*total));
-    return 0;
-}
-
-static uint32_t test_counter = 0;
-
-static int test_random_bytes(void *buf, size_t size) {
-    /* Fill with incrementing pattern */
-    uint8_t *bytes = (uint8_t *)buf;
-    for (size_t i = 0; i < size; i++) {
-        bytes[i] = (uint8_t)(test_counter++ & BYTE_MASK);
-    }
-    return 0;
-}
-
-static uint32_t test_random_u32(void) {
-    return test_counter++;
-}
-
-static uint64_t test_random_u64(void) {
-    uint64_t result = test_counter;
-    test_counter += 2;
-    return result;
-}
-
-/* Test backend instance */
-static gm_crypto_backend_t test_backend = {.name = "test",
-                                           .sha256_init = test_sha256_init,
-                                           .sha256_update = test_sha256_update,
-                                           .sha256_final = test_sha256_final,
-                                           .sha256 = test_sha256,
-                                           .random_bytes = test_random_bytes,
-                                           .random_u32 = test_random_u32,
-                                           .random_u64 = test_random_u64,
-                                           .context = &test_counter};
-
 /* Get libsodium backend */
-gm_crypto_backend_t *gm_crypto_backend_libsodium(void) {
+const gm_crypto_backend_t *gm_crypto_backend_libsodium(void) {
     return &libsodium_backend;
 }
 
-/* Get test backend */
-gm_crypto_backend_t *gm_crypto_backend_test(void) {
-    /* Reset counter for reproducibility */
-    test_counter = 0;
-    return &test_backend;
-}
 
 /* Set current backend */
-gm_result_backend gm_crypto_set_backend(gm_crypto_backend_t *backend) {
+gm_result_backend gm_crypto_set_backend(const gm_crypto_backend_t *backend) {
     if (!backend) {
         return (gm_result_backend){
             .ok = false,
@@ -191,7 +103,7 @@ gm_result_backend gm_crypto_set_backend(gm_crypto_backend_t *backend) {
 }
 
 /* Get current backend */
-gm_crypto_backend_t *gm_crypto_get_backend(void) {
+const gm_crypto_backend_t *gm_crypto_get_backend(void) {
     return g_backend;
 }
 
