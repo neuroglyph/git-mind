@@ -6,7 +6,6 @@
 #include "gitmind/crypto/sha256.h"
 #include "gitmind/error.h"
 #include "gitmind/result.h"
-#include "gitmind/security/memory.h"
 
 #include <sodium/crypto_hash_sha256.h>
 #include <sodium/randombytes.h>

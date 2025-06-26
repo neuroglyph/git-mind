@@ -2,10 +2,9 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind/error.h"
+#include "gitmind/result.h"
 #include "gitmind/types/string.h"
 #include "gitmind/utf8/validate.h"
-
-#include <string.h>
 
 /* Validate UTF-8 */
 gm_result_void gm_string_validate_utf8(const gm_string_t *str) {

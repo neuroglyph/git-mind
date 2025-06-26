@@ -5,6 +5,7 @@
 
 #include "gitmind/crypto/backend.h"
 #include "gitmind/error.h"
+#include "gitmind/result.h"
 
 #include <assert.h>
 #include <sodium/crypto_hash_sha256.h>

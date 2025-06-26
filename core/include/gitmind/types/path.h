@@ -8,6 +8,7 @@
 #include "gitmind/types/string.h"
 
 #include <stdbool.h>
+#include <stddef.h>
 
 /* Forward declaration */
 typedef struct gm_path_rules gm_path_rules_t;

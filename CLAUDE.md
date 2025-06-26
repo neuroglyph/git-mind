@@ -10,8 +10,8 @@
 ## 📍 Project Status (2025-06-27)
 
 **git-mind**: A Git-native tool for versioning your understanding of code
-- **Current warnings**: 345 (reduced from 401 → 388 → 375 → 363 → 353 → 345)
-- **Original warnings**: 11,951 → 410 → 401 → 345
+- **Current warnings**: 279 (reduced from 401 → 388 → 375 → 363 → 353 → 345 → 306 → 279)
+- **Original warnings**: 11,951 → 410 → 401 → 345 → 306 → 279
 - **Build system**: meson/ninja (Makefiles deprecated)
 - **Architecture**: Quarantined legacy code in `src/`, clean new code in `core/`
 - **Test separation**: Test backends isolated in `core/tests/backends/`
@@ -42,6 +42,11 @@
 - [x] Created check-warning-fix.sh script with celebratory messages
 - [x] Evicted test backend from production (test code now in core/tests/backends/)
 - [x] Made crypto backends const (API now returns const pointers)
+- [x] Fixed missing result.h, stddef.h, and stdarg.h includes (39 warnings eliminated)
+- [x] Migrated id.c from pthread to C11 threads (call_once)
+- [x] Converted test_id_thread_safety.c to C11 threads
+- [x] Rewrote memory.h macros as inline functions
+- [x] Achieved ZERO include-cleaner warnings (66 warnings eliminated total)
 
 ## 🛠️ Development Workflow
 
@@ -109,9 +114,9 @@ git-mind/
 
 ## 🚧 Known Issues
 
-### Clang-tidy Warnings (345 total)
+### Clang-tidy Warnings (279 total)
 1. **Global variables** (~20): Non-const globals that should be const
-2. **Missing includes** (~150): IWYU compliance (result.h, stdarg.h, etc.)
+2. **Missing includes**: ZERO! All include-cleaner warnings eliminated
 3. **Naming violations** (~112): `gm_result_*` typedef case style
 4. **Function complexity** (~8): Exceeds size/cognitive thresholds
 5. **Security** (~20): Unchecked return values (cert-err33-c)
@@ -119,7 +124,7 @@ git-mind/
 7. **Misc** (~13): Recursion warnings, cognitive complexity
 
 ### CI Status
-- **c_core.yml**: Uses baseline_count.txt (345)
+- **c_core.yml**: Uses baseline_count.txt (279)
 - **core-quality.yml**: Runs full quality checks
 - Coverage: 83.1% line, 54.1% branch (needs 70% branch)
 
@@ -147,8 +152,11 @@ git-mind/
 - Created check-warning-fix.sh script with celebratory emojis
 - Evicted test backend from production code per Central Command
 - Made crypto backends const with API returning const pointers
-- Reduced warnings from 401 → 345 (56 warnings eliminated!)
-- Learned: Test code belongs in tests/, not production
+- Fixed ALL include-cleaner warnings - ZERO remaining!
+- Migrated to C11 threads (pthread → threads.h)
+- Converted memory.h macros to inline functions
+- Reduced warnings from 401 → 279 (122 warnings eliminated total!)
+- Learned: Don't blame the tool - fix the code!
 
 **Next Steps**:
 1. Fix g_siphash_key globals in id.c (use atomic operations)

@@ -1,14 +1,18 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
+#define _GNU_SOURCE
 #include "gitmind/types/id.h"
 
 #include "gitmind/crypto/random.h"
 #include "gitmind/crypto/sha256.h"
 #include "gitmind/error.h"
+#include "gitmind/result.h"
 #include "gitmind/security/memory.h"
 
-#include <pthread.h>
+#include <stdatomic.h>
+#include <stddef.h>
+#include <threads.h>
 #include <sodium/crypto_shorthash_siphash24.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -27,9 +31,9 @@ int gm_id_compare(gm_id_t id_a, gm_id_t id_b) {
 
 /* SipHash key - initialized once at startup */
 static uint8_t g_siphash_key[crypto_shorthash_siphash24_KEYBYTES];
-static pthread_once_t g_siphash_key_once = PTHREAD_ONCE_INIT;
+static once_flag g_siphash_key_once = ONCE_FLAG_INIT;
 
-/* Initialize SipHash key with random data - called once by pthread_once */
+/* Initialize SipHash key with random data - called once by call_once */
 static void init_siphash_key(void) {
     /* Generate random key - this is best effort, if it fails we use fallback */
     gm_result_void result =
@@ -46,7 +50,7 @@ static void init_siphash_key(void) {
 /* Hash function for hash tables using SipHash-2-4 */
 gm_result_u32 gm_id_hash(gm_id_t identifier) {
     /* Ensure key is initialized exactly once, thread-safe */
-    pthread_once(&g_siphash_key_once, init_siphash_key);
+    call_once(&g_siphash_key_once, init_siphash_key);
 
     /* SipHash produces 8-byte output */
     uint8_t hash_output[crypto_shorthash_siphash24_BYTES];

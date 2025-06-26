@@ -2,12 +2,12 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind/error.h"
+#include "gitmind/result.h"
 #include "gitmind/types/id.h"
 
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 /* Test ID creation from string */

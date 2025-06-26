@@ -3,13 +3,15 @@
 
 #include "gitmind/crypto/backend.h"
 #include "gitmind/error.h"
+#include "gitmind/result.h"
 #include "gitmind/types/id.h"
 
 #include <assert.h>
-#include <pthread.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <threads.h>
 
 #define NUM_THREADS 10
 #define HASHES_PER_THREAD 1000
@@ -20,7 +22,7 @@ typedef struct {
 } thread_data_t;
 
 /* Thread function that generates many hashes */
-static void *hash_thread(void *arg) {
+static int hash_thread(void *arg) {
     thread_data_t *data = (thread_data_t *)arg;
 
     /* Create a unique ID for this thread */
@@ -40,12 +42,12 @@ static void *hash_thread(void *arg) {
         }
     }
 
-    return NULL;
+    return 0;
 }
 
 /* Test that multiple threads can safely hash IDs */
 static void test_concurrent_hashing(void) {
-    pthread_t threads[NUM_THREADS];
+    thrd_t threads[NUM_THREADS];
     thread_data_t thread_data[NUM_THREADS];
 
     /* Allocate hash arrays */
@@ -57,14 +59,13 @@ static void test_concurrent_hashing(void) {
 
     /* Start threads */
     for (int i = 0; i < NUM_THREADS; i++) {
-        int result =
-            pthread_create(&threads[i], NULL, hash_thread, &thread_data[i]);
-        assert(result == 0);
+        int result = thrd_create(&threads[i], hash_thread, &thread_data[i]);
+        assert(result == thrd_success);
     }
 
     /* Wait for threads */
     for (int i = 0; i < NUM_THREADS; i++) {
-        pthread_join(threads[i], NULL);
+        thrd_join(threads[i], NULL);
     }
 
     /* Verify results */
@@ -98,7 +99,7 @@ static void test_concurrent_hashing(void) {
 }
 
 /* Thread function for ID generation */
-static void *generate_thread(void *arg) {
+static int generate_thread(void *arg) {
     gm_id_t *ids = (gm_id_t *)arg;
 
     for (int i = 0; i < 100; i++) {
@@ -114,24 +115,23 @@ static void *generate_thread(void *arg) {
         }
     }
 
-    return NULL;
+    return 0;
 }
 
 /* Test that ID generation is thread-safe */
 static void test_concurrent_generation(void) {
-    pthread_t threads[NUM_THREADS];
+    thrd_t threads[NUM_THREADS];
     gm_id_t thread_ids[NUM_THREADS][100];
 
     /* Create threads */
     for (int i = 0; i < NUM_THREADS; i++) {
-        int ret =
-            pthread_create(&threads[i], NULL, generate_thread, thread_ids[i]);
-        assert(ret == 0);
+        int ret = thrd_create(&threads[i], generate_thread, thread_ids[i]);
+        assert(ret == thrd_success);
     }
 
     /* Wait for threads */
     for (int i = 0; i < NUM_THREADS; i++) {
-        pthread_join(threads[i], NULL);
+        thrd_join(threads[i], NULL);
     }
 
     /* Verify all IDs are unique */
@@ -159,7 +159,7 @@ static void test_initialization_race(void) {
      * g_siphash_key_initialized by having multiple threads
      * call gm_id_hash simultaneously on first use */
 
-    pthread_t threads[NUM_THREADS];
+    thrd_t threads[NUM_THREADS];
     thread_data_t thread_data[NUM_THREADS];
 
     /* Allocate hash arrays */
@@ -171,14 +171,13 @@ static void test_initialization_race(void) {
 
     /* Start all threads at once to maximize race condition likelihood */
     for (int i = 0; i < NUM_THREADS; i++) {
-        int result =
-            pthread_create(&threads[i], NULL, hash_thread, &thread_data[i]);
-        assert(result == 0);
+        int result = thrd_create(&threads[i], hash_thread, &thread_data[i]);
+        assert(result == thrd_success);
     }
 
     /* Wait for threads */
     for (int i = 0; i < NUM_THREADS; i++) {
-        pthread_join(threads[i], NULL);
+        thrd_join(threads[i], NULL);
     }
 
     /* If we get here without crashing, the implementation handled

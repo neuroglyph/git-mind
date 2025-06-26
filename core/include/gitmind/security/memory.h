@@ -8,7 +8,7 @@
 #include <stddef.h>
 #include <string.h>
 
-/* GM_MEMCPY_SAFE
+/* Safe memory copy with bounds checking
  * dst    : pointer to destination buffer
  * dstsz  : total size of destination buffer in bytes
  * src    : pointer to source
@@ -18,41 +18,57 @@
  *   - Aborts or asserts in debug if n > dstsz
  *   - Compile-time diagnostic on Clang/GCC when sizes are constant
  */
-
-/* Detect Annex K support */
+static inline void gm_memcpy_safe(void *dst, size_t dstsz,
+                                  const void *src, size_t n) {
+    assert(n <= dstsz && "gm_memcpy_safe: out-of-bounds copy");
+    if (n) {
 #if defined(__STDC_LIB_EXT1__)
-/* The host libc provides memcpy_s, use it directly */
-#define GM_MEMCPY_SAFE(dst, dstsz, src, n) memcpy_s((dst), (dstsz), (src), (n))
-#define GM_MEMSET_SAFE(dst, dstsz, val, n) memset_s((dst), (dstsz), (val), (n))
-
+        memcpy_s(dst, dstsz, src, n);
+#elif defined(__clang__) || defined(__GNUC__)
+        __builtin___memcpy_chk(dst, src, n, dstsz);
 #else
-/* Fallback: compile-time and run-time checks, then plain memcpy */
-#if defined(__clang__) || defined(__GNUC__)
-/* Clang/GCC: emit compile-time buffer-overflow errors when possible */
-#define GM_MEMCPY_SAFE(dst, dstsz, src, n)                                     \
-    __builtin___memcpy_chk((dst), (src), (n), (dstsz))
-
-#define GM_MEMSET_SAFE(dst, dstsz, val, n)                                     \
-    __builtin___memset_chk((dst), (val), (n), (dstsz))
-#else
-/* Generic: assert & memcpy */
-static inline void GM_MEMCPY_SAFE(void *dst, size_t dstsz, const void *src,
-                                  size_t n) {
-    assert(n <= dstsz && "GM_MEMCPY_SAFE: out-of-bounds copy");
-    if (n)
         memcpy(dst, src, n);
+#endif
+    }
 }
 
-static inline void GM_MEMSET_SAFE(void *dst, size_t dstsz, int val, size_t n) {
-    assert(n <= dstsz && "GM_MEMSET_SAFE: out-of-bounds set");
-    if (n)
+/* Safe memory set with bounds checking
+ * dst    : pointer to destination buffer
+ * dstsz  : total size of destination buffer in bytes
+ * val    : value to set
+ * n      : number of bytes to set
+ *
+ * Guarantees:
+ *   - Aborts or asserts in debug if n > dstsz
+ *   - Compile-time diagnostic on Clang/GCC when sizes are constant
+ */
+static inline void gm_memset_safe(void *dst, size_t dstsz,
+                                  int val, size_t n) {
+    assert(n <= dstsz && "gm_memset_safe: out-of-bounds set");
+    if (n) {
+#if defined(__STDC_LIB_EXT1__)
+        memset_s(dst, dstsz, val, n);
+#elif defined(__clang__) || defined(__GNUC__)
+        __builtin___memset_chk(dst, val, n, dstsz);
+#else
         memset(dst, val, n);
+#endif
+    }
 }
-#endif
-#endif
 
-/* Drop-in replacements for common memory functions */
-#define GM_MEMCPY(dst, src, n) GM_MEMCPY_SAFE((dst), (n), (src), (n))
-#define GM_MEMSET(dst, val, n) GM_MEMSET_SAFE((dst), (n), (val), (n))
+/* Convenience wrappers for common patterns */
+static inline void gm_memcpy(void *dst, const void *src, size_t n) {
+    gm_memcpy_safe(dst, n, src, n);
+}
+
+static inline void gm_memset(void *dst, int val, size_t n) {
+    gm_memset_safe(dst, n, val, n);
+}
+
+/* Compatibility macros - to be removed after migration */
+#define GM_MEMCPY_SAFE gm_memcpy_safe
+#define GM_MEMSET_SAFE gm_memset_safe
+#define GM_MEMCPY gm_memcpy
+#define GM_MEMSET gm_memset
 
 #endif

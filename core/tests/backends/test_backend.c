@@ -10,6 +10,7 @@
 #include "gitmind/crypto/sha256.h"
 #include "gitmind/security/memory.h"
 
+#include <stddef.h>
 #include <stdint.h>
 
 /* Test backend constants */

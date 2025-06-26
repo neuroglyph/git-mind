@@ -6,6 +6,7 @@
 #include "gitmind/result.h"
 #include "gitmind/security/memory.h"
 
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
