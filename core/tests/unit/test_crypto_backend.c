@@ -104,8 +104,8 @@ static void test_deterministic_random(void) {
     /* Should restart from 0 */
     r1_result = gm_random_u32();
     assert(GM_IS_OK(r1_result));
-    r1 = GM_UNWRAP(r1_result);
-    assert(r1 == 0);
+    uint32_t rand_reset = GM_UNWRAP(r1_result);
+    assert(rand_reset == 0);
 
     printf("✓ test_deterministic_random\n");
 }
