@@ -117,6 +117,10 @@ gm_result_id_t gm_id_generate(void) {
 #define HEX_DIGIT_STRING "0123456789abcdef"
 #define HEX_FORMAT_2X "%2x"
 
+/* Error messages */
+static const char *const ERR_MSG_INVALID_HEX_LEN = "Invalid hex ID: must be %d characters";
+static const char *const ERR_MSG_INVALID_HEX_CHAR = "Invalid hex character at position %d";
+
 /* Convert ID to hex string (safe version with buffer size check) */
 gm_result_void_t gm_id_to_hex(gm_id_t new_identifier, char *out, size_t out_size) {
     if (!out) {
@@ -142,30 +146,40 @@ gm_result_void_t gm_id_to_hex(gm_id_t new_identifier, char *out, size_t out_size
     return gm_ok_void();
 }
 
+/* Validate hex string length */
+static gm_error_t *validate_hex_length(const char *hex) {
+    if (!hex || strlen(hex) != GM_ID_HEX_CHARS) {
+        return GM_ERROR(GM_ERR_INVALID_FORMAT, ERR_MSG_INVALID_HEX_LEN, GM_ID_HEX_CHARS);
+    }
+    return NULL;
+}
+
+/* Parse single hex byte */
+static gm_error_t *parse_hex_byte(const char *hex, int pos, uint8_t *out) {
+    unsigned int byte;
+    if (sscanf(hex + (size_t)pos * HEX_CHARS_PER_BYTE, HEX_FORMAT_2X, &byte) != 1) {
+        return GM_ERROR(GM_ERR_INVALID_FORMAT, ERR_MSG_INVALID_HEX_CHAR, 
+                       pos * HEX_CHARS_PER_BYTE);
+    }
+    *out = (uint8_t)byte;
+    return NULL;
+}
+
 /* Parse hex string to ID */
 gm_result_id_t gm_id_from_hex(const char *hex) {
+    gm_error_t *err = validate_hex_length(hex);
+    if (err) {
+        return (gm_result_id_t){.ok = false, .u.err = err};
+    }
+
     gm_id_t new_id;
     GM_MEMSET_SAFE(&new_id, sizeof(new_id), 0, sizeof(new_id));
 
-    if (!hex || strlen(hex) != GM_ID_HEX_CHARS) {
-        return (gm_result_id_t){
-            .ok = false,
-            .u.err = GM_ERROR(GM_ERR_INVALID_FORMAT,
-                              "Invalid hex ID: must be %d characters",
-                              GM_ID_HEX_CHARS)};
-    }
-
     for (int i = 0; i < GM_ID_SIZE; i++) {
-        unsigned int byte;
-        if (sscanf(hex + (size_t)i * HEX_CHARS_PER_BYTE, HEX_FORMAT_2X,
-                   &byte) != 1) {
-            return (gm_result_id_t){
-                .ok = false,
-                .u.err = GM_ERROR(GM_ERR_INVALID_FORMAT,
-                                  "Invalid hex character at position %d",
-                                  (int)(i * HEX_CHARS_PER_BYTE))};
+        err = parse_hex_byte(hex, i, &new_id.bytes[i]);
+        if (err) {
+            return (gm_result_id_t){.ok = false, .u.err = err};
         }
-        new_id.bytes[i] = (uint8_t)byte;
     }
 
     return (gm_result_id_t){.ok = true, .u.val = new_id};

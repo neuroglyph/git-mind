@@ -63,7 +63,7 @@ gm_result_void_t gm_string_clear(gm_string_t *str);
 /* String validation */
 gm_result_void_t gm_string_validate_utf8(const gm_string_t *str);
 bool gm_string_is_empty(const gm_string_t *str);
-bool gm_string_equals(const gm_string_t *a, const gm_string_t *b);
+bool gm_string_equals(const gm_string_t *str1, const gm_string_t *str2);
 bool gm_string_starts_with(const gm_string_t *str, const char *prefix);
 bool gm_string_ends_with(const gm_string_t *str, const char *suffix);
 

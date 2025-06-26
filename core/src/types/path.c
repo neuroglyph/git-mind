@@ -164,32 +164,31 @@ static bool validate_path_basic(const char *str) {
     return true;
 }
 
+/* Initialize path structure */
+static void init_path(gm_path_t *path, gm_string_t value, const char *str) {
+    path->value = value;
+    path->separator = detect_separator(str);
+    path->is_absolute = is_absolute_path(str, path->separator);
+    path->state = GM_PATH_STATE_RAW;
+    path->is_validated = true;
+    path->type = GM_PATH_TYPE_UNKNOWN;
+}
+
 /* Create new path from string */
 gm_result_path_t gm_path_new(const char *str) {
-    if (!str) {
-        str = ""; /* Treat NULL as empty path */
-    }
+    if (!str) str = "";
 
-    /* Basic validation */
     if (!validate_path_basic(str)) {
-        return gm_err_path(
-            GM_ERROR(GM_ERR_INVALID_PATH, ERR_MSG_INVALID_FORMAT));
+        return gm_err_path(GM_ERROR(GM_ERR_INVALID_PATH, ERR_MSG_INVALID_FORMAT));
     }
 
-    /* Create string copy */
     gm_result_string_t str_result = gm_string_new(str);
     if (GM_IS_ERR(str_result)) {
         return gm_err_path(GM_UNWRAP_ERR(str_result));
     }
 
     gm_path_t path;
-    path.value = GM_UNWRAP(str_result);
-    path.separator = detect_separator(str);
-    path.is_absolute = is_absolute_path(str, path.separator);
-    path.state = GM_PATH_STATE_RAW;
-    path.is_validated = true; /* Basic validation passed */
-    path.type = GM_PATH_TYPE_UNKNOWN;
-
+    init_path(&path, GM_UNWRAP(str_result), str);
     return gm_ok_path(path);
 }
 
@@ -215,61 +214,84 @@ gm_result_path_t gm_path_from_string(gm_string_t str) {
     return gm_ok_path(path);
 }
 
+/* Validate join parameters */
+static gm_error_t *validate_join_params(const gm_path_t *base, const gm_path_t *relative) {
+    if (!base) return GM_ERROR(GM_ERR_INVALID_ARGUMENT, ERR_MSG_NULL_BASE);
+    if (!relative) return GM_ERROR(GM_ERR_INVALID_ARGUMENT, ERR_MSG_NULL_RELATIVE);
+    return NULL;
+}
+
+/* Check if path needs separator at end */
+static bool needs_trailing_separator(const gm_path_t *path) {
+    const char *str = gm_path_str(path);
+    size_t len = gm_path_len(path);
+    return len > 0 && str[len - 1] != path->separator;
+}
+
+/* Join paths with separator */
+static gm_result_string_t join_with_separator(const gm_path_t *base, const gm_path_t *relative) {
+    if (!needs_trailing_separator(base)) {
+        return gm_string_concat(&base->value, &relative->value);
+    }
+    
+    /* Need to add separator */
+    char sep_str[2] = {base->separator, '\0'};
+    gm_string_t sep = {.data = sep_str, .length = 1, .capacity = 2};
+    
+    gm_result_string_t with_sep = gm_string_concat(&base->value, &sep);
+    if (GM_IS_ERR(with_sep)) {
+        return with_sep;
+    }
+    
+    gm_string_t temp = GM_UNWRAP(with_sep);
+    gm_result_string_t result = gm_string_concat(&temp, &relative->value);
+    gm_string_free(&temp);
+    return result;
+}
+
 /* Join two paths */
 gm_result_path_t gm_path_join(const gm_path_t *base, const gm_path_t *relative) {
-    if (!base) {
-        return gm_err_path(
-            GM_ERROR(GM_ERR_INVALID_ARGUMENT, ERR_MSG_NULL_BASE));
-    }
-    if (!relative) {
-        return gm_err_path(
-            GM_ERROR(GM_ERR_INVALID_ARGUMENT, ERR_MSG_NULL_RELATIVE));
-    }
+    gm_error_t *err = validate_join_params(base, relative);
+    if (err) return gm_err_path(err);
 
-    /* If relative is absolute, return copy of it */
-    if (relative->is_absolute) {
-        return gm_path_new(gm_path_str(relative));
-    }
-
-    /* If base is empty, return copy of relative */
-    if (gm_path_is_empty(base)) {
-        return gm_path_new(gm_path_str(relative));
-    }
-
-    /* If relative is empty, return copy of base */
-    if (gm_path_is_empty(relative)) {
-        return gm_path_new(gm_path_str(base));
-    }
+    /* Special cases */
+    if (relative->is_absolute) return gm_path_new(gm_path_str(relative));
+    if (gm_path_is_empty(base)) return gm_path_new(gm_path_str(relative));
+    if (gm_path_is_empty(relative)) return gm_path_new(gm_path_str(base));
 
     /* Join with separator */
-    const char *base_str = gm_path_str(base);
-    size_t base_len = gm_path_len(base);
-    bool needs_sep =
-        (base_len > 0 && base_str[base_len - 1] != base->separator);
-
-    /* Create joined string */
-    gm_result_string_t result;
-    if (needs_sep) {
-        /* Need to add separator */
-        char sep_str[2] = {base->separator, '\0'};
-        gm_result_string_t with_sep = gm_string_concat(
-            &base->value,
-            &(gm_string_t){.data = sep_str, .length = 1, .capacity = 2});
-        if (GM_IS_ERR(with_sep)) {
-            return gm_err_path(GM_UNWRAP_ERR(with_sep));
-        }
-        gm_string_t temp = GM_UNWRAP(with_sep);
-        result = gm_string_concat(&temp, &relative->value);
-        gm_string_free(&temp);
-    } else {
-        result = gm_string_concat(&base->value, &relative->value);
-    }
-
+    gm_result_string_t result = join_with_separator(base, relative);
     if (GM_IS_ERR(result)) {
         return gm_err_path(GM_UNWRAP_ERR(result));
     }
 
     return gm_path_from_string(GM_UNWRAP(result));
+}
+
+/* Find last separator in path */
+static size_t find_last_separator(const char *str, size_t len, char sep) {
+    for (size_t i = len; i > 0; i--) {
+        if (str[i - 1] == sep) {
+            return i - 1;
+        }
+    }
+    return len; /* Not found */
+}
+
+/* Create root path */
+static gm_result_path_t create_root_path(char sep) {
+    char root[2] = {sep, '\0'};
+    return gm_path_new(root);
+}
+
+/* Extract directory substring */
+static gm_result_path_t extract_dirname(const gm_path_t *path, size_t last_sep) {
+    gm_result_string_t dir_result = 
+        gm_string_substring(&path->value, 0, last_sep);
+    if (GM_IS_ERR(dir_result)) {
+        return gm_err_path(GM_UNWRAP_ERR(dir_result));
+    }
+    return gm_path_from_string(GM_UNWRAP(dir_result));
 }
 
 /* Extract directory name */
@@ -288,14 +310,8 @@ gm_result_path_t gm_path_dirname(const gm_path_t *path) {
     }
 
     /* Find last separator */
-    size_t last_sep = len;
-    for (size_t i = len; i > 0; i--) {
-        if (str[i - 1] == path->separator) {
-            last_sep = i - 1;
-            break;
-        }
-    }
-
+    size_t last_sep = find_last_separator(str, len, path->separator);
+    
     /* No separator found */
     if (last_sep == len) {
         return gm_path_new(PATH_CURRENT_DIR);
@@ -303,18 +319,11 @@ gm_result_path_t gm_path_dirname(const gm_path_t *path) {
 
     /* Root directory special case */
     if (last_sep == 0 && path->is_absolute) {
-        char root[2] = {path->separator, '\0'};
-        return gm_path_new(root);
+        return create_root_path(path->separator);
     }
 
     /* Extract directory part */
-    gm_result_string_t dir_result =
-        gm_string_substring(&path->value, 0, last_sep);
-    if (GM_IS_ERR(dir_result)) {
-        return gm_err_path(GM_UNWRAP_ERR(dir_result));
-    }
-
-    return gm_path_from_string(GM_UNWRAP(dir_result));
+    return extract_dirname(path, last_sep);
 }
 
 /* Extract base name */
