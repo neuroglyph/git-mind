@@ -36,17 +36,17 @@ bool gm_string_is_empty(const gm_string_t *str) {
 }
 
 /* Compare strings */
-bool gm_string_equals(const gm_string_t *a, const gm_string_t *b) {
-    if (a == b) {
+bool gm_string_equals(const gm_string_t *str_a, const gm_string_t *str_b) {
+    if (str_a == str_b) {
         return true;
     }
-    if (!a || !b) {
+    if (!str_a || !str_b) {
         return false;
     }
-    if (a->length != b->length) {
+    if (str_a->length != str_b->length) {
         return false;
     }
-    return memcmp(a->data, b->data, a->length) == 0;
+    return memcmp(str_a->data, str_b->data, str_a->length) == 0;
 }
 
 /* Check prefix */

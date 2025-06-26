@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#define _GNU_SOURCE
 #include "gitmind/types/id.h"
 
 #include "gitmind/crypto/random.h"
@@ -20,13 +19,13 @@
 #include <string.h>
 
 /* Compare two IDs */
-bool gm_id_equal(gm_id_t id_a, gm_id_t id_b) {
-    return memcmp(id_a.bytes, id_b.bytes, GM_ID_SIZE) == 0;
+bool gm_id_equal(gm_id_t new_id_a, gm_id_t new_id_b) {
+    return memcmp(id_a.bytes, new_id_b.bytes, GM_ID_SIZE) == 0;
 }
 
 /* Compare IDs for ordering */
-int gm_id_compare(gm_id_t id_a, gm_id_t id_b) {
-    return memcmp(id_a.bytes, id_b.bytes, GM_ID_SIZE);
+int gm_id_compare(gm_id_t new_id_a, gm_id_t new_id_b) {
+    return memcmp(id_a.bytes, new_id_b.bytes, GM_ID_SIZE);
 }
 
 /* SipHash key - initialized once at startup */
@@ -48,7 +47,7 @@ static void init_siphash_key(void) {
     }
 }
 /* Hash function for hash tables using SipHash-2-4 */
-gm_result_u32 gm_id_hash(gm_id_t identifier) {
+gm_result_u32 gm_id_hash(gm_id_t new_identifier) {
     /* Ensure key is initialized exactly once, thread-safe */
     call_once(&g_siphash_key_once, init_siphash_key);
 
@@ -57,7 +56,7 @@ gm_result_u32 gm_id_hash(gm_id_t identifier) {
 
     /* Compute SipHash-2-4 of the ID bytes */
     crypto_shorthash_siphash24(hash_output,      /* output buffer */
-                               identifier.bytes, /* input data */
+                               new_identifier.bytes, /* input data */
                                GM_ID_SIZE,       /* input length */
                                g_siphash_key     /* 128-bit key */
     );
@@ -83,13 +82,13 @@ gm_result_id gm_id_from_data(const void *data, size_t len) {
         return gm_err_id(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL data"));
     }
 
-    gm_id_t id;
-    gm_result_void result = gm_sha256(data, len, id.bytes);
+    gm_id_t new_id;
+    gm_result_void result = gm_sha256(data, len, new_id.bytes);
     if (GM_IS_ERR(result)) {
         return gm_err_id(GM_UNWRAP_ERR(result));
     }
 
-    return (gm_result_id){.ok = true, .u.val = id};
+    return (gm_result_id){.ok = true, .u.val = new_id};
 }
 
 /* Create ID from string */
@@ -102,13 +101,13 @@ gm_result_id gm_id_from_string(const char *str) {
 
 /* Generate random ID */
 gm_result_id gm_id_generate(void) {
-    gm_id_t id;
+    gm_id_t new_id;
     gm_result_void result = gm_random_bytes(id.bytes, GM_ID_SIZE);
     if (GM_IS_ERR(result)) {
         return gm_err_id(GM_UNWRAP_ERR(result));
     }
 
-    return (gm_result_id){.ok = true, .u.val = id};
+    return (gm_result_id){.ok = true, .u.val = new_id};
 }
 
 /* Hex conversion constants */
@@ -119,7 +118,7 @@ gm_result_id gm_id_generate(void) {
 #define HEX_FORMAT_2X "%2x"
 
 /* Convert ID to hex string (safe version with buffer size check) */
-gm_result_void gm_id_to_hex(gm_id_t identifier, char *out, size_t out_size) {
+gm_result_void gm_id_to_hex(gm_id_t new_identifier, char *out, size_t out_size) {
     if (!out) {
         return gm_err_void(
             GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL output buffer"));
@@ -145,8 +144,8 @@ gm_result_void gm_id_to_hex(gm_id_t identifier, char *out, size_t out_size) {
 
 /* Parse hex string to ID */
 gm_result_id gm_id_from_hex(const char *hex) {
-    gm_id_t id;
-    GM_MEMSET_SAFE(&id, sizeof(id), 0, sizeof(id));
+    gm_id_t new_id;
+    GM_MEMSET_SAFE(&new_id, sizeof(new_id), 0, sizeof(new_id));
 
     if (!hex || strlen(hex) != GM_ID_HEX_CHARS) {
         return (gm_result_id){
@@ -166,10 +165,10 @@ gm_result_id gm_id_from_hex(const char *hex) {
                                   "Invalid hex character at position %d",
                                   (int)(i * HEX_CHARS_PER_BYTE))};
         }
-        id.bytes[i] = (uint8_t)byte;
+        new_id.bytes[i] = (uint8_t)byte;
     }
 
-    return (gm_result_id){.ok = true, .u.val = id};
+    return (gm_result_id){.ok = true, .u.val = new_id};
 }
 
 /* Helper to create error result for session ID */

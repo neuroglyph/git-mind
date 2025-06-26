@@ -21,7 +21,7 @@
 #define U32_HIGH_SHIFT 32
 
 /* Test-only mutable state for deterministic behavior */
-static uint32_t test_counter = 0; /* NOLINT(cppcoreguidelines-avoid-non-const-global-variables) */
+static uint32_t test_counter = 0;
 
 /* Test SHA-256 implementation (deterministic) */
 static int test_sha256(const void *data, size_t len,
@@ -92,7 +92,7 @@ static uint64_t test_random_u64(void) {
 }
 
 /* Test backend instance */
-static const gm_crypto_backend_t test_backend = {
+static const gm_crypto_backend_t GM_TEST_BACKEND = {
     .name = "test",
     .sha256_init = test_sha256_init,
     .sha256_update = test_sha256_update,
@@ -108,5 +108,5 @@ static const gm_crypto_backend_t test_backend = {
 const gm_crypto_backend_t *gm_crypto_backend_test(void) {
     /* Reset counter for reproducibility */
     test_counter = 0;
-    return &test_backend;
+    return &GM_TEST_BACKEND;
 }

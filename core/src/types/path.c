@@ -12,8 +12,8 @@
 #include <string.h>
 
 /* Path constants */
-static const char PATH_SEP_UNIX = '/';
-static const char PATH_SEP_WIN = '\\';
+static const char GM_GM_PATH_SEP_UNIX = '/';
+static const char GM_GM_PATH_SEP_WIN = '\\';
 #define PATH_CURRENT_DIR "."
 #define PATH_PARENT_DIR ".."
 
@@ -25,7 +25,7 @@ enum {
 };
 
 /* Path separator character constants */
-static const char SYMLINK_SUFFIX_MACOS = '@';
+static const char GM_SYMLINK_SUFFIX_MACOS = '@';
 #define PATH_ENCODED_PARENT_1 "%2e%2e" /* URL encoded .. */
 #define PATH_ENCODED_PARENT_2 "%2E%2E" /* URL encoded .. */
 #define PATH_ENCODED_DOT_1 "%2e"       /* URL encoded . */
@@ -83,42 +83,42 @@ static const char SYMLINK_SUFFIX_MACOS = '@';
 #define HOMOGLYPH_BOM "\xef\xbb\xbf" /* U+FEFF ZERO WIDTH NO-BREAK SPACE */
 
 /* Helper to create error result for path */
-static inline gm_result_path gm_err_path(gm_error_t *e) {
-    return (gm_result_path){.ok = false, .u.err = e};
+static inline gm_result_path gm_err_path(gm_error_t *err) {
+    return (gm_result_path){.ok = false, .u.err = err};
 }
 
 /* Helper to create success result for path */
-static inline gm_result_path gm_ok_path(gm_path_t p) {
-    return (gm_result_path){.ok = true, .u.val = p};
+static inline gm_result_path gm_ok_path(gm_path_t path) {
+    return (gm_result_path){.ok = true, .u.val = path};
 }
 
 /* Helper to create error result for string */
-static inline gm_result_string gm_err_string(gm_error_t *e) {
-    return (gm_result_string){.ok = false, .u.err = e};
+static inline gm_result_string gm_err_string(gm_error_t *err) {
+    return (gm_result_string){.ok = false, .u.err = err};
 }
 
 /* Detect path separator */
 static char detect_separator(const char *str) {
     /* Look for first separator */
-    const char *unix_sep = strchr(str, PATH_SEP_UNIX);
-    const char *win_sep = strchr(str, PATH_SEP_WIN);
+    const char *unix_sep = strchr(str, GM_PATH_SEP_UNIX);
+    const char *win_sep = strchr(str, GM_PATH_SEP_WIN);
 
     if (unix_sep && !win_sep) {
-        return PATH_SEP_UNIX;
+        return GM_PATH_SEP_UNIX;
     }
     if (win_sep && !unix_sep) {
-        return PATH_SEP_WIN;
+        return GM_PATH_SEP_WIN;
     }
     if (unix_sep && win_sep) {
         /* Use whichever comes first */
-        return (unix_sep < win_sep) ? PATH_SEP_UNIX : PATH_SEP_WIN;
+        return (unix_sep < win_sep) ? GM_PATH_SEP_UNIX : GM_PATH_SEP_WIN;
     }
 
     /* Default to system separator */
 #ifdef _WIN32
-    return PATH_SEP_WIN;
+    return GM_PATH_SEP_WIN;
 #else
-    return PATH_SEP_UNIX;
+    return GM_PATH_SEP_UNIX;
 #endif
 }
 
@@ -128,15 +128,15 @@ static bool is_absolute_path(const char *str, char separator) {
         return false;
     }
 
-    if (separator == PATH_SEP_UNIX) {
-        return str[0] == PATH_SEP_UNIX;
+    if (separator == GM_PATH_SEP_UNIX) {
+        return str[0] == GM_PATH_SEP_UNIX;
     }
 
     /* Windows: C:\ or \\server\share */
-    if (str[0] == PATH_SEP_WIN && str[1] == PATH_SEP_WIN) {
+    if (str[0] == GM_PATH_SEP_WIN && str[1] == GM_PATH_SEP_WIN) {
         return true; /* UNC path */
     }
-    if (str[1] == ':' && str[2] == PATH_SEP_WIN) {
+    if (str[1] == ':' && str[2] == GM_PATH_SEP_WIN) {
         return true; /* Drive letter */
     }
     return false;
@@ -363,13 +363,13 @@ static void free_components(char **components, size_t count) {
 
 /* Count path components */
 static size_t count_path_components(const char *str, char sep) {
-    size_t n = 1;
-    for (const char *p = str; *p; p++) {
-        if (*p == sep) {
-            n++;
+    size_t count = 1;
+    for (const char *ptr = str; *ptr; ptr++) {
+        if (*ptr == sep) {
+            count++;
         }
     }
-    return n;
+    return count;
 }
 
 /* Allocate and copy a single component */
@@ -410,10 +410,10 @@ static gm_result_void split_path_components(const char *str, char sep,
     }
 
     /* Count components */
-    size_t n = count_path_components(str, sep);
+    size_t comp_count = count_path_components(str, sep);
 
     /* Allocate component array */
-    char **comps = (char **)calloc(n + 1, sizeof(char *));
+    char **comps = (char **)calloc(comp_count + 1, sizeof(char *));
     if (!comps) {
         return gm_err_void(
             GM_ERROR(GM_ERR_OUT_OF_MEMORY, ERR_MSG_ALLOC_COMPONENTS));
@@ -422,11 +422,11 @@ static gm_result_void split_path_components(const char *str, char sep,
     /* Split into components */
     size_t idx = 0;
     const char *start = str;
-    const char *p = str;
+    const char *ptr = str;
 
-    while (*p) {
-        if (*p == sep) {
-            size_t len = p - start;
+    while (*ptr) {
+        if (*ptr == sep) {
+            size_t len = ptr - start;
             gm_result_void res =
                 process_path_component(comps, &idx, start, len, idx == 0);
             if (GM_IS_ERR(res)) {
@@ -463,7 +463,7 @@ typedef struct {
 } canonical_context_t;
 
 static bool process_canonical_component(const char *comp,
-                                        canonical_context_t *ctx, size_t i) {
+                                        canonical_context_t *ctx, size_t idx) {
     /* Skip . components */
     if (strcmp(comp, PATH_CURRENT_DIR) == 0) {
         return true;
@@ -477,8 +477,8 @@ static bool process_canonical_component(const char *comp,
             (*ctx->out_idx)--;
         } else if (!ctx->is_absolute) {
             /* Keep .. for relative paths that go above start */
-            ctx->canonical[(*ctx->out_idx)++] = ctx->components[i];
-            ctx->components[i] = NULL; /* Transfer ownership */
+            ctx->canonical[(*ctx->out_idx)++] = ctx->components[idx];
+            ctx->components[idx] = NULL; /* Transfer ownership */
         }
         /* For absolute paths, .. at root is ignored */
         return true;
@@ -688,7 +688,7 @@ static gm_result_void check_symlink_pattern(const char *comp) {
     }
 
     /* Check for @ suffix (macOS Finder symlink indicator) */
-    if (comp_len > 1 && comp[comp_len - 1] == SYMLINK_SUFFIX_MACOS) {
+    if (comp_len > 1 && comp[comp_len - 1] == GM_SYMLINK_SUFFIX_MACOS) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_PATH, ERR_MSG_SYMLINK_AT));
     }
 
@@ -914,7 +914,7 @@ static const struct {
     bool allow_relative;
     bool allow_symlinks;
     bool allow_hidden;
-} DEFAULT_PATH_RULES = {.max_length = GM_PATH_MAX_LENGTH,
+} GM_DEFAULT_PATH_RULES = {.max_length = GM_PATH_MAX_LENGTH,
                         .allow_traversal = false,
                         .allow_absolute = true,
                         .allow_relative = true,
@@ -935,10 +935,10 @@ gm_result_void gm_path_validate(const gm_path_t *path,
     /* Use default rules if none provided */
     /* For now, we use hardcoded defaults since gm_path_rules_t is not yet
      * defined */
-    size_t max_length = DEFAULT_PATH_RULES.max_length;
-    bool allow_traversal = DEFAULT_PATH_RULES.allow_traversal;
-    bool allow_absolute = DEFAULT_PATH_RULES.allow_absolute;
-    bool allow_relative = DEFAULT_PATH_RULES.allow_relative;
+    size_t max_length = GM_DEFAULT_PATH_RULES.max_length;
+    bool allow_traversal = GM_DEFAULT_PATH_RULES.allow_traversal;
+    bool allow_absolute = GM_DEFAULT_PATH_RULES.allow_absolute;
+    bool allow_relative = GM_DEFAULT_PATH_RULES.allow_relative;
 
     /* Suppress unused parameter warning */
     (void)rules;
@@ -972,14 +972,14 @@ gm_result_void gm_path_validate(const gm_path_t *path,
 
     /* Validate path components */
     gm_result_void comp_res = validate_path_components(
-        str, path->separator, DEFAULT_PATH_RULES.allow_hidden,
-        DEFAULT_PATH_RULES.allow_symlinks);
+        str, path->separator, GM_DEFAULT_PATH_RULES.allow_hidden,
+        GM_DEFAULT_PATH_RULES.allow_symlinks);
     if (GM_IS_ERR(comp_res)) {
         return comp_res;
     }
 
     /* Check for full path symlink patterns if not allowed */
-    if (!DEFAULT_PATH_RULES.allow_symlinks &&
+    if (!GM_DEFAULT_PATH_RULES.allow_symlinks &&
         strstr(str, SYMLINK_ARROW_SPACED)) {
         return gm_err_void(
             GM_ERROR(GM_ERR_INVALID_PATH, ERR_MSG_SYMLINK_GENERIC));
@@ -995,8 +995,8 @@ gm_result_void gm_path_validate(const gm_path_t *path,
 /* Check if path contains control characters */
 static bool has_control_chars(const char *str, size_t len) {
     for (size_t i = 0; i < len; i++) {
-        unsigned char c = (unsigned char)str[i];
-        if (c < 0x20 || c == 0x7F) { /* Control chars */
+        unsigned char chr = (unsigned char)str[i];
+        if (chr < 0x20 || chr == 0x7F) { /* Control chars */
             return true;
         }
     }
@@ -1111,17 +1111,17 @@ bool gm_path_has_extension(const gm_path_t *path, const char *ext) {
 }
 
 /* Compare paths */
-bool gm_path_equals(const gm_path_t *a, const gm_path_t *b) {
-    if (a == b) {
+bool gm_path_equals(const gm_path_t *path_a, const gm_path_t *path_b) {
+    if (path_a == path_b) {
         return true;
     }
-    if (!a || !b) {
+    if (!path_a || !path_b) {
         return false;
     }
 
     /* For now, simple string comparison */
     /* Full implementation would canonicalize first */
-    return gm_string_equals(&a->value, &b->value);
+    return gm_string_equals(&path_a->value, &path_b->value);
 }
 
 /* Check if path starts with prefix */
