@@ -29,8 +29,8 @@ typedef struct gm_id {
 GM_RESULT_DEF(gm_result_id, gm_id_t);
 
 /* ID operations */
-bool gm_id_equal(gm_id_t a, gm_id_t b);
-int gm_id_compare(gm_id_t a, gm_id_t b);
+bool gm_id_equal(gm_id_t id_a, gm_id_t id_b);
+int gm_id_compare(gm_id_t id_a, gm_id_t id_b);
 gm_result_u32 gm_id_hash(gm_id_t id);
 
 /* ID creation - all can fail */
