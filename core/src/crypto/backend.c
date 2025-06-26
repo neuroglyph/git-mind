@@ -7,7 +7,9 @@
 #include "gitmind/error.h"
 #include "gitmind/security/memory.h"
 
-#include <sodium.h>
+#include <sodium/crypto_hash_sha256.h>
+#include <sodium/randombytes.h>
+#include <sodium/core.h>
 #include <string.h>
 
 /* Test backend constants */
