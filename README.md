@@ -1,6 +1,6 @@
 # git-mind 🧠
 
-> **⚠️ MAJOR REWRITE IN PROGRESS**: This project is undergoing a complete architectural overhaul. We've reduced warnings from 11,951 to 410 and are migrating to meson/ninja build system. Not production-ready. See [The Great Migration](#the-great-migration) below.
+> **⚠️ MAJOR REWRITE IN PROGRESS**: This project is undergoing a complete architectural overhaul. We've reduced warnings from 11,951 to 353 and are migrating to meson/ninja build system. Not production-ready. See [The Great Migration](#the-great-migration) below.
 
 ## How We Gate Quality
 
@@ -33,7 +33,7 @@ git-mind stores these relationships as Git objects, giving them the same permane
 
 ## 🚧 The Great Migration
 
-**Current Status**: Major progress! Warnings reduced from 11,951 to 410
+**Current Status**: Major progress! Warnings reduced from 11,951 to 353 (97% reduction!)
 
 We're completing the architectural rebuild with modern build tools:
 
@@ -42,7 +42,7 @@ We're completing the architectural rebuild with modern build tools:
   - Strong typedefs for domain concepts ✅
   - Security primitives ✅
   - Migrated to meson/ninja build system ✅
-  - Reduced warnings from 11,951 to 410 ✅
+  - Reduced warnings from 11,951 to 353 ✅
 
 - **Phase 2**: Migrate existing functionality
   - Reimplement each module using new foundations
@@ -65,7 +65,7 @@ See [docs/enforcer/ROADMAP_TO_REFACTORING.md](docs/enforcer/ROADMAP_TO_REFACTORI
 - Tests pass (on legacy code)
 
 ### What's Being Fixed 🔧
-- ~~11,951~~ 410 compiler warnings (96% reduction!)
+- ~~11,951~~ 353 compiler warnings (97% reduction!)
 - Proper error handling with Result types
 - Memory safety improvements
 - Security-first design
@@ -91,14 +91,21 @@ meson setup build
 ninja -C build
 ninja -C build test
 
+# Check warnings (always in Docker for CI parity)
+./tools/docker-clang-tidy.sh
+
+# Verify fixes and update baseline
+./tools/check-warning-fix.sh
+
 # Don't touch src/ - it's quarantined
 # New development happens in core/
 ```
 
 **Important**: 
-- The pre-commit hook blocks changes to `src/` (legacy code)
-- All new development happens in `core/` with zero warnings
-- We're following "touch it = rewrite it completely" rule
+- No pre-push hooks - CI does all validation
+- All new development happens in `core/` with goal of zero warnings
+- We're following "fix the code, not the tool" philosophy
+- Always run linting in Docker to match CI environment
 
 ## The Vision (Unchanged)
 
@@ -131,7 +138,7 @@ This project uses a custom ethical license: `LicenseRef-MIND-UCAL-1.0`
 
 ---
 
-**Bottom line**: git-mind is a tool for versioning your understanding of code. We're rebuilding it properly. Come back in a few months for the good stuff, or join us in eliminating the last 410 warnings. 🎯
+**Bottom line**: git-mind is a tool for versioning your understanding of code. We're rebuilding it properly. Come back in a few months for the good stuff, or join us in eliminating the last 353 warnings. 🎯
 
 For the full vision and technical details, see:
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture

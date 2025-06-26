@@ -7,34 +7,36 @@
 3. **UPDATE this document** as you work - This is your persistent memory
 4. **READ this first** before doing anything in the project
 
-## 📍 Project Status (2025-06-26)
+## 📍 Project Status (2025-06-27)
 
 **git-mind**: A Git-native tool for versioning your understanding of code
-- **Current warnings**: 284 (baseline updated from 141)
-- **Original warnings**: 11,951 → 410 → 284
+- **Current warnings**: 353 (reduced from 401 → 388 → 375 → 363 → 353)
+- **Original warnings**: 11,951 → 410 → 401 → 353
 - **Build system**: meson/ninja (Makefiles deprecated)
 - **Architecture**: Quarantined legacy code in `src/`, clean new code in `core/`
 
 ## 🎯 Current TODO List
 
 ### Immediate Tasks
-- [ ] PR #135 (remove pre-push hooks) - CREATED, waiting to merge
+- [ ] Fix global const warnings in backend.c
 - [ ] Fix naming convention violations for `gm_result_*` typedefs
-- [ ] Add missing direct includes (IWYU compliance)
+- [ ] Fix missing result.h includes (gm_result_void, gm_err_void, etc.)
 - [ ] Reduce function complexity below thresholds
 - [ ] Fix security warnings (unchecked return values)
 
 ### Next Up
-- [ ] Reduce warnings from 284 → 141 → 0
+- [ ] Reduce warnings from 353 → 0
 - [ ] Complete migration of remaining modules from `src/` to `core/`
 - [ ] Add Result types to remaining functions that can fail
 - [ ] Split path.c (1,156 lines) into smaller modules
 
 ### Completed Recently
-- [x] Removed pre-push hook circus (PR #135)
+- [x] Removed pre-push hooks entirely (PR #135 & #140)
 - [x] Disabled macro-to-enum checks for C code
 - [x] Created Docker-based clang-tidy runner
-- [x] Updated warning baseline to unblock CI
+- [x] Replaced all sodium.h with specific headers (26 warnings eliminated)
+- [x] Added all missing stdint.h includes (22 warnings eliminated)
+- [x] Created check-warning-fix.sh script with celebratory messages
 
 ## 🛠️ Development Workflow
 
@@ -51,47 +53,66 @@ ninja -C build test
 ./tools/docker-clang-tidy.sh
 ```
 
+### Warning Fix Procedure
+1. Start from main: `git checkout main && git pull`
+2. Run clang-tidy to see current state: `./tools/docker-clang-tidy.sh`
+3. Pick a warning type to fix: `grep -E "warning:|error:" clang-tidy-report.txt | head -20`
+4. Create appropriately named branch: `git checkout -b fix/specific-warning-type`
+5. Fix the warnings in the code
+6. Verify fix: `./tools/check-warning-fix.sh "optional-warning-pattern"`
+7. See celebration message! 🤩 👍 😱🚨
+8. Stage files INCLUDING baseline: `git add <files> tools/baseline_count.txt`
+9. Suggest commit message and wait for user
+10. Push and wait for merge
+
 ### Key Commands
 - **Build**: `ninja -C build`
 - **Test**: `ninja -C build test`
 - **Clean**: `rm -rf build`
 - **Lint in Docker**: `./tools/docker-clang-tidy.sh`
+- **Check fix & update baseline**: `./tools/check-warning-fix.sh [optional-pattern]`
 
 ### Git Workflow
-1. Work on feature branch
-2. Make changes
-3. **PAUSE** - Suggest commit message
-4. User commits
-5. Push (no pre-push hooks!)
-6. CI validates
+1. `git checkout main && git pull`
+2. **RUN CLANG-TIDY FIRST** to see current warnings
+3. `git checkout -b fix/descriptive-name` based on warnings found
+4. Make changes to eliminate specific warnings
+5. Run `./tools/check-warning-fix.sh` to verify fix
+6. **PAUSE** - Suggest commit message
+7. User commits
+8. Push (git config push.autoSetupRemote enabled)
+9. CI validates
 
 ## 📂 Project Structure
 
 ```
 git-mind/
-├── core/           # New clean code (284 warnings)
+├── core/           # New clean code (353 warnings)
 │   ├── src/        # Implementation
 │   ├── include/    # Headers
 │   └── tests/      # Unit tests
 ├── src/            # Legacy code (11,951 warnings - DO NOT TOUCH)
 ├── tools/          # Build and CI tools
-│   ├── baseline_count.txt    # Current: 284
-│   └── docker-clang-tidy.sh  # Run linting in CI environment
+│   ├── baseline_count.txt      # Current: 353
+│   ├── docker-clang-tidy.sh    # Run linting in CI environment
+│   └── check-warning-fix.sh    # Verify fixes & celebrate progress
 └── quality/        # Linting configs
     └── .clang-tidy # Strict checks (macro-to-enum disabled)
 ```
 
 ## 🚧 Known Issues
 
-### Clang-tidy Warnings (284 total)
-1. **Naming violations** (~112): `gm_result_*` typedef case style
-2. **Missing includes** (~90): IWYU compliance needed
-3. **Function complexity** (~8): Exceeds size/cognitive thresholds
-4. **Security** (~20): Unchecked return values (cert-err33-c)
-5. **Misc** (~54): Global variables, unused parameters, etc.
+### Clang-tidy Warnings (353 total)
+1. **Global variables** (~20): Non-const globals that should be const
+2. **Missing includes** (~150): IWYU compliance (result.h, stdarg.h, etc.)
+3. **Naming violations** (~112): `gm_result_*` typedef case style
+4. **Function complexity** (~8): Exceeds size/cognitive thresholds
+5. **Security** (~20): Unchecked return values (cert-err33-c)
+6. **Parameter naming** (~30): Short names like 'a', 'b', 'id'
+7. **Misc** (~13): Recursion warnings, cognitive complexity
 
 ### CI Status
-- **c_core.yml**: Uses baseline_count.txt (284)
+- **c_core.yml**: Uses baseline_count.txt (353)
 - **core-quality.yml**: Runs full quality checks
 - Coverage: 83.1% line, 54.1% branch (needs 70% branch)
 
@@ -113,25 +134,29 @@ git-mind/
 
 ## 🔄 Handoff Notes
 
-**Last Session Summary** (2025-06-26):
-- Removed pre-push hook complexity after 8+ hours of Docker/path issues
-- Updated baseline from 141 → 284 after disabling C++ specific checks
-- Created Docker-based tooling to match CI environment exactly
-- CI hasn't passed in days - focus on getting it green
+**Last Session Summary** (2025-06-27):
+- Eliminated all sodium.h warnings by using specific headers
+- Fixed all stdint.h missing include warnings 
+- Created check-warning-fix.sh script with celebratory emojis
+- Reduced warnings from 401 → 353 (48 warnings eliminated!)
+- Learned: Always run clang-tidy BEFORE naming branches
 
 **Next Steps**:
-1. Wait for PR #135 to merge
-2. Start systematic warning reduction
-3. Focus on easy wins: naming conventions, missing includes
-4. Keep this document updated as source of truth
+1. Fix global const warnings in backend.c
+2. Add missing result.h includes for error handling
+3. Fix parameter naming violations (3+ character names)
+4. Continue systematic warning reduction to zero
 
 ## 💡 Tips for Next Claude
 
 1. **Always run linting in Docker**: `./tools/docker-clang-tidy.sh`
 2. **Never trust local clang-tidy**: macOS vs Linux = different results
-3. **Update baseline_count.txt** when making progress
+3. **Use check-warning-fix.sh**: It updates baseline & celebrates!
 4. **Check CI logs**: `gh run list --workflow=c_core.yml`
 5. **This is your memory**: Update TODO list after every task
+6. **Run clang-tidy FIRST**: See warnings before naming branches
+7. **Some warnings are false positives**: But fix the code, not the tool
+8. **Update baseline with EVERY commit**: Track progress accurately
 
 ---
 *Remember: You're fixing 20 years of technical debt. Every warning removed is a victory.*

@@ -18,7 +18,7 @@ static void test_backend_switch(void) {
     assert(GM_IS_OK(init_result));
 
     /* Default should be libsodium */
-    gm_crypto_backend_t *backend = gm_crypto_get_backend();
+    const gm_crypto_backend_t *backend = gm_crypto_get_backend();
     assert(backend != NULL);
     assert(strcmp(backend->name, "libsodium") == 0);
 
@@ -112,7 +112,7 @@ static void test_deterministic_random(void) {
 /* Test streaming hash with backend */
 static void test_streaming_hash(void) {
     /* Test with both backends */
-    gm_crypto_backend_t *backends[] = {gm_crypto_backend_libsodium(),
+    const gm_crypto_backend_t *backends[] = {gm_crypto_backend_libsodium(),
                                        gm_crypto_backend_test()};
 
     for (int i = 0; i < 2; i++) {

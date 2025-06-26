@@ -19,7 +19,7 @@ gm_result_void gm_random_bytes(void *buf, size_t size) {
         return gm_ok_void();
     }
 
-    gm_crypto_backend_t *backend = gm_crypto_get_backend();
+    const gm_crypto_backend_t *backend = gm_crypto_get_backend();
 
     /* Use backend if available */
     if (backend && backend->random_bytes) {
@@ -33,7 +33,7 @@ gm_result_void gm_random_bytes(void *buf, size_t size) {
 }
 
 gm_result_u32 gm_random_u32(void) {
-    gm_crypto_backend_t *backend = gm_crypto_get_backend();
+    const gm_crypto_backend_t *backend = gm_crypto_get_backend();
 
     /* Use backend if available */
     if (backend && backend->random_u32) {
@@ -45,7 +45,7 @@ gm_result_u32 gm_random_u32(void) {
 }
 
 gm_result_u64 gm_random_u64(void) {
-    gm_crypto_backend_t *backend = gm_crypto_get_backend();
+    const gm_crypto_backend_t *backend = gm_crypto_get_backend();
 
     /* Use backend if available */
     if (backend && backend->random_u64) {

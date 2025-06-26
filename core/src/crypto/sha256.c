@@ -26,7 +26,7 @@ gm_result_void gm_sha256(const void *data, size_t len,
             GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL output buffer"));
     }
 
-    gm_crypto_backend_t *backend = gm_crypto_get_backend();
+    const gm_crypto_backend_t *backend = gm_crypto_get_backend();
 
     /* Use backend if available */
     if (backend && backend->sha256) {
@@ -44,7 +44,7 @@ gm_result_void gm_sha256_init(gm_sha256_ctx_t *ctx) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL context"));
     }
 
-    gm_crypto_backend_t *backend = gm_crypto_get_backend();
+    const gm_crypto_backend_t *backend = gm_crypto_get_backend();
 
     /* Use backend if available */
     if (backend && backend->sha256_init) {
@@ -68,7 +68,7 @@ gm_result_void gm_sha256_update(gm_sha256_ctx_t *ctx, const void *data,
                                     "NULL data with non-zero length"));
     }
 
-    gm_crypto_backend_t *backend = gm_crypto_get_backend();
+    const gm_crypto_backend_t *backend = gm_crypto_get_backend();
 
     /* Use backend if available */
     if (backend && backend->sha256_update) {
@@ -92,7 +92,7 @@ gm_result_void gm_sha256_final(gm_sha256_ctx_t *ctx,
             GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL output buffer"));
     }
 
-    gm_crypto_backend_t *backend = gm_crypto_get_backend();
+    const gm_crypto_backend_t *backend = gm_crypto_get_backend();
 
     /* Use backend if available */
     if (backend && backend->sha256_final) {

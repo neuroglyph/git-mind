@@ -35,6 +35,16 @@ libgitmind = static_library(
   dependencies : [libsodium_dep, thread_dep]
 )
 
+# Test backend - ONLY for tests
+test_backend_src = files('core/tests/backends/test_backend.c')
+test_backend_lib = static_library(
+  'gitmind_test_backend',
+  test_backend_src,
+  include_directories : inc,
+  dependencies : [libsodium_dep],
+  c_args : ['-DGITMIND_ENABLE_TEST_BACKEND']
+)
+
 # Individual test executables (matching original Makefile)
 test_error = executable('test_error',
   'core/tests/unit/test_error.c',
@@ -69,14 +79,16 @@ test_path = executable('test_path',
 test_sha256 = executable('test_sha256',
   'core/tests/unit/test_sha256.c',
   include_directories : inc,
-  link_with : libgitmind,
-  dependencies : [libsodium_dep, thread_dep])
+  link_with : [libgitmind, test_backend_lib],
+  dependencies : [libsodium_dep, thread_dep],
+  c_args : ['-DGITMIND_ENABLE_TEST_BACKEND'])
 
 test_random = executable('test_random',
   'core/tests/unit/test_random.c',
   include_directories : inc,
-  link_with : libgitmind,
-  dependencies : [libsodium_dep, thread_dep])
+  link_with : [libgitmind, test_backend_lib],
+  dependencies : [libsodium_dep, thread_dep],
+  c_args : ['-DGITMIND_ENABLE_TEST_BACKEND'])
 
 test_utf8 = executable('test_utf8',
   'core/tests/unit/test_utf8.c',
@@ -87,8 +99,9 @@ test_utf8 = executable('test_utf8',
 test_crypto_backend = executable('test_crypto_backend',
   'core/tests/unit/test_crypto_backend.c',
   include_directories : inc,
-  link_with : libgitmind,
-  dependencies : [libsodium_dep, thread_dep])
+  link_with : [libgitmind, test_backend_lib],
+  dependencies : [libsodium_dep, thread_dep],
+  c_args : ['-DGITMIND_ENABLE_TEST_BACKEND'])
 
 # Register tests
 test('error', test_error)
