@@ -44,8 +44,8 @@ docker run --rm -v "$PWD":/workspace -w /workspace $IMAGE bash -c '
         $(git ls-files "core/**/*.c" "core/**/*.h") \
         | tee clang-tidy-report-full.txt || true
     
-    # Filter to just project warnings
-    grep -E "^/.*core/|^core/" clang-tidy-report-full.txt > clang-tidy-report.txt || true
+    # Filter to just project warnings (handles both absolute /workspace/core/ and relative ../core/ paths)
+    grep -E "^/.*core/|^core/|^\.\./core/" clang-tidy-report-full.txt > clang-tidy-report.txt || true
     
     # Count warnings
     echo ""
