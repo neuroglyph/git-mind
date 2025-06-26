@@ -26,8 +26,8 @@ static size_t next_capacity(size_t current, size_t needed) {
 }
 
 /* Helper to create error result for string */
-static inline gm_result_string gm_err_string(gm_error_t *e) {
-    return (gm_result_string){.ok = false, .u.err = e};
+static inline gm_result_string gm_err_string(gm_error_t *err) {
+    return (gm_result_string){.ok = false, .u.err = err};
 }
 
 /* Create new string from C string */
@@ -40,42 +40,42 @@ gm_result_string gm_string_new(const char *str) {
 
 /* Create new string with specific length */
 gm_result_string gm_string_new_n(const char *str, size_t len) {
-    gm_string_t s;
-    s.length = len;
-    s.capacity = len + 1; /* +1 for null terminator */
+    gm_string_t new_str;
+    new_str.length = len;
+    new_str.capacity = len + 1; /* +1 for null terminator */
 
-    s.data = malloc(s.capacity);
-    if (!s.data) {
+    new_str.data = malloc(new_str.capacity);
+    if (!new_str.data) {
         return (gm_result_string){
             .ok = false,
             .u.err = GM_ERROR(GM_ERR_OUT_OF_MEMORY,
-                              "Failed to allocate %zu bytes", s.capacity)};
+                              "Failed to allocate %zu bytes", new_str.capacity)};
     }
 
     if (str && len > 0) {
-        GM_MEMCPY_SAFE(s.data, s.capacity, str, len);
+        GM_MEMCPY_SAFE(new_str.data, new_str.capacity, str, len);
     }
-    s.data[len] = '\0';
+    new_str.data[len] = '\0';
 
-    return (gm_result_string){.ok = true, .u.val = s};
+    return (gm_result_string){.ok = true, .u.val = new_str};
 }
 
 /* Create string with pre-allocated capacity */
 gm_result_string gm_string_with_capacity(size_t capacity) {
-    gm_string_t s;
-    s.length = 0;
-    s.capacity = capacity > 0 ? capacity : MIN_CAPACITY;
+    gm_string_t new_str;
+    new_str.length = 0;
+    new_str.capacity = capacity > 0 ? capacity : MIN_CAPACITY;
 
-    s.data = malloc(s.capacity);
-    if (!s.data) {
+    new_str.data = malloc(new_str.capacity);
+    if (!new_str.data) {
         return (gm_result_string){
             .ok = false,
             .u.err = GM_ERROR(GM_ERR_OUT_OF_MEMORY,
-                              "Failed to allocate %zu bytes", s.capacity)};
+                              "Failed to allocate %zu bytes", new_str.capacity)};
     }
 
-    s.data[0] = '\0';
-    return (gm_result_string){.ok = true, .u.val = s};
+    new_str.data[0] = '\0';
+    return (gm_result_string){.ok = true, .u.val = new_str};
 }
 
 /* Create string from owned buffer */
@@ -87,12 +87,12 @@ gm_result_string gm_string_from_owned(char *str, size_t len, size_t capacity) {
                               "Invalid owned string parameters")};
     }
 
-    gm_string_t s;
-    s.data = str;
-    s.length = len;
-    s.capacity = capacity;
+    gm_string_t new_str;
+    new_str.data = str;
+    new_str.length = len;
+    new_str.capacity = capacity;
 
-    return (gm_result_string){.ok = true, .u.val = s};
+    return (gm_result_string){.ok = true, .u.val = new_str};
 }
 
 /* Copy string */
@@ -104,9 +104,9 @@ gm_result_string gm_string_copy(const gm_string_t *str) {
 }
 
 /* Concatenate strings */
-gm_result_string gm_string_concat(const gm_string_t *a, const gm_string_t *b) {
-    size_t len_a = a ? a->length : 0;
-    size_t len_b = b ? b->length : 0;
+gm_result_string gm_string_concat(const gm_string_t *str_a, const gm_string_t *str_b) {
+    size_t len_a = str_a ? str_a->length : 0;
+    size_t len_b = str_b ? str_b->length : 0;
     size_t total = len_a + len_b;
 
     gm_result_string result = gm_string_with_capacity(total + 1);
@@ -114,17 +114,17 @@ gm_result_string gm_string_concat(const gm_string_t *a, const gm_string_t *b) {
         return result;
     }
 
-    gm_string_t s = GM_UNWRAP(result);
-    if (a && len_a > 0) {
-        GM_MEMCPY_SAFE(s.data, s.capacity, a->data, len_a);
+    gm_string_t concat_str = GM_UNWRAP(result);
+    if (str_a && len_a > 0) {
+        GM_MEMCPY_SAFE(concat_str.data, concat_str.capacity, str_a->data, len_a);
     }
-    if (b && len_b > 0) {
-        GM_MEMCPY_SAFE(s.data + len_a, s.capacity - len_a, b->data, len_b);
+    if (str_b && len_b > 0) {
+        GM_MEMCPY_SAFE(concat_str.data + len_a, concat_str.capacity - len_a, str_b->data, len_b);
     }
-    s.data[total] = '\0';
-    s.length = total;
+    concat_str.data[total] = '\0';
+    concat_str.length = total;
 
-    return (gm_result_string){.ok = true, .u.val = s};
+    return (gm_result_string){.ok = true, .u.val = concat_str};
 }
 
 /* Append to string */

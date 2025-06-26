@@ -18,10 +18,10 @@
 #define U32_HIGH_SHIFT 32
 
 /* Forward declaration for default backend */
-static const gm_crypto_backend_t libsodium_backend;
+static const gm_crypto_backend_t GM_LIBSODIUM_BACKEND;
 
 /* Global backend instance - mutable to allow runtime backend switching */
-static const gm_crypto_backend_t *g_backend = &libsodium_backend; /* NOLINT(cppcoreguidelines-avoid-non-const-global-variables) */
+static const gm_crypto_backend_t *g_backend = &GM_LIBSODIUM_BACKEND;
 
 /* Libsodium backend implementation */
 static int libsodium_sha256_init(gm_sha256_ctx_t *ctx) {
@@ -62,7 +62,7 @@ static uint64_t libsodium_random_u64(void) {
 }
 
 /* Libsodium backend instance */
-static const gm_crypto_backend_t libsodium_backend = {
+static const gm_crypto_backend_t GM_LIBSODIUM_BACKEND = {
     .name = "libsodium",
     .sha256_init = libsodium_sha256_init,
     .sha256_update = libsodium_sha256_update,
@@ -75,7 +75,7 @@ static const gm_crypto_backend_t libsodium_backend = {
 
 /* Get libsodium backend */
 const gm_crypto_backend_t *gm_crypto_backend_libsodium(void) {
-    return &libsodium_backend;
+    return &GM_LIBSODIUM_BACKEND;
 }
 
 
@@ -120,7 +120,7 @@ gm_result_void gm_crypto_init(void) {
 
     /* Set default backend if none set */
     if (!g_backend) {
-        gm_result_backend result = gm_crypto_set_backend(&libsodium_backend);
+        gm_result_backend result = gm_crypto_set_backend(&GM_LIBSODIUM_BACKEND);
         if (GM_IS_ERR(result)) {
             return gm_err_void(GM_UNWRAP_ERR(result));
         }

@@ -29,7 +29,7 @@ typedef struct gm_error gm_error_t;
             T val;                                                             \
             gm_error_t *err;                                                   \
         } u;                                                                   \
-    } name
+    } name##_t
 
 /* Define standard result types */
 GM_RESULT_DEF(gm_result_void, int); /* int is dummy for void case */
