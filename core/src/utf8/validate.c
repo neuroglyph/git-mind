@@ -17,6 +17,8 @@
 
 #include "gitmind/utf8/validate.h"
 
+#include <stdint.h>
+
 /* DFA states */
 #define UTF8_ACCEPT 0
 #define UTF8_REJECT 12

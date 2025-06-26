@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include <sodium/crypto_shorthash_siphash24.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 

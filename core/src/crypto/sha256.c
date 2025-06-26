@@ -8,6 +8,7 @@
 
 #include <assert.h>
 #include <sodium/crypto_hash_sha256.h>
+#include <stdint.h>
 #include <string.h>
 
 /* Ensure our context size is sufficient */

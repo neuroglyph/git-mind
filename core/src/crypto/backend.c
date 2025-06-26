@@ -10,6 +10,7 @@
 #include <sodium/crypto_hash_sha256.h>
 #include <sodium/randombytes.h>
 #include <sodium/core.h>
+#include <stdint.h>
 #include <string.h>
 
 /* Test backend constants */
