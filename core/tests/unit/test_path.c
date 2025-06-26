@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#include "gitmind/error.h"
+#include "gitmind/result.h"
 #include "gitmind/types/path.h"
 
 #include <assert.h>

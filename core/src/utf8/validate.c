@@ -17,6 +17,7 @@
 
 #include "gitmind/utf8/validate.h"
 
+#include <stddef.h>
 #include <stdint.h>
 
 /* DFA states */

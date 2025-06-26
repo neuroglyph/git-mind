@@ -5,6 +5,7 @@
 #include "gitmind/crypto/random.h"
 #include "gitmind/crypto/sha256.h"
 #include "gitmind/error.h"
+#include "gitmind/result.h"
 
 #include <assert.h>
 #include <stdint.h>

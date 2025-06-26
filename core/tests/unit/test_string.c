@@ -2,6 +2,7 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind/error.h"
+#include "gitmind/result.h"
 #include "gitmind/types/string.h"
 
 #include <assert.h>
