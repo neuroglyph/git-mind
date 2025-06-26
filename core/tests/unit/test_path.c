@@ -11,7 +11,7 @@
 /* Test path creation */
 static void test_path_new(void) {
     /* Basic path */
-    gm_result_path result = gm_path_new("/usr/local/bin");
+    gm_result_path_t result = gm_path_new("/usr/local/bin");
     assert(GM_IS_OK(result));
 
     gm_path_t path = GM_UNWRAP(result);
@@ -55,8 +55,8 @@ static void test_path_new(void) {
 
 /* Test path joining */
 static void test_path_join(void) {
-    gm_result_path base_result = gm_path_new("/home/user");
-    gm_result_path rel_result = gm_path_new("documents/file.txt");
+    gm_result_path_t base_result = gm_path_new("/home/user");
+    gm_result_path_t rel_result = gm_path_new("documents/file.txt");
 
     assert(GM_IS_OK(base_result) && GM_IS_OK(rel_result));
 
@@ -64,7 +64,7 @@ static void test_path_join(void) {
     gm_path_t rel = GM_UNWRAP(rel_result);
 
     /* Join paths */
-    gm_result_path joined_result = gm_path_join(&base, &rel);
+    gm_result_path_t joined_result = gm_path_join(&base, &rel);
     assert(GM_IS_OK(joined_result));
 
     gm_path_t joined = GM_UNWRAP(joined_result);
@@ -116,12 +116,12 @@ static void test_path_join(void) {
 /* Test dirname extraction */
 static void test_path_dirname(void) {
     /* Normal path */
-    gm_result_path result = gm_path_new("/home/user/file.txt");
+    gm_result_path_t result = gm_path_new("/home/user/file.txt");
     assert(GM_IS_OK(result));
 
     gm_path_t path = GM_UNWRAP(result);
 
-    gm_result_path dir_result = gm_path_dirname(&path);
+    gm_result_path_t dir_result = gm_path_dirname(&path);
     assert(GM_IS_OK(dir_result));
 
     gm_path_t dir = GM_UNWRAP(dir_result);
@@ -164,12 +164,12 @@ static void test_path_dirname(void) {
 /* Test basename extraction */
 static void test_path_basename(void) {
     /* Normal path */
-    gm_result_path result = gm_path_new("/home/user/file.txt");
+    gm_result_path_t result = gm_path_new("/home/user/file.txt");
     assert(GM_IS_OK(result));
 
     gm_path_t path = GM_UNWRAP(result);
 
-    gm_result_path base_result = gm_path_basename(&path);
+    gm_result_path_t base_result = gm_path_basename(&path);
     assert(GM_IS_OK(base_result));
 
     gm_path_t base = GM_UNWRAP(base_result);
@@ -212,7 +212,7 @@ static void test_path_basename(void) {
 /* Test path safety checks */
 static void test_path_safety(void) {
     /* Safe paths */
-    gm_result_path result = gm_path_new("/home/user/docs");
+    gm_result_path_t result = gm_path_new("/home/user/docs");
     assert(GM_IS_OK(result));
     gm_path_t path = GM_UNWRAP(result);
     assert(gm_path_is_safe(&path));
@@ -242,7 +242,7 @@ static void test_path_safety(void) {
 
 /* Test path extensions */
 static void test_path_extension(void) {
-    gm_result_path result = gm_path_new("document.pdf");
+    gm_result_path_t result = gm_path_new("document.pdf");
     assert(GM_IS_OK(result));
 
     gm_path_t path = GM_UNWRAP(result);
@@ -275,9 +275,9 @@ static void test_path_extension(void) {
 
 /* Test path comparison */
 static void test_path_compare(void) {
-    gm_result_path r1 = gm_path_new("/home/user");
-    gm_result_path r2 = gm_path_new("/home/user");
-    gm_result_path r3 = gm_path_new("/home/other");
+    gm_result_path_t r1 = gm_path_new("/home/user");
+    gm_result_path_t r2 = gm_path_new("/home/user");
+    gm_result_path_t r3 = gm_path_new("/home/other");
 
     assert(GM_IS_OK(r1) && GM_IS_OK(r2) && GM_IS_OK(r3));
 
@@ -289,7 +289,7 @@ static void test_path_compare(void) {
     assert(!gm_path_equals(&p1, &p3));
 
     /* Prefix check */
-    gm_result_path r4 = gm_path_new("/home/user/documents");
+    gm_result_path_t r4 = gm_path_new("/home/user/documents");
     assert(GM_IS_OK(r4));
     gm_path_t p4 = GM_UNWRAP(r4);
 
@@ -311,13 +311,13 @@ static void test_path_compare(void) {
 
 /* Test canonicalization */
 static void test_path_canonicalize(void) {
-    gm_result_path result = gm_path_new("/home/user/./documents");
+    gm_result_path_t result = gm_path_new("/home/user/./documents");
     assert(GM_IS_OK(result));
 
     gm_path_t path = GM_UNWRAP(result);
     assert(path.state == GM_PATH_STATE_RAW);
 
-    gm_result_path canon_result = gm_path_canonicalize(&path);
+    gm_result_path_t canon_result = gm_path_canonicalize(&path);
     assert(GM_IS_OK(canon_result));
 
     gm_path_t canon = GM_UNWRAP(canon_result);

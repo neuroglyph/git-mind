@@ -12,7 +12,7 @@
 
 /* Test string creation */
 static void test_string_new(void) {
-    gm_result_string result = gm_string_new("hello world");
+    gm_result_string_t result = gm_string_new("hello world");
     assert(GM_IS_OK(result));
 
     gm_string_t str = GM_UNWRAP(result);
@@ -26,7 +26,7 @@ static void test_string_new(void) {
 
 /* Test empty string */
 static void test_string_empty(void) {
-    gm_result_string result = gm_string_new("");
+    gm_result_string_t result = gm_string_new("");
     assert(GM_IS_OK(result));
 
     gm_string_t str = GM_UNWRAP(result);
@@ -40,13 +40,13 @@ static void test_string_empty(void) {
 
 /* Test string append */
 static void test_string_append(void) {
-    gm_result_string result = gm_string_new("hello");
+    gm_result_string_t result = gm_string_new("hello");
     assert(GM_IS_OK(result));
 
     gm_string_t str = GM_UNWRAP(result);
 
     /* Append string */
-    gm_result_void append_result = gm_string_append(&str, " world");
+    gm_result_void_t append_result = gm_string_append(&str, " world");
     assert(GM_IS_OK(append_result));
 
     assert(strcmp(str.data, "hello world") == 0);
@@ -71,7 +71,7 @@ static void test_string_view(void) {
     assert(memcmp(view.data, "hello world", 11) == 0);
 
     /* View from owned string */
-    gm_result_string result = gm_string_new("test string");
+    gm_result_string_t result = gm_string_new("test string");
     assert(GM_IS_OK(result));
 
     gm_string_t str = GM_UNWRAP(result);
@@ -90,9 +90,9 @@ static void test_string_view(void) {
 
 /* Test string comparison */
 static void test_string_compare(void) {
-    gm_result_string r1 = gm_string_new("hello");
-    gm_result_string r2 = gm_string_new("hello");
-    gm_result_string r3 = gm_string_new("world");
+    gm_result_string_t r1 = gm_string_new("hello");
+    gm_result_string_t r2 = gm_string_new("hello");
+    gm_result_string_t r3 = gm_string_new("world");
 
     assert(GM_IS_OK(r1) && GM_IS_OK(r2) && GM_IS_OK(r3));
 
@@ -117,15 +117,15 @@ static void test_string_compare(void) {
 
 /* Test string concatenation */
 static void test_string_concat(void) {
-    gm_result_string r1 = gm_string_new("hello");
-    gm_result_string r2 = gm_string_new(" world");
+    gm_result_string_t r1 = gm_string_new("hello");
+    gm_result_string_t r2 = gm_string_new(" world");
 
     assert(GM_IS_OK(r1) && GM_IS_OK(r2));
 
     gm_string_t s1 = GM_UNWRAP(r1);
     gm_string_t s2 = GM_UNWRAP(r2);
 
-    gm_result_string result = gm_string_concat(&s1, &s2);
+    gm_result_string_t result = gm_string_concat(&s1, &s2);
     assert(GM_IS_OK(result));
 
     gm_string_t concat = GM_UNWRAP(result);
@@ -140,11 +140,11 @@ static void test_string_concat(void) {
 
 /* Test UTF-8 validation */
 static void test_string_utf8(void) {
-    gm_result_string result = gm_string_new("valid utf-8");
+    gm_result_string_t result = gm_string_new("valid utf-8");
     assert(GM_IS_OK(result));
 
     gm_string_t str = GM_UNWRAP(result);
-    gm_result_void valid = gm_string_validate_utf8(&str);
+    gm_result_void_t valid = gm_string_validate_utf8(&str);
     assert(GM_IS_OK(valid));
 
     /* Test with invalid UTF-8 (continuation byte as start) */
@@ -159,13 +159,13 @@ static void test_string_utf8(void) {
 
 /* Test substring extraction */
 static void test_string_substring(void) {
-    gm_result_string result = gm_string_new("hello world");
+    gm_result_string_t result = gm_string_new("hello world");
     assert(GM_IS_OK(result));
 
     gm_string_t str = GM_UNWRAP(result);
 
     /* Extract "world" */
-    gm_result_string sub_result = gm_string_substring(&str, 6, 5);
+    gm_result_string_t sub_result = gm_string_substring(&str, 6, 5);
     assert(GM_IS_OK(sub_result));
     gm_string_t sub = GM_UNWRAP(sub_result);
     assert(strcmp(sub.data, "world") == 0);
@@ -224,12 +224,12 @@ static void test_string_trim(void) {
                               ""};
 
     for (int i = 0; test_cases[i] != NULL; i++) {
-        gm_result_string result = gm_string_new(test_cases[i]);
+        gm_result_string_t result = gm_string_new(test_cases[i]);
         assert(GM_IS_OK(result));
 
         gm_string_t str = GM_UNWRAP(result);
 
-        gm_result_string trim_result = gm_string_trim(&str);
+        gm_result_string_t trim_result = gm_string_trim(&str);
         assert(GM_IS_OK(trim_result));
 
         gm_string_t trimmed = GM_UNWRAP(trim_result);
@@ -240,7 +240,7 @@ static void test_string_trim(void) {
     }
 
     /* Test NULL string */
-    gm_result_string trim_result = gm_string_trim(NULL);
+    gm_result_string_t trim_result = gm_string_trim(NULL);
     assert(GM_IS_ERR(trim_result));
     gm_error_free(GM_UNWRAP_ERR(trim_result));
 

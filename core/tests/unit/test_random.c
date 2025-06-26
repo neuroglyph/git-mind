@@ -19,10 +19,10 @@ static void test_random_bytes(void) {
     uint8_t buf2[RANDOM_TEST_SIZE];
 
     /* Generate two random buffers */
-    gm_result_void result1 = gm_random_bytes(buf1, sizeof(buf1));
+    gm_result_void_t result1 = gm_random_bytes(buf1, sizeof(buf1));
     assert(GM_IS_OK(result1));
 
-    gm_result_void result2 = gm_random_bytes(buf2, sizeof(buf2));
+    gm_result_void_t result2 = gm_random_bytes(buf2, sizeof(buf2));
     assert(GM_IS_OK(result2));
 
     /* They should be different (probability of collision is negligible) */
@@ -34,12 +34,12 @@ static void test_random_bytes(void) {
     assert(memcmp(buf2, zeros, sizeof(buf2)) != 0);
 
     /* Test error case - NULL buffer */
-    gm_result_void err_result = gm_random_bytes(NULL, 10);
+    gm_result_void_t err_result = gm_random_bytes(NULL, 10);
     assert(GM_IS_ERR(err_result));
     gm_error_free(GM_UNWRAP_ERR(err_result));
 
     /* Test zero size - should succeed but do nothing */
-    gm_result_void zero_result = gm_random_bytes(buf1, 0);
+    gm_result_void_t zero_result = gm_random_bytes(buf1, 0);
     assert(GM_IS_OK(zero_result));
 
     printf("✓ test_random_bytes\n");
@@ -51,7 +51,7 @@ static void test_random_u32(void) {
 
     /* Generate multiple random values */
     for (int i = 0; i < RANDOM_TEST_ITERATIONS; i++) {
-        gm_result_u32 result = gm_random_u32();
+        gm_result_u32_t result = gm_random_u32();
         assert(GM_IS_OK(result));
         values[i] = GM_UNWRAP(result);
     }
@@ -78,11 +78,11 @@ static void test_random_u32(void) {
 
 /* Test random u64 generation */
 static void test_random_u64(void) {
-    gm_result_u64 result1 = gm_random_u64();
+    gm_result_u64_t result1 = gm_random_u64();
     assert(GM_IS_OK(result1));
     uint64_t val1 = GM_UNWRAP(result1);
 
-    gm_result_u64 result2 = gm_random_u64();
+    gm_result_u64_t result2 = gm_random_u64();
     assert(GM_IS_OK(result2));
     uint64_t val2 = GM_UNWRAP(result2);
 
@@ -100,7 +100,7 @@ static void test_random_u64(void) {
 static void test_entropy_quality(void) {
     /* Generate a larger buffer */
     uint8_t buf[1024];
-    gm_result_void result = gm_random_bytes(buf, sizeof(buf));
+    gm_result_void_t result = gm_random_bytes(buf, sizeof(buf));
     assert(GM_IS_OK(result));
 
     /* Count bit distribution */

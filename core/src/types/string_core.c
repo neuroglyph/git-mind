@@ -26,12 +26,12 @@ static size_t next_capacity(size_t current, size_t needed) {
 }
 
 /* Helper to create error result for string */
-static inline gm_result_string gm_err_string(gm_error_t *err) {
-    return (gm_result_string){.ok = false, .u.err = err};
+static inline gm_result_string_t gm_err_string(gm_error_t *err) {
+    return (gm_result_string_t){.ok = false, .u.err = err};
 }
 
 /* Create new string from C string */
-gm_result_string gm_string_new(const char *str) {
+gm_result_string_t gm_string_new(const char *str) {
     if (!str) {
         return gm_string_new_n("", 0);
     }
@@ -39,14 +39,14 @@ gm_result_string gm_string_new(const char *str) {
 }
 
 /* Create new string with specific length */
-gm_result_string gm_string_new_n(const char *str, size_t len) {
+gm_result_string_t gm_string_new_n(const char *str, size_t len) {
     gm_string_t new_str;
     new_str.length = len;
     new_str.capacity = len + 1; /* +1 for null terminator */
 
     new_str.data = malloc(new_str.capacity);
     if (!new_str.data) {
-        return (gm_result_string){
+        return (gm_result_string_t){
             .ok = false,
             .u.err = GM_ERROR(GM_ERR_OUT_OF_MEMORY,
                               "Failed to allocate %zu bytes", new_str.capacity)};
@@ -57,31 +57,31 @@ gm_result_string gm_string_new_n(const char *str, size_t len) {
     }
     new_str.data[len] = '\0';
 
-    return (gm_result_string){.ok = true, .u.val = new_str};
+    return (gm_result_string_t){.ok = true, .u.val = new_str};
 }
 
 /* Create string with pre-allocated capacity */
-gm_result_string gm_string_with_capacity(size_t capacity) {
+gm_result_string_t gm_string_with_capacity(size_t capacity) {
     gm_string_t new_str;
     new_str.length = 0;
     new_str.capacity = capacity > 0 ? capacity : MIN_CAPACITY;
 
     new_str.data = malloc(new_str.capacity);
     if (!new_str.data) {
-        return (gm_result_string){
+        return (gm_result_string_t){
             .ok = false,
             .u.err = GM_ERROR(GM_ERR_OUT_OF_MEMORY,
                               "Failed to allocate %zu bytes", new_str.capacity)};
     }
 
     new_str.data[0] = '\0';
-    return (gm_result_string){.ok = true, .u.val = new_str};
+    return (gm_result_string_t){.ok = true, .u.val = new_str};
 }
 
 /* Create string from owned buffer */
-gm_result_string gm_string_from_owned(char *str, size_t len, size_t capacity) {
+gm_result_string_t gm_string_from_owned(char *str, size_t len, size_t capacity) {
     if (!str || capacity < len + 1) {
-        return (gm_result_string){
+        return (gm_result_string_t){
             .ok = false,
             .u.err = GM_ERROR(GM_ERR_INVALID_ARGUMENT,
                               "Invalid owned string parameters")};
@@ -92,11 +92,11 @@ gm_result_string gm_string_from_owned(char *str, size_t len, size_t capacity) {
     new_str.length = len;
     new_str.capacity = capacity;
 
-    return (gm_result_string){.ok = true, .u.val = new_str};
+    return (gm_result_string_t){.ok = true, .u.val = new_str};
 }
 
 /* Copy string */
-gm_result_string gm_string_copy(const gm_string_t *str) {
+gm_result_string_t gm_string_copy(const gm_string_t *str) {
     if (!str) {
         return gm_string_new("");
     }
@@ -104,12 +104,12 @@ gm_result_string gm_string_copy(const gm_string_t *str) {
 }
 
 /* Concatenate strings */
-gm_result_string gm_string_concat(const gm_string_t *str_a, const gm_string_t *str_b) {
+gm_result_string_t gm_string_concat(const gm_string_t *str_a, const gm_string_t *str_b) {
     size_t len_a = str_a ? str_a->length : 0;
     size_t len_b = str_b ? str_b->length : 0;
     size_t total = len_a + len_b;
 
-    gm_result_string result = gm_string_with_capacity(total + 1);
+    gm_result_string_t result = gm_string_with_capacity(total + 1);
     if (GM_IS_ERR(result)) {
         return result;
     }
@@ -124,11 +124,11 @@ gm_result_string gm_string_concat(const gm_string_t *str_a, const gm_string_t *s
     concat_str.data[total] = '\0';
     concat_str.length = total;
 
-    return (gm_result_string){.ok = true, .u.val = concat_str};
+    return (gm_result_string_t){.ok = true, .u.val = concat_str};
 }
 
 /* Append to string */
-gm_result_void gm_string_append(gm_string_t *str, const char *suffix) {
+gm_result_void_t gm_string_append(gm_string_t *str, const char *suffix) {
     if (!suffix) {
         return gm_ok_void();
     }
@@ -136,7 +136,7 @@ gm_result_void gm_string_append(gm_string_t *str, const char *suffix) {
 }
 
 /* Append with length */
-gm_result_void gm_string_append_n(gm_string_t *str, const char *suffix,
+gm_result_void_t gm_string_append_n(gm_string_t *str, const char *suffix,
                                   size_t len) {
     if (!str) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL string"));
@@ -166,7 +166,7 @@ gm_result_void gm_string_append_n(gm_string_t *str, const char *suffix,
 }
 
 /* Clear string contents */
-gm_result_void gm_string_clear(gm_string_t *str) {
+gm_result_void_t gm_string_clear(gm_string_t *str) {
     if (!str) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL string"));
     }
@@ -180,7 +180,7 @@ gm_result_void gm_string_clear(gm_string_t *str) {
 }
 
 /* Extract substring */
-gm_result_string gm_string_substring(const gm_string_t *str, size_t start,
+gm_result_string_t gm_string_substring(const gm_string_t *str, size_t start,
                                      size_t len) {
     if (!str) {
         return gm_err_string(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL string"));
@@ -204,7 +204,7 @@ gm_result_string gm_string_substring(const gm_string_t *str, size_t start,
 }
 
 /* Trim whitespace from both ends */
-gm_result_string gm_string_trim(const gm_string_t *str) {
+gm_result_string_t gm_string_trim(const gm_string_t *str) {
     if (!str) {
         return gm_err_string(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL string"));
     }

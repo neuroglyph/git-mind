@@ -12,8 +12,8 @@
 #include <string.h>
 
 /* Path constants */
-static const char GM_GM_PATH_SEP_UNIX = '/';
-static const char GM_GM_PATH_SEP_WIN = '\\';
+static const char GM_PATH_SEP_UNIX = '/';
+static const char GM_PATH_SEP_WIN = '\\';
 #define PATH_CURRENT_DIR "."
 #define PATH_PARENT_DIR ".."
 
@@ -83,18 +83,18 @@ static const char GM_SYMLINK_SUFFIX_MACOS = '@';
 #define HOMOGLYPH_BOM "\xef\xbb\xbf" /* U+FEFF ZERO WIDTH NO-BREAK SPACE */
 
 /* Helper to create error result for path */
-static inline gm_result_path gm_err_path(gm_error_t *err) {
-    return (gm_result_path){.ok = false, .u.err = err};
+static inline gm_result_path_t gm_err_path(gm_error_t *err) {
+    return (gm_result_path_t){.ok = false, .u.err = err};
 }
 
 /* Helper to create success result for path */
-static inline gm_result_path gm_ok_path(gm_path_t path) {
-    return (gm_result_path){.ok = true, .u.val = path};
+static inline gm_result_path_t gm_ok_path(gm_path_t path) {
+    return (gm_result_path_t){.ok = true, .u.val = path};
 }
 
 /* Helper to create error result for string */
-static inline gm_result_string gm_err_string(gm_error_t *err) {
-    return (gm_result_string){.ok = false, .u.err = err};
+static inline gm_result_string_t gm_err_string(gm_error_t *err) {
+    return (gm_result_string_t){.ok = false, .u.err = err};
 }
 
 /* Detect path separator */
@@ -165,7 +165,7 @@ static bool validate_path_basic(const char *str) {
 }
 
 /* Create new path from string */
-gm_result_path gm_path_new(const char *str) {
+gm_result_path_t gm_path_new(const char *str) {
     if (!str) {
         str = ""; /* Treat NULL as empty path */
     }
@@ -177,7 +177,7 @@ gm_result_path gm_path_new(const char *str) {
     }
 
     /* Create string copy */
-    gm_result_string str_result = gm_string_new(str);
+    gm_result_string_t str_result = gm_string_new(str);
     if (GM_IS_ERR(str_result)) {
         return gm_err_path(GM_UNWRAP_ERR(str_result));
     }
@@ -194,7 +194,7 @@ gm_result_path gm_path_new(const char *str) {
 }
 
 /* Create path from existing string (takes ownership) */
-gm_result_path gm_path_from_string(gm_string_t str) {
+gm_result_path_t gm_path_from_string(gm_string_t str) {
     const char *data = gm_string_data(&str);
 
     /* Basic validation */
@@ -216,7 +216,7 @@ gm_result_path gm_path_from_string(gm_string_t str) {
 }
 
 /* Join two paths */
-gm_result_path gm_path_join(const gm_path_t *base, const gm_path_t *relative) {
+gm_result_path_t gm_path_join(const gm_path_t *base, const gm_path_t *relative) {
     if (!base) {
         return gm_err_path(
             GM_ERROR(GM_ERR_INVALID_ARGUMENT, ERR_MSG_NULL_BASE));
@@ -248,11 +248,11 @@ gm_result_path gm_path_join(const gm_path_t *base, const gm_path_t *relative) {
         (base_len > 0 && base_str[base_len - 1] != base->separator);
 
     /* Create joined string */
-    gm_result_string result;
+    gm_result_string_t result;
     if (needs_sep) {
         /* Need to add separator */
         char sep_str[2] = {base->separator, '\0'};
-        gm_result_string with_sep = gm_string_concat(
+        gm_result_string_t with_sep = gm_string_concat(
             &base->value,
             &(gm_string_t){.data = sep_str, .length = 1, .capacity = 2});
         if (GM_IS_ERR(with_sep)) {
@@ -273,7 +273,7 @@ gm_result_path gm_path_join(const gm_path_t *base, const gm_path_t *relative) {
 }
 
 /* Extract directory name */
-gm_result_path gm_path_dirname(const gm_path_t *path) {
+gm_result_path_t gm_path_dirname(const gm_path_t *path) {
     if (!path) {
         return gm_err_path(
             GM_ERROR(GM_ERR_INVALID_ARGUMENT, ERR_MSG_NULL_PATH));
@@ -308,7 +308,7 @@ gm_result_path gm_path_dirname(const gm_path_t *path) {
     }
 
     /* Extract directory part */
-    gm_result_string dir_result =
+    gm_result_string_t dir_result =
         gm_string_substring(&path->value, 0, last_sep);
     if (GM_IS_ERR(dir_result)) {
         return gm_err_path(GM_UNWRAP_ERR(dir_result));
@@ -318,7 +318,7 @@ gm_result_path gm_path_dirname(const gm_path_t *path) {
 }
 
 /* Extract base name */
-gm_result_path gm_path_basename(const gm_path_t *path) {
+gm_result_path_t gm_path_basename(const gm_path_t *path) {
     if (!path) {
         return gm_err_path(
             GM_ERROR(GM_ERR_INVALID_ARGUMENT, ERR_MSG_NULL_PATH));
@@ -342,7 +342,7 @@ gm_result_path gm_path_basename(const gm_path_t *path) {
     }
 
     /* Extract base name */
-    gm_result_string base_result =
+    gm_result_string_t base_result =
         gm_string_substring(&path->value, start, len - start);
     if (GM_IS_ERR(base_result)) {
         return gm_err_path(GM_UNWRAP_ERR(base_result));
@@ -385,7 +385,7 @@ static char *copy_component(const char *start, size_t len) {
 }
 
 /* Process a single path component during splitting */
-static gm_result_void process_path_component(char **comps, size_t *idx,
+static gm_result_void_t process_path_component(char **comps, size_t *idx,
                                              const char *start, size_t len,
                                              bool is_first) {
     if (len > 0 || is_first) { /* Keep leading empty for absolute paths */
@@ -400,7 +400,7 @@ static gm_result_void process_path_component(char **comps, size_t *idx,
 }
 
 /* Split path into components */
-static gm_result_void split_path_components(const char *str, char sep,
+static gm_result_void_t split_path_components(const char *str, char sep,
                                             char ***components, size_t *count) {
     *components = NULL;
     *count = 0;
@@ -427,21 +427,21 @@ static gm_result_void split_path_components(const char *str, char sep,
     while (*ptr) {
         if (*ptr == sep) {
             size_t len = ptr - start;
-            gm_result_void res =
+            gm_result_void_t res =
                 process_path_component(comps, &idx, start, len, idx == 0);
             if (GM_IS_ERR(res)) {
                 free_components(comps, idx);
                 return res;
             }
-            start = p + 1;
+            start = ptr + 1;
         }
-        p++;
+        ptr++;
     }
 
     /* Handle last component */
-    size_t len = p - start;
+    size_t len = ptr - start;
     if (len > 0) {
-        gm_result_void res =
+        gm_result_void_t res =
             process_path_component(comps, &idx, start, len, false);
         if (GM_IS_ERR(res)) {
             free_components(comps, idx);
@@ -488,7 +488,7 @@ static bool process_canonical_component(const char *comp,
 }
 
 /* Build path string from components */
-static gm_result_string build_path_from_components(char **components,
+static gm_result_string_t build_path_from_components(char **components,
                                                    size_t count,
                                                    bool is_absolute,
                                                    char separator) {
@@ -504,7 +504,7 @@ static gm_result_string build_path_from_components(char **components,
     }
 
     /* Join components */
-    gm_result_string result_str = gm_string_new("");
+    gm_result_string_t result_str = gm_string_new("");
     if (GM_IS_ERR(result_str)) {
         return result_str;
     }
@@ -516,25 +516,25 @@ static gm_result_string build_path_from_components(char **components,
             /* Add separator except before empty first component of absolute
              * path */
             char sep_str[2] = {separator, '\0'};
-            gm_result_void append_result = gm_string_append(&joined, sep_str);
+            gm_result_void_t append_result = gm_string_append(&joined, sep_str);
             if (GM_IS_ERR(append_result)) {
                 gm_string_free(&joined);
                 return gm_err_string(GM_UNWRAP_ERR(append_result));
             }
         }
 
-        gm_result_void append_result = gm_string_append(&joined, components[i]);
+        gm_result_void_t append_result = gm_string_append(&joined, components[i]);
         if (GM_IS_ERR(append_result)) {
             gm_string_free(&joined);
             return gm_err_string(GM_UNWRAP_ERR(append_result));
         }
     }
 
-    return (gm_result_string){.ok = true, .u.val = joined};
+    return (gm_result_string_t){.ok = true, .u.val = joined};
 }
 
 /* Canonicalize path (remove . and .. components) */
-gm_result_path gm_path_canonicalize(const gm_path_t *path) {
+gm_result_path_t gm_path_canonicalize(const gm_path_t *path) {
     if (!path) {
         return gm_err_path(
             GM_ERROR(GM_ERR_INVALID_ARGUMENT, ERR_MSG_NULL_PATH));
@@ -545,7 +545,7 @@ gm_result_path gm_path_canonicalize(const gm_path_t *path) {
     /* Split into components */
     char **components = NULL;
     size_t comp_count = 0;
-    gm_result_void split_result =
+    gm_result_void_t split_result =
         split_path_components(str, path->separator, &components, &comp_count);
     if (GM_IS_ERR(split_result)) {
         return gm_err_path(GM_UNWRAP_ERR(split_result));
@@ -578,7 +578,7 @@ gm_result_path gm_path_canonicalize(const gm_path_t *path) {
     }
 
     /* Build result string */
-    gm_result_string result_str = build_path_from_components(
+    gm_result_string_t result_str = build_path_from_components(
         canonical, out_idx, path->is_absolute, path->separator);
     if (GM_IS_ERR(result_str)) {
         free_components(canonical, out_idx);
@@ -595,7 +595,7 @@ gm_result_path gm_path_canonicalize(const gm_path_t *path) {
     }
 
     /* Create canonicalized path */
-    gm_result_path final_result = gm_path_from_string(GM_UNWRAP(result_str));
+    gm_result_path_t final_result = gm_path_from_string(GM_UNWRAP(result_str));
     if (GM_IS_OK(final_result)) {
         gm_path_t canonical_path = GM_UNWRAP(final_result);
         canonical_path.state = GM_PATH_STATE_CANONICAL;
@@ -622,19 +622,19 @@ typedef struct {
     size_t common;
 } traversal_counts_t;
 
-static gm_result_void append_relative_traversal(gm_string_t *str,
+static gm_result_void_t append_relative_traversal(gm_string_t *str,
                                                 traversal_counts_t counts,
                                                 char separator) {
     for (size_t i = counts.common; i < counts.base_count; i++) {
         if (gm_string_len(str) > 0) {
             char sep_str[2] = {separator, '\0'};
-            gm_result_void append_res = gm_string_append(str, sep_str);
+            gm_result_void_t append_res = gm_string_append(str, sep_str);
             if (GM_IS_ERR(append_res)) {
                 return append_res;
             }
         }
 
-        gm_result_void append_res = gm_string_append(str, PATH_PARENT_DIR);
+        gm_result_void_t append_res = gm_string_append(str, PATH_PARENT_DIR);
         if (GM_IS_ERR(append_res)) {
             return append_res;
         }
@@ -649,19 +649,19 @@ typedef struct {
     size_t start_idx;
 } component_range_t;
 
-static gm_result_void append_remaining_components(gm_string_t *str,
+static gm_result_void_t append_remaining_components(gm_string_t *str,
                                                   component_range_t range,
                                                   char separator) {
     for (size_t i = range.start_idx; i < range.count; i++) {
         if (gm_string_len(str) > 0) {
             char sep_str[2] = {separator, '\0'};
-            gm_result_void append_res = gm_string_append(str, sep_str);
+            gm_result_void_t append_res = gm_string_append(str, sep_str);
             if (GM_IS_ERR(append_res)) {
                 return append_res;
             }
         }
 
-        gm_result_void append_res = gm_string_append(str, range.components[i]);
+        gm_result_void_t append_res = gm_string_append(str, range.components[i]);
         if (GM_IS_ERR(append_res)) {
             return append_res;
         }
@@ -677,7 +677,7 @@ static bool is_hidden_component(const char *comp) {
 }
 
 /* Check for symlink pattern in component */
-static gm_result_void check_symlink_pattern(const char *comp) {
+static gm_result_void_t check_symlink_pattern(const char *comp) {
     size_t comp_len = strlen(comp);
 
     /* Check for .lnk extension (Windows) */
@@ -708,12 +708,12 @@ static gm_result_void check_symlink_pattern(const char *comp) {
 }
 
 /* Validate path components for hidden files and symlinks */
-static gm_result_void validate_path_components(const char *str, char separator,
+static gm_result_void_t validate_path_components(const char *str, char separator,
                                                bool allow_hidden,
                                                bool allow_symlinks) {
     char **components = NULL;
     size_t comp_count = 0;
-    gm_result_void split_res =
+    gm_result_void_t split_res =
         split_path_components(str, separator, &components, &comp_count);
     if (GM_IS_ERR(split_res)) {
         return split_res;
@@ -729,7 +729,7 @@ static gm_result_void validate_path_components(const char *str, char separator,
 
         /* Check symlinks */
         if (!allow_symlinks) {
-            gm_result_void sym_res = check_symlink_pattern(components[i]);
+            gm_result_void_t sym_res = check_symlink_pattern(components[i]);
             if (GM_IS_ERR(sym_res)) {
                 free_components(components, comp_count);
                 return sym_res;
@@ -765,10 +765,10 @@ typedef struct {
     char separator;
 } relative_path_context_t;
 
-static gm_result_string
+static gm_result_string_t
 build_relative_path_string(relative_path_context_t ctx) {
     /* Build relative path */
-    gm_result_string result = gm_string_new("");
+    gm_result_string_t result = gm_string_new("");
     if (GM_IS_ERR(result)) {
         return result;
     }
@@ -778,7 +778,7 @@ build_relative_path_string(relative_path_context_t ctx) {
     /* Add .. for each remaining base component */
     traversal_counts_t trav_counts = {.base_count = ctx.res->base_count,
                                       .common = ctx.common};
-    gm_result_void traverse_res =
+    gm_result_void_t traverse_res =
         append_relative_traversal(&rel_str, trav_counts, ctx.separator);
     if (GM_IS_ERR(traverse_res)) {
         gm_string_free(&rel_str);
@@ -789,7 +789,7 @@ build_relative_path_string(relative_path_context_t ctx) {
     component_range_t comp_range = {.components = ctx.res->path_comps,
                                     .count = ctx.res->path_count,
                                     .start_idx = ctx.common};
-    gm_result_void append_res =
+    gm_result_void_t append_res =
         append_remaining_components(&rel_str, comp_range, ctx.separator);
     if (GM_IS_ERR(append_res)) {
         gm_string_free(&rel_str);
@@ -802,11 +802,11 @@ build_relative_path_string(relative_path_context_t ctx) {
         return gm_string_new(PATH_CURRENT_DIR);
     }
 
-    return (gm_result_string){.ok = true, .u.val = rel_str};
+    return (gm_result_string_t){.ok = true, .u.val = rel_str};
 }
 
 /* Check paths for make_relative - returns error if invalid */
-static gm_result_void check_make_relative_args(const gm_path_t *path,
+static gm_result_void_t check_make_relative_args(const gm_path_t *path,
                                                const gm_path_t *base) {
     if (!path || !base) {
         return gm_err_void(
@@ -823,22 +823,22 @@ static gm_result_void check_make_relative_args(const gm_path_t *path,
 }
 
 /* Make path relative to base */
-gm_result_path gm_path_make_relative(const gm_path_t *path,
+gm_result_path_t gm_path_make_relative(const gm_path_t *path,
                                      const gm_path_t *base) {
     /* Check arguments */
-    gm_result_void check_res = check_make_relative_args(path, base);
+    gm_result_void_t check_res = check_make_relative_args(path, base);
     if (GM_IS_ERR(check_res)) {
         return gm_err_path(GM_UNWRAP_ERR(check_res));
     }
 
     /* Canonicalize both paths first */
-    gm_result_path canon_path = gm_path_canonicalize(path);
+    gm_result_path_t canon_path = gm_path_canonicalize(path);
     if (GM_IS_ERR(canon_path)) {
         return canon_path;
     }
     gm_path_t canonical_path = GM_UNWRAP(canon_path);
 
-    gm_result_path canon_base = gm_path_canonicalize(base);
+    gm_result_path_t canon_base = gm_path_canonicalize(base);
     if (GM_IS_ERR(canon_base)) {
         gm_path_free(&canonical_path);
         return canon_base;
@@ -852,7 +852,7 @@ gm_result_path gm_path_make_relative(const gm_path_t *path,
                                      .base_count = 0};
 
     /* Split both into components */
-    gm_result_void split1 =
+    gm_result_void_t split1 =
         split_path_components(gm_path_str(&canonical_path), path->separator,
                               &res.path_comps, &res.path_count);
     if (GM_IS_ERR(split1)) {
@@ -862,7 +862,7 @@ gm_result_path gm_path_make_relative(const gm_path_t *path,
         return gm_err_path(GM_UNWRAP_ERR(split1));
     }
 
-    gm_result_void split2 =
+    gm_result_void_t split2 =
         split_path_components(gm_path_str(&canonical_base), base->separator,
                               &res.base_comps, &res.base_count);
     if (GM_IS_ERR(split2)) {
@@ -879,7 +879,7 @@ gm_result_path gm_path_make_relative(const gm_path_t *path,
     /* Build relative path string */
     relative_path_context_t rel_ctx = {
         .res = &res, .common = common, .separator = path->separator};
-    gm_result_string str_result = build_relative_path_string(rel_ctx);
+    gm_result_string_t str_result = build_relative_path_string(rel_ctx);
     if (GM_IS_ERR(str_result)) {
         cleanup_make_relative(&res);
         gm_path_free(&canonical_path);
@@ -890,7 +890,7 @@ gm_result_path gm_path_make_relative(const gm_path_t *path,
     gm_string_t rel_str = GM_UNWRAP(str_result);
 
     /* Create relative path */
-    gm_result_path rel_path = gm_path_from_string(rel_str);
+    gm_result_path_t rel_path = gm_path_from_string(rel_str);
 
     /* Clean up */
     cleanup_make_relative(&res);
@@ -922,7 +922,7 @@ static const struct {
                         .allow_hidden = true};
 
 /* Validate path with rules */
-gm_result_void gm_path_validate(const gm_path_t *path,
+gm_result_void_t gm_path_validate(const gm_path_t *path,
                                 const gm_path_rules_t *rules) {
     if (!path) {
         return gm_err_void(
@@ -971,7 +971,7 @@ gm_result_void gm_path_validate(const gm_path_t *path,
     }
 
     /* Validate path components */
-    gm_result_void comp_res = validate_path_components(
+    gm_result_void_t comp_res = validate_path_components(
         str, path->separator, GM_DEFAULT_PATH_RULES.allow_hidden,
         GM_DEFAULT_PATH_RULES.allow_symlinks);
     if (GM_IS_ERR(comp_res)) {

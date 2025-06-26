@@ -13,7 +13,7 @@
 
 /* gm_err_u32 and gm_err_u64 are now defined in result.h */
 
-gm_result_void gm_random_bytes(void *buf, size_t size) {
+gm_result_void_t gm_random_bytes(void *buf, size_t size) {
     if (!buf) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL buffer"));
     }
@@ -34,28 +34,28 @@ gm_result_void gm_random_bytes(void *buf, size_t size) {
     return gm_ok_void();
 }
 
-gm_result_u32 gm_random_u32(void) {
+gm_result_u32_t gm_random_u32(void) {
     const gm_crypto_backend_t *backend = gm_crypto_get_backend();
 
     /* Use backend if available */
     if (backend && backend->random_u32) {
-        return (gm_result_u32){.ok = true, .u.val = backend->random_u32()};
+        return (gm_result_u32_t){.ok = true, .u.val = backend->random_u32()};
     }
 
     /* Fallback to direct libsodium */
-    return (gm_result_u32){.ok = true, .u.val = randombytes_random()};
+    return (gm_result_u32_t){.ok = true, .u.val = randombytes_random()};
 }
 
-gm_result_u64 gm_random_u64(void) {
+gm_result_u64_t gm_random_u64(void) {
     const gm_crypto_backend_t *backend = gm_crypto_get_backend();
 
     /* Use backend if available */
     if (backend && backend->random_u64) {
-        return (gm_result_u64){.ok = true, .u.val = backend->random_u64()};
+        return (gm_result_u64_t){.ok = true, .u.val = backend->random_u64()};
     }
 
     /* Fallback to direct libsodium */
     uint64_t val;
     randombytes_buf(&val, sizeof(val));
-    return (gm_result_u64){.ok = true, .u.val = val};
+    return (gm_result_u64_t){.ok = true, .u.val = val};
 }

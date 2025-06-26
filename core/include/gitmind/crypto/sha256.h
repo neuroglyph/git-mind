@@ -27,8 +27,8 @@ typedef struct gm_sha256_ctx {
  * @param out Output buffer for 32-byte digest (big-endian/network order)
  * @return gm_result_void Success or error
  */
-gm_result_void gm_sha256(const void *data, size_t len,
-                         uint8_t out[GM_SHA256_DIGEST_SIZE]);
+gm_result_void_t gm_sha256(const void *data, size_t len,
+                           uint8_t out[GM_SHA256_DIGEST_SIZE]);
 
 /**
  * @brief Initialize SHA256 streaming context
@@ -36,7 +36,7 @@ gm_result_void gm_sha256(const void *data, size_t len,
  * @param ctx Context to initialize
  * @return gm_result_void Success or error
  */
-gm_result_void gm_sha256_init(gm_sha256_ctx_t *ctx);
+gm_result_void_t gm_sha256_init(gm_sha256_ctx_t *ctx);
 
 /**
  * @brief Update SHA256 context with more data
@@ -46,8 +46,8 @@ gm_result_void gm_sha256_init(gm_sha256_ctx_t *ctx);
  * @param len Length of input data
  * @return gm_result_void Success or error
  */
-gm_result_void gm_sha256_update(gm_sha256_ctx_t *ctx, const void *data,
-                                size_t len);
+gm_result_void_t gm_sha256_update(gm_sha256_ctx_t *ctx, const void *data,
+                                  size_t len);
 
 /**
  * @brief Finalize SHA256 computation and get digest
@@ -56,7 +56,7 @@ gm_result_void gm_sha256_update(gm_sha256_ctx_t *ctx, const void *data,
  * @param out Output buffer for 32-byte digest (big-endian/network order)
  * @return gm_result_void Success or error
  */
-gm_result_void gm_sha256_final(gm_sha256_ctx_t *ctx,
-                               uint8_t out[GM_SHA256_DIGEST_SIZE]);
+gm_result_void_t gm_sha256_final(gm_sha256_ctx_t *ctx,
+                                 uint8_t out[GM_SHA256_DIGEST_SIZE]);
 
 #endif /* GITMIND_CRYPTO_SHA256_H */

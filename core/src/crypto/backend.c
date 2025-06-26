@@ -80,9 +80,9 @@ const gm_crypto_backend_t *gm_crypto_backend_libsodium(void) {
 
 
 /* Set current backend */
-gm_result_backend gm_crypto_set_backend(const gm_crypto_backend_t *backend) {
+gm_result_backend_t gm_crypto_set_backend(const gm_crypto_backend_t *backend) {
     if (!backend) {
-        return (gm_result_backend){
+        return (gm_result_backend_t){
             .ok = false,
             .u.err = GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL backend")};
     }
@@ -91,14 +91,14 @@ gm_result_backend gm_crypto_set_backend(const gm_crypto_backend_t *backend) {
     if (!backend->sha256_init || !backend->sha256_update ||
         !backend->sha256_final || !backend->sha256 || !backend->random_bytes ||
         !backend->random_u32 || !backend->random_u64) {
-        return (gm_result_backend){
+        return (gm_result_backend_t){
             .ok = false,
             .u.err = GM_ERROR(GM_ERR_INVALID_ARGUMENT,
                               "Backend missing required functions")};
     }
 
     g_backend = backend;
-    return (gm_result_backend){.ok = true, .u.val = backend};
+    return (gm_result_backend_t){.ok = true, .u.val = backend};
 }
 
 /* Get current backend */
@@ -107,7 +107,7 @@ const gm_crypto_backend_t *gm_crypto_get_backend(void) {
 }
 
 /* Initialize crypto subsystem */
-gm_result_void gm_crypto_init(void) {
+gm_result_void_t gm_crypto_init(void) {
     /* Initialize libsodium if not already done */
     static bool sodium_initialized = false;
     if (!sodium_initialized) {
@@ -120,7 +120,7 @@ gm_result_void gm_crypto_init(void) {
 
     /* Set default backend if none set */
     if (!g_backend) {
-        gm_result_backend result = gm_crypto_set_backend(&GM_LIBSODIUM_BACKEND);
+        gm_result_backend_t result = gm_crypto_set_backend(&GM_LIBSODIUM_BACKEND);
         if (GM_IS_ERR(result)) {
             return gm_err_void(GM_UNWRAP_ERR(result));
         }
@@ -130,7 +130,7 @@ gm_result_void gm_crypto_init(void) {
 }
 
 /* Cleanup crypto subsystem */
-gm_result_void gm_crypto_cleanup(void) {
+gm_result_void_t gm_crypto_cleanup(void) {
     g_backend = NULL;
     return gm_ok_void();
 }

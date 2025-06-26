@@ -49,9 +49,9 @@ typedef struct {
 /**
  * @brief Initialize streaming validation state
  *
- * @param s State to initialize (sets to ACCEPT state)
+ * @param state State to initialize (sets to ACCEPT state)
  */
-void gm_utf8_state_init(gm_utf8_state_t *s);
+void gm_utf8_state_init(gm_utf8_state_t *state);
 
 /**
  * @brief Validate a chunk of UTF-8 data
@@ -59,21 +59,21 @@ void gm_utf8_state_init(gm_utf8_state_t *s);
  * Can be called multiple times to validate large inputs.
  * Final chunk should end with state in ACCEPT for valid UTF-8.
  *
- * @param s Validation state (modified)
+ * @param state Validation state (modified)
  * @param buf Buffer chunk to validate
  * @param len Length of chunk
  * @return GM_UTF8_OK if chunk is valid so far, or specific error
  */
-gm_utf8_error_t gm_utf8_validate_chunk(gm_utf8_state_t *s, const char *buf,
+gm_utf8_error_t gm_utf8_validate_chunk(gm_utf8_state_t *state, const char *buf,
                                        size_t len);
 
 /**
  * @brief Check if streaming validation is complete
  *
- * @param s Validation state
+ * @param state Validation state
  * @return true if in ACCEPT state (valid complete UTF-8)
  */
-bool gm_utf8_state_is_complete(const gm_utf8_state_t *s);
+bool gm_utf8_state_is_complete(const gm_utf8_state_t *state);
 
 #ifdef __cplusplus
 }

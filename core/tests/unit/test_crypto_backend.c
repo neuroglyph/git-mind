@@ -15,7 +15,7 @@
 /* Test backend switching */
 static void test_backend_switch(void) {
     /* Initialize crypto system */
-    gm_result_void init_result = gm_crypto_init();
+    gm_result_void_t init_result = gm_crypto_init();
     assert(GM_IS_OK(init_result));
 
     /* Default should be libsodium */
@@ -25,11 +25,11 @@ static void test_backend_switch(void) {
 
     /* Test with libsodium backend */
     uint8_t hash1[GM_SHA256_DIGEST_SIZE];
-    gm_result_void sha_result = gm_sha256("test", 4, hash1);
+    gm_result_void_t sha_result = gm_sha256("test", 4, hash1);
     assert(GM_IS_OK(sha_result));
 
     /* Switch to test backend */
-    gm_result_backend result = gm_crypto_set_backend(gm_crypto_backend_test());
+    gm_result_backend_t result = gm_crypto_set_backend(gm_crypto_backend_test());
     assert(GM_IS_OK(result));
 
     backend = gm_crypto_get_backend();
@@ -67,29 +67,29 @@ static void test_backend_switch(void) {
 /* Test deterministic random in test backend */
 static void test_deterministic_random(void) {
     /* Switch to test backend */
-    gm_result_backend result = gm_crypto_set_backend(gm_crypto_backend_test());
+    gm_result_backend_t result = gm_crypto_set_backend(gm_crypto_backend_test());
     assert(GM_IS_OK(result));
 
     /* Random should be deterministic */
-    gm_result_u32 r1_result = gm_random_u32();
+    gm_result_u32_t r1_result = gm_random_u32();
     assert(GM_IS_OK(r1_result));
-    uint32_t r1 = GM_UNWRAP(r1_result);
+    uint32_t rand1 = GM_UNWRAP(r1_result);
 
-    gm_result_u32 r2_result = gm_random_u32();
+    gm_result_u32_t r2_result = gm_random_u32();
     assert(GM_IS_OK(r2_result));
-    uint32_t r2 = GM_UNWRAP(r2_result);
+    uint32_t rand2 = GM_UNWRAP(r2_result);
 
-    gm_result_u32 r3_result = gm_random_u32();
+    gm_result_u32_t r3_result = gm_random_u32();
     assert(GM_IS_OK(r3_result));
-    uint32_t r3 = GM_UNWRAP(r3_result);
+    uint32_t rand3 = GM_UNWRAP(r3_result);
 
-    assert(r1 == 0);
-    assert(r2 == 1);
-    assert(r3 == 2);
+    assert(rand1 == 0);
+    assert(rand2 == 1);
+    assert(rand3 == 2);
 
     /* Test random bytes */
     uint8_t buf[10];
-    gm_result_void rand_result = gm_random_bytes(buf, sizeof(buf));
+    gm_result_void_t rand_result = gm_random_bytes(buf, sizeof(buf));
     assert(GM_IS_OK(rand_result));
 
     for (int i = 0; i < 10; i++) {
@@ -117,12 +117,12 @@ static void test_streaming_hash(void) {
                                        gm_crypto_backend_test()};
 
     for (int i = 0; i < 2; i++) {
-        gm_result_backend result = gm_crypto_set_backend(backends[i]);
+        gm_result_backend_t result = gm_crypto_set_backend(backends[i]);
         assert(GM_IS_OK(result));
 
         /* Streaming hash */
         gm_sha256_ctx_t ctx;
-        gm_result_void hash_result = gm_sha256_init(&ctx);
+        gm_result_void_t hash_result = gm_sha256_init(&ctx);
         assert(GM_IS_OK(hash_result));
 
         hash_result = gm_sha256_update(&ctx, "hello", 5);
@@ -159,7 +159,7 @@ static void test_streaming_hash(void) {
 /* Test invalid backend */
 static void test_invalid_backend(void) {
     /* NULL backend */
-    gm_result_backend result = gm_crypto_set_backend(NULL);
+    gm_result_backend_t result = gm_crypto_set_backend(NULL);
     assert(GM_IS_ERR(result));
     gm_error_free(GM_UNWRAP_ERR(result));
 
@@ -190,7 +190,7 @@ int main(void) {
     test_invalid_backend();
 
     /* Cleanup */
-    gm_result_void cleanup_result = gm_crypto_cleanup();
+    gm_result_void_t cleanup_result = gm_crypto_cleanup();
     assert(GM_IS_OK(cleanup_result));
 
     printf("\n✅ All crypto backend tests passed!\n");

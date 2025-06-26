@@ -62,7 +62,7 @@ static void test_error_chain(void) {
 
 /* Test result types */
 static void test_result_success(void) {
-    gm_result_int result = gm_ok_int(42);
+    gm_result_int_t result = gm_ok_int(42);
 
     assert(GM_IS_OK(result));
     assert(!GM_IS_ERR(result));
@@ -74,7 +74,7 @@ static void test_result_success(void) {
 /* Test result error */
 static void test_result_error(void) {
     gm_error_t *err = gm_error_new(GM_ERR_INVALID_ARGUMENT, "Bad input");
-    gm_result_int result = gm_err_int(err);
+    gm_result_int_t result = gm_err_int(err);
 
     assert(!GM_IS_OK(result));
     assert(GM_IS_ERR(result));
@@ -86,17 +86,17 @@ static void test_result_error(void) {
 }
 
 /* Test function that uses results */
-static gm_result_int divide(int a, int b) {
-    if (b == 0) {
+static gm_result_int_t divide(int dividend, int divisor) {
+    if (divisor == 0) {
         return gm_err_int(
             GM_ERROR(GM_ERR_INVALID_ARGUMENT, "Division by zero"));
     }
-    return gm_ok_int(a / b);
+    return gm_ok_int(dividend / divisor);
 }
 
 /* Test GM_TRY macro */
-static gm_result_int calculate(int x, int y) {
-    gm_result_int div_result = divide(x, y);
+static gm_result_int_t calculate(int num1, int num2) {
+    gm_result_int_t div_result = divide(num1, num2);
     GM_TRY(div_result);
 
     int quotient = GM_UNWRAP(div_result);
@@ -105,7 +105,7 @@ static gm_result_int calculate(int x, int y) {
 
 static void test_try_macro(void) {
     /* Success case */
-    gm_result_int result = calculate(10, 2);
+    gm_result_int_t result = calculate(10, 2);
     assert(GM_IS_OK(result));
     assert(GM_UNWRAP(result) == 10); /* (10/2) * 2 = 10 */
 

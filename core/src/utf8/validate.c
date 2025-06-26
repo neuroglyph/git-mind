@@ -482,29 +482,29 @@ gm_utf8_error_t gm_utf8_validate(const char *buf, size_t len) {
     return state_to_error(state, codep);
 }
 
-void gm_utf8_state_init(gm_utf8_state_t *s) {
-    s->state = UTF8_ACCEPT;
-    s->codep = 0;
+void gm_utf8_state_init(gm_utf8_state_t *state) {
+    state->state = UTF8_ACCEPT;
+    state->codep = 0;
 }
 
-gm_utf8_error_t gm_utf8_validate_chunk(gm_utf8_state_t *s, const char *buf,
+gm_utf8_error_t gm_utf8_validate_chunk(gm_utf8_state_t *state, const char *buf,
                                        size_t len) {
     for (size_t i = 0; i < len; i++) {
-        uint32_t prev_state = s->state;
-        decode(&s->state, &s->codep, (uint8_t)buf[i]);
+        uint32_t prev_state = state->state;
+        decode(&state->state, &state->codep, (uint8_t)buf[i]);
 
-        if (s->state == UTF8_REJECT) {
+        if (state->state == UTF8_REJECT) {
             /* Fast fail on first error */
-            return state_to_error(s->state, s->codep);
+            return state_to_error(state->state, state->codep);
         }
 
         /* Check for completed codepoint */
-        if (prev_state != UTF8_ACCEPT && s->state == UTF8_ACCEPT) {
+        if (prev_state != UTF8_ACCEPT && state->state == UTF8_ACCEPT) {
             /* We just completed a codepoint, check if it's valid */
-            if (s->codep >= 0xD800 && s->codep <= 0xDFFF) {
+            if (state->codep >= 0xD800 && state->codep <= 0xDFFF) {
                 return GM_UTF8_ERR_SURROGATE;
             }
-            if (s->codep > 0x10FFFF) {
+            if (state->codep > 0x10FFFF) {
                 return GM_UTF8_ERR_OUT_OF_RANGE;
             }
         }
@@ -514,6 +514,6 @@ gm_utf8_error_t gm_utf8_validate_chunk(gm_utf8_state_t *s, const char *buf,
     return GM_UTF8_OK;
 }
 
-bool gm_utf8_state_is_complete(const gm_utf8_state_t *s) {
-    return s->state == UTF8_ACCEPT;
+bool gm_utf8_state_is_complete(const gm_utf8_state_t *state) {
+    return state->state == UTF8_ACCEPT;
 }

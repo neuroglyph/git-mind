@@ -41,64 +41,64 @@ GM_RESULT_DEF(gm_result_u32, uint32_t);
 GM_RESULT_DEF(gm_result_u64, uint64_t);
 
 /* Legacy name for compatibility during migration */
-typedef gm_result_ptr gm_result_t;
+typedef gm_result_ptr_t gm_result_t;
 
 /* Success constructors */
-static inline gm_result_void gm_ok_void(void) {
-    return (gm_result_void){.ok = true, .u.val = 0};
+static inline gm_result_void_t gm_ok_void(void) {
+    return (gm_result_void_t){.ok = true, .u.val = 0};
 }
 
-static inline gm_result_ptr gm_ok_ptr(void *v) {
-    return (gm_result_ptr){.ok = true, .u.val = v};
+static inline gm_result_ptr_t gm_ok_ptr(void *v) {
+    return (gm_result_ptr_t){.ok = true, .u.val = v};
 }
 
-static inline gm_result_int gm_ok_int(int v) {
-    return (gm_result_int){.ok = true, .u.val = v};
+static inline gm_result_int_t gm_ok_int(int v) {
+    return (gm_result_int_t){.ok = true, .u.val = v};
 }
 
-static inline gm_result_bool gm_ok_bool(bool v) {
-    return (gm_result_bool){.ok = true, .u.val = v};
+static inline gm_result_bool_t gm_ok_bool(bool v) {
+    return (gm_result_bool_t){.ok = true, .u.val = v};
 }
 
-static inline gm_result_size gm_ok_size(size_t v) {
-    return (gm_result_size){.ok = true, .u.val = v};
+static inline gm_result_size_t gm_ok_size(size_t v) {
+    return (gm_result_size_t){.ok = true, .u.val = v};
 }
 
-static inline gm_result_u32 gm_ok_u32(uint32_t v) {
-    return (gm_result_u32){.ok = true, .u.val = v};
+static inline gm_result_u32_t gm_ok_u32(uint32_t v) {
+    return (gm_result_u32_t){.ok = true, .u.val = v};
 }
 
 /* Error constructors */
-static inline gm_result_void gm_err_void(gm_error_t *e) {
-    return (gm_result_void){.ok = false, .u.err = e};
+static inline gm_result_void_t gm_err_void(gm_error_t *e) {
+    return (gm_result_void_t){.ok = false, .u.err = e};
 }
 
-static inline gm_result_ptr gm_err_ptr(gm_error_t *e) {
-    return (gm_result_ptr){.ok = false, .u.err = e};
+static inline gm_result_ptr_t gm_err_ptr(gm_error_t *e) {
+    return (gm_result_ptr_t){.ok = false, .u.err = e};
 }
 
-static inline gm_result_int gm_err_int(gm_error_t *e) {
-    return (gm_result_int){.ok = false, .u.err = e};
+static inline gm_result_int_t gm_err_int(gm_error_t *e) {
+    return (gm_result_int_t){.ok = false, .u.err = e};
 }
 
-static inline gm_result_bool gm_err_bool(gm_error_t *e) {
-    return (gm_result_bool){.ok = false, .u.err = e};
+static inline gm_result_bool_t gm_err_bool(gm_error_t *e) {
+    return (gm_result_bool_t){.ok = false, .u.err = e};
 }
 
-static inline gm_result_size gm_err_size(gm_error_t *e) {
-    return (gm_result_size){.ok = false, .u.err = e};
+static inline gm_result_size_t gm_err_size(gm_error_t *e) {
+    return (gm_result_size_t){.ok = false, .u.err = e};
 }
 
-static inline gm_result_u32 gm_err_u32(gm_error_t *e) {
-    return (gm_result_u32){.ok = false, .u.err = e};
+static inline gm_result_u32_t gm_err_u32(gm_error_t *e) {
+    return (gm_result_u32_t){.ok = false, .u.err = e};
 }
 
-static inline gm_result_u64 gm_ok_u64(uint64_t v) {
-    return (gm_result_u64){.ok = true, .u.val = v};
+static inline gm_result_u64_t gm_ok_u64(uint64_t v) {
+    return (gm_result_u64_t){.ok = true, .u.val = v};
 }
 
-static inline gm_result_u64 gm_err_u64(gm_error_t *e) {
-    return (gm_result_u64){.ok = false, .u.err = e};
+static inline gm_result_u64_t gm_err_u64(gm_error_t *e) {
+    return (gm_result_u64_t){.ok = false, .u.err = e};
 }
 
 /**

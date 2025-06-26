@@ -48,7 +48,7 @@ typedef struct gm_crypto_backend {
 GM_RESULT_DEF(gm_result_backend, const gm_crypto_backend_t *);
 
 /* Global backend management */
-gm_result_backend gm_crypto_set_backend(const gm_crypto_backend_t *backend);
+gm_result_backend_t gm_crypto_set_backend(const gm_crypto_backend_t *backend);
 const gm_crypto_backend_t *gm_crypto_get_backend(void);
 
 /* Default backends */
@@ -59,7 +59,7 @@ const gm_crypto_backend_t *gm_crypto_backend_test(void);
 #endif
 
 /* Backend initialization */
-gm_result_void gm_crypto_init(void);
-gm_result_void gm_crypto_cleanup(void);
+gm_result_void_t gm_crypto_init(void);
+gm_result_void_t gm_crypto_cleanup(void);
 
 #endif /* GITMIND_CRYPTO_BACKEND_H */

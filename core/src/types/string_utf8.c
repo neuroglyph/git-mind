@@ -7,7 +7,7 @@
 #include "gitmind/utf8/validate.h"
 
 /* Validate UTF-8 */
-gm_result_void gm_string_validate_utf8(const gm_string_t *str) {
+gm_result_void_t gm_string_validate_utf8(const gm_string_t *str) {
     if (!str) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL string"));
     }

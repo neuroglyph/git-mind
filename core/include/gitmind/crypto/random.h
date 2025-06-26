@@ -21,20 +21,20 @@
  * @param size Number of random bytes to generate
  * @return gm_result_void Success or error
  */
-gm_result_void gm_random_bytes(void *buf, size_t size);
+gm_result_void_t gm_random_bytes(void *buf, size_t size);
 
 /**
  * @brief Generate a random 32-bit unsigned integer
  *
  * @return gm_result_u32 containing random value or error
  */
-gm_result_u32 gm_random_u32(void);
+gm_result_u32_t gm_random_u32(void);
 
 /**
  * @brief Generate a random 64-bit unsigned integer
  *
  * @return gm_result_u64 containing random value or error
  */
-gm_result_u64 gm_random_u64(void);
+gm_result_u64_t gm_random_u64(void);
 
 #endif /* GITMIND_CRYPTO_RANDOM_H */

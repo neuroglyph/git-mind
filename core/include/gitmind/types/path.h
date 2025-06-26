@@ -53,20 +53,20 @@ typedef struct gm_path {
 GM_RESULT_DEF(gm_result_path, gm_path_t);
 
 /* Path creation with validation */
-gm_result_path gm_path_new(const char *str);
-gm_result_path gm_path_from_string(gm_string_t str);
+gm_result_path_t gm_path_new(const char *str);
+gm_result_path_t gm_path_from_string(gm_string_t str);
 
 /* Path operations */
-gm_result_path gm_path_join(const gm_path_t *base, const gm_path_t *relative);
-gm_result_path gm_path_dirname(const gm_path_t *path);
-gm_result_path gm_path_basename(const gm_path_t *path);
-gm_result_path gm_path_canonicalize(const gm_path_t *path);
-gm_result_path gm_path_make_relative(const gm_path_t *path,
-                                     const gm_path_t *base);
+gm_result_path_t gm_path_join(const gm_path_t *base, const gm_path_t *relative);
+gm_result_path_t gm_path_dirname(const gm_path_t *path);
+gm_result_path_t gm_path_basename(const gm_path_t *path);
+gm_result_path_t gm_path_canonicalize(const gm_path_t *path);
+gm_result_path_t gm_path_make_relative(const gm_path_t *path,
+                                       const gm_path_t *base);
 
 /* Path validation */
-gm_result_void gm_path_validate(const gm_path_t *path,
-                                const gm_path_rules_t *rules);
+gm_result_void_t gm_path_validate(const gm_path_t *path,
+                                  const gm_path_rules_t *rules);
 bool gm_path_is_safe(const gm_path_t *path); /* No traversal, etc. */
 bool gm_path_has_extension(const gm_path_t *path, const char *ext);
 

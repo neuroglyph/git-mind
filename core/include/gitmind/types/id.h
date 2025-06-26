@@ -31,18 +31,18 @@ GM_RESULT_DEF(gm_result_id, gm_id_t);
 /* ID operations */
 bool gm_id_equal(gm_id_t id_a, gm_id_t id_b);
 int gm_id_compare(gm_id_t id_a, gm_id_t id_b);
-gm_result_u32 gm_id_hash(gm_id_t id);
+gm_result_u32_t gm_id_hash(gm_id_t id);
 
 /* ID creation - all can fail */
-gm_result_id gm_id_from_data(const void *data, size_t len);
-gm_result_id gm_id_from_string(const char *str);
-gm_result_id gm_id_generate(void); /* Random ID */
+gm_result_id_t gm_id_from_data(const void *data, size_t len);
+gm_result_id_t gm_id_from_string(const char *str);
+gm_result_id_t gm_id_generate(void); /* Random ID */
 
 /* ID conversion (safe - validates buffer size) */
-gm_result_void gm_id_to_hex(gm_id_t id, char *out, size_t out_size);
+gm_result_void_t gm_id_to_hex(gm_id_t id, char *out, size_t out_size);
 
 /* ID parsing (can fail) */
-gm_result_id gm_id_from_hex(const char *hex);
+gm_result_id_t gm_id_from_hex(const char *hex);
 
 /**
  * @brief Strongly typed IDs prevent mixing different ID types
@@ -102,16 +102,16 @@ gm_edge_id_t gm_edge_id_from_triple(gm_node_id_t source, gm_node_id_t target,
                                     gm_edge_type_t type);
 
 /* Session ID: Random UUID v4 */
-gm_result_session_id gm_session_id_new(void);
+gm_result_session_id_t gm_session_id_new(void);
 
 /* Conversion helpers */
-static inline gm_result_void gm_node_id_to_hex(gm_node_id_t id,
-                                               char out[GM_ID_HEX_SIZE]) {
+static inline gm_result_void_t gm_node_id_to_hex(gm_node_id_t id,
+                                                 char out[GM_ID_HEX_SIZE]) {
     return gm_id_to_hex(id.base, out, GM_ID_HEX_SIZE);
 }
 
-static inline gm_result_void gm_edge_id_to_hex(gm_edge_id_t id,
-                                               char out[GM_ID_HEX_SIZE]) {
+static inline gm_result_void_t gm_edge_id_to_hex(gm_edge_id_t id,
+                                                 char out[GM_ID_HEX_SIZE]) {
     return gm_id_to_hex(id.base, out, GM_ID_HEX_SIZE);
 }
 

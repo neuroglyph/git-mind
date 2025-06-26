@@ -61,7 +61,7 @@ static void test_sha256_vectors(void) {
         hex_to_bytes(vectors[i].hex, expected, GM_SHA256_DIGEST_SIZE);
 
         /* Compute SHA256 */
-        gm_result_void result =
+        gm_result_void_t result =
             gm_sha256(vectors[i].msg, strlen(vectors[i].msg), out);
         assert(GM_IS_OK(result));
 
@@ -87,7 +87,7 @@ static void test_sha256_streaming(void) {
     uint8_t streaming[GM_SHA256_DIGEST_SIZE];
 
     /* One-shot */
-    gm_result_void result = gm_sha256(test_data, strlen(test_data), one_shot);
+    gm_result_void_t result = gm_sha256(test_data, strlen(test_data), one_shot);
     assert(GM_IS_OK(result));
 
     /* Streaming in chunks */
@@ -119,7 +119,7 @@ static void test_sha256_streaming(void) {
 /* Test edge cases */
 static void test_sha256_edge_cases(void) {
     uint8_t out[GM_SHA256_DIGEST_SIZE];
-    gm_result_void result;
+    gm_result_void_t result;
 
     /* NULL data with zero length should work */
     result = gm_sha256(NULL, 0, out);
