@@ -33,8 +33,8 @@ static void test_random_bytes(void) {
     assert(memcmp(buf1, zeros, sizeof(buf1)) != 0);
     assert(memcmp(buf2, zeros, sizeof(buf2)) != 0);
 
-    /* Test error case - NULL buffer */
-    gm_result_void_t err_result = gm_random_bytes(NULL, 10);
+    /* Test error case - nullptr buffer */
+    gm_result_void_t err_result = gm_random_bytes(nullptr, 10);
     assert(GM_IS_ERR(err_result));
     gm_error_free(GM_UNWRAP_ERR(err_result));
 
@@ -66,8 +66,9 @@ static void test_random_u32(void) {
                 break;
             }
         }
-        if (is_unique)
+        if (is_unique) {
             unique_count++;
+        }
     }
 
     /* Should have mostly unique values */

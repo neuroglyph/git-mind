@@ -16,6 +16,7 @@
  */
 
 #include "gitmind/utf8/validate.h"
+#include "gitmind/types/path_internal.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -431,19 +432,21 @@ static GM_ALWAYS_INLINE uint32_t decode(uint32_t *state, uint32_t *codep,
 /**
  * @brief Map DFA state to error code
  */
-static gm_utf8_error_t state_to_error(uint32_t state, uint32_t codep) {
-    if (state == UTF8_ACCEPT) {
+static gm_utf8_error_t state_to_error(gm_utf8_state_t state /* DFA validation state */, 
+                                     gm_utf8_codepoint_t codep /* Unicode code point value */) {
+    /* Parameters: validation state from DFA, then code point being validated */
+    if (state.value == UTF8_ACCEPT) {
         return GM_UTF8_OK;
     }
 
     /* Check for specific error conditions */
-    if (state == UTF8_REJECT) {
+    if (state.value == UTF8_REJECT) {
         /* Check for surrogate */
-        if (codep >= 0xD800 && codep <= 0xDFFF) {
+        if (codep.value >= 0xD800 && codep.value <= 0xDFFF) {
             return GM_UTF8_ERR_SURROGATE;
         }
         /* Check for out of range */
-        if (codep > 0x10FFFF) {
+        if (codep.value > 0x10FFFF) {
             return GM_UTF8_ERR_OUT_OF_RANGE;
         }
         /* Default to invalid start */
@@ -464,7 +467,7 @@ gm_utf8_error_t gm_utf8_validate(const char *buf, size_t len) {
 
         if (state == UTF8_REJECT) {
             /* Fast fail on first error */
-            return state_to_error(state, codep);
+            return state_to_error(GM_UTF8_STATE(state), GM_UTF8_CODEPOINT(codep));
         }
 
         /* Check for completed codepoint */
@@ -479,7 +482,7 @@ gm_utf8_error_t gm_utf8_validate(const char *buf, size_t len) {
         }
     }
 
-    return state_to_error(state, codep);
+    return state_to_error(GM_UTF8_STATE(state), GM_UTF8_CODEPOINT(codep));
 }
 
 void gm_utf8_state_init(gm_utf8_state_t *state) {
@@ -495,7 +498,7 @@ gm_utf8_error_t gm_utf8_validate_chunk(gm_utf8_state_t *state, const char *buf,
 
         if (state->state == UTF8_REJECT) {
             /* Fast fail on first error */
-            return state_to_error(state->state, state->codep);
+            return state_to_error(GM_UTF8_STATE(state->state), GM_UTF8_CODEPOINT(state->codep));
         }
 
         /* Check for completed codepoint */

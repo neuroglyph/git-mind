@@ -71,7 +71,7 @@ bool gm_path_is_safe(const gm_path_t *path); /* No traversal, etc. */
 bool gm_path_has_extension(const gm_path_t *path, const char *ext);
 
 /* Path comparison */
-bool gm_path_equals(const gm_path_t *a, const gm_path_t *b);
+bool gm_path_equals(const gm_path_t *path_a, const gm_path_t *path_b);
 bool gm_path_starts_with(const gm_path_t *path, const gm_path_t *prefix);
 bool gm_path_is_child_of(const gm_path_t *path, const gm_path_t *parent);
 

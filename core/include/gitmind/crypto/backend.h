@@ -44,10 +44,20 @@ typedef struct gm_crypto_backend {
     void *context;
 } gm_crypto_backend_t;
 
+/* Crypto context for dependency injection */
+typedef struct gm_crypto_context {
+    const gm_crypto_backend_t *backend;
+} gm_crypto_context_t;
+
 /* Result type for backend operations */
 GM_RESULT_DEF(gm_result_backend, const gm_crypto_backend_t *);
+GM_RESULT_DEF(gm_result_crypto_context, gm_crypto_context_t);
 
-/* Global backend management */
+/* Context-based crypto management (preferred) */
+gm_result_crypto_context_t gm_crypto_context_create(const gm_crypto_backend_t *backend);
+const gm_crypto_backend_t *gm_crypto_context_get_backend(const gm_crypto_context_t *ctx);
+
+/* Legacy global backend management (deprecated - use context-based APIs) */
 gm_result_backend_t gm_crypto_set_backend(const gm_crypto_backend_t *backend);
 const gm_crypto_backend_t *gm_crypto_get_backend(void);
 

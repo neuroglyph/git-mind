@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* Test vector structure */
@@ -19,9 +20,17 @@ typedef struct {
 /* Convert hex string to bytes */
 static void hex_to_bytes(const char *hex, uint8_t *out, size_t out_len) {
     for (size_t i = 0; i < out_len; i++) {
-        unsigned int byte;
-        sscanf(hex + i * 2, "%2x", &byte);
-        out[i] = (uint8_t)byte;
+        char hex_byte[3] = {hex[i * 2], hex[i * 2 + 1], '\0'};
+        char *endptr;
+        unsigned long byte = strtoul(hex_byte, &endptr, 16);
+        
+        /* Check for conversion errors */
+        if (endptr != hex_byte + 2 || byte > UINT8_MAX) {
+            /* For tests, we'll just set to 0 on error */
+            out[i] = 0;
+        } else {
+            out[i] = (uint8_t)byte;
+        }
     }
 }
 
@@ -121,8 +130,8 @@ static void test_sha256_edge_cases(void) {
     uint8_t out[GM_SHA256_DIGEST_SIZE];
     gm_result_void_t result;
 
-    /* NULL data with zero length should work */
-    result = gm_sha256(NULL, 0, out);
+    /* nullptr data with zero length should work */
+    result = gm_sha256(nullptr, 0, out);
     assert(GM_IS_OK(result));
 
     /* Large data */
@@ -132,23 +141,23 @@ static void test_sha256_edge_cases(void) {
     assert(GM_IS_OK(result));
 
     /* Test error cases */
-    /* NULL output buffer */
-    result = gm_sha256("test", 4, NULL);
+    /* nullptr output buffer */
+    result = gm_sha256("test", 4, nullptr);
     assert(GM_IS_ERR(result));
     gm_error_free(GM_UNWRAP_ERR(result));
 
-    /* NULL context for init */
-    result = gm_sha256_init(NULL);
+    /* nullptr context for init */
+    result = gm_sha256_init(nullptr);
     assert(GM_IS_ERR(result));
     gm_error_free(GM_UNWRAP_ERR(result));
 
-    /* NULL context for update */
-    result = gm_sha256_update(NULL, "test", 4);
+    /* nullptr context for update */
+    result = gm_sha256_update(nullptr, "test", 4);
     assert(GM_IS_ERR(result));
     gm_error_free(GM_UNWRAP_ERR(result));
 
-    /* NULL context for final */
-    result = gm_sha256_final(NULL, out);
+    /* nullptr context for final */
+    result = gm_sha256_final(nullptr, out);
     assert(GM_IS_ERR(result));
     gm_error_free(GM_UNWRAP_ERR(result));
 

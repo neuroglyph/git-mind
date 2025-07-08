@@ -1,121 +1,121 @@
 [
   {
     "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_crypto_backend.c.o -MF libgitmind.a.p/core_src_crypto_backend.c.o.d -o libgitmind.a.p/core_src_crypto_backend.c.o -c ../core/src/crypto/backend.c",
+    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_crypto_backend.c.o -MF libgitmind.a.p/core_src_crypto_backend.c.o.d -o libgitmind.a.p/core_src_crypto_backend.c.o -c ../core/src/crypto/backend.c",
     "file": "../core/src/crypto/backend.c",
     "output": "libgitmind.a.p/core_src_crypto_backend.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_crypto_random.c.o -MF libgitmind.a.p/core_src_crypto_random.c.o.d -o libgitmind.a.p/core_src_crypto_random.c.o -c ../core/src/crypto/random.c",
+    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_crypto_random.c.o -MF libgitmind.a.p/core_src_crypto_random.c.o.d -o libgitmind.a.p/core_src_crypto_random.c.o -c ../core/src/crypto/random.c",
     "file": "../core/src/crypto/random.c",
     "output": "libgitmind.a.p/core_src_crypto_random.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_crypto_sha256.c.o -MF libgitmind.a.p/core_src_crypto_sha256.c.o.d -o libgitmind.a.p/core_src_crypto_sha256.c.o -c ../core/src/crypto/sha256.c",
+    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_crypto_sha256.c.o -MF libgitmind.a.p/core_src_crypto_sha256.c.o.d -o libgitmind.a.p/core_src_crypto_sha256.c.o -c ../core/src/crypto/sha256.c",
     "file": "../core/src/crypto/sha256.c",
     "output": "libgitmind.a.p/core_src_crypto_sha256.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_error_error.c.o -MF libgitmind.a.p/core_src_error_error.c.o.d -o libgitmind.a.p/core_src_error_error.c.o -c ../core/src/error/error.c",
+    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_error_error.c.o -MF libgitmind.a.p/core_src_error_error.c.o.d -o libgitmind.a.p/core_src_error_error.c.o -c ../core/src/error/error.c",
     "file": "../core/src/error/error.c",
     "output": "libgitmind.a.p/core_src_error_error.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_id.c.o -MF libgitmind.a.p/core_src_types_id.c.o.d -o libgitmind.a.p/core_src_types_id.c.o -c ../core/src/types/id.c",
+    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_id.c.o -MF libgitmind.a.p/core_src_types_id.c.o.d -o libgitmind.a.p/core_src_types_id.c.o -c ../core/src/types/id.c",
     "file": "../core/src/types/id.c",
     "output": "libgitmind.a.p/core_src_types_id.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_path.c.o -MF libgitmind.a.p/core_src_types_path.c.o.d -o libgitmind.a.p/core_src_types_path.c.o -c ../core/src/types/path.c",
+    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_path.c.o -MF libgitmind.a.p/core_src_types_path.c.o.d -o libgitmind.a.p/core_src_types_path.c.o -c ../core/src/types/path.c",
     "file": "../core/src/types/path.c",
     "output": "libgitmind.a.p/core_src_types_path.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_string.c.o -MF libgitmind.a.p/core_src_types_string.c.o.d -o libgitmind.a.p/core_src_types_string.c.o -c ../core/src/types/string.c",
+    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_string.c.o -MF libgitmind.a.p/core_src_types_string.c.o.d -o libgitmind.a.p/core_src_types_string.c.o -c ../core/src/types/string.c",
     "file": "../core/src/types/string.c",
     "output": "libgitmind.a.p/core_src_types_string.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_string_core.c.o -MF libgitmind.a.p/core_src_types_string_core.c.o.d -o libgitmind.a.p/core_src_types_string_core.c.o -c ../core/src/types/string_core.c",
+    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_string_core.c.o -MF libgitmind.a.p/core_src_types_string_core.c.o.d -o libgitmind.a.p/core_src_types_string_core.c.o -c ../core/src/types/string_core.c",
     "file": "../core/src/types/string_core.c",
     "output": "libgitmind.a.p/core_src_types_string_core.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_string_utf8.c.o -MF libgitmind.a.p/core_src_types_string_utf8.c.o.d -o libgitmind.a.p/core_src_types_string_utf8.c.o -c ../core/src/types/string_utf8.c",
+    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_string_utf8.c.o -MF libgitmind.a.p/core_src_types_string_utf8.c.o.d -o libgitmind.a.p/core_src_types_string_utf8.c.o -c ../core/src/types/string_utf8.c",
     "file": "../core/src/types/string_utf8.c",
     "output": "libgitmind.a.p/core_src_types_string_utf8.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_utf8_validate.c.o -MF libgitmind.a.p/core_src_utf8_validate.c.o.d -o libgitmind.a.p/core_src_utf8_validate.c.o -c ../core/src/utf8/validate.c",
+    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_utf8_validate.c.o -MF libgitmind.a.p/core_src_utf8_validate.c.o.d -o libgitmind.a.p/core_src_utf8_validate.c.o -c ../core/src/utf8/validate.c",
     "file": "../core/src/utf8/validate.c",
     "output": "libgitmind.a.p/core_src_utf8_validate.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind_test_backend.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -fPIC -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o -MF libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o.d -o libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o -c ../core/tests/backends/test_backend.c",
+    "command": "clang -Ilibgitmind_test_backend.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -fPIC -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o -MF libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o.d -o libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o -c ../core/tests/backends/test_backend.c",
     "file": "../core/tests/backends/test_backend.c",
     "output": "libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Itest_error.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_error.p/core_tests_unit_test_error.c.o -MF test_error.p/core_tests_unit_test_error.c.o.d -o test_error.p/core_tests_unit_test_error.c.o -c ../core/tests/unit/test_error.c",
+    "command": "clang -Itest_error.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_error.p/core_tests_unit_test_error.c.o -MF test_error.p/core_tests_unit_test_error.c.o.d -o test_error.p/core_tests_unit_test_error.c.o -c ../core/tests/unit/test_error.c",
     "file": "../core/tests/unit/test_error.c",
     "output": "test_error.p/core_tests_unit_test_error.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Itest_id.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_id.p/core_tests_unit_test_id.c.o -MF test_id.p/core_tests_unit_test_id.c.o.d -o test_id.p/core_tests_unit_test_id.c.o -c ../core/tests/unit/test_id.c",
+    "command": "clang -Itest_id.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_id.p/core_tests_unit_test_id.c.o -MF test_id.p/core_tests_unit_test_id.c.o.d -o test_id.p/core_tests_unit_test_id.c.o -c ../core/tests/unit/test_id.c",
     "file": "../core/tests/unit/test_id.c",
     "output": "test_id.p/core_tests_unit_test_id.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Itest_id_thread_safety.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o -MF test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o.d -o test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o -c ../core/tests/unit/test_id_thread_safety.c",
+    "command": "clang -Itest_id_thread_safety.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o -MF test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o.d -o test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o -c ../core/tests/unit/test_id_thread_safety.c",
     "file": "../core/tests/unit/test_id_thread_safety.c",
     "output": "test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Itest_string.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_string.p/core_tests_unit_test_string.c.o -MF test_string.p/core_tests_unit_test_string.c.o.d -o test_string.p/core_tests_unit_test_string.c.o -c ../core/tests/unit/test_string.c",
+    "command": "clang -Itest_string.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_string.p/core_tests_unit_test_string.c.o -MF test_string.p/core_tests_unit_test_string.c.o.d -o test_string.p/core_tests_unit_test_string.c.o -c ../core/tests/unit/test_string.c",
     "file": "../core/tests/unit/test_string.c",
     "output": "test_string.p/core_tests_unit_test_string.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Itest_path.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_path.p/core_tests_unit_test_path.c.o -MF test_path.p/core_tests_unit_test_path.c.o.d -o test_path.p/core_tests_unit_test_path.c.o -c ../core/tests/unit/test_path.c",
+    "command": "clang -Itest_path.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_path.p/core_tests_unit_test_path.c.o -MF test_path.p/core_tests_unit_test_path.c.o.d -o test_path.p/core_tests_unit_test_path.c.o -c ../core/tests/unit/test_path.c",
     "file": "../core/tests/unit/test_path.c",
     "output": "test_path.p/core_tests_unit_test_path.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Itest_sha256.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_sha256.p/core_tests_unit_test_sha256.c.o -MF test_sha256.p/core_tests_unit_test_sha256.c.o.d -o test_sha256.p/core_tests_unit_test_sha256.c.o -c ../core/tests/unit/test_sha256.c",
+    "command": "clang -Itest_sha256.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_sha256.p/core_tests_unit_test_sha256.c.o -MF test_sha256.p/core_tests_unit_test_sha256.c.o.d -o test_sha256.p/core_tests_unit_test_sha256.c.o -c ../core/tests/unit/test_sha256.c",
     "file": "../core/tests/unit/test_sha256.c",
     "output": "test_sha256.p/core_tests_unit_test_sha256.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Itest_random.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_random.p/core_tests_unit_test_random.c.o -MF test_random.p/core_tests_unit_test_random.c.o.d -o test_random.p/core_tests_unit_test_random.c.o -c ../core/tests/unit/test_random.c",
+    "command": "clang -Itest_random.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_random.p/core_tests_unit_test_random.c.o -MF test_random.p/core_tests_unit_test_random.c.o.d -o test_random.p/core_tests_unit_test_random.c.o -c ../core/tests/unit/test_random.c",
     "file": "../core/tests/unit/test_random.c",
     "output": "test_random.p/core_tests_unit_test_random.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Itest_utf8.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_utf8.p/core_tests_unit_test_utf8.c.o -MF test_utf8.p/core_tests_unit_test_utf8.c.o.d -o test_utf8.p/core_tests_unit_test_utf8.c.o -c ../core/tests/unit/test_utf8.c",
+    "command": "clang -Itest_utf8.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -pthread -MD -MQ test_utf8.p/core_tests_unit_test_utf8.c.o -MF test_utf8.p/core_tests_unit_test_utf8.c.o.d -o test_utf8.p/core_tests_unit_test_utf8.c.o -c ../core/tests/unit/test_utf8.c",
     "file": "../core/tests/unit/test_utf8.c",
     "output": "test_utf8.p/core_tests_unit_test_utf8.c.o"
   },
   {
     "directory": "/workspace/build",
-    "command": "clang -Itest_crypto_backend.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=gnu11 -O0 -g -Wall -Wextra -Werror -O2 -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o -MF test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o.d -o test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o -c ../core/tests/unit/test_crypto_backend.c",
+    "command": "clang -Itest_crypto_backend.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -Wall -Wextra -Werror -O2 -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o -MF test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o.d -o test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o -c ../core/tests/unit/test_crypto_backend.c",
     "file": "../core/tests/unit/test_crypto_backend.c",
     "output": "test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o"
   }

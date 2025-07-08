@@ -32,7 +32,7 @@ gm_string_view_t gm_string_view_from_string(const gm_string_t *str) {
 
 /* Check if string is empty */
 bool gm_string_is_empty(const gm_string_t *str) {
-    return !str || str->length == 0;
+    return (bool)(!str || str->length == 0);
 }
 
 /* Compare strings */

@@ -20,11 +20,11 @@ gm_result_void_t gm_sha256(const void *data, size_t len,
                          uint8_t out[GM_SHA256_DIGEST_SIZE]) {
     if (!data && len > 0) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
-                                    "NULL data with non-zero length"));
+                                    "nullptr data with non-zero length"));
     }
     if (!out) {
         return gm_err_void(
-            GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL output buffer"));
+            GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr output buffer"));
     }
 
     const gm_crypto_backend_t *backend = gm_crypto_get_backend();
@@ -42,7 +42,7 @@ gm_result_void_t gm_sha256(const void *data, size_t len,
 
 gm_result_void_t gm_sha256_init(gm_sha256_ctx_t *ctx) {
     if (!ctx) {
-        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL context"));
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr context"));
     }
 
     const gm_crypto_backend_t *backend = gm_crypto_get_backend();
@@ -62,11 +62,11 @@ gm_result_void_t gm_sha256_init(gm_sha256_ctx_t *ctx) {
 gm_result_void_t gm_sha256_update(gm_sha256_ctx_t *ctx, const void *data,
                                 size_t len) {
     if (!ctx) {
-        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL context"));
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr context"));
     }
     if (!data && len > 0) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
-                                    "NULL data with non-zero length"));
+                                    "nullptr data with non-zero length"));
     }
 
     const gm_crypto_backend_t *backend = gm_crypto_get_backend();
@@ -86,11 +86,11 @@ gm_result_void_t gm_sha256_update(gm_sha256_ctx_t *ctx, const void *data,
 gm_result_void_t gm_sha256_final(gm_sha256_ctx_t *ctx,
                                uint8_t out[GM_SHA256_DIGEST_SIZE]) {
     if (!ctx) {
-        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL context"));
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr context"));
     }
     if (!out) {
         return gm_err_void(
-            GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL output buffer"));
+            GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr output buffer"));
     }
 
     const gm_crypto_backend_t *backend = gm_crypto_get_backend();

@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Clang-Tidy",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/tools/docker-clang-tidy.sh",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Run Clang-Tidy (Docker)"
+    }
+  ]
+}

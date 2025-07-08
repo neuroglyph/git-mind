@@ -30,8 +30,8 @@ static void test_id_from_string(void) {
     /* Different input should produce different ID */
     assert(!gm_id_equal(id1, id3));
 
-    /* Test error case - NULL input */
-    gm_result_id_t err_result = gm_id_from_string(NULL);
+    /* Test error case - nullptr input */
+    gm_result_id_t err_result = gm_id_from_string(nullptr);
     assert(GM_IS_ERR(err_result));
     gm_error_free(GM_UNWRAP_ERR(err_result));
 
@@ -42,17 +42,17 @@ static void test_id_from_string(void) {
 static void test_id_hex_conversion(void) {
     gm_result_id_t id_result = gm_id_from_string("test");
     assert(GM_IS_OK(id_result));
-    gm_id_t id = GM_UNWRAP(id_result);
+    gm_id_t test_id = GM_UNWRAP(id_result);
 
     char hex[GM_ID_HEX_SIZE];
-    gm_result_void_t hex_result = gm_id_to_hex(id, hex, sizeof(hex));
+    gm_result_void_t hex_result = gm_id_to_hex(test_id, hex, sizeof(hex));
     assert(GM_IS_OK(hex_result));
     assert(strlen(hex) == GM_ID_HEX_CHARS); /* SHA-256 hex representation */
 
     /* Test buffer too small */
     char small_buf[10];
     gm_result_void_t small_result =
-        gm_id_to_hex(id, small_buf, sizeof(small_buf));
+        gm_id_to_hex(test_id, small_buf, sizeof(small_buf));
     assert(GM_IS_ERR(small_result));
     assert(GM_UNWRAP_ERR(small_result)->code == GM_ERR_BUFFER_TOO_SMALL);
     gm_error_free(GM_UNWRAP_ERR(small_result));
@@ -62,7 +62,7 @@ static void test_id_hex_conversion(void) {
     assert(GM_IS_OK(result));
 
     gm_id_t parsed = GM_UNWRAP(result);
-    assert(gm_id_equal(id, parsed));
+    assert(gm_id_equal(test_id, parsed));
 
     printf("✓ test_id_hex_conversion\n");
 }
@@ -80,8 +80,8 @@ static void test_id_hex_invalid(void) {
     assert(GM_IS_ERR(result));
     gm_error_free(GM_UNWRAP_ERR(result));
 
-    /* NULL */
-    result = gm_id_from_hex(NULL);
+    /* nullptr */
+    result = gm_id_from_hex(nullptr);
     assert(GM_IS_ERR(result));
     gm_error_free(GM_UNWRAP_ERR(result));
 
@@ -181,8 +181,8 @@ static void test_id_from_data(void) {
     /* Different data should produce different ID */
     assert(!gm_id_equal(id1, id3));
 
-    /* Test error case - NULL data */
-    gm_result_id_t err_result = gm_id_from_data(NULL, 10);
+    /* Test error case - nullptr data */
+    gm_result_id_t err_result = gm_id_from_data(nullptr, 10);
     assert(GM_IS_ERR(err_result));
     gm_error_free(GM_UNWRAP_ERR(err_result));
 

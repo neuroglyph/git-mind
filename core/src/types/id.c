@@ -17,6 +17,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+#include <stdlib.h>
 
 /* Compare two IDs */
 bool gm_id_equal(gm_id_t new_id_a, gm_id_t new_id_b) {
@@ -28,28 +30,36 @@ int gm_id_compare(gm_id_t new_id_a, gm_id_t new_id_b) {
     return memcmp(new_id_a.bytes, new_id_b.bytes, GM_ID_SIZE);
 }
 
-/* SipHash key - initialized once at startup */
-static uint8_t g_siphash_key[crypto_shorthash_siphash24_KEYBYTES];
-static once_flag g_siphash_key_once = ONCE_FLAG_INIT;
+/* Static storage for SipHash key - using a struct to group related data */
+static struct {
+    uint8_t key[crypto_shorthash_siphash24_KEYBYTES];
+    once_flag init_flag;
+} g_siphash_data = { .init_flag = ONCE_FLAG_INIT };
 
-/* Initialize SipHash key with random data - called once by call_once */
+/* Initialize SipHash key with random data */
 static void init_siphash_key(void) {
     /* Generate random key - this is best effort, if it fails we use fallback */
-    gm_result_void_t result =
-        gm_random_bytes(g_siphash_key, sizeof(g_siphash_key));
+    gm_result_void_t result = gm_random_bytes(g_siphash_data.key, 
+                                             sizeof(g_siphash_data.key));
     if (GM_IS_ERR(result)) {
         /* If random generation fails, use a deterministic fallback */
         /* This is still better than hardcoded constant */
-        for (size_t i = 0; i < sizeof(g_siphash_key); i++) {
-            g_siphash_key[i] = (uint8_t)(i ^ 0xAA);
+        for (size_t i = 0; i < sizeof(g_siphash_data.key); i++) {
+            g_siphash_data.key[i] = (uint8_t)(i ^ 0xAA);
         }
         gm_error_free(GM_UNWRAP_ERR(result));
     }
 }
+
+/* Get the SipHash key, initializing it once if needed */
+static const uint8_t *get_siphash_key(void) {
+    call_once(&g_siphash_data.init_flag, init_siphash_key);
+    return g_siphash_data.key;
+}
 /* Hash function for hash tables using SipHash-2-4 */
 gm_result_u32_t gm_id_hash(gm_id_t new_identifier) {
-    /* Ensure key is initialized exactly once, thread-safe */
-    call_once(&g_siphash_key_once, init_siphash_key);
+    /* Get the SipHash key (initialized once) */
+    const uint8_t *siphash_key = get_siphash_key();
 
     /* SipHash produces 8-byte output */
     uint8_t hash_output[crypto_shorthash_siphash24_BYTES];
@@ -58,7 +68,7 @@ gm_result_u32_t gm_id_hash(gm_id_t new_identifier) {
     crypto_shorthash_siphash24(hash_output,      /* output buffer */
                                new_identifier.bytes, /* input data */
                                GM_ID_SIZE,       /* input length */
-                               g_siphash_key     /* 128-bit key */
+                               siphash_key       /* 128-bit key */
     );
 
     /* Convert 8-byte output to uint64_t */
@@ -79,7 +89,7 @@ static inline gm_result_id_t gm_err_id(gm_error_t *err) {
 /* Create ID from data */
 gm_result_id_t gm_id_from_data(const void *data, size_t len) {
     if (!data) {
-        return gm_err_id(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL data"));
+        return gm_err_id(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr data"));
     }
 
     gm_id_t new_id;
@@ -94,7 +104,7 @@ gm_result_id_t gm_id_from_data(const void *data, size_t len) {
 /* Create ID from string */
 gm_result_id_t gm_id_from_string(const char *str) {
     if (!str) {
-        return gm_err_id(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL string"));
+        return gm_err_id(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr string"));
     }
     return gm_id_from_data(str, strlen(str));
 }
@@ -118,14 +128,14 @@ gm_result_id_t gm_id_generate(void) {
 #define HEX_FORMAT_2X "%2x"
 
 /* Error messages */
-static const char *const ERR_MSG_INVALID_HEX_LEN = "Invalid hex ID: must be %d characters";
-static const char *const ERR_MSG_INVALID_HEX_CHAR = "Invalid hex character at position %d";
+static const char *const GM_ERR_MSG_INVALID_HEX_LEN = "Invalid hex ID: must be %d characters";
+static const char *const GM_ERR_MSG_INVALID_HEX_CHAR = "Invalid hex character at position %d";
 
 /* Convert ID to hex string (safe version with buffer size check) */
 gm_result_void_t gm_id_to_hex(gm_id_t new_identifier, char *out, size_t out_size) {
     if (!out) {
         return gm_err_void(
-            GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL output buffer"));
+            GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr output buffer"));
     }
 
     if (out_size < GM_ID_HEX_SIZE) {
@@ -149,20 +159,30 @@ gm_result_void_t gm_id_to_hex(gm_id_t new_identifier, char *out, size_t out_size
 /* Validate hex string length */
 static gm_error_t *validate_hex_length(const char *hex) {
     if (!hex || strlen(hex) != GM_ID_HEX_CHARS) {
-        return GM_ERROR(GM_ERR_INVALID_FORMAT, ERR_MSG_INVALID_HEX_LEN, GM_ID_HEX_CHARS);
+        return GM_ERROR(GM_ERR_INVALID_FORMAT, GM_ERR_MSG_INVALID_HEX_LEN, GM_ID_HEX_CHARS);
     }
-    return NULL;
+    return nullptr;
 }
 
 /* Parse single hex byte */
 static gm_error_t *parse_hex_byte(const char *hex, int pos, uint8_t *out) {
-    unsigned int byte;
-    if (sscanf(hex + (size_t)pos * HEX_CHARS_PER_BYTE, HEX_FORMAT_2X, &byte) != 1) {
-        return GM_ERROR(GM_ERR_INVALID_FORMAT, ERR_MSG_INVALID_HEX_CHAR, 
+    char hex_pair[3];
+    hex_pair[0] = hex[(size_t)pos * HEX_CHARS_PER_BYTE];
+    hex_pair[1] = hex[(size_t)pos * HEX_CHARS_PER_BYTE + 1];
+    hex_pair[2] = '\0';
+    
+    char *endptr = nullptr;
+    errno = 0;
+    unsigned long value = strtoul(hex_pair, &endptr, 16);
+    
+    /* Check for conversion errors */
+    if (errno != 0 || endptr != hex_pair + 2 || value > 0xFF) {
+        return GM_ERROR(GM_ERR_INVALID_FORMAT, GM_ERR_MSG_INVALID_HEX_CHAR, 
                        pos * HEX_CHARS_PER_BYTE);
     }
-    *out = (uint8_t)byte;
-    return NULL;
+    
+    *out = (uint8_t)value;
+    return nullptr;
 }
 
 /* Parse hex string to ID */

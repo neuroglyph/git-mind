@@ -9,7 +9,7 @@
 /* Validate UTF-8 */
 gm_result_void_t gm_string_validate_utf8(const gm_string_t *str) {
     if (!str) {
-        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL string"));
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr string"));
     }
 
     /* Use DFA-based UTF-8 validator */

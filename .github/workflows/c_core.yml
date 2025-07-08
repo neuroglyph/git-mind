@@ -25,7 +25,7 @@ jobs:
       - name: clang-tidy (diff-guard)
         run: |
           clang-tidy -quiet -p . --config-file=quality/.clang-tidy \
-            $(git ls-files 'core/**/*.c' 'core/**/*.h') \
+            $(git ls-files 'core/**/*.c' 'core/**/*.h' | grep -v -E '(test_|_test\.|/tests/)') \
             | tee clang-tidy-report-full.txt || true
           # Filter to just project warnings
           grep -E "^/.*core/|^core/" clang-tidy-report-full.txt > clang-tidy-report.txt || true

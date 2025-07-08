@@ -256,7 +256,7 @@ static void test_utf8_performance(void) {
     /* Generate 1MB of ASCII data */
     size_t size = 1024 * 1024;
     char *buf = malloc(size);
-    assert(buf != NULL);
+    assert(buf != nullptr);
 
     /* Fill with ASCII */
     for (size_t i = 0; i < size; i++) {

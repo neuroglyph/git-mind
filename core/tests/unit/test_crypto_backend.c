@@ -20,7 +20,7 @@ static void test_backend_switch(void) {
 
     /* Default should be libsodium */
     const gm_crypto_backend_t *backend = gm_crypto_get_backend();
-    assert(backend != NULL);
+    assert(backend != nullptr);
     assert(strcmp(backend->name, "libsodium") == 0);
 
     /* Test with libsodium backend */
@@ -158,21 +158,21 @@ static void test_streaming_hash(void) {
 
 /* Test invalid backend */
 static void test_invalid_backend(void) {
-    /* NULL backend */
-    gm_result_backend_t result = gm_crypto_set_backend(NULL);
+    /* nullptr backend */
+    gm_result_backend_t result = gm_crypto_set_backend(nullptr);
     assert(GM_IS_ERR(result));
     gm_error_free(GM_UNWRAP_ERR(result));
 
     /* Backend with missing functions */
     gm_crypto_backend_t incomplete = {.name = "incomplete",
-                                      .sha256 = NULL, /* Missing function */
-                                      .sha256_init = NULL,
-                                      .sha256_update = NULL,
-                                      .sha256_final = NULL,
-                                      .random_bytes = NULL,
-                                      .random_u32 = NULL,
-                                      .random_u64 = NULL,
-                                      .context = NULL};
+                                      .sha256 = nullptr, /* Missing function */
+                                      .sha256_init = nullptr,
+                                      .sha256_update = nullptr,
+                                      .sha256_final = nullptr,
+                                      .random_bytes = nullptr,
+                                      .random_u32 = nullptr,
+                                      .random_u64 = nullptr,
+                                      .context = nullptr};
 
     result = gm_crypto_set_backend(&incomplete);
     assert(GM_IS_ERR(result));

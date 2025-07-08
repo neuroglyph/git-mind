@@ -90,50 +90,50 @@ static void test_string_view(void) {
 
 /* Test string comparison */
 static void test_string_compare(void) {
-    gm_result_string_t r1 = gm_string_new("hello");
-    gm_result_string_t r2 = gm_string_new("hello");
-    gm_result_string_t r3 = gm_string_new("world");
+    gm_result_string_t res1 = gm_string_new("hello");
+    gm_result_string_t res2 = gm_string_new("hello");
+    gm_result_string_t res3 = gm_string_new("world");
 
-    assert(GM_IS_OK(r1) && GM_IS_OK(r2) && GM_IS_OK(r3));
+    assert(GM_IS_OK(res1) && GM_IS_OK(res2) && GM_IS_OK(res3));
 
-    gm_string_t s1 = GM_UNWRAP(r1);
-    gm_string_t s2 = GM_UNWRAP(r2);
-    gm_string_t s3 = GM_UNWRAP(r3);
+    gm_string_t str1 = GM_UNWRAP(res1);
+    gm_string_t str2 = GM_UNWRAP(res2);
+    gm_string_t str3 = GM_UNWRAP(res3);
 
-    assert(gm_string_equals(&s1, &s2));
-    assert(!gm_string_equals(&s1, &s3));
+    assert(gm_string_equals(&str1, &str2));
+    assert(!gm_string_equals(&str1, &str3));
 
     /* Test prefix/suffix */
-    assert(gm_string_starts_with(&s1, "hel"));
-    assert(!gm_string_starts_with(&s1, "wor"));
-    assert(gm_string_ends_with(&s1, "llo"));
-    assert(!gm_string_ends_with(&s1, "wor"));
+    assert(gm_string_starts_with(&str1, "hel"));
+    assert(!gm_string_starts_with(&str1, "wor"));
+    assert(gm_string_ends_with(&str1, "llo"));
+    assert(!gm_string_ends_with(&str1, "wor"));
 
-    gm_string_free(&s1);
-    gm_string_free(&s2);
-    gm_string_free(&s3);
+    gm_string_free(&str1);
+    gm_string_free(&str2);
+    gm_string_free(&str3);
     printf("✓ test_string_compare\n");
 }
 
 /* Test string concatenation */
 static void test_string_concat(void) {
-    gm_result_string_t r1 = gm_string_new("hello");
-    gm_result_string_t r2 = gm_string_new(" world");
+    gm_result_string_t res1 = gm_string_new("hello");
+    gm_result_string_t res2 = gm_string_new(" world");
 
-    assert(GM_IS_OK(r1) && GM_IS_OK(r2));
+    assert(GM_IS_OK(res1) && GM_IS_OK(res2));
 
-    gm_string_t s1 = GM_UNWRAP(r1);
-    gm_string_t s2 = GM_UNWRAP(r2);
+    gm_string_t str1 = GM_UNWRAP(res1);
+    gm_string_t str2 = GM_UNWRAP(res2);
 
-    gm_result_string_t result = gm_string_concat(&s1, &s2);
+    gm_result_string_t result = gm_string_concat(&str1, &str2);
     assert(GM_IS_OK(result));
 
     gm_string_t concat = GM_UNWRAP(result);
     assert(strcmp(concat.data, "hello world") == 0);
     assert(concat.length == 11);
 
-    gm_string_free(&s1);
-    gm_string_free(&s2);
+    gm_string_free(&str1);
+    gm_string_free(&str2);
     gm_string_free(&concat);
     printf("✓ test_string_concat\n");
 }
@@ -192,8 +192,8 @@ static void test_string_substring(void) {
     assert(GM_IS_ERR(sub_result));
     gm_error_free(GM_UNWRAP_ERR(sub_result));
 
-    /* NULL string */
-    sub_result = gm_string_substring(NULL, 0, 5);
+    /* nullptr string */
+    sub_result = gm_string_substring(nullptr, 0, 5);
     assert(GM_IS_ERR(sub_result));
     gm_error_free(GM_UNWRAP_ERR(sub_result));
 
@@ -212,7 +212,7 @@ static void test_string_trim(void) {
                                 "hello world", /* No whitespace */
                                 "   ",         /* All whitespace */
                                 "",            /* Empty string */
-                                NULL};
+                                nullptr};
 
     const char *expected[] = {"hello world",
                               "hello world",
@@ -223,7 +223,7 @@ static void test_string_trim(void) {
                               "",
                               ""};
 
-    for (int i = 0; test_cases[i] != NULL; i++) {
+    for (int i = 0; test_cases[i] != nullptr; i++) {
         gm_result_string_t result = gm_string_new(test_cases[i]);
         assert(GM_IS_OK(result));
 
@@ -239,8 +239,8 @@ static void test_string_trim(void) {
         gm_string_free(&trimmed);
     }
 
-    /* Test NULL string */
-    gm_result_string_t trim_result = gm_string_trim(NULL);
+    /* Test nullptr string */
+    gm_result_string_t trim_result = gm_string_trim(nullptr);
     assert(GM_IS_ERR(trim_result));
     gm_error_free(GM_UNWRAP_ERR(trim_result));
 

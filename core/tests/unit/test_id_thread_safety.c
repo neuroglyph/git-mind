@@ -35,14 +35,14 @@ static int hash_thread(void *arg) {
     thread_data_t *data = (thread_data_t *)arg;
 
     /* Create a unique ID for this thread */
-    gm_id_t id;
+    gm_id_t thread_id;
     for (int i = 0; i < GM_ID_SIZE; i++) {
-        id.bytes[i] = (uint8_t)((data->thread_id + i * 13) % 256);
+        thread_id.bytes[i] = (uint8_t)((data->thread_id + i * 13) % 256);
     }
 
     /* Generate many hashes */
     for (int i = 0; i < HASHES_PER_THREAD; i++) {
-        gm_result_u32_t result = gm_id_hash(id);
+        gm_result_u32_t result = gm_id_hash(thread_id);
         if (GM_IS_OK(result)) {
             data->hashes[i] = GM_UNWRAP(result);
         } else {
@@ -63,7 +63,7 @@ static void test_concurrent_hashing(void) {
     for (int i = 0; i < NUM_THREADS; i++) {
         thread_data[i].thread_id = i;
         thread_data[i].hashes = calloc(HASHES_PER_THREAD, sizeof(uint32_t));
-        assert(thread_data[i].hashes != NULL);
+        assert(thread_data[i].hashes != nullptr);
     }
 
     /* Start threads */
@@ -74,7 +74,8 @@ static void test_concurrent_hashing(void) {
 
     /* Wait for threads */
     for (int i = 0; i < NUM_THREADS; i++) {
-        thrd_join(threads[i], NULL);
+        int join_result = thrd_join(threads[i], nullptr);
+        (void)join_result; /* Explicitly ignore return value for test */
     }
 
     /* Verify results */
@@ -140,7 +141,8 @@ static void test_concurrent_generation(void) {
 
     /* Wait for threads */
     for (int i = 0; i < NUM_THREADS; i++) {
-        thrd_join(threads[i], NULL);
+        int join_result = thrd_join(threads[i], nullptr);
+        (void)join_result; /* Explicitly ignore return value for test */
     }
 
     /* Verify all IDs are unique */
@@ -175,7 +177,7 @@ static void test_initialization_race(void) {
     for (int i = 0; i < NUM_THREADS; i++) {
         thread_data[i].thread_id = i;
         thread_data[i].hashes = calloc(HASHES_PER_THREAD, sizeof(uint32_t));
-        assert(thread_data[i].hashes != NULL);
+        assert(thread_data[i].hashes != nullptr);
     }
 
     /* Start all threads at once to maximize race condition likelihood */
@@ -186,7 +188,8 @@ static void test_initialization_race(void) {
 
     /* Wait for threads */
     for (int i = 0; i < NUM_THREADS; i++) {
-        thrd_join(threads[i], NULL);
+        int join_result = thrd_join(threads[i], nullptr);
+        (void)join_result; /* Explicitly ignore return value for test */
     }
 
     /* If we get here without crashing, the implementation handled

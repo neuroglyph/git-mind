@@ -15,7 +15,7 @@
 
 gm_result_void_t gm_random_bytes(void *buf, size_t size) {
     if (!buf) {
-        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL buffer"));
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr buffer"));
     }
     if (size == 0) {
         return gm_ok_void();

@@ -1,7 +1,7 @@
 project('git-mind', 'c',
   version : '0.0.1',
   default_options : ['warning_level=0',  # We'll add our own flags
-                     'c_std=gnu11'])
+                     'c_std=c2x'])
 
 # Add specific compiler flags to match original Makefile exactly
 add_project_arguments('-Wall', '-Wextra', '-Werror', '-O2', language : 'c')

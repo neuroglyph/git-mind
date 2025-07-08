@@ -11,7 +11,7 @@ git-mind <command> [args...]
 ```
 
 Not using getopt or argparse because:
-1. **Minimal dependencies**: Pure C99
+1. **Minimal dependencies**: C23
 2. **Clear flow**: Easy to trace execution
 3. **Subcommand pattern**: Like Git itself
 4. **Future-proof**: Can add complex parsing later

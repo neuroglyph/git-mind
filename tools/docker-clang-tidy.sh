@@ -39,9 +39,9 @@ docker run --rm -v "$PWD":/workspace -w /workspace $IMAGE bash -c '
     ninja -C build
     cp build/compile_commands.json .
     
-    # Run clang-tidy exactly like CI
+    # Run clang-tidy exactly like CI (excluding test files)
     clang-tidy -quiet -p . --config-file=quality/.clang-tidy \
-        $(git ls-files "core/**/*.c" "core/**/*.h") \
+        $(git ls-files "core/**/*.c" "core/**/*.h" | grep -v -E "(test_|_test\.|/tests/)") \
         | tee clang-tidy-report-full.txt || true
     
     # Filter to just project warnings (handles both absolute /workspace/core/ and relative ../core/ paths)

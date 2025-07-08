@@ -31,7 +31,7 @@ GM_RESULT_DEF(gm_result_id, gm_id_t);
 /* ID operations */
 bool gm_id_equal(gm_id_t id_a, gm_id_t id_b);
 int gm_id_compare(gm_id_t id_a, gm_id_t id_b);
-gm_result_u32_t gm_id_hash(gm_id_t id);
+gm_result_u32_t gm_id_hash(gm_id_t new_identifier);
 
 /* ID creation - all can fail */
 gm_result_id_t gm_id_from_data(const void *data, size_t len);
@@ -39,7 +39,8 @@ gm_result_id_t gm_id_from_string(const char *str);
 gm_result_id_t gm_id_generate(void); /* Random ID */
 
 /* ID conversion (safe - validates buffer size) */
-gm_result_void_t gm_id_to_hex(gm_id_t id, char *out, size_t out_size);
+gm_result_void_t gm_id_to_hex(gm_id_t new_identifier, char *out,
+                              size_t out_size);
 
 /* ID parsing (can fail) */
 gm_result_id_t gm_id_from_hex(const char *hex);
@@ -67,24 +68,27 @@ typedef struct {
 } gm_commit_id_t;
 
 /* Type-safe operations (compiler enforced!) */
-static inline bool gm_node_id_equal(gm_node_id_t a, gm_node_id_t b) {
-    return gm_id_equal(a.base, b.base);
+static inline bool gm_node_id_equal(gm_node_id_t node_a, gm_node_id_t node_b) {
+    return gm_id_equal(node_a.base, node_b.base);
 }
 
-static inline bool gm_edge_id_equal(gm_edge_id_t a, gm_edge_id_t b) {
-    return gm_id_equal(a.base, b.base);
+static inline bool gm_edge_id_equal(gm_edge_id_t edge_a, gm_edge_id_t edge_b) {
+    return gm_id_equal(edge_a.base, edge_b.base);
 }
 
-static inline bool gm_graph_id_equal(gm_graph_id_t a, gm_graph_id_t b) {
-    return gm_id_equal(a.base, b.base);
+static inline bool gm_graph_id_equal(gm_graph_id_t graph_a,
+                                     gm_graph_id_t graph_b) {
+    return gm_id_equal(graph_a.base, graph_b.base);
 }
 
-static inline bool gm_session_id_equal(gm_session_id_t a, gm_session_id_t b) {
-    return gm_id_equal(a.base, b.base);
+static inline bool gm_session_id_equal(gm_session_id_t session_a,
+                                       gm_session_id_t session_b) {
+    return gm_id_equal(session_a.base, session_b.base);
 }
 
-static inline bool gm_commit_id_equal(gm_commit_id_t a, gm_commit_id_t b) {
-    return gm_id_equal(a.base, b.base);
+static inline bool gm_commit_id_equal(gm_commit_id_t commit_a,
+                                      gm_commit_id_t commit_b) {
+    return gm_id_equal(commit_a.base, commit_b.base);
 }
 
 /* Forward declarations for typed ID generation */
@@ -105,14 +109,14 @@ gm_edge_id_t gm_edge_id_from_triple(gm_node_id_t source, gm_node_id_t target,
 gm_result_session_id_t gm_session_id_new(void);
 
 /* Conversion helpers */
-static inline gm_result_void_t gm_node_id_to_hex(gm_node_id_t id,
+static inline gm_result_void_t gm_node_id_to_hex(gm_node_id_t identifier,
                                                  char out[GM_ID_HEX_SIZE]) {
-    return gm_id_to_hex(id.base, out, GM_ID_HEX_SIZE);
+    return gm_id_to_hex(identifier.base, out, GM_ID_HEX_SIZE);
 }
 
-static inline gm_result_void_t gm_edge_id_to_hex(gm_edge_id_t id,
+static inline gm_result_void_t gm_edge_id_to_hex(gm_edge_id_t identifier,
                                                  char out[GM_ID_HEX_SIZE]) {
-    return gm_id_to_hex(id.base, out, GM_ID_HEX_SIZE);
+    return gm_id_to_hex(identifier.base, out, GM_ID_HEX_SIZE);
 }
 
 #endif /* GITMIND_TYPES_ID_H */

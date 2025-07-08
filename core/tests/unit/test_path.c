@@ -41,8 +41,8 @@ static void test_path_new(void) {
 
     gm_path_free(&path);
 
-    /* NULL path (treated as empty) */
-    result = gm_path_new(NULL);
+    /* nullptr path (treated as empty) */
+    result = gm_path_new(nullptr);
     assert(GM_IS_OK(result));
 
     path = GM_UNWRAP(result);
@@ -275,36 +275,36 @@ static void test_path_extension(void) {
 
 /* Test path comparison */
 static void test_path_compare(void) {
-    gm_result_path_t r1 = gm_path_new("/home/user");
-    gm_result_path_t r2 = gm_path_new("/home/user");
-    gm_result_path_t r3 = gm_path_new("/home/other");
+    gm_result_path_t res1 = gm_path_new("/home/user");
+    gm_result_path_t res2 = gm_path_new("/home/user");
+    gm_result_path_t res3 = gm_path_new("/home/other");
 
-    assert(GM_IS_OK(r1) && GM_IS_OK(r2) && GM_IS_OK(r3));
+    assert(GM_IS_OK(res1) && GM_IS_OK(res2) && GM_IS_OK(res3));
 
-    gm_path_t p1 = GM_UNWRAP(r1);
-    gm_path_t p2 = GM_UNWRAP(r2);
-    gm_path_t p3 = GM_UNWRAP(r3);
+    gm_path_t path1 = GM_UNWRAP(res1);
+    gm_path_t path2 = GM_UNWRAP(res2);
+    gm_path_t path3 = GM_UNWRAP(res3);
 
-    assert(gm_path_equals(&p1, &p2));
-    assert(!gm_path_equals(&p1, &p3));
+    assert(gm_path_equals(&path1, &path2));
+    assert(!gm_path_equals(&path1, &path3));
 
     /* Prefix check */
-    gm_result_path_t r4 = gm_path_new("/home/user/documents");
-    assert(GM_IS_OK(r4));
-    gm_path_t p4 = GM_UNWRAP(r4);
+    gm_result_path_t res4 = gm_path_new("/home/user/documents");
+    assert(GM_IS_OK(res4));
+    gm_path_t path4 = GM_UNWRAP(res4);
 
-    assert(gm_path_starts_with(&p4, &p1));
-    assert(!gm_path_starts_with(&p1, &p4));
+    assert(gm_path_starts_with(&path4, &path1));
+    assert(!gm_path_starts_with(&path1, &path4));
 
     /* Child check */
-    assert(gm_path_is_child_of(&p4, &p1));
-    assert(!gm_path_is_child_of(&p1, &p4));
-    assert(!gm_path_is_child_of(&p1, &p3));
+    assert(gm_path_is_child_of(&path4, &path1));
+    assert(!gm_path_is_child_of(&path1, &path4));
+    assert(!gm_path_is_child_of(&path1, &path3));
 
-    gm_path_free(&p1);
-    gm_path_free(&p2);
-    gm_path_free(&p3);
-    gm_path_free(&p4);
+    gm_path_free(&path1);
+    gm_path_free(&path2);
+    gm_path_free(&path3);
+    gm_path_free(&path4);
 
     printf("✓ test_path_compare\n");
 }
