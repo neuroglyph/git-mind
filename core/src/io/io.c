@@ -23,10 +23,10 @@
 #include <unistd.h>
 
 /* Error code constants */
-static const int GM_ERROR_FILE_OPERATION = 1001;
-static const int GM_ERROR_DIR_OPERATION = 2001;
-static const int GM_ERROR_FS_OPERATION = 3001;
-static const int GM_ERROR_PROCESS_OPERATION = 4001;
+static const int GmErrorFileOperation = 1001;
+static const int GmErrorDirOperation = 2001;
+static const int GmErrorFsOperation = 3001;
+static const int GmErrorProcessOperation = 4001;
 
 /* Wrapper functions for file operations with Result types */
 
@@ -35,7 +35,7 @@ static gm_result_file_ptr_t wrap_fopen(const char *path, const char *mode) {
     if (!file) {
         return (gm_result_file_ptr_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FILE_OPERATION, "Failed to open file: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFileOperation, "Failed to open file: %s", strerror(errno))
         };
     }
     return (gm_result_file_ptr_t){.ok = true, .u.val = file};
@@ -45,7 +45,7 @@ static gm_result_void_t wrap_fclose(FILE *stream) {
     if (fclose(stream) != 0) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FILE_OPERATION, "Failed to close file: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFileOperation, "Failed to close file: %s", strerror(errno))
         };
     }
     return (gm_result_void_t){.ok = true};
@@ -56,7 +56,7 @@ static gm_result_size_t wrap_fread(void *ptr, size_t size, size_t count, FILE *s
     if (result < count && ferror(stream)) {
         return (gm_result_size_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FILE_OPERATION, "Failed to read file: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFileOperation, "Failed to read file: %s", strerror(errno))
         };
     }
     return (gm_result_size_t){.ok = true, .u.val = result};
@@ -67,7 +67,7 @@ static gm_result_size_t wrap_fwrite(const void *ptr, size_t size, size_t count, 
     if (result < count) {
         return (gm_result_size_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FILE_OPERATION, "Failed to write file: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFileOperation, "Failed to write file: %s", strerror(errno))
         };
     }
     return (gm_result_size_t){.ok = true, .u.val = result};
@@ -82,7 +82,7 @@ static gm_result_int_t wrap_fprintf(FILE *stream, const char *format, ...) {
     if (result < 0) {
         return (gm_result_int_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FILE_OPERATION, "Failed to write formatted output: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFileOperation, "Failed to write formatted output: %s", strerror(errno))
         };
     }
     return (gm_result_int_t){.ok = true, .u.val = result};
@@ -92,7 +92,7 @@ static gm_result_void_t wrap_fflush(FILE *stream) {
     if (fflush(stream) != 0) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FILE_OPERATION, "Failed to flush stream: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFileOperation, "Failed to flush stream: %s", strerror(errno))
         };
     }
     return (gm_result_void_t){.ok = true};
@@ -102,7 +102,7 @@ static gm_result_void_t wrap_remove(const char *path) {
     if (remove(path) != 0) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FILE_OPERATION, "Failed to remove file: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFileOperation, "Failed to remove file: %s", strerror(errno))
         };
     }
     return (gm_result_void_t){.ok = true};
@@ -112,7 +112,7 @@ static gm_result_void_t wrap_rename(const char *oldpath, const char *newpath) {
     if (rename(oldpath, newpath) != 0) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FILE_OPERATION, "Failed to rename file: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFileOperation, "Failed to rename file: %s", strerror(errno))
         };
     }
     return (gm_result_void_t){.ok = true};
@@ -124,7 +124,7 @@ static gm_result_void_t wrap_mkdir(const char *path, mode_t mode) {
     if (mkdir(path, mode) != 0) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_DIR_OPERATION, "Failed to create directory: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorDirOperation, "Failed to create directory: %s", strerror(errno))
         };
     }
     return (gm_result_void_t){.ok = true};
@@ -134,7 +134,7 @@ static gm_result_void_t wrap_rmdir(const char *path) {
     if (rmdir(path) != 0) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_DIR_OPERATION, "Failed to remove directory: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorDirOperation, "Failed to remove directory: %s", strerror(errno))
         };
     }
     return (gm_result_void_t){.ok = true};
@@ -144,7 +144,7 @@ static gm_result_void_t wrap_chdir(const char *path) {
     if (chdir(path) != 0) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_DIR_OPERATION, "Failed to change directory: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorDirOperation, "Failed to change directory: %s", strerror(errno))
         };
     }
     return (gm_result_void_t){.ok = true};
@@ -155,7 +155,7 @@ static gm_result_string_t wrap_getcwd(char *buf, size_t size) {
     if (!result) {
         return (gm_result_string_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_DIR_OPERATION, "Failed to get current directory: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorDirOperation, "Failed to get current directory: %s", strerror(errno))
         };
     }
     return (gm_result_string_t){.ok = true, .u.val = result};
@@ -167,7 +167,7 @@ static gm_result_void_t wrap_stat(const char *path, struct stat *buf) {
     if (stat(path, buf) != 0) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FS_OPERATION, "Failed to stat file: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFsOperation, "Failed to stat file: %s", strerror(errno))
         };
     }
     return (gm_result_void_t){.ok = true};
@@ -177,7 +177,7 @@ static gm_result_void_t wrap_lstat(const char *path, struct stat *buf) {
     if (lstat(path, buf) != 0) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FS_OPERATION, "Failed to lstat file: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFsOperation, "Failed to lstat file: %s", strerror(errno))
         };
     }
     return (gm_result_void_t){.ok = true};
@@ -187,7 +187,7 @@ static gm_result_void_t wrap_access(const char *path, int mode) {
     if (access(path, mode) != 0) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FS_OPERATION, "Access check failed: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFsOperation, "Access check failed: %s", strerror(errno))
         };
     }
     return (gm_result_void_t){.ok = true};
@@ -197,7 +197,7 @@ static gm_result_void_t wrap_chmod(const char *path, mode_t mode) {
     if (chmod(path, mode) != 0) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FS_OPERATION, "Failed to change file mode: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFsOperation, "Failed to change file mode: %s", strerror(errno))
         };
     }
     return (gm_result_void_t){.ok = true};
@@ -207,7 +207,7 @@ static gm_result_void_t wrap_unlink(const char *path) {
     if (unlink(path) != 0) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FS_OPERATION, "Failed to unlink file: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFsOperation, "Failed to unlink file: %s", strerror(errno))
         };
     }
     return (gm_result_void_t){.ok = true};
@@ -218,7 +218,7 @@ static gm_result_ssize_t wrap_readlink(const char *path, char *buf, size_t bufsi
     if (result < 0) {
         return (gm_result_ssize_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FS_OPERATION, "Failed to read link: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFsOperation, "Failed to read link: %s", strerror(errno))
         };
     }
     return (gm_result_ssize_t){.ok = true, .u.val = result};
@@ -228,7 +228,7 @@ static gm_result_void_t wrap_symlink(const char *oldpath, const char *newpath) {
     if (symlink(oldpath, newpath) != 0) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_FS_OPERATION, "Failed to create symlink: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorFsOperation, "Failed to create symlink: %s", strerror(errno))
         };
     }
     return (gm_result_void_t){.ok = true};
@@ -242,7 +242,7 @@ static gm_result_int_t wrap_system(const char *command) {
     if (result == -1) {
         return (gm_result_int_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_PROCESS_OPERATION, "Failed to execute command: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorProcessOperation, "Failed to execute command: %s", strerror(errno))
         };
     }
     return (gm_result_int_t){.ok = true, .u.val = result};
@@ -253,7 +253,7 @@ static gm_result_pid_t wrap_fork(void) {
     if (result < 0) {
         return (gm_result_pid_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_PROCESS_OPERATION, "Failed to fork process: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorProcessOperation, "Failed to fork process: %s", strerror(errno))
         };
     }
     return (gm_result_pid_t){.ok = true, .u.val = result};
@@ -264,7 +264,7 @@ static gm_result_void_t wrap_execvp(const char *file, char *const argv[]) {
     /* If we get here, execvp failed */
     return (gm_result_void_t){
         .ok = false,
-        .u.err = GM_ERROR(GM_ERROR_PROCESS_OPERATION, "Failed to execute program: %s", strerror(errno))
+        .u.err = GM_ERROR(GmErrorProcessOperation, "Failed to execute program: %s", strerror(errno))
     };
 }
 
@@ -273,7 +273,7 @@ static gm_result_pid_t wrap_waitpid(pid_t pid, int *status, int options) {
     if (result < 0) {
         return (gm_result_pid_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_PROCESS_OPERATION, "Failed to wait for process: %s", strerror(errno))
+            .u.err = GM_ERROR(GmErrorProcessOperation, "Failed to wait for process: %s", strerror(errno))
         };
     }
     return (gm_result_pid_t){.ok = true, .u.val = result};
