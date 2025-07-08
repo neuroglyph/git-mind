@@ -55,12 +55,12 @@ gm_result_void_t gm_cbor_read_text(const uint8_t *buf, size_t *offset, size_t ma
 
 /**
  * Write a CBOR unsigned integer to buffer.
+ * @param value Value to write
  * @param buf Buffer to write to
  * @param buf_size Size of output buffer
- * @param value Value to write
  * @return Result containing number of bytes written or error
  */
-gm_result_size_t gm_cbor_write_uint(uint8_t *buf, size_t buf_size, uint64_t value);
+gm_result_size_t gm_cbor_write_uint(uint64_t value, uint8_t *buf, size_t buf_size);
 
 /**
  * Write a CBOR byte string to buffer.

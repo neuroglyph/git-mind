@@ -49,7 +49,7 @@ static void test_cbor_uint(void) {
         size_t expected_size = test_cases[i].expected_size;
         
         /* Write value */
-        gm_result_size_t write_result = gm_cbor_write_uint(buffer, BUFFER_SIZE, value);
+        gm_result_size_t write_result = gm_cbor_write_uint(value, buffer, BUFFER_SIZE);
         assert(write_result.ok);
         assert(write_result.u.val == expected_size);
         
@@ -62,12 +62,12 @@ static void test_cbor_uint(void) {
     }
     
     /* Test buffer too small for write */
-    gm_result_size_t write_result = gm_cbor_write_uint(buffer, 0, 42);
+    gm_result_size_t write_result = gm_cbor_write_uint(42, buffer, 0);
     assert(!write_result.ok);
     assert_error_code(write_result.u.err, 6002); /* GM_ERROR_CBOR_BUFFER_TOO_SMALL */
     
     /* Test NULL buffer */
-    write_result = gm_cbor_write_uint(NULL, BUFFER_SIZE, 42);
+    write_result = gm_cbor_write_uint(42, NULL, BUFFER_SIZE);
     assert(!write_result.ok);
     assert_error_code(write_result.u.err, 6003); /* GM_ERROR_CBOR_INVALID_DATA */
     
@@ -250,8 +250,8 @@ static void test_cbor_sequences(void) {
     const char *text_val = "Hello CBOR";
     
     /* Write uint */
-    gm_result_size_t write_result = gm_cbor_write_uint(buffer + write_offset, 
-                                                       BUFFER_SIZE - write_offset, uint_val);
+    gm_result_size_t write_result = gm_cbor_write_uint(uint_val, buffer + write_offset, 
+                                                       BUFFER_SIZE - write_offset);
     assert(write_result.ok);
     write_offset += write_result.u.val;
     
@@ -313,9 +313,8 @@ static void test_cbor_bounds_checking(void) {
     };
     
     for (size_t i = 0; i < sizeof(write_tests) / sizeof(write_tests[0]); i++) {
-        gm_result_size_t result = gm_cbor_write_uint(small_buffer, 
-                                                     write_tests[i].buf_size,
-                                                     write_tests[i].value);
+        gm_result_size_t result = gm_cbor_write_uint(write_tests[i].value, small_buffer, 
+                                                     write_tests[i].buf_size);
         assert(result.ok == write_tests[i].should_succeed);
         if (!result.ok) {
             assert(result.u.err->code == 6002); /* GM_ERROR_CBOR_BUFFER_TOO_SMALL */

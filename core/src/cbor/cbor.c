@@ -88,7 +88,7 @@ static gm_result_uint64_t read_uint64_value(const uint8_t *buf, size_t *offset, 
 
 /* Helper to read CBOR uint value based on info type */
 static gm_result_uint64_t read_uint_value(const uint8_t *buf, size_t *offset, 
-                                          size_t max_size, uint8_t additional_info) {
+                                          uint8_t additional_info, size_t max_size) {
     if (additional_info < CBOR_IMMEDIATE_THRESHOLD) {
         return (gm_result_uint64_t){.ok = true, .u.val = additional_info};
     }
@@ -144,7 +144,43 @@ gm_result_uint64_t gm_cbor_read_uint(const uint8_t *buf, size_t *offset, size_t 
         };
     }
 
-    return read_uint_value(buf, offset, max_size, info);
+    return read_uint_value(buf, offset, info, max_size);
+}
+
+/* Helper to read CBOR length from additional info */
+static gm_result_size_t read_cbor_length(const uint8_t *buf, size_t *offset, 
+                                         size_t max_size, uint8_t additional_info) {
+    if (additional_info < CBOR_IMMEDIATE_THRESHOLD) {
+        return (gm_result_size_t){.ok = true, .u.val = additional_info};
+    }
+    
+    if (additional_info == CBOR_UINT8_FOLLOWS) {
+        if (!check_read_bounds(*offset, 1, max_size)) {
+            return (gm_result_size_t){
+                .ok = false,
+                .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading length")
+            };
+        }
+        return (gm_result_size_t){.ok = true, .u.val = buf[(*offset)++]};
+    }
+    
+    if (additional_info == CBOR_UINT16_FOLLOWS) {
+        if (!check_read_bounds(*offset, 2, max_size)) {
+            return (gm_result_size_t){
+                .ok = false,
+                .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading length")
+            };
+        }
+        size_t len = ((size_t)buf[*offset] << SHIFT_8) | (size_t)buf[*offset + 1];
+        *offset += 2;
+        return (gm_result_size_t){.ok = true, .u.val = len};
+    }
+    
+    return (gm_result_size_t){
+        .ok = false,
+        .u.err = GM_ERROR(GmErrorCborInvalidData, 
+                         "Invalid additional info: 0x%02x", additional_info)
+    };
 }
 
 /* Read CBOR byte string with bounds checking */
@@ -167,7 +203,6 @@ gm_result_void_t gm_cbor_read_bytes(const uint8_t *buf, size_t *offset, size_t m
     uint8_t initial = buf[(*offset)++];
     uint8_t type = initial & CBOR_TYPE_MASK;
     uint8_t info = initial & CBOR_ADDITIONAL_INFO_MASK;
-    size_t len = 0;
 
     if (type != CBOR_TYPE_BYTES) {
         return (gm_result_void_t){
@@ -177,32 +212,11 @@ gm_result_void_t gm_cbor_read_bytes(const uint8_t *buf, size_t *offset, size_t m
         };
     }
 
-    if (info < CBOR_IMMEDIATE_THRESHOLD) {
-        len = info;
-    } else if (info == CBOR_UINT8_FOLLOWS) {
-        if (!check_read_bounds(*offset, 1, max_size)) {
-            return (gm_result_void_t){
-                .ok = false,
-                .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading length")
-            };
-        }
-        len = buf[(*offset)++];
-    } else if (info == CBOR_UINT16_FOLLOWS) {
-        if (!check_read_bounds(*offset, 2, max_size)) {
-            return (gm_result_void_t){
-                .ok = false,
-                .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading length")
-            };
-        }
-        len = ((size_t)buf[*offset] << SHIFT_8) | (size_t)buf[*offset + 1];
-        *offset += 2;
-    } else {
-        return (gm_result_void_t){
-            .ok = false,
-            .u.err = GM_ERROR(GmErrorCborInvalidData, 
-                             "Invalid additional info: 0x%02x", info)
-        };
+    gm_result_size_t len_result = read_cbor_length(buf, offset, max_size, info);
+    if (!len_result.ok) {
+        return (gm_result_void_t){.ok = false, .u.err = len_result.u.err};
     }
+    size_t len = len_result.u.val;
 
     if (len != expected_len) {
         return (gm_result_void_t){
@@ -220,6 +234,7 @@ gm_result_void_t gm_cbor_read_bytes(const uint8_t *buf, size_t *offset, size_t m
         };
     }
 
+    /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) - bounds checked */
     memcpy(data, buf + *offset, len);
     *offset += len;
 
@@ -253,7 +268,6 @@ gm_result_void_t gm_cbor_read_text(const uint8_t *buf, size_t *offset, size_t ma
     uint8_t initial = buf[(*offset)++];
     uint8_t type = initial & CBOR_TYPE_MASK;
     uint8_t info = initial & CBOR_ADDITIONAL_INFO_MASK;
-    size_t len = 0;
 
     if (type != CBOR_TYPE_TEXT) {
         return (gm_result_void_t){
@@ -263,32 +277,11 @@ gm_result_void_t gm_cbor_read_text(const uint8_t *buf, size_t *offset, size_t ma
         };
     }
 
-    if (info < CBOR_IMMEDIATE_THRESHOLD) {
-        len = info;
-    } else if (info == CBOR_UINT8_FOLLOWS) {
-        if (!check_read_bounds(*offset, 1, max_size)) {
-            return (gm_result_void_t){
-                .ok = false,
-                .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading length")
-            };
-        }
-        len = buf[(*offset)++];
-    } else if (info == CBOR_UINT16_FOLLOWS) {
-        if (!check_read_bounds(*offset, 2, max_size)) {
-            return (gm_result_void_t){
-                .ok = false,
-                .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading length")
-            };
-        }
-        len = ((size_t)buf[*offset] << SHIFT_8) | (size_t)buf[*offset + 1];
-        *offset += 2;
-    } else {
-        return (gm_result_void_t){
-            .ok = false,
-            .u.err = GM_ERROR(GmErrorCborInvalidData, 
-                             "Invalid additional info: 0x%02x", info)
-        };
+    gm_result_size_t len_result = read_cbor_length(buf, offset, max_size, info);
+    if (!len_result.ok) {
+        return (gm_result_void_t){.ok = false, .u.err = len_result.u.err};
     }
+    size_t len = len_result.u.val;
 
     if (len >= max_text_len) {
         return (gm_result_void_t){
@@ -306,6 +299,7 @@ gm_result_void_t gm_cbor_read_text(const uint8_t *buf, size_t *offset, size_t ma
         };
     }
 
+    /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) - bounds checked */
     memcpy(text, buf + *offset, len);
     text[len] = '\0';
     *offset += len;
@@ -314,7 +308,7 @@ gm_result_void_t gm_cbor_read_text(const uint8_t *buf, size_t *offset, size_t ma
 }
 
 /* Write CBOR unsigned integer with bounds checking */
-gm_result_size_t gm_cbor_write_uint(uint8_t *buf, size_t buf_size, uint64_t value) {
+gm_result_size_t gm_cbor_write_uint(uint64_t value, uint8_t *buf, size_t buf_size) {
     if (!buf) {
         return (gm_result_size_t){
             .ok = false,
@@ -424,6 +418,7 @@ gm_result_size_t gm_cbor_write_bytes(uint8_t *buf, size_t buf_size,
         buf[2] = (uint8_t)(data_len & BYTE_MASK);
     }
 
+    /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) - bounds checked */
     memcpy(buf + header_size, data, data_len);
     return (gm_result_size_t){.ok = true, .u.val = total_size};
 }
@@ -474,6 +469,7 @@ gm_result_size_t gm_cbor_write_text(uint8_t *buf, size_t buf_size, const char *t
         buf[2] = (uint8_t)(text_len & BYTE_MASK);
     }
 
+    /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) - bounds checked */
     memcpy(buf + header_size, text, text_len);
     return (gm_result_size_t){.ok = true, .u.val = total_size};
 }
