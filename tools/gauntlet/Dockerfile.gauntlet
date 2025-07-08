@@ -36,7 +36,6 @@ RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
     apt-get install -y \
         gcc-12 g++-12 \
         gcc-13 g++-13 \
-        gcc-14 g++-14 \
         clang-18 clang++-18 clang-tidy-18 \
         clang-19 clang++-19 clang-tidy-19 \
         clang-20 clang++-20 clang-tidy-20
@@ -60,11 +59,7 @@ RUN echo '#!/bin/bash' > /gauntlet/compilers/gcc-13 && \
     echo 'echo "🔫 GCC 13 (Partial C23 support)"' >> /gauntlet/compilers/gcc-13 && \
     chmod +x /gauntlet/compilers/gcc-13
 
-RUN echo '#!/bin/bash' > /gauntlet/compilers/gcc-14 && \
-    echo 'export CC=gcc-14' >> /gauntlet/compilers/gcc-14 && \
-    echo 'export CXX=g++-14' >> /gauntlet/compilers/gcc-14 && \
-    echo 'echo "🔫 GCC 14 (Better C23 support)"' >> /gauntlet/compilers/gcc-14 && \
-    chmod +x /gauntlet/compilers/gcc-14
+# GCC 14 removed - not available in ubuntu-toolchain-r/test PPA yet
 
 # Clang Gauntlet Setup
 RUN echo '#!/bin/bash' > /gauntlet/compilers/clang-18 && \
@@ -137,7 +132,7 @@ RUN echo '#!/bin/bash' > /gauntlet/run-gauntlet.sh && \
     echo 'echo "Running in PARALLEL because we'\''re not waiting 5evah!"' >> /gauntlet/run-gauntlet.sh && \
     echo 'echo ""' >> /gauntlet/run-gauntlet.sh && \
     echo '' >> /gauntlet/run-gauntlet.sh && \
-    echo 'COMPILERS=("gcc-12" "gcc-13" "gcc-14" "clang-18" "clang-19" "clang-20")' >> /gauntlet/run-gauntlet.sh && \
+    echo 'COMPILERS=("gcc-12" "gcc-13" "clang-18" "clang-19" "clang-20")' >> /gauntlet/run-gauntlet.sh && \
     echo '' >> /gauntlet/run-gauntlet.sh && \
     echo '# Clean old results' >> /gauntlet/run-gauntlet.sh && \
     echo 'rm -f result-*.txt build-*.log' >> /gauntlet/run-gauntlet.sh && \

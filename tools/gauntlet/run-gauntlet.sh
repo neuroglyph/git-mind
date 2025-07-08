@@ -21,9 +21,9 @@ fi
 
 # Run the GAUNTLET
 echo ""
-echo "🔫 Running GAUNTLET with 6 compilers in parallel..."
+echo "🔫 Running GAUNTLET with 5 compilers in parallel..."
 echo "  - GCC 12 (Pre-C23 - THE DEVIL)"
-echo "  - GCC 13, 14 (C23 support progression)"
+echo "  - GCC 13 (C23 support progression)"
 echo "  - Clang 18, 19, 20 (C23 support progression)"
 echo ""
 

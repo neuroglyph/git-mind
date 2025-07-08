@@ -21,7 +21,7 @@ jobs:
     - name: Run GNU CRY GAUNTLET
       run: |
         echo "🚨 Running GNU CRY GAUNTLET - Multiple C23 Compilers 🚨"
-        echo "Testing with GCC 13/14/15 and Clang 18/19/20 in parallel"
+        echo "Testing with GCC 12/13 and Clang 18/19/20 in parallel"
         
         # Build and run the gauntlet
         docker build -t gnu-cry-gauntlet:latest -f tools/gauntlet/Dockerfile.gauntlet .
