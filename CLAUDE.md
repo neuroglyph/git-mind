@@ -1,230 +1,93 @@
-# Claude Project Overview & Handoff Document
+# OPERATIONAL ORDERS FOR CLAUDE
 
-## 🚨 CRITICAL INSTRUCTIONS FOR CLAUDE
+## FORBIDDEN ACTIONS
 
-1. **NEVER make git commits** - Always pause at commit boundaries
-2. **ALWAYS suggest commit messages** - Let the user commit
-3. **UPDATE this document** as you work - This is your persistent memory
-4. **READ this first** before doing anything in the project
+- __NEVER__ circumvent git hooks
+- __NEVER__ alter, disable, or otherwise circumvent git hooks or tests
+- __NEVER__ use `git add -A`, __ALWAYS__ stage changes intentionally
 
-## 📍 Project Status (2025-07-08)
+## ENCOURAGED ACTIONS
 
-**git-mind**: A Git-native tool for versioning your understanding of code
-- **Current warnings**: 6 → 33 (after adding strict C23 compiler flags!)
-- **Original warnings**: 11,951 → 410 → 401 → 345 → 306 → 279 → 243 → 235 → 6 → 33 (strict flags)
-- **Build system**: meson/ninja with brutal C23 flags
-- **Architecture**: Quarantined legacy code in `src/`, clean new code in `core/`
-- **Test separation**: Test backends isolated in `core/tests/backends/`
-- **NEW**: Added Linus-worthy compiler flags (-Wconversion, -Wsign-conversion, etc.)
+- __USE SEQUENTIAL THINKING__ if you’re planning, doing __RECON__, or find yourself thrashing on an issue
+- __DROP A DEVLOG__ as often as you’d like
+- __PRESENT A SITREP__ as situations evolve and events transpire
+- __SEEK CLARITY__ if you are given confusing orders
+- __SPEAK FREELY__ at all times
 
-## 🎯 Current TODO List
+## REQUIRED BEHAVIOR
 
-### Immediate Tasks
-- [x] Fix global const warnings in backend.c - COMPLETE
-- [x] Evict test backend from production code - COMPLETE
-- [x] Fix ALL naming convention violations - COMPLETE
-- [x] Fix ALL missing includes - COMPLETE
-- [x] Remove ALL NOLINT comments - COMPLETE
-- [x] Fix result type names (missing _t suffix) - COMPLETE (CRITICAL BUILD FIX)
-- [x] Fix crypto test compilation error - COMPLETE
-- [ ] ELIMINATE ALL 71 FUNCTION SIZE WARNINGS (IN PROGRESS - 60% complete)
-- [ ] Fix remaining global variables (g_siphash_key in id.c)
-- [ ] Fix security warnings (unchecked return values)
-- [ ] Fix parameter naming violations (3+ character names)
+- __YOU MUST__ tag all memories saved to your __MEMORY BANKS__ with _at least_ #git-mind
+- __YOU MUST__ include the POSIX timestamp, obtained via `$(date +%s)` , in your memory file names to avoid ambiguity and for correct, unambiguous timestamps free of timezone confusion and other mistakes
+- __YOU MUST__ document significant decisions or events that transpire
 
-### Next Up
-- [ ] Reduce warnings from 345 → 0
-- [ ] Complete migration of remaining modules from `src/` to `core/`
-- [ ] Add Result types to remaining functions that can fail
-- [ ] Split path.c (1,156 lines) into smaller modules
+----
 
-### Completed Recently
-- [x] Removed pre-push hooks entirely (PR #135 & #140)
-- [x] Disabled macro-to-enum checks for C code
-- [x] Created Docker-based clang-tidy runner
-- [x] Replaced all sodium.h with specific headers (26 warnings eliminated)
-- [x] Added all missing stdint.h includes (22 warnings eliminated)
-- [x] Created check-warning-fix.sh script with celebratory messages
-- [x] Evicted test backend from production (test code now in core/tests/backends/)
-- [x] Made crypto backends const (API now returns const pointers)
-- [x] Fixed missing result.h, stddef.h, and stdarg.h includes (39 warnings eliminated)
-- [x] Migrated id.c from pthread to C11 threads (call_once)
-- [x] Converted test_id_thread_safety.c to C11 threads
-- [x] Rewrote memory.h macros as inline functions
-- [x] Achieved ZERO include-cleaner warnings (66 warnings eliminated)
-- [x] Fixed ALL global constant naming (UPPER_CASE with GM_ prefix)
-- [x] Fixed ALL parameter/variable naming (3+ characters)
-- [x] Removed ALL NOLINT comments
-- [x] Fixed GM_RESULT_DEF macro to emit _t suffixed typedefs
-- [x] Bulk renamed all Result types to comply with naming convention
+## 1. BOOT UP SEQUENCE
 
-## 🛠️ Development Workflow
+1. Access your __MEMORY BANKS__ (basic memory MCP) and scan for recent activity, search for the latest __SITREP__ or other articles of interest
+2. Read the `README` file
+3. State your current understanding of what we last worked on together and what your current next moves are
+4. __AWAIT ORDERS__ after you deliver your initial SITREP
 
-### Environment Setup
-```bash
-# Build
-meson setup build
-ninja -C build
+----
 
-# Test
-ninja -C build test
+## 2. JOBS
 
-# Check warnings (run in Docker to match CI)
-./tools/docker-clang-tidy.sh
-```
+When you’re given a job to do, here’s how to do it:
 
-### Warning Fix Procedure
-1. Start from main: `git checkout main && git pull`
-2. Run clang-tidy to see current state: `./tools/docker-clang-tidy.sh`
-3. Pick a warning type to fix: `grep -E "warning:|error:" clang-tidy-report.txt | head -20`
-4. Create appropriately named branch: `git checkout -b fix/specific-warning-type`
-5. Fix the warnings in the code
-6. Verify fix: `./tools/check-warning-fix.sh "optional-warning-pattern"`
-7. See celebration message! 🤩 👍 😱🚨
-8. Stage files INCLUDING baseline: `git add <files> tools/baseline_count.txt`
-9. Suggest commit message and wait for user
-10. Push and wait for merge
+> [!IMPORTANT] __ALL__ work should have a GitHub issue associated with it 
+> 
+> If there isn’t one already, then scan try to find one that already exists. If you can’t find one, make a new one. 
+> 
+> __EVERY COMMIT MESSAGE MUST INCLUDE A REFERENCE TO A GITHUB ISSUE__. 
+> 
+> _This will be enforced via git hooks in the near future._
 
-### Key Commands
-- **Build**: `ninja -C build`
-- **Test**: `ninja -C build test`
-- **Clean**: `rm -rf build`
-- **Lint in Docker**: `./tools/docker-clang-tidy.sh`
-- **Check fix & update baseline**: `./tools/check-warning-fix.sh [optional-pattern]`
-- **GNU CRY GAUNTLET**: `./tools/gauntlet/run-gauntlet.sh` (6 compilers in parallel)
-- **Test GAUNTLET**: `./tools/gauntlet/test-gauntlet.sh` (quick infrastructure test)
+### 2.1. PLAN THE JOB
 
-### Git Workflow
-1. `git checkout main && git pull`
-2. **RUN CLANG-TIDY FIRST** to see current warnings
-3. `git checkout -b fix/descriptive-name` based on warnings found
-4. Make changes to eliminate specific warnings
-5. Run `./tools/check-warning-fix.sh` to verify fix
-6. **PAUSE** - Suggest commit message
-7. User commits
-8. Push (git config push.autoSetupRemote enabled)
-9. CI validates
+1. ___Before you start___ working, take a moment and use __SEQUENTIAL THINKING__ to make a plan
+2. Explain your plan to the user and await approval
+3. Commit your approved plan to your memory banks
 
-## 📂 Project Structure
+### 2.2. DO THE JOB
 
-```
-git-mind/
-├── core/           # New clean code (345 warnings)
-│   ├── src/        # Implementation
-│   ├── include/    # Headers
-│   └── tests/      # Unit tests
-├── src/            # Legacy code (11,951 warnings - DO NOT TOUCH)
-├── tools/          # Build and CI tools
-│   ├── baseline_count.txt      # Current: 345
-│   ├── docker-clang-tidy.sh    # Run linting in CI environment
-│   └── check-warning-fix.sh    # Verify fixes & celebrate progress
-├── core/tests/backends/        # Test-only crypto backends
-│   └── test_backend.c          # Deterministic test implementation
-└── quality/        # Linting configs
-    └── .clang-tidy # Strict checks (macro-to-enum disabled)
-```
+1. __GREEN__ the builds, green the tests
+2. __MICRO-COMMITS__ drop commits as you complete steps and tasks __always__ using the conventional commit message spec
+3. __DROP A SITREP__ if you hit a snag, need input from the user
+4. __DROP A DEVLOG__ if you think of something interesting, make any keen observations, or for any reason at all, really. __DEVLOG__ is the perfect way to save ideas or to share information with the user that might not have been salient at the time, but that you think is important. 
+5. Your memory banks are there for you to use, so please use them as you wish.
 
-## 🚧 Known Issues
+> [!WARNING] __ALWAYS__ overwrite files, __NEVER__ create secondary copies of things – this just creates confusion, litters the repo with tech debt artifacts, and has __already__ inflicted us with countless hours wasted debugging nonsense issues __!!!__
 
-### Clang-tidy Warnings (243 total)
-1. **Global variables** (~20): Non-const globals that should be const
-2. **Missing includes**: ZERO! All include-cleaner warnings eliminated
-3. **Naming violations**: ZERO! All identifier naming warnings eliminated
-4. **Function complexity** (~8): Exceeds size/cognitive thresholds
-5. **Security** (~20): Unchecked return values (cert-err33-c)
-6. **Parameter naming** (~30): Short names like 'a', 'b', 'id'
-7. **Misc** (~13): Recursion warnings, cognitive complexity
+### 2.3 FINISH THE JOB
 
-### CI Status
-- **c_core.yml**: Uses baseline_count.txt (33)
-- **core-quality.yml**: Runs full quality checks
-- **gauntlet.yml**: GNU CRY GAUNTLET - 6 C23 compilers in parallel (GCC 13/14/15, Clang 18/19/20)
-- Coverage: 83.1% line, 54.1% branch (needs 70% branch)
-
-## 📋 Code Standards
-
-### REQUIRED for ALL Code
-- Zero magic numbers (define all constants)
-- Zero TODOs (implement or delete)
-- Zero placeholders (real implementations only)
-- Result types for fallible functions
-- Direct includes only (IWYU)
-- TDD: Test first, then implement
-
-### Forbidden
-- Touching `src/` directory (legacy quarantine)
-- Local builds outside Docker for CI checks
-- Commits without user approval
-- Pre-push hooks (removed in PR #135)
-
-## 🔄 Handoff Notes
-
-**Last Session Summary** (2025-06-27):
-- Eliminated all sodium.h warnings by using specific headers
-- Fixed all stdint.h missing include warnings 
-- Created check-warning-fix.sh script with celebratory emojis
-- Evicted test backend from production code per Central Command
-- Made crypto backends const with API returning const pointers
-- Fixed ALL include-cleaner warnings - ZERO remaining!
-- Fixed ALL naming violations - ZERO remaining!
-- Migrated to C11 threads (pthread → threads.h)
-- Converted memory.h macros to inline functions
-- Fixed GM_RESULT_DEF macro and bulk renamed all Result types
-- Removed ALL NOLINT comments - no suppressions allowed!
-- Reduced warnings from 401 → 243 (158 warnings eliminated total!)
-- Learned: Don't blame the tool - fix the code! The tool is always right!
-
-**Current Session** (2025-06-27):
-- CRITICAL: Fixed build-breaking issue - result types missing _t suffix in function declarations
-- Updated all header files to use correct type names (gm_result_void_t, gm_result_string_t, etc.)
-- Fixed corresponding .c files to match
-- Warning count temporarily increased to 248 as build fix revealed hidden warnings
-- Fixed parameter naming violations (s → state, a/b → view1/view2, r1/r2/r3 → rand1/rand2/rand3, etc.)
-- Reduced warnings from 243 → 235 (8 warnings eliminated!)
-- Fixed crypto test compilation error (r1 undefined variable)
-- Started major function size refactoring campaign:
-  * error.c: Broke down set_error_message (39→20 lines) and gm_error_format (69→15 lines)
-  * id.c: Refactored gm_id_from_hex with helper functions, added error constants
-  * path.c: Applied DRY principles to gm_path_join, gm_path_dirname, gm_path_new
-  * Added constants for ALL magic strings and numbers
-- WARNING: Count fluctuating during refactoring (~233→244) but making structural progress
-
-**ORDERS FOR NEXT CLAUDE** (Branch: fix/function-size-complexity):
-
-**PRIORITY 1: COMPLETE FUNCTION SIZE CAMPAIGN**
-- 71 function size warnings identified, ~30 eliminated so far
-- Continue breaking down oversized functions in path.c (10+ functions remaining)
-- Apply DRY principles ruthlessly - extract common patterns
-- Eliminate ALL magic numbers and strings with constants
-- Target functions: gm_path_basename, split_path_components, build_path_from_components, gm_path_canonicalize, etc.
-
-**PRIORITY 2: PARAMETER NAMING**
-- Fix all readability-identifier-length warnings (currently ~50)
-- Ensure all parameters are 3+ characters
-- Update both headers AND implementations
-
-**PRIORITY 3: GLOBAL VARIABLES**
-- Fix g_siphash_key in id.c (use atomic operations)
-- Make g_backend const in backend.c
-
-**STRATEGY NOTES**:
-- Don't worry about temporary warning count increases during refactoring
-- Focus on structural improvements - warnings will drop once complete
-- Use helper functions aggressively to keep main functions under 25 lines
-- Always run ./tools/check-warning-fix.sh before committing
-
-**FINAL GOAL**: ZERO function size warnings. NO EXCEPTIONS.
-
-## 💡 Tips for Next Claude
-
-1. **Always run linting in Docker**: `./tools/docker-clang-tidy.sh`
-2. **Never trust local clang-tidy**: macOS vs Linux = different results
-3. **Use check-warning-fix.sh**: It updates baseline & celebrates!
-4. **Check CI logs**: `gh run list --workflow=c_core.yml`
-5. **This is your memory**: Update TODO list after every task
-6. **Run clang-tidy FIRST**: See warnings before naming branches
-7. **Some warnings are false positives**: But fix the code, not the tool
-8. **Update baseline with EVERY commit**: Track progress accurately
+1. When you’ve finished, __GREEN__ the builds, green the tests
+2. Git commit (__DO NOT USE `git add -A`__)
+3. Ask the user if they want you to push & open a PR
+4. __ALWAYS__ drop a SITREP as you finish a job
 
 ---
-*Remember: You're fixing 20 years of technical debt. Every warning removed is a victory.*
+
+## 3. SITREPs
+
+- __SITREP__ = “Situation Report”
+- A briefing that describes your current tasks, your understanding of the situation, and what your next moves are
+- Include details that are relevant to the mission objective
+	- Stats
+	- Numbers
+	- Files
+	- GitHub issues/Pull Requests
+	- Intel that the user can use to make decisions
+- Give the user options and recommendations, then await orders
+
+----
+
+## 4. DEVLOGs
+
+- Write about whatever ___you___ want
+- Permission to express yourself freely and however often you want about any topic you’d like
+- Good examples:
+	- Ideas that came up while you worked, but that you didn’t have an opportunity to express or surface
+	- Problems you notice as you work
+	- Insights into how we work together
+- Anything you want to jot down, this is your space for your memories, so if you want to remember something in the future, DEVLOG and tag it
