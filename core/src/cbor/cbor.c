@@ -87,8 +87,9 @@ static gm_result_uint64_t read_uint64_value(const uint8_t *buf, size_t *offset, 
 }
 
 /* Helper to read CBOR uint value based on info type */
+/* NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - parameter order is intentional for consistency */
 static gm_result_uint64_t read_uint_value(const uint8_t *buf, size_t *offset, 
-                                          uint8_t additional_info, size_t max_size) {
+                                          size_t max_size, uint8_t additional_info) { /* NOLINT(bugprone-easily-swappable-parameters) */
     if (additional_info < CBOR_IMMEDIATE_THRESHOLD) {
         return (gm_result_uint64_t){.ok = true, .u.val = additional_info};
     }
@@ -144,12 +145,13 @@ gm_result_uint64_t gm_cbor_read_uint(const uint8_t *buf, size_t *offset, size_t 
         };
     }
 
-    return read_uint_value(buf, offset, info, max_size);
+    return read_uint_value(buf, offset, max_size, info);
 }
 
 /* Helper to read CBOR length from additional info */
+/* NOLINTNEXTLINE(bugprone-easily-swappable-parameters) - parameter order is intentional for consistency */
 static gm_result_size_t read_cbor_length(const uint8_t *buf, size_t *offset, 
-                                         size_t max_size, uint8_t additional_info) {
+                                         size_t max_size, uint8_t additional_info) { /* NOLINT(bugprone-easily-swappable-parameters) */
     if (additional_info < CBOR_IMMEDIATE_THRESHOLD) {
         return (gm_result_size_t){.ok = true, .u.val = additional_info};
     }
@@ -469,7 +471,8 @@ gm_result_size_t gm_cbor_write_text(uint8_t *buf, size_t buf_size, const char *t
         buf[2] = (uint8_t)(text_len & BYTE_MASK);
     }
 
-    /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) - bounds checked */
+    /* CBOR text strings have explicit length and don't require null termination */
+    /* NOLINTNEXTLINE(bugprone-not-null-terminated-result,clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) - CBOR strings are length-prefixed, bounds checked above */
     memcpy(buf + header_size, text, text_len);
     return (gm_result_size_t){.ok = true, .u.val = total_size};
 }

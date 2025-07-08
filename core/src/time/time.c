@@ -31,6 +31,7 @@ static gm_result_time_t wrap_time(time_t *tloc) {
     return (gm_result_time_t){.ok = true, .u.val = result};
 }
 
+/* NOLINTNEXTLINE(misc-include-cleaner) - clockid_t from time.h with _POSIX_C_SOURCE */
 static gm_result_void_t wrap_clock_gettime(clockid_t clk_id, struct timespec *timespec_ptr) {
     if (clock_gettime(clk_id, timespec_ptr) != 0) {
         return (gm_result_void_t){
