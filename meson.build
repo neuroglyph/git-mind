@@ -45,6 +45,7 @@ src = files(
   'core/src/types/string.c',
   'core/src/types/string_core.c',
   'core/src/types/string_utf8.c',
+  'core/src/types/ulid.c',
   'core/src/utf8/validate.c',
 )
 
@@ -127,6 +128,12 @@ test_crypto_backend = executable('test_crypto_backend',
   dependencies : [libsodium_dep, thread_dep],
   c_args : ['-DGITMIND_ENABLE_TEST_BACKEND'])
 
+test_ulid = executable('test_ulid',
+  'core/tests/unit/test_ulid.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, thread_dep])
+
 # Register tests
 test('error', test_error)
 test('id', test_id)
@@ -137,3 +144,4 @@ test('sha256', test_sha256)
 test('random', test_random)
 test('utf8', test_utf8)
 test('crypto_backend', test_crypto_backend)
+test('ulid', test_ulid)
