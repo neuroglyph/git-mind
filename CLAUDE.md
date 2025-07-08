@@ -91,6 +91,8 @@ ninja -C build test
 - **Clean**: `rm -rf build`
 - **Lint in Docker**: `./tools/docker-clang-tidy.sh`
 - **Check fix & update baseline**: `./tools/check-warning-fix.sh [optional-pattern]`
+- **GNU CRY GAUNTLET**: `./tools/gauntlet/run-gauntlet.sh` (6 compilers in parallel)
+- **Test GAUNTLET**: `./tools/gauntlet/test-gauntlet.sh` (quick infrastructure test)
 
 ### Git Workflow
 1. `git checkout main && git pull`
@@ -134,8 +136,9 @@ git-mind/
 7. **Misc** (~13): Recursion warnings, cognitive complexity
 
 ### CI Status
-- **c_core.yml**: Uses baseline_count.txt (243)
+- **c_core.yml**: Uses baseline_count.txt (33)
 - **core-quality.yml**: Runs full quality checks
+- **gauntlet.yml**: GNU CRY GAUNTLET - 6 C23 compilers in parallel (GCC 13/14/15, Clang 18/19/20)
 - Coverage: 83.1% line, 54.1% branch (needs 70% branch)
 
 ## 📋 Code Standards

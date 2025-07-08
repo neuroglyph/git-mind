@@ -1,0 +1,42 @@
+name: GNU CRY GAUNTLET
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  gauntlet:
+    runs-on: ubuntu-latest
+    name: C23 Compiler GAUNTLET
+    strategy:
+      matrix:
+        compiler: [gcc-12, gcc-13, clang-18, clang-19, clang-20]
+      fail-fast: false
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build ${{ matrix.compiler }} Docker image
+      run: |
+        echo "🔥 Building ${{ matrix.compiler }} Docker image..."
+        docker build --target ${{ matrix.compiler }} -t gauntlet-${{ matrix.compiler }}:latest -f tools/gauntlet/Dockerfile.gauntlet .
+        
+    - name: Run ${{ matrix.compiler }} GAUNTLET
+      run: |
+        echo "🔫 Running ${{ matrix.compiler }} GAUNTLET..."
+        docker run --rm -v "$PWD":/workspace -w /workspace gauntlet-${{ matrix.compiler }}:latest
+        
+    - name: Upload build logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: gauntlet-logs-${{ matrix.compiler }}
+        path: |
+          build/
+        retention-days: 7
