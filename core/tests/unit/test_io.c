@@ -235,20 +235,23 @@ static void test_error_handling(void) {
     gm_result_file_ptr_t open_result = io->file->fopen("/dev/null/impossible", "r");
     assert(!open_result.ok);
     assert(open_result.u.err != NULL);
-    assert(open_result.u.err->code == 1001); /* ERROR_FILE_OPERATION */
+    assert(open_result.u.err->code == 1001); /* GM_ERROR_FILE_OPERATION */
+    gm_error_free(open_result.u.err);
     
     /* Test directory errors */
     gm_result_void_t mkdir_result = io->dir->mkdir("/dev/null/impossible", 0755);
     assert(!mkdir_result.ok);
     assert(mkdir_result.u.err != NULL);
-    assert(mkdir_result.u.err->code == 2001); /* ERROR_DIR_OPERATION */
+    assert(mkdir_result.u.err->code == 2001); /* GM_ERROR_DIR_OPERATION */
+    gm_error_free(mkdir_result.u.err);
     
     /* Test filesystem errors */
     struct stat st;
     gm_result_void_t stat_result = io->fs->stat("/nonexistent/path", &st);
     assert(!stat_result.ok);
     assert(stat_result.u.err != NULL);
-    assert(stat_result.u.err->code == 3001); /* ERROR_FS_OPERATION */
+    assert(stat_result.u.err->code == 3001); /* GM_ERROR_FS_OPERATION */
+    gm_error_free(stat_result.u.err);
     
     printf("OK\n");
 }

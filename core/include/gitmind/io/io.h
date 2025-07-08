@@ -4,7 +4,6 @@
 #ifndef GITMIND_IO_IO_H
 #define GITMIND_IO_IO_H
 
-#include <gitmind/error.h>
 #include <gitmind/result.h>
 #include <stddef.h>
 #include <stdint.h>
