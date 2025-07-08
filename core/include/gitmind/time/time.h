@@ -4,9 +4,6 @@
 #ifndef GITMIND_TIME_TIME_H
 #define GITMIND_TIME_TIME_H
 
-/* NOLINTNEXTLINE(bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp,readability-identifier-naming) - POSIX feature test macro */
-#define _POSIX_C_SOURCE 199309L
-
 #include <gitmind/result.h>
 #include <stddef.h>
 #include <time.h>
