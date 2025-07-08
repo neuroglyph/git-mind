@@ -119,7 +119,7 @@ static inline gm_result_u64_t gm_err_u64(gm_error_t *err) {
  */
 #define GM_TRY(expr)                                                           \
     do {                                                                       \
-        __auto_type _result = (expr);                                          \
+        typeof(expr) _result = (expr);                                         \
         if (GM_IS_ERR(_result)) {                                              \
             return (typeof(_result)){.ok = false,                              \
                                      .u.err = GM_UNWRAP_ERR(_result)};         \

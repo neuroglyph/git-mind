@@ -5,11 +5,9 @@
 
 #include "gitmind/crypto/sha256.h"
 #include "gitmind/error.h"
-#include "gitmind/result.h"
 
 #include <sodium/crypto_hash_sha256.h>
 #include <sodium/randombytes.h>
-#include <sodium/core.h>
 #include <stdint.h>
 #include <string.h>
 #include <stddef.h>
@@ -21,9 +19,7 @@
 /* Forward declaration for default backend */
 static const gm_crypto_backend_t GM_LIBSODIUM_BACKEND;
 
-/* Singleton backend set once during initialization */
-static const gm_crypto_backend_t *g_default_backend = NULL;
-static bool g_crypto_initialized = false;
+/* No global state - everything is context-based */
 
 /* Libsodium backend implementation */
 static int libsodium_sha256_init(gm_sha256_ctx_t *ctx) {
@@ -108,34 +104,4 @@ const gm_crypto_backend_t *gm_crypto_context_get_backend(const gm_crypto_context
 
 
 
-/* Initialize crypto subsystem with options */
-gm_result_void_t gm_crypto_init_with_options(const gm_crypto_options_t *opts) {
-    if (g_crypto_initialized) {
-        return gm_ok_void(); /* Already initialized */
-    }
-
-    /* Initialize libsodium */
-    if (sodium_init() < 0) {
-        return gm_err_void(
-            GM_ERROR(GM_ERR_UNKNOWN, "Failed to initialize libsodium"));
-    }
-
-    /* Set default backend */
-    g_default_backend = opts && opts->default_backend ? 
-                       opts->default_backend : &GM_LIBSODIUM_BACKEND;
-    
-    g_crypto_initialized = true;
-    return gm_ok_void();
-}
-
-/* Initialize crypto subsystem with default backend */
-gm_result_void_t gm_crypto_init(void) {
-    return gm_crypto_init_with_options(NULL);
-}
-
-/* Cleanup crypto subsystem */
-gm_result_void_t gm_crypto_cleanup(void) {
-    g_default_backend = NULL;
-    g_crypto_initialized = false;
-    return gm_ok_void();
-}
+/* Legacy initialization removed - use gm_crypto_context_create() instead */

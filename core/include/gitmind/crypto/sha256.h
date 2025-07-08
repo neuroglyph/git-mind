@@ -19,7 +19,11 @@ typedef struct gm_crypto_context gm_crypto_context_t;
 /* SHA256 context for streaming operations */
 typedef struct gm_sha256_ctx {
     /* Implementation-specific; users should treat as opaque */
-    uint8_t opaque[256]; /* Enough for any backend */
+    union {
+        uint8_t opaque[256];     /* Enough for any backend */
+        uint64_t align[256/8];   /* Ensure proper alignment */
+        void *ptr;               /* For pointer-based backends */
+    } u;
 } gm_sha256_ctx_t;
 
 /**

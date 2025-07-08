@@ -106,28 +106,33 @@ gm_result_string_t gm_string_copy(const gm_string_t *str) {
     return gm_string_new_n(str->data, str->length);
 }
 
+/* Helper to copy string data during concatenation */
+static void copy_concat_data(gm_string_t *dest, const gm_string_t *str_a, 
+                           const gm_string_t *str_b, size_t len_a, size_t len_b) {
+    if (str_a && len_a > 0) {
+        GM_MEMCPY_SAFE(dest->data, dest->capacity, str_a->data, len_a);
+    }
+    
+    if (str_b && len_b > 0) {
+        GM_MEMCPY_SAFE(dest->data + len_a, dest->capacity - len_a, str_b->data, len_b);
+    }
+    
+    dest->data[len_a + len_b] = '\0';
+    dest->length = len_a + len_b;
+}
+
 /* Concatenate strings */
 gm_result_string_t gm_string_concat(const gm_string_t *str_a, const gm_string_t *str_b) {
     size_t len_a = str_a ? str_a->length : 0;
     size_t len_b = str_b ? str_b->length : 0;
-    size_t total = len_a + len_b;
 
-    gm_result_string_t result = gm_string_with_capacity(total + 1);
+    gm_result_string_t result = gm_string_with_capacity(len_a + len_b + 1);
     if (GM_IS_ERR(result)) {
         return result;
     }
 
-    gm_string_t concat_str = GM_UNWRAP(result);
-    if (str_a && len_a > 0) {
-        GM_MEMCPY_SAFE(concat_str.data, concat_str.capacity, str_a->data, len_a);
-    }
-    if (str_b && len_b > 0) {
-        GM_MEMCPY_SAFE(concat_str.data + len_a, concat_str.capacity - len_a, str_b->data, len_b);
-    }
-    concat_str.data[total] = '\0';
-    concat_str.length = total;
-
-    return (gm_result_string_t){.ok = true, .u.val = concat_str};
+    copy_concat_data(&result.u.val, str_a, str_b, len_a, len_b);
+    return result;
 }
 
 /* Append to string */
@@ -213,13 +218,13 @@ gm_result_string_t gm_string_substring(const gm_string_t *str, size_t start,
 
 /* Helper to check if character is whitespace */
 static bool is_whitespace(char character) {
-    return character == ' ' || character == '\t' || character == '\n' || character == '\r';
+    return (character == ' ') || (character == '\t') || (character == '\n') || (character == '\r');
 }
 
 /* Helper to find trim bounds */
 static void find_trim_bounds(const gm_string_t *str, size_t *start, size_t *end) {
     *start = 0;
-    while (*start < str->length && is_whitespace(str->data[*start])) {
+    while ((*start < str->length) && !!is_whitespace(str->data[*start])) {
         (*start)++;
     }
 
@@ -229,7 +234,7 @@ static void find_trim_bounds(const gm_string_t *str, size_t *start, size_t *end)
     }
 
     *end = str->length - 1;
-    while (*end > *start && is_whitespace(str->data[*end])) {
+    while ((*end > *start) && !!is_whitespace(str->data[*end])) {
         (*end)--;
     }
 }

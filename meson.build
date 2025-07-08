@@ -3,8 +3,32 @@ project('git-mind', 'c',
   default_options : ['warning_level=0',  # We'll add our own flags
                      'c_std=c2x'])
 
-# Add specific compiler flags to match original Makefile exactly
-add_project_arguments('-Wall', '-Wextra', '-Werror', '-O2', language : 'c')
+# Linus-worthy C23 compiler flags - no warnings, no excuses
+add_project_arguments(
+  '-std=c2x',
+  '-pedantic',
+  '-Wall',
+  '-Wextra',
+  '-Werror',
+  '-Wvla',                    # Ban variable-length arrays
+  '-Wshadow',                 # No variable shadowing
+  '-Wstrict-prototypes',      # Require proper prototypes
+  '-Wconversion',             # Catch implicit conversions
+  '-Wsign-conversion',        # Catch sign conversions
+  '-Wfloat-equal',           # No float equality comparisons
+  '-Wpointer-arith',         # Arithmetic on void pointers is stupid
+  '-Wcast-align',            # Catch alignment issues
+  '-Wwrite-strings',         # String literals are const
+  '-Wmissing-prototypes',    # Every function needs a prototype
+  '-Wmissing-declarations',  # No implicit declarations
+  '-Wredundant-decls',       # No duplicate declarations
+  '-Wnested-externs',        # No nested extern declarations
+  '-Winline',                # Failed inline is a bug
+  '-O2',                     # Optimize for real-world use
+  '-fno-common',             # No common symbols
+  '-fstrict-aliasing',       # We follow aliasing rules
+  language : 'c'
+)
 
 # Dependencies
 libsodium_dep = dependency('libsodium', required : true)

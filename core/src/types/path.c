@@ -341,7 +341,7 @@ gm_result_path_t gm_path_dirname(const gm_path_t *path) {
         return handle_dirname_no_separator(last_sep, len);
     }
 
-    if (last_sep == 0 && path->is_absolute) {
+    if (last_sep == 0 && !!path->is_absolute) {
         return create_root_path(path->separator);
     }
 
@@ -452,7 +452,7 @@ static gm_result_void_t process_component_at_separator(char **comps, size_t *idx
 
 /* Process component found at separator boundary */
 static gm_result_void_t handle_separator_boundary(char **comps, size_t *idx, const char **start, const char *ptr) {
-    gm_result_void_t res = process_component_at_separator(comps, idx, *start, ptr - *start, *idx == 0);
+    gm_result_void_t res = process_component_at_separator(comps, idx, *start, (size_t)(ptr - *start), *idx == 0);
     if (GM_IS_OK(res)) {
         *start = ptr + 1;
     }
@@ -477,7 +477,7 @@ static gm_result_void_t process_all_components(const char *str, char sep, char *
         ptr++;
     }
 
-    size_t final_len = ptr - start;
+    size_t final_len = (size_t)(ptr - start);
     return (final_len > 0) ? process_component_at_separator(comps, idx, start, final_len, false) : gm_ok_void();
 }
 
@@ -553,7 +553,7 @@ static gm_result_string_t handle_empty_components(bool is_absolute, char separat
 
 /* Check if separator needed before component */
 static bool needs_separator(size_t index, bool is_absolute, const char *first_component) {
-    return index > 0 || (is_absolute && strlen(first_component) > 0);
+    return (index > 0) || (is_absolute && (*first_component != '\0'));
 }
 
 /* Append single component with separator if needed */
@@ -1118,11 +1118,11 @@ static bool has_dangerous_homoglyphs(const char *str) {
 
 /* Perform basic path safety checks */
 static bool perform_basic_safety_checks(const char *str, size_t len) {
-    if (len == 0) return true;
-    if (len > GM_PATH_MAX_LENGTH) return false;
-    if (has_control_chars(str, len)) return false;
-    if (strstr(str, "..")) return false;
-    if (has_encoded_traversal(str)) return false;
+    if (len == 0) { return true; }
+    if (len > GM_PATH_MAX_LENGTH) { return false; }
+    if (has_control_chars(str, len)) { return false; }
+    if (strstr(str, "..")) { return false; }
+    if (has_encoded_traversal(str)) { return false; }
     return true;
 }
 

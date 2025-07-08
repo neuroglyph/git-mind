@@ -41,9 +41,9 @@ static void store_small_message(gm_error_t *err, const char *fmt, va_list args) 
 
 /* Store error message on heap */
 static void store_heap_message(gm_error_t *err, const char *fmt, va_list args, int len) {
-    err->msg.heap = malloc(len + 1);
+    err->msg.heap = malloc((size_t)(len + 1));
     if (err->msg.heap) {
-        int ret = gm_vsnprintf(err->msg.heap, len + 1, fmt, args);
+        int ret = gm_vsnprintf(err->msg.heap, (size_t)(len + 1), fmt, args);
         if (ret < 0 || ret > len) {
             free(err->msg.heap);
             set_format_error(err);
@@ -89,7 +89,7 @@ static void set_error_message(gm_error_t *err, const char *fmt, va_list args) {
 
 /* Get message pointer (handles SSO) */
 static const char *get_error_message(const gm_error_t *err) {
-    return err->heap_alloc ? err->msg.heap : err->msg.small;
+    return !!err->heap_alloc ? err->msg.heap : err->msg.small;
 }
 
 /* Create new error with formatted message */
@@ -157,28 +157,24 @@ gm_error_t *gm_error_wrap(gm_error_t *cause, int32_t code, const char *fmt,
     return err;
 }
 
-/* Free error and its cause chain */
+/* Free error and its cause chain iteratively */
 void gm_error_free(gm_error_t *error) {
-    if (!error) {
-        return;
+    while (error) {
+        gm_error_t *next_error = error->cause;
+        
+        /* Free heap-allocated message if present */
+        if (!!error->heap_alloc && error->msg.heap) {
+            free(error->msg.heap);
+        }
+        
+        /* Free any context data if present */
+        if (error->context && error->context_free) {
+            error->context_free(error->context);
+        }
+        
+        free(error);
+        error = next_error;
     }
-
-    /* Free heap-allocated message if present */
-    if (error->heap_alloc && error->msg.heap) {
-        free(error->msg.heap);
-    }
-
-    /* Free cause chain recursively */
-    if (error->cause) {
-        gm_error_free(error->cause);
-    }
-
-    /* Free any context data if present */
-    if (error->context && error->context_free) {
-        error->context_free(error->context);
-    }
-
-    free(error);
 }
 
 /* Calculate size needed for single error */
@@ -186,11 +182,13 @@ static size_t calc_error_size(const gm_error_t *err) {
     const char *msg = get_error_message(err);
     
     if (err->file && err->func) {
-        return gm_snprintf(nullptr, 0, "[%d] %s (%s:%d in %s)\n", 
-                       err->code, msg, err->file, err->line, err->func);
-    } else {
-        return gm_snprintf(nullptr, 0, "[%d] %s\n", err->code, msg);
+        int ret = gm_snprintf(nullptr, 0, "[%d] %s (%s:%d in %s)\n", 
+                          err->code, msg, err->file, err->line, err->func);
+        return ret > 0 ? (size_t)ret : 0;
     }
+    
+    int ret = gm_snprintf(nullptr, 0, "[%d] %s\n", err->code, msg);
+    return ret > 0 ? (size_t)ret : 0;
 }
 
 /* Calculate total size for error chain */
@@ -221,13 +219,13 @@ static size_t format_single_error(char *buffer, size_t size, const gm_error_t *e
         written = gm_snprintf(buffer, size, "[%d] %s\n", err->code, msg);
     }
     
-    return (written > 0 && (size_t)written < size) ? written : 0;
+    return (written > 0 && (size_t)written < size) ? (size_t)written : 0;
 }
 
 /* Append caused by prefix */
 static size_t append_caused_by(char *buffer, size_t size) {
     int written = gm_snprintf(buffer, size, "%s", GM_ERR_CAUSED_BY);
-    return (written > 0 && (size_t)written < size) ? written : 0;
+    return (written > 0 && (size_t)written < size) ? (size_t)written : 0;
 }
 
 /* Format error chain into buffer */
