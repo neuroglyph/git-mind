@@ -36,6 +36,7 @@ thread_dep = dependency('threads')
 
 # Source files
 src = files(
+  'core/src/cbor/cbor.c',
   'core/src/crypto/backend.c',
   'core/src/crypto/random.c',
   'core/src/crypto/sha256.c',
@@ -149,6 +150,12 @@ test_time = executable('test_time',
   link_with : libgitmind,
   dependencies : [libsodium_dep, thread_dep])
 
+test_cbor = executable('test_cbor',
+  'core/tests/unit/test_cbor.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, thread_dep])
+
 # Register tests
 test('error', test_error)
 test('id', test_id)
@@ -162,3 +169,4 @@ test('crypto_backend', test_crypto_backend)
 test('ulid', test_ulid)
 test('io', test_io)
 test('time', test_time)
+test('cbor', test_cbor)

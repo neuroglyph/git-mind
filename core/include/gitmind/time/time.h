@@ -7,6 +7,8 @@
 #include <gitmind/result.h>
 #include <stddef.h>
 #include <time.h>
+/* NOLINTNEXTLINE(misc-include-cleaner) - provides clockid_t on some systems */
+#include <sys/types.h>
 
 /* Result types for time operations */
 GM_RESULT_DEF(gm_result_time, time_t);
@@ -18,11 +20,12 @@ GM_RESULT_DEF(gm_result_tm_ptr, struct tm *);
  */
 typedef struct gm_time_ops {
     gm_result_time_t (*time)(time_t *tloc);
-    gm_result_void_t (*clock_gettime)(clockid_t clk_id, struct timespec *tp);
+    /* NOLINTNEXTLINE(misc-include-cleaner) - clockid_t from time.h/sys/types.h */
+    gm_result_void_t (*clock_gettime)(clockid_t clk_id, struct timespec *timespec_ptr);
     gm_result_tm_ptr_t (*localtime_r)(const time_t *timep, struct tm *result);
     gm_result_tm_ptr_t (*gmtime_r)(const time_t *timep, struct tm *result);
-    gm_result_size_t (*strftime)(char *s, size_t max, const char *format,
-                                 const struct tm *tm);
+    gm_result_size_t (*strftime)(char *str, size_t max, const char *format,
+                                 const struct tm *time_ptr);
 } gm_time_ops_t;
 
 /**

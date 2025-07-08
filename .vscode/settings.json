@@ -1,5 +1,5 @@
 {
-    "workbench.colorTheme": "Gruvbox Dark Soft",
+    "workbench.colorTheme": "Dreamweaver Dark Theme",
     "C_Cpp.default.compileCommands": "${workspaceFolder}/compile_commands.json",
     "C_Cpp.default.cppStandard": "c17",
     "C_Cpp.default.intelliSenseMode": "clang-x64",

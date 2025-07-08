@@ -1,4 +1,6 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
+/* NOLINTNEXTLINE(bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp,readability-identifier-naming) - POSIX feature test macro */
+#define _POSIX_C_SOURCE 199309L
 #include "gitmind/types/ulid.h"
 
 #include <stdint.h>
@@ -8,6 +10,7 @@
 #include "gitmind/crypto/backend.h"
 #include "gitmind/crypto/random.h"
 #include "gitmind/error.h"
+#include "gitmind/result.h"
 
 /* Crockford's Base32 alphabet (excludes I, L, O, U to avoid confusion) */
 static const char ENCODING[32] = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
@@ -20,9 +23,12 @@ static const char ENCODING[32] = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 #define BITS_PER_CHARACTER 5
 #define MILLISECONDS_PER_SECOND 1000
 #define NANOSECONDS_PER_MILLISECOND 1000000
+#define BITS_PER_BYTE 8
+#define RANDOM_BYTES_COUNT 10
+#define MAX_TIMESTAMP_VALUE 16
 
 /* Decoding table for validation (-1 for invalid characters) */
-static const int8_t DECODING[256] = {
+static const int DECODING[256] = {
     /* 0-31: Control characters */
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -52,12 +58,13 @@ static const int8_t DECODING[256] = {
 /* Get current time in milliseconds */
 static uint64_t get_current_time_ms(void) {
     struct timespec timestamp;
+    /* NOLINTNEXTLINE(misc-include-cleaner) - CLOCK_REALTIME from time.h with _POSIX_C_SOURCE */
     if (clock_gettime(CLOCK_REALTIME, &timestamp) != 0) {
         /* Fallback to time() if clock_gettime fails */
         return (uint64_t)time(NULL) * MILLISECONDS_PER_SECOND;
     }
-    return (uint64_t)timestamp.tv_sec * MILLISECONDS_PER_SECOND +
-           (uint64_t)timestamp.tv_nsec / NANOSECONDS_PER_MILLISECOND;
+    return ((uint64_t)timestamp.tv_sec * MILLISECONDS_PER_SECOND) +
+           ((uint64_t)timestamp.tv_nsec / NANOSECONDS_PER_MILLISECOND);
 }
 
 /* Encode time component (48 bits) into 10 base32 characters */
@@ -71,7 +78,7 @@ static void encode_time(uint64_t time_ms, char *output) {
 
 /* Encode random component (80 bits) into 16 base32 characters */
 static gm_result_void_t encode_random(char *output) {
-    uint8_t random_bytes[10]; /* 80 bits = 10 bytes */
+    uint8_t random_bytes[RANDOM_BYTES_COUNT]; /* 80 bits = 10 bytes */
     
     /* Get random bytes using default backend */
     const gm_crypto_backend_t *backend = gm_crypto_backend_libsodium();
@@ -94,8 +101,8 @@ static gm_result_void_t encode_random(char *output) {
     for (int char_index = 0; char_index < RANDOM_COMPONENT_LENGTH; char_index++) {
         /* Ensure we have at least 5 bits */
         while (bits_available < BITS_PER_CHARACTER && byte_index < sizeof(random_bytes)) {
-            bit_buffer = (bit_buffer << 8) | random_bytes[byte_index++];
-            bits_available += 8;
+            bit_buffer = (bit_buffer << BITS_PER_BYTE) | random_bytes[byte_index++];
+            bits_available += BITS_PER_BYTE;
         }
         
         /* Extract 5 bits */
@@ -165,11 +172,8 @@ bool gm_ulid_is_valid(const char *ulid) {
     /* Check timestamp doesn't overflow (first 10 chars = 50 bits, max 48 bits) */
     unsigned char first_char = (unsigned char)ulid[0];
     int first_value = DECODING[first_char];
-    if (first_value >= 16) { /* Top 2 bits must be 0 for 48-bit value */
-        return false;
-    }
-    
-    return true;
+    /* Top 2 bits must be 0 for 48-bit value */
+    return first_value < MAX_TIMESTAMP_VALUE;
 }
 
 gm_result_void_t gm_ulid_get_timestamp(const char *ulid,
