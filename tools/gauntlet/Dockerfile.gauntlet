@@ -35,9 +35,14 @@ RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
     apt-get update && \
     apt-get install -y \
         gcc-12 g++-12 \
-        gcc-13 g++-13 \
-        clang-18 clang++-18 clang-tidy-18 \
-        clang-19 clang++-19 clang-tidy-19 \
+        gcc-13 g++-13
+
+# Install Clang versions separately to avoid Python binding conflicts
+RUN apt-get install -y --no-install-recommends \
+        clang-18 clang++-18 clang-tidy-18 && \
+    apt-get install -y --no-install-recommends \
+        clang-19 clang++-19 clang-tidy-19 && \
+    apt-get install -y --no-install-recommends \
         clang-20 clang++-20 clang-tidy-20
 
 # Install meson
