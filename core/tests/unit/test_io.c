@@ -91,6 +91,7 @@ static void test_file_operations(void) {
     open_result = io->file->fopen("/nonexistent/path/file.txt", "r");
     assert(!open_result.ok);
     assert(open_result.u.err != NULL);
+    gm_error_free(open_result.u.err);
     
     printf("OK\n");
 }
@@ -128,6 +129,7 @@ static void test_dir_operations(void) {
     /* Test error cases */
     mkdir_result = io->dir->mkdir("/root/no_permission", TEST_DIR_MODE);
     assert(!mkdir_result.ok);
+    gm_error_free(mkdir_result.u.err);
     
     printf("OK\n");
 }
@@ -189,6 +191,7 @@ static void test_fs_operations(void) {
     /* Test error cases */
     stat_result = io->fs->stat("/nonexistent/file", &st);
     assert(!stat_result.ok);
+    gm_error_free(stat_result.u.err);
     
     printf("OK\n");
 }

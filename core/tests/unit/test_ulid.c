@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <threads.h>
+#include <pthread.h>
 
 #include "gitmind/crypto/backend.h"
 #include "gitmind/error.h"
@@ -32,7 +32,7 @@ static void test_ulid_generate_basic(void) {
     
     /* Small delay to ensure different timestamp */
     struct timespec delay = {.tv_sec = 0, .tv_nsec = 2000000}; /* 2ms */
-    thrd_sleep(&delay, NULL);
+    nanosleep(&delay, NULL);
     
     /* Generate second ULID */
     gm_result_ulid_t result2 = gm_ulid_generate(ulid2);
