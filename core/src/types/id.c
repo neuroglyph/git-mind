@@ -3,6 +3,7 @@
 
 #include "gitmind/types/id.h"
 
+#include "gitmind/crypto/backend.h"
 #include "gitmind/crypto/random.h"
 #include "gitmind/crypto/sha256.h"
 #include "gitmind/error.h"
@@ -36,14 +37,24 @@ static struct {
     once_flag init_flag;
 } g_siphash_data = { .init_flag = ONCE_FLAG_INIT };
 
-/* Initialize SipHash key with random data */
+/* Initialize SipHash key with default libsodium backend */
 static void init_siphash_key(void) {
-    /* Generate random key - this is best effort, if it fails we use fallback */
-    gm_result_void_t result = gm_random_bytes(g_siphash_data.key, 
-                                             sizeof(g_siphash_data.key));
+    /* Create default crypto context for initialization */
+    gm_result_crypto_context_t ctx_result = gm_crypto_context_create(gm_crypto_backend_libsodium());
+    if (GM_IS_ERR(ctx_result)) {
+        /* If context creation fails, use deterministic fallback */
+        for (size_t i = 0; i < sizeof(g_siphash_data.key); i++) {
+            g_siphash_data.key[i] = (uint8_t)(i ^ 0xAA);
+        }
+        gm_error_free(GM_UNWRAP_ERR(ctx_result));
+        return;
+    }
+    
+    gm_crypto_context_t ctx = GM_UNWRAP(ctx_result);
+    gm_result_void_t result = gm_random_bytes_with_context(&ctx, g_siphash_data.key, 
+                                                          sizeof(g_siphash_data.key));
     if (GM_IS_ERR(result)) {
         /* If random generation fails, use a deterministic fallback */
-        /* This is still better than hardcoded constant */
         for (size_t i = 0; i < sizeof(g_siphash_data.key); i++) {
             g_siphash_data.key[i] = (uint8_t)(i ^ 0xAA);
         }
@@ -87,13 +98,16 @@ static inline gm_result_id_t gm_err_id(gm_error_t *err) {
 }
 
 /* Create ID from data */
-gm_result_id_t gm_id_from_data(const void *data, size_t len) {
+gm_result_id_t gm_id_from_data_with_context(const gm_crypto_context_t *ctx, const void *data, size_t len) {
+    if (!ctx) {
+        return gm_err_id(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr crypto context"));
+    }
     if (!data) {
         return gm_err_id(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr data"));
     }
 
     gm_id_t new_id;
-    gm_result_void_t result = gm_sha256(data, len, new_id.bytes);
+    gm_result_void_t result = gm_sha256_with_context(ctx, data, len, new_id.bytes);
     if (GM_IS_ERR(result)) {
         return gm_err_id(GM_UNWRAP_ERR(result));
     }
@@ -102,17 +116,21 @@ gm_result_id_t gm_id_from_data(const void *data, size_t len) {
 }
 
 /* Create ID from string */
-gm_result_id_t gm_id_from_string(const char *str) {
+gm_result_id_t gm_id_from_string_with_context(const gm_crypto_context_t *ctx, const char *str) {
     if (!str) {
         return gm_err_id(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr string"));
     }
-    return gm_id_from_data(str, strlen(str));
+    return gm_id_from_data_with_context(ctx, str, strlen(str));
 }
 
 /* Generate random ID */
-gm_result_id_t gm_id_generate(void) {
+gm_result_id_t gm_id_generate_with_context(const gm_crypto_context_t *ctx) {
+    if (!ctx) {
+        return gm_err_id(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr crypto context"));
+    }
+    
     gm_id_t new_id;
-    gm_result_void_t result = gm_random_bytes(new_id.bytes, GM_ID_SIZE);
+    gm_result_void_t result = gm_random_bytes_with_context(ctx, new_id.bytes, GM_ID_SIZE);
     if (GM_IS_ERR(result)) {
         return gm_err_id(GM_UNWRAP_ERR(result));
     }
@@ -211,8 +229,8 @@ static inline gm_result_session_id_t gm_err_session_id(gm_error_t *err) {
 }
 
 /* Generate session ID */
-gm_result_session_id_t gm_session_id_new(void) {
-    gm_result_id_t result = gm_id_generate();
+gm_result_session_id_t gm_session_id_new_with_context(const gm_crypto_context_t *ctx) {
+    gm_result_id_t result = gm_id_generate_with_context(ctx);
     if (GM_IS_ERR(result)) {
         return gm_err_session_id(GM_UNWRAP_ERR(result));
     }

@@ -10,9 +10,9 @@
 #include <sodium/crypto_hash_sha256.h>
 #include <sodium/randombytes.h>
 #include <sodium/core.h>
-#include <stdatomic.h>
 #include <stdint.h>
 #include <string.h>
+#include <stddef.h>
 
 #define BITS_PER_BYTE 8
 #define BYTE_MASK 0xFF
@@ -21,8 +21,9 @@
 /* Forward declaration for default backend */
 static const gm_crypto_backend_t GM_LIBSODIUM_BACKEND;
 
-/* Global backend instance - uses atomic operations for thread-safe switching */
-static _Atomic(const gm_crypto_backend_t *) g_backend = &GM_LIBSODIUM_BACKEND;
+/* Singleton backend set once during initialization */
+static const gm_crypto_backend_t *g_default_backend = NULL;
+static bool g_crypto_initialized = false;
 
 /* Libsodium backend implementation */
 static int libsodium_sha256_init(gm_sha256_ctx_t *ctx) {
@@ -102,61 +103,39 @@ gm_result_crypto_context_t gm_crypto_context_create(const gm_crypto_backend_t *b
 }
 
 const gm_crypto_backend_t *gm_crypto_context_get_backend(const gm_crypto_context_t *ctx) {
-    return ctx ? ctx->backend : nullptr;
+    return ctx ? ctx->backend : NULL;
 }
 
-/* Legacy global backend management (deprecated) */
-gm_result_backend_t gm_crypto_set_backend(const gm_crypto_backend_t *backend) {
-    if (!backend) {
-        return (gm_result_backend_t){
-            .ok = false,
-            .u.err = GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr backend")};
+
+
+/* Initialize crypto subsystem with options */
+gm_result_void_t gm_crypto_init_with_options(const gm_crypto_options_t *opts) {
+    if (g_crypto_initialized) {
+        return gm_ok_void(); /* Already initialized */
     }
 
-    /* Validate backend has all required functions */
-    if (!backend->sha256_init || !backend->sha256_update ||
-        !backend->sha256_final || !backend->sha256 || !backend->random_bytes ||
-        !backend->random_u32 || !backend->random_u64) {
-        return (gm_result_backend_t){
-            .ok = false,
-            .u.err = GM_ERROR(GM_ERR_INVALID_ARGUMENT,
-                              "Backend missing required functions")};
+    /* Initialize libsodium */
+    if (sodium_init() < 0) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_UNKNOWN, "Failed to initialize libsodium"));
     }
 
-    atomic_store(&g_backend, backend);
-    return (gm_result_backend_t){.ok = true, .u.val = backend};
-}
-
-/* Get current backend */
-const gm_crypto_backend_t *gm_crypto_get_backend(void) {
-    return atomic_load(&g_backend);
-}
-
-/* Initialize crypto subsystem */
-gm_result_void_t gm_crypto_init(void) {
-    /* Initialize libsodium if not already done */
-    static bool sodium_initialized = false;
-    if (!sodium_initialized) {
-        if (sodium_init() < 0) {
-            return gm_err_void(
-                GM_ERROR(GM_ERR_UNKNOWN, "Failed to initialize libsodium"));
-        }
-        sodium_initialized = true;
-    }
-
-    /* Set default backend if none set */
-    if (!atomic_load(&g_backend)) {
-        gm_result_backend_t result = gm_crypto_set_backend(&GM_LIBSODIUM_BACKEND);
-        if (GM_IS_ERR(result)) {
-            return gm_err_void(GM_UNWRAP_ERR(result));
-        }
-    }
-
+    /* Set default backend */
+    g_default_backend = opts && opts->default_backend ? 
+                       opts->default_backend : &GM_LIBSODIUM_BACKEND;
+    
+    g_crypto_initialized = true;
     return gm_ok_void();
+}
+
+/* Initialize crypto subsystem with default backend */
+gm_result_void_t gm_crypto_init(void) {
+    return gm_crypto_init_with_options(NULL);
 }
 
 /* Cleanup crypto subsystem */
 gm_result_void_t gm_crypto_cleanup(void) {
-    atomic_store(&g_backend, nullptr);
+    g_default_backend = NULL;
+    g_crypto_initialized = false;
     return gm_ok_void();
 }

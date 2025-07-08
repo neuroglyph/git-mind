@@ -10,6 +10,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* Forward declaration */
+typedef struct gm_crypto_context gm_crypto_context_t;
+
 /* ID size constants */
 #define GM_ID_SIZE 32      /* SHA-256 digest size in bytes */
 #define GM_ID_HEX_SIZE 65  /* 32 bytes * 2 + null terminator */
@@ -34,9 +37,9 @@ int gm_id_compare(gm_id_t id_a, gm_id_t id_b);
 gm_result_u32_t gm_id_hash(gm_id_t new_identifier);
 
 /* ID creation - all can fail */
-gm_result_id_t gm_id_from_data(const void *data, size_t len);
-gm_result_id_t gm_id_from_string(const char *str);
-gm_result_id_t gm_id_generate(void); /* Random ID */
+gm_result_id_t gm_id_from_data_with_context(const gm_crypto_context_t *ctx, const void *data, size_t len);
+gm_result_id_t gm_id_from_string_with_context(const gm_crypto_context_t *ctx, const char *str);
+gm_result_id_t gm_id_generate_with_context(const gm_crypto_context_t *ctx); /* Random ID */
 
 /* ID conversion (safe - validates buffer size) */
 gm_result_void_t gm_id_to_hex(gm_id_t new_identifier, char *out,
@@ -106,7 +109,7 @@ gm_edge_id_t gm_edge_id_from_triple(gm_node_id_t source, gm_node_id_t target,
                                     gm_edge_type_t type);
 
 /* Session ID: Random UUID v4 */
-gm_result_session_id_t gm_session_id_new(void);
+gm_result_session_id_t gm_session_id_new_with_context(const gm_crypto_context_t *ctx);
 
 /* Conversion helpers */
 static inline gm_result_void_t gm_node_id_to_hex(gm_node_id_t identifier,
