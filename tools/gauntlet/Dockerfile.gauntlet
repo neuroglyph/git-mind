@@ -45,7 +45,8 @@ FROM base as clang-18
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
-    lsb-release && \
+    lsb-release \
+    software-properties-common && \
     wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 18 all && \
     apt-get install -y clang-18 clang++-18 clang-tidy-18
 ENV CC=clang-18
@@ -56,7 +57,8 @@ FROM base as clang-19
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
-    lsb-release && \
+    lsb-release \
+    software-properties-common && \
     wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 19 all && \
     apt-get install -y clang-19 clang++-19 clang-tidy-19
 ENV CC=clang-19
@@ -67,7 +69,8 @@ FROM base as clang-20
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
-    lsb-release && \
+    lsb-release \
+    software-properties-common && \
     wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 20 all && \
     apt-get install -y clang-20 clang++-20 clang-tidy-20
 ENV CC=clang-20
