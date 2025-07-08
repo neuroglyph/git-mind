@@ -30,14 +30,13 @@ RUN wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 20 all
 RUN wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 19 all
 RUN wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 18 all
 
-# Install multiple GCC versions (including bleeding edge)
+# Install multiple GCC versions (available in Ubuntu PPA)
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
     apt-get update && \
     apt-get install -y \
         gcc-12 g++-12 \
         gcc-13 g++-13 \
         gcc-14 g++-14 \
-        gcc-15 g++-15 \
         clang-18 clang++-18 clang-tidy-18 \
         clang-19 clang++-19 clang-tidy-19 \
         clang-20 clang++-20 clang-tidy-20
@@ -67,12 +66,6 @@ RUN echo '#!/bin/bash' > /gauntlet/compilers/gcc-14 && \
     echo 'echo "🔫 GCC 14 (Better C23 support)"' >> /gauntlet/compilers/gcc-14 && \
     chmod +x /gauntlet/compilers/gcc-14
 
-RUN echo '#!/bin/bash' > /gauntlet/compilers/gcc-15 && \
-    echo 'export CC=gcc-15' >> /gauntlet/compilers/gcc-15 && \
-    echo 'export CXX=g++-15' >> /gauntlet/compilers/gcc-15 && \
-    echo 'echo "🔫 GCC 15 (Feature-complete C23)"' >> /gauntlet/compilers/gcc-15 && \
-    chmod +x /gauntlet/compilers/gcc-15
-
 # Clang Gauntlet Setup
 RUN echo '#!/bin/bash' > /gauntlet/compilers/clang-18 && \
     echo 'export CC=clang-18' >> /gauntlet/compilers/clang-18 && \
@@ -92,12 +85,7 @@ RUN echo '#!/bin/bash' > /gauntlet/compilers/clang-20 && \
     echo 'echo "🔫 Clang 20 (Latest C23 support)"' >> /gauntlet/compilers/clang-20 && \
     chmod +x /gauntlet/compilers/clang-20
 
-# Add clang-cl (Microsoft's Clang frontend) - the MSVC-compatible devil
-RUN echo '#!/bin/bash' > /gauntlet/compilers/clang-cl && \
-    echo 'export CC="clang-20 --target=x86_64-pc-windows-msvc"' >> /gauntlet/compilers/clang-cl && \
-    echo 'export CXX="clang++-20 --target=x86_64-pc-windows-msvc"' >> /gauntlet/compilers/clang-cl && \
-    echo 'echo "👹 Clang-CL (MSVC-compatible DEVIL - limited C support)"' >> /gauntlet/compilers/clang-cl && \
-    chmod +x /gauntlet/compilers/clang-cl
+# Note: clang-cl (MSVC-compatible) removed due to cross-compilation complexity
 
 # Create individual compiler test functions
 RUN echo '#!/bin/bash' > /gauntlet/test-compiler.sh && \
