@@ -88,7 +88,7 @@ static inline size_t gm_path_len(const gm_path_t *path) {
 }
 
 static inline bool gm_path_is_empty(const gm_path_t *path) {
-    return (bool)((path == NULL) || gm_string_is_empty(&path->value));
+    return ((path == NULL) || (int)gm_string_is_empty(&path->value)) != 0;
 }
 
 #endif /* GITMIND_TYPES_PATH_H */

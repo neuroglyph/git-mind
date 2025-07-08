@@ -13,16 +13,16 @@
 #include <string.h>
 
 /* Error formatting constants */
-static const char *const gm_err_no_error = "(no error)";
-static const char *const gm_err_format_failed = "(error formatting failed)";
-static const char *const gm_err_caused_by = "  caused by: ";
-static const char *const gm_err_format_error_msg = "Error formatting failed";
+static const char *const GmErrNoError = "(no error)";
+static const char *const GmErrFormatFailed = "(error formatting failed)";
+static const char *const GmErrCausedBy = "  caused by: ";
+static const char *const GmErrFormatErrorMsg = "Error formatting failed";
 
 /* Set error message for formatting failure */
 static void set_format_error(gm_error_t *err) {
-    /* Safe copy - we know gm_err_format_error_msg fits in small buffer */
-    size_t msg_len = strlen(gm_err_format_error_msg);
-    gm_memcpy_safe(err->msg.small, GM_ERROR_SMALL_SIZE, gm_err_format_error_msg, msg_len + 1);
+    /* Safe copy - we know GmErrFormatErrorMsg fits in small buffer */
+    size_t msg_len = strlen(GmErrFormatErrorMsg);
+    gm_memcpy_safe(err->msg.small, GM_ERROR_SMALL_SIZE, GmErrFormatErrorMsg, msg_len + 1);
     err->len = (uint16_t)msg_len;
     err->heap_alloc = false;
 }
@@ -41,9 +41,9 @@ static void store_small_message(gm_error_t *err, const char *fmt, va_list args) 
 
 /* Store error message on heap */
 static void store_heap_message(gm_error_t *err, const char *fmt, va_list args, int len) {
-    err->msg.heap = malloc((size_t)(len + 1));
+    err->msg.heap = malloc((size_t)len + 1);
     if (err->msg.heap) {
-        int ret = gm_vsnprintf(err->msg.heap, (size_t)(len + 1), fmt, args);
+        int ret = gm_vsnprintf(err->msg.heap, (size_t)len + 1, fmt, args);
         if (ret < 0 || ret > len) {
             free(err->msg.heap);
             set_format_error(err);
@@ -199,7 +199,7 @@ static size_t calc_error_chain_size(const gm_error_t *error) {
     while (err) {
         total_size += calc_error_size(err);
         if (err->cause) {
-            total_size += strlen(gm_err_caused_by);
+            total_size += strlen(GmErrCausedBy);
         }
         err = err->cause;
     }
@@ -224,7 +224,7 @@ static size_t format_single_error(char *buffer, size_t size, const gm_error_t *e
 
 /* Append caused by prefix */
 static size_t append_caused_by(char *buffer, size_t size) {
-    int written = gm_snprintf(buffer, size, "%s", gm_err_caused_by);
+    int written = gm_snprintf(buffer, size, "%s", GmErrCausedBy);
     return (written > 0 && (size_t)written < size) ? (size_t)written : 0;
 }
 
@@ -252,13 +252,13 @@ static void format_error_chain(char *buffer, size_t size, const gm_error_t *erro
 /* Format error chain as string */
 char *gm_error_format(const gm_error_t *error) {
     if (!error) {
-        return strdup(gm_err_no_error);
+        return strdup(GmErrNoError);
     }
 
     size_t total_size = calc_error_chain_size(error);
     char *buffer = malloc(total_size);
     if (!buffer) {
-        return strdup(gm_err_format_failed);
+        return strdup(GmErrFormatFailed);
     }
 
     format_error_chain(buffer, total_size, error);

@@ -126,11 +126,18 @@ gm_result_string_t gm_string_concat(const gm_string_t *str_a, const gm_string_t 
     size_t len_a = str_a ? str_a->length : 0;
     size_t len_b = str_b ? str_b->length : 0;
 
+    /* Handle empty concatenation cases */
+    if (len_a == 0 && len_b == 0) {
+        return gm_string_new("");
+    }
+
     gm_result_string_t result = gm_string_with_capacity(len_a + len_b + 1);
     if (GM_IS_ERR(result)) {
         return result;
     }
 
+    /* Memory is properly managed through result structure - suppress false positive */
+    // NOLINTNEXTLINE(clang-analyzer-unix.Malloc)
     copy_concat_data(&result.u.val, str_a, str_b, len_a, len_b);
     return result;
 }

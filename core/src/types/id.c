@@ -162,8 +162,8 @@ gm_result_id_t gm_id_generate_with_context(const gm_crypto_context_t *ctx) {
 #define HEX_FORMAT_2X "%2x"
 
 /* Error messages */
-static const char *const gm_err_msg_invalid_hex_len = "Invalid hex ID: must be %d characters";
-static const char *const gm_err_msg_invalid_hex_char = "Invalid hex character at position %d";
+static const char *const GmErrMsgInvalidHexLen = "Invalid hex ID: must be %d characters";
+static const char *const GmErrMsgInvalidHexChar = "Invalid hex character at position %d";
 
 /* Convert ID to hex string (safe version with buffer size check) */
 gm_result_void_t gm_id_to_hex(gm_id_t new_identifier, char *out, size_t out_size) {
@@ -193,7 +193,7 @@ gm_result_void_t gm_id_to_hex(gm_id_t new_identifier, char *out, size_t out_size
 /* Validate hex string length */
 static gm_error_t *validate_hex_length(const char *hex) {
     if (!hex || strlen(hex) != GM_ID_HEX_CHARS) {
-        return GM_ERROR(GM_ERR_INVALID_FORMAT, gm_err_msg_invalid_hex_len, GM_ID_HEX_CHARS);
+        return GM_ERROR(GM_ERR_INVALID_FORMAT, GmErrMsgInvalidHexLen, GM_ID_HEX_CHARS);
     }
     return nullptr;
 }
@@ -215,7 +215,7 @@ static gm_error_t *parse_hex_byte(const char *hex, int pos, uint8_t *out) {
     
     /* Check for conversion errors */
     if (errno != 0 || endptr != hex_pair + 2 || value > BYTE_MAX_VALUE) {
-        return GM_ERROR(GM_ERR_INVALID_FORMAT, gm_err_msg_invalid_hex_char, 
+        return GM_ERROR(GM_ERR_INVALID_FORMAT, GmErrMsgInvalidHexChar, 
                        pos * HEX_CHARS_PER_BYTE);
     }
     

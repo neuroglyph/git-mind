@@ -13,8 +13,8 @@
 #include <string.h>
 
 /* Path constants */
-static const char gm_path_sep_unix = '/';
-static const char gm_path_sep_win = '\\';
+static const char GmPathSepUnix = '/';
+static const char GmPathSepWin = '\\';
 #define PATH_CURRENT_DIR "."
 #define PATH_PARENT_DIR ".."
 
@@ -26,7 +26,7 @@ enum {
 };
 
 /* Path separator character constants */
-static const char gm_symlink_suffix_macos = '@';
+static const char GmSymlinkSuffixMacos = '@';
 #define PATH_ENCODED_PARENT_1 "%2e%2e" /* URL encoded .. */
 #define PATH_ENCODED_PARENT_2 "%2E%2E" /* URL encoded .. */
 #define PATH_ENCODED_DOT_1 "%2e"       /* URL encoded . */
@@ -101,25 +101,25 @@ static inline gm_result_string_t gm_err_string(gm_error_t *err) {
 /* Detect path separator */
 static char detect_separator(const char *str) {
     /* Look for first separator */
-    const char *unix_sep = strchr(str, gm_path_sep_unix);
-    const char *win_sep = strchr(str, gm_path_sep_win);
+    const char *unix_sep = strchr(str, GmPathSepUnix);
+    const char *win_sep = strchr(str, GmPathSepWin);
 
     if (unix_sep && !win_sep) {
-        return gm_path_sep_unix;
+        return GmPathSepUnix;
     }
     if (win_sep && !unix_sep) {
-        return gm_path_sep_win;
+        return GmPathSepWin;
     }
     if (unix_sep && win_sep) {
         /* Use whichever comes first */
-        return (unix_sep < win_sep) ? gm_path_sep_unix : gm_path_sep_win;
+        return (unix_sep < win_sep) ? GmPathSepUnix : GmPathSepWin;
     }
 
     /* Default to system separator */
 #ifdef _WIN32
-    return gm_path_sep_win;
+    return GmPathSepWin;
 #else
-    return gm_path_sep_unix;
+    return GmPathSepUnix;
 #endif
 }
 
@@ -129,15 +129,15 @@ static bool is_absolute_path(const char *str, char separator) {
         return false;
     }
 
-    if (separator == gm_path_sep_unix) {
-        return str[0] == gm_path_sep_unix;
+    if (separator == GmPathSepUnix) {
+        return str[0] == GmPathSepUnix;
     }
 
     /* Windows: C:\ or \\server\share */
-    if (str[0] == gm_path_sep_win && str[1] == gm_path_sep_win) {
+    if (str[0] == GmPathSepWin && str[1] == GmPathSepWin) {
         return true; /* UNC path */
     }
-    if (str[1] == ':' && str[2] == gm_path_sep_win) {
+    if (str[1] == ':' && str[2] == GmPathSepWin) {
         return true; /* Drive letter */
     }
     return false;
@@ -553,7 +553,7 @@ static gm_result_string_t handle_empty_components(bool is_absolute, char separat
 
 /* Check if separator needed before component */
 static bool needs_separator(size_t index, bool is_absolute, const char *first_component) {
-    return (index > 0) || (is_absolute && (*first_component != '\0'));
+    return ((index > 0) || ((int)is_absolute && (*first_component != '\0'))) != 0;
 }
 
 /* Append single component with separator if needed */
@@ -744,7 +744,7 @@ static bool has_windows_lnk_extension(const char *comp, size_t comp_len) {
 
 /* Check for macOS @ suffix */
 static bool has_macos_symlink_suffix(const char *comp, size_t comp_len) {
-    return (bool)(comp_len > 1 && comp[comp_len - 1] == gm_symlink_suffix_macos);
+    return (bool)(comp_len > 1 && comp[comp_len - 1] == GmSymlinkSuffixMacos);
 }
 
 /* Check for arrow patterns in component */
@@ -985,7 +985,7 @@ static const struct {
     bool allow_relative;
     bool allow_symlinks;
     bool allow_hidden;
-} gm_default_path_rules = {.max_length = GM_PATH_MAX_LENGTH,
+} GmDefaultPathRules = {.max_length = GM_PATH_MAX_LENGTH,
                         .allow_traversal = false,
                         .allow_absolute = true,
                         .allow_relative = true,
@@ -1023,24 +1023,24 @@ static gm_result_void_t check_path_safety(const gm_path_t *path, bool allow_trav
 /* Validate all path constraints and safety */
 static gm_result_void_t validate_all_rules(const gm_path_t *path) {
     gm_result_void_t constraint_res = check_path_constraints(path, 
-        gm_default_path_rules.max_length, gm_default_path_rules.allow_absolute,
-        gm_default_path_rules.allow_relative);
+        GmDefaultPathRules.max_length, GmDefaultPathRules.allow_absolute,
+        GmDefaultPathRules.allow_relative);
     if (GM_IS_ERR(constraint_res)) {
         return constraint_res;
     }
 
-    gm_result_void_t safety_res = check_path_safety(path, gm_default_path_rules.allow_traversal);
+    gm_result_void_t safety_res = check_path_safety(path, GmDefaultPathRules.allow_traversal);
     if (GM_IS_ERR(safety_res)) {
         return safety_res;
     }
 
     gm_result_void_t comp_res = validate_path_components(gm_path_str(path), path->separator,
-        gm_default_path_rules.allow_hidden, gm_default_path_rules.allow_symlinks);
+        GmDefaultPathRules.allow_hidden, GmDefaultPathRules.allow_symlinks);
     if (GM_IS_ERR(comp_res)) {
         return comp_res;
     }
 
-    if (!gm_default_path_rules.allow_symlinks && strstr(gm_path_str(path), SYMLINK_ARROW_SPACED)) {
+    if (!GmDefaultPathRules.allow_symlinks && strstr(gm_path_str(path), SYMLINK_ARROW_SPACED)) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_PATH, ERR_MSG_SYMLINK_GENERIC));
     }
     return gm_ok_void();
