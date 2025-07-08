@@ -138,9 +138,22 @@ gm_result_void_t gm_string_append(gm_string_t *str, const char *suffix) {
     return gm_string_append_n(str, suffix, strlen(suffix));
 }
 
+/* Helper to ensure string has enough capacity */
+static gm_result_void_t ensure_capacity(gm_string_t *str, size_t needed_size) {
+    if (needed_size > str->capacity) {
+        size_t new_cap = next_capacity(GM_CURRENT_CAPACITY(str->capacity), GM_NEEDED_CAPACITY(needed_size));
+        char *new_data = realloc(str->data, new_cap);
+        if (!new_data) {
+            return gm_err_void(GM_ERROR(GM_ERR_OUT_OF_MEMORY, "Failed to grow string"));
+        }
+        str->data = new_data;
+        str->capacity = new_cap;
+    }
+    return gm_ok_void();
+}
+
 /* Append with length */
-gm_result_void_t gm_string_append_n(gm_string_t *str, const char *suffix,
-                                  size_t len) {
+gm_result_void_t gm_string_append_n(gm_string_t *str, const char *suffix, size_t len) {
     if (!str) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr string"));
     }
@@ -149,22 +162,14 @@ gm_result_void_t gm_string_append_n(gm_string_t *str, const char *suffix,
     }
 
     size_t new_len = str->length + len;
-    if (new_len + 1 > str->capacity) {
-        size_t new_cap = next_capacity(GM_CURRENT_CAPACITY(str->capacity), GM_NEEDED_CAPACITY(new_len + 1));
-        char *new_data = realloc(str->data, new_cap);
-        if (!new_data) {
-            return gm_err_void(
-                GM_ERROR(GM_ERR_OUT_OF_MEMORY, "Failed to grow string"));
-        }
-        str->data = new_data;
-        str->capacity = new_cap;
+    gm_result_void_t result = ensure_capacity(str, new_len + 1);
+    if (GM_IS_ERR(result)) {
+        return result;
     }
 
-    GM_MEMCPY_SAFE(str->data + str->length, str->capacity - str->length, suffix,
-                   len);
+    GM_MEMCPY_SAFE(str->data + str->length, str->capacity - str->length, suffix, len);
     str->length = new_len;
     str->data[new_len] = '\0';
-
     return gm_ok_void();
 }
 
@@ -206,35 +211,43 @@ gm_result_string_t gm_string_substring(const gm_string_t *str, size_t start,
     return gm_string_new_n(str->data + start, len);
 }
 
+/* Helper to check if character is whitespace */
+static bool is_whitespace(char character) {
+    return character == ' ' || character == '\t' || character == '\n' || character == '\r';
+}
+
+/* Helper to find trim bounds */
+static void find_trim_bounds(const gm_string_t *str, size_t *start, size_t *end) {
+    *start = 0;
+    while (*start < str->length && is_whitespace(str->data[*start])) {
+        (*start)++;
+    }
+
+    if (*start == str->length) {
+        *end = *start;
+        return;
+    }
+
+    *end = str->length - 1;
+    while (*end > *start && is_whitespace(str->data[*end])) {
+        (*end)--;
+    }
+}
+
 /* Trim whitespace from both ends */
 gm_result_string_t gm_string_trim(const gm_string_t *str) {
     if (!str) {
         return gm_err_string(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr string"));
     }
-
-    /* Empty string returns empty string */
     if (str->length == 0) {
         return gm_string_new("");
     }
 
-    /* Find first non-whitespace character */
-    size_t start = 0;
-    while (start < str->length &&
-           (str->data[start] == ' ' || str->data[start] == '\t' ||
-            str->data[start] == '\n' || str->data[start] == '\r')) {
-        start++;
-    }
-
-    /* All whitespace? Return empty string */
+    size_t start, end;
+    find_trim_bounds(str, &start, &end);
+    
     if (start == str->length) {
         return gm_string_new("");
-    }
-
-    /* Find last non-whitespace character */
-    size_t end = str->length - 1;
-    while (end > start && (str->data[end] == ' ' || str->data[end] == '\t' ||
-                           str->data[end] == '\n' || str->data[end] == '\r')) {
-        end--;
     }
 
     /* Extract the trimmed portion */

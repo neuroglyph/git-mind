@@ -14,13 +14,15 @@
  */
 
 /* Safe vsnprintf wrapper that suppresses security warnings */
-static inline int gm_vsnprintf(char *str, size_t size, const char *format, va_list ap) {
+static inline int gm_vsnprintf(char *str, size_t size, const char *format, va_list args) {
     assert(format != nullptr && "gm_vsnprintf: format cannot be null");
     if (size == 0) {
-        return vsnprintf(nullptr, 0, format, ap);
+        // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
+        return vsnprintf(nullptr, 0, format, args);
     }
     assert(str != nullptr && "gm_vsnprintf: buffer cannot be null with non-zero size");
-    return vsnprintf(str, size, format, ap);
+    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
+    return vsnprintf(str, size, format, args);
 }
 
 /* Safe snprintf wrapper that suppresses security warnings */

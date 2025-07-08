@@ -32,10 +32,10 @@ typedef struct {
     size_t value;
 } gm_needed_capacity_t;
 
-/* Wrapper for UTF8 state */
+/* Wrapper for UTF8 state value */
 typedef struct {
     uint32_t value;
-} gm_utf8_state_t;
+} gm_utf8_state_value_t;
 
 /* Wrapper for code point */
 typedef struct {
@@ -57,7 +57,7 @@ typedef struct {
 #define GM_PATH_SEPARATOR(c) ((gm_path_separator_t){.value = (c)})
 #define GM_CURRENT_CAPACITY(n) ((gm_current_capacity_t){.value = (n)})
 #define GM_NEEDED_CAPACITY(n) ((gm_needed_capacity_t){.value = (n)})
-#define GM_UTF8_STATE(s) ((gm_utf8_state_t){.value = (s)})
+#define GM_UTF8_STATE(s) ((gm_utf8_state_value_t){.value = (s)})
 #define GM_UTF8_CODEPOINT(c) ((gm_utf8_codepoint_t){.value = (c)})
 #define GM_BASE_PATH(p) ((gm_base_path_t){.value = (p)})
 #define GM_RELATIVE_PATH(p) ((gm_relative_path_t){.value = (p)})

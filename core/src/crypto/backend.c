@@ -83,20 +83,22 @@ const gm_crypto_backend_t *gm_crypto_backend_libsodium(void) {
 /* Context-based crypto management (preferred) */
 gm_result_crypto_context_t gm_crypto_context_create(const gm_crypto_backend_t *backend) {
     if (!backend) {
-        return gm_err_crypto_context(
-            GM_ERROR(GM_ERR_INVALID_ARGUMENT, "Backend cannot be null"));
+        return (gm_result_crypto_context_t){
+            .ok = false,
+            .u.err = GM_ERROR(GM_ERR_INVALID_ARGUMENT, "Backend cannot be null")};
     }
     
     /* Validate backend has all required functions */
     if (!backend->sha256_init || !backend->sha256_update ||
         !backend->sha256_final || !backend->sha256 || !backend->random_bytes ||
         !backend->random_u32 || !backend->random_u64) {
-        return gm_err_crypto_context(
-            GM_ERROR(GM_ERR_INVALID_ARGUMENT, "Backend missing required functions"));
+        return (gm_result_crypto_context_t){
+            .ok = false,
+            .u.err = GM_ERROR(GM_ERR_INVALID_ARGUMENT, "Backend missing required functions")};
     }
     
     gm_crypto_context_t ctx = { .backend = backend };
-    return gm_ok_crypto_context(ctx);
+    return (gm_result_crypto_context_t){.ok = true, .u.val = ctx};
 }
 
 const gm_crypto_backend_t *gm_crypto_context_get_backend(const gm_crypto_context_t *ctx) {

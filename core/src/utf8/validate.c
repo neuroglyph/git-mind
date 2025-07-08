@@ -16,7 +16,6 @@
  */
 
 #include "gitmind/utf8/validate.h"
-#include "gitmind/types/path_internal.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -422,39 +421,72 @@ static GM_ALWAYS_INLINE uint32_t decode(uint32_t *state, uint32_t *codep,
                                         uint8_t byte) {
     uint32_t type = GM_UTF8D[byte];
 
-    *codep = (*state != UTF8_ACCEPT) ? (byte & 0x3fu) | (*codep << 6)
-                                     : (0xff >> type) & (byte);
+    *codep = (*state != UTF8_ACCEPT) ? (byte & 0x3fU) | (*codep << 6)
+                                     : (0xffU >> type) & (byte);
 
     *state = GM_UTF8D[256 + *state + type];
     return *state;
 }
 
+/* Constants for codepoint range validation */
+#define SURROGATE_MIN 0xD800
+#define SURROGATE_MAX 0xDFFF
+#define UNICODE_MAX 0x10FFFF
+
+/**
+ * @brief Check if completed codepoint is valid
+ */
+static gm_utf8_error_t validate_completed_codepoint(uint32_t codep) {
+    if (codep >= SURROGATE_MIN && codep <= SURROGATE_MAX) {
+        return GM_UTF8_ERR_SURROGATE;
+    }
+    if (codep > UNICODE_MAX) {
+        return GM_UTF8_ERR_OUT_OF_RANGE;
+    }
+    return GM_UTF8_OK;
+}
+
+/* Type-safe wrapper for DFA state */
+typedef struct {
+    uint32_t value;
+} utf8_dfa_state_t;
+
+/* Type-safe wrapper for codepoint */
+typedef struct {
+    uint32_t value;
+} utf8_codepoint_t;
+
 /**
  * @brief Map DFA state to error code
  */
-static gm_utf8_error_t state_to_error(gm_utf8_state_t state /* DFA validation state */, 
-                                     gm_utf8_codepoint_t codep /* Unicode code point value */) {
-    /* Parameters: validation state from DFA, then code point being validated */
-    if (state.value == UTF8_ACCEPT) {
+static gm_utf8_error_t state_to_error(utf8_dfa_state_t dfa_state, utf8_codepoint_t codepoint) {
+    if (dfa_state.value == UTF8_ACCEPT) {
         return GM_UTF8_OK;
     }
-
-    /* Check for specific error conditions */
-    if (state.value == UTF8_REJECT) {
-        /* Check for surrogate */
-        if (codep.value >= 0xD800 && codep.value <= 0xDFFF) {
-            return GM_UTF8_ERR_SURROGATE;
-        }
-        /* Check for out of range */
-        if (codep.value > 0x10FFFF) {
-            return GM_UTF8_ERR_OUT_OF_RANGE;
-        }
-        /* Default to invalid start */
-        return GM_UTF8_ERR_INVALID_START;
+    if (dfa_state.value == UTF8_REJECT) {
+        return validate_completed_codepoint(codepoint.value) != GM_UTF8_OK ? 
+               validate_completed_codepoint(codepoint.value) : GM_UTF8_ERR_INVALID_START;
     }
-
-    /* State != ACCEPT and != REJECT means truncated */
     return GM_UTF8_ERR_TRUNCATED;
+}
+
+/**
+ * @brief Process a single byte and validate completed codepoints
+ */
+static gm_utf8_error_t process_utf8_byte(uint32_t *state, uint32_t *codep, uint8_t byte) {
+    uint32_t prev_state = *state;
+    decode(state, codep, byte);
+    
+    if (*state == UTF8_REJECT) {
+        return state_to_error((utf8_dfa_state_t){.value = *state}, (utf8_codepoint_t){.value = *codep});
+    }
+    
+    /* Check completed codepoint */
+    if (prev_state != UTF8_ACCEPT && *state == UTF8_ACCEPT) {
+        return validate_completed_codepoint(*codep);
+    }
+    
+    return GM_UTF8_OK;
 }
 
 gm_utf8_error_t gm_utf8_validate(const char *buf, size_t len) {
@@ -462,27 +494,13 @@ gm_utf8_error_t gm_utf8_validate(const char *buf, size_t len) {
     uint32_t codep = 0;
 
     for (size_t i = 0; i < len; i++) {
-        uint32_t prev_state = state;
-        decode(&state, &codep, (uint8_t)buf[i]);
-
-        if (state == UTF8_REJECT) {
-            /* Fast fail on first error */
-            return state_to_error(GM_UTF8_STATE(state), GM_UTF8_CODEPOINT(codep));
-        }
-
-        /* Check for completed codepoint */
-        if (prev_state != UTF8_ACCEPT && state == UTF8_ACCEPT) {
-            /* We just completed a codepoint, check if it's valid */
-            if (codep >= 0xD800 && codep <= 0xDFFF) {
-                return GM_UTF8_ERR_SURROGATE;
-            }
-            if (codep > 0x10FFFF) {
-                return GM_UTF8_ERR_OUT_OF_RANGE;
-            }
+        gm_utf8_error_t err = process_utf8_byte(&state, &codep, (uint8_t)buf[i]);
+        if (err != GM_UTF8_OK) {
+            return err;
         }
     }
 
-    return state_to_error(GM_UTF8_STATE(state), GM_UTF8_CODEPOINT(codep));
+    return state_to_error((utf8_dfa_state_t){.value = state}, (utf8_codepoint_t){.value = codep});
 }
 
 void gm_utf8_state_init(gm_utf8_state_t *state) {
@@ -493,27 +511,11 @@ void gm_utf8_state_init(gm_utf8_state_t *state) {
 gm_utf8_error_t gm_utf8_validate_chunk(gm_utf8_state_t *state, const char *buf,
                                        size_t len) {
     for (size_t i = 0; i < len; i++) {
-        uint32_t prev_state = state->state;
-        decode(&state->state, &state->codep, (uint8_t)buf[i]);
-
-        if (state->state == UTF8_REJECT) {
-            /* Fast fail on first error */
-            return state_to_error(GM_UTF8_STATE(state->state), GM_UTF8_CODEPOINT(state->codep));
-        }
-
-        /* Check for completed codepoint */
-        if (prev_state != UTF8_ACCEPT && state->state == UTF8_ACCEPT) {
-            /* We just completed a codepoint, check if it's valid */
-            if (state->codep >= 0xD800 && state->codep <= 0xDFFF) {
-                return GM_UTF8_ERR_SURROGATE;
-            }
-            if (state->codep > 0x10FFFF) {
-                return GM_UTF8_ERR_OUT_OF_RANGE;
-            }
+        gm_utf8_error_t err = process_utf8_byte(&state->state, &state->codep, (uint8_t)buf[i]);
+        if (err != GM_UTF8_OK) {
+            return err;
         }
     }
-
-    /* Chunk is valid so far */
     return GM_UTF8_OK;
 }
 
