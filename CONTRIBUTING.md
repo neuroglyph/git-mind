@@ -24,6 +24,15 @@ Thank you for your interest in contributing to git-mind! This project aims to cr
    make test  # Runs all tests in Docker
    ```
 
+4. **Test across multiple compilers**
+   ```bash
+   # The DEVIL'S COMPILER GAUNTLET 666 🔥
+   ./tools/gauntlet/run-gauntlet.sh
+   
+   # Quick infrastructure test
+   ./tools/gauntlet/test-gauntlet.sh
+   ```
+
 ## Development Principles
 
 1. **Test-Driven Development (TDD)** - Write tests first
@@ -39,6 +48,7 @@ Thank you for your interest in contributing to git-mind! This project aims to cr
 - **Silent by default** - Output only on error or with --verbose
 - **Single Responsibility** - Each function does one thing
 - **Always use Docker** - Never build on host
+- **C23 compatibility** - Must pass the DEVIL'S COMPILER GAUNTLET 666
 
 ## Making Changes
 
@@ -48,7 +58,44 @@ Thank you for your interest in contributing to git-mind! This project aims to cr
 4. **Implement the feature**
 5. **Update documentation**
 6. **Run all tests**
-7. **Submit a pull request**
+7. **Run the DEVIL'S COMPILER GAUNTLET 666** - `./tools/gauntlet/run-gauntlet.sh`
+8. **Submit a pull request**
+
+## The DEVIL'S COMPILER GAUNTLET 666 🔥
+
+This project uses a **BRUTAL** multi-compiler testing system to ensure maximum compatibility:
+
+### What it tests:
+- **GCC 12** (Pre-C23 - THE DEVIL) - Tests backwards compatibility
+- **GCC 13** (Partial C23) - Early C23 support
+- **GCC 14** (Better C23) - Improved C23 support
+- **Clang 18** (Partial C23) - LLVM C23 support
+- **Clang 19** (Better C23) - Improved LLVM C23
+- **Clang 20** (Latest C23) - Cutting-edge C23 support
+
+### How it works:
+1. Runs **6 compilers in parallel** (not waiting 5evah!)
+2. Each compiler builds and tests your code independently
+3. Logs saved to `build-<compiler>.log` files
+4. Results in `result-<compiler>.txt` files
+
+### Usage:
+```bash
+# Full GAUNTLET (all 6 compilers)
+./tools/gauntlet/run-gauntlet.sh
+
+# Quick test (subset)
+./tools/gauntlet/test-gauntlet.sh
+
+# CI integration
+# The GAUNTLET runs automatically on all PRs
+```
+
+### Results:
+- ✅ **ALL PASS** = Your code is **UNHOLY and BULLETPROOF**
+- ❌ **ANY FAIL** = Some compilers made you cry (check logs)
+
+**If your code survives the DEVIL'S COMPILER GAUNTLET 666, it's ready for production.**
 
 ## Attribution System
 

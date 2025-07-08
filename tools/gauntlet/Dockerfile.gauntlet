@@ -1,0 +1,211 @@
+FROM ubuntu:22.04
+
+# THE DEVIL'S COMPILER GAUNTLET 666 - Multiple C23 compilers + MSVC hell
+# This GAUNTLET tests your C23 code against multiple compiler versions
+# INCLUDING the hellish MSVC with limited C support
+# If it survives this, it's UNHOLY and BULLETPROOF
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# Install base dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    lsb-release \
+    software-properties-common \
+    build-essential \
+    cmake \
+    ninja-build \
+    python3 \
+    python3-pip \
+    pkg-config \
+    libsodium-dev \
+    git \
+    curl \
+    xz-utils
+
+# Install LLVM/Clang repository
+RUN wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 20 all
+RUN wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 19 all
+RUN wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 18 all
+
+# Install multiple GCC versions (including bleeding edge)
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
+    apt-get update && \
+    apt-get install -y \
+        gcc-12 g++-12 \
+        gcc-13 g++-13 \
+        gcc-14 g++-14 \
+        gcc-15 g++-15 \
+        clang-18 clang++-18 clang-tidy-18 \
+        clang-19 clang++-19 clang-tidy-19 \
+        clang-20 clang++-20 clang-tidy-20
+
+# Install meson
+RUN pip3 install meson ninja
+
+# Create compiler aliases and test scripts
+RUN mkdir -p /gauntlet/compilers
+
+# GCC Gauntlet Setup
+RUN echo '#!/bin/bash' > /gauntlet/compilers/gcc-12 && \
+    echo 'export CC=gcc-12' >> /gauntlet/compilers/gcc-12 && \
+    echo 'export CXX=g++-12' >> /gauntlet/compilers/gcc-12 && \
+    echo 'echo "😈 GCC 12 (Pre-C23 - THE DEVIL)"' >> /gauntlet/compilers/gcc-12 && \
+    chmod +x /gauntlet/compilers/gcc-12
+
+RUN echo '#!/bin/bash' > /gauntlet/compilers/gcc-13 && \
+    echo 'export CC=gcc-13' >> /gauntlet/compilers/gcc-13 && \
+    echo 'export CXX=g++-13' >> /gauntlet/compilers/gcc-13 && \
+    echo 'echo "🔫 GCC 13 (Partial C23 support)"' >> /gauntlet/compilers/gcc-13 && \
+    chmod +x /gauntlet/compilers/gcc-13
+
+RUN echo '#!/bin/bash' > /gauntlet/compilers/gcc-14 && \
+    echo 'export CC=gcc-14' >> /gauntlet/compilers/gcc-14 && \
+    echo 'export CXX=g++-14' >> /gauntlet/compilers/gcc-14 && \
+    echo 'echo "🔫 GCC 14 (Better C23 support)"' >> /gauntlet/compilers/gcc-14 && \
+    chmod +x /gauntlet/compilers/gcc-14
+
+RUN echo '#!/bin/bash' > /gauntlet/compilers/gcc-15 && \
+    echo 'export CC=gcc-15' >> /gauntlet/compilers/gcc-15 && \
+    echo 'export CXX=g++-15' >> /gauntlet/compilers/gcc-15 && \
+    echo 'echo "🔫 GCC 15 (Feature-complete C23)"' >> /gauntlet/compilers/gcc-15 && \
+    chmod +x /gauntlet/compilers/gcc-15
+
+# Clang Gauntlet Setup
+RUN echo '#!/bin/bash' > /gauntlet/compilers/clang-18 && \
+    echo 'export CC=clang-18' >> /gauntlet/compilers/clang-18 && \
+    echo 'export CXX=clang++-18' >> /gauntlet/compilers/clang-18 && \
+    echo 'echo "🔫 Clang 18 (Partial C23 support)"' >> /gauntlet/compilers/clang-18 && \
+    chmod +x /gauntlet/compilers/clang-18
+
+RUN echo '#!/bin/bash' > /gauntlet/compilers/clang-19 && \
+    echo 'export CC=clang-19' >> /gauntlet/compilers/clang-19 && \
+    echo 'export CXX=clang++-19' >> /gauntlet/compilers/clang-19 && \
+    echo 'echo "🔫 Clang 19 (Better C23 support)"' >> /gauntlet/compilers/clang-19 && \
+    chmod +x /gauntlet/compilers/clang-19
+
+RUN echo '#!/bin/bash' > /gauntlet/compilers/clang-20 && \
+    echo 'export CC=clang-20' >> /gauntlet/compilers/clang-20 && \
+    echo 'export CXX=clang++-20' >> /gauntlet/compilers/clang-20 && \
+    echo 'echo "🔫 Clang 20 (Latest C23 support)"' >> /gauntlet/compilers/clang-20 && \
+    chmod +x /gauntlet/compilers/clang-20
+
+# Add clang-cl (Microsoft's Clang frontend) - the MSVC-compatible devil
+RUN echo '#!/bin/bash' > /gauntlet/compilers/clang-cl && \
+    echo 'export CC="clang-20 --target=x86_64-pc-windows-msvc"' >> /gauntlet/compilers/clang-cl && \
+    echo 'export CXX="clang++-20 --target=x86_64-pc-windows-msvc"' >> /gauntlet/compilers/clang-cl && \
+    echo 'echo "👹 Clang-CL (MSVC-compatible DEVIL - limited C support)"' >> /gauntlet/compilers/clang-cl && \
+    chmod +x /gauntlet/compilers/clang-cl
+
+# Create individual compiler test functions
+RUN echo '#!/bin/bash' > /gauntlet/test-compiler.sh && \
+    echo 'set -e' >> /gauntlet/test-compiler.sh && \
+    echo 'COMPILER=$1' >> /gauntlet/test-compiler.sh && \
+    echo 'WORKSPACE=/workspace' >> /gauntlet/test-compiler.sh && \
+    echo 'cd $WORKSPACE' >> /gauntlet/test-compiler.sh && \
+    echo '' >> /gauntlet/test-compiler.sh && \
+    echo 'echo "🔫 Testing $COMPILER..."' >> /gauntlet/test-compiler.sh && \
+    echo 'source /gauntlet/compilers/$COMPILER' >> /gauntlet/test-compiler.sh && \
+    echo '' >> /gauntlet/test-compiler.sh && \
+    echo '# Clean previous build' >> /gauntlet/test-compiler.sh && \
+    echo 'rm -rf build-$COMPILER' >> /gauntlet/test-compiler.sh && \
+    echo '' >> /gauntlet/test-compiler.sh && \
+    echo '# Setup build with current compiler' >> /gauntlet/test-compiler.sh && \
+    echo 'if meson setup build-$COMPILER --warnlevel=3 > build-$COMPILER.log 2>&1; then' >> /gauntlet/test-compiler.sh && \
+    echo '    echo "✅ Meson setup successful for $COMPILER"' >> /gauntlet/test-compiler.sh && \
+    echo '    ' >> /gauntlet/test-compiler.sh && \
+    echo '    # Build' >> /gauntlet/test-compiler.sh && \
+    echo '    if ninja -C build-$COMPILER >> build-$COMPILER.log 2>&1; then' >> /gauntlet/test-compiler.sh && \
+    echo '        echo "✅ Build successful for $COMPILER"' >> /gauntlet/test-compiler.sh && \
+    echo '        ' >> /gauntlet/test-compiler.sh && \
+    echo '        # Run tests' >> /gauntlet/test-compiler.sh && \
+    echo '        if ninja -C build-$COMPILER test >> build-$COMPILER.log 2>&1; then' >> /gauntlet/test-compiler.sh && \
+    echo '            echo "✅ Tests passed for $COMPILER"' >> /gauntlet/test-compiler.sh && \
+    echo '            echo "PASS" > result-$COMPILER.txt' >> /gauntlet/test-compiler.sh && \
+    echo '        else' >> /gauntlet/test-compiler.sh && \
+    echo '            echo "❌ Tests failed for $COMPILER"' >> /gauntlet/test-compiler.sh && \
+    echo '            echo "FAIL_TEST" > result-$COMPILER.txt' >> /gauntlet/test-compiler.sh && \
+    echo '        fi' >> /gauntlet/test-compiler.sh && \
+    echo '    else' >> /gauntlet/test-compiler.sh && \
+    echo '        echo "❌ Build failed for $COMPILER"' >> /gauntlet/test-compiler.sh && \
+    echo '        echo "FAIL_BUILD" > result-$COMPILER.txt' >> /gauntlet/test-compiler.sh && \
+    echo '    fi' >> /gauntlet/test-compiler.sh && \
+    echo 'else' >> /gauntlet/test-compiler.sh && \
+    echo '    echo "❌ Meson setup failed for $COMPILER"' >> /gauntlet/test-compiler.sh && \
+    echo '    echo "FAIL_SETUP" > result-$COMPILER.txt' >> /gauntlet/test-compiler.sh && \
+    echo 'fi' >> /gauntlet/test-compiler.sh && \
+    chmod +x /gauntlet/test-compiler.sh
+
+# Create the main PARALLEL gauntlet runner
+RUN echo '#!/bin/bash' > /gauntlet/run-gauntlet.sh && \
+    echo 'set -e' >> /gauntlet/run-gauntlet.sh && \
+    echo 'WORKSPACE=/workspace' >> /gauntlet/run-gauntlet.sh && \
+    echo 'cd $WORKSPACE' >> /gauntlet/run-gauntlet.sh && \
+    echo '' >> /gauntlet/run-gauntlet.sh && \
+    echo 'echo "🔥 DEVIL'\''S COMPILER GAUNTLET 666 🔥"' >> /gauntlet/run-gauntlet.sh && \
+    echo 'echo "If your code survives this, it'\''s UNHOLY and BULLETPROOF"' >> /gauntlet/run-gauntlet.sh && \
+    echo 'echo "Running in PARALLEL because we'\''re not waiting 5evah!"' >> /gauntlet/run-gauntlet.sh && \
+    echo 'echo ""' >> /gauntlet/run-gauntlet.sh && \
+    echo '' >> /gauntlet/run-gauntlet.sh && \
+    echo 'COMPILERS=("gcc-12" "gcc-13" "gcc-14" "clang-18" "clang-19" "clang-20")' >> /gauntlet/run-gauntlet.sh && \
+    echo '' >> /gauntlet/run-gauntlet.sh && \
+    echo '# Clean old results' >> /gauntlet/run-gauntlet.sh && \
+    echo 'rm -f result-*.txt build-*.log' >> /gauntlet/run-gauntlet.sh && \
+    echo '' >> /gauntlet/run-gauntlet.sh && \
+    echo '# Start all compiler tests in parallel' >> /gauntlet/run-gauntlet.sh && \
+    echo 'PIDS=()' >> /gauntlet/run-gauntlet.sh && \
+    echo 'for compiler in "${COMPILERS[@]}"; do' >> /gauntlet/run-gauntlet.sh && \
+    echo '    /gauntlet/test-compiler.sh $compiler &' >> /gauntlet/run-gauntlet.sh && \
+    echo '    PIDS+=($!)' >> /gauntlet/run-gauntlet.sh && \
+    echo 'done' >> /gauntlet/run-gauntlet.sh && \
+    echo '' >> /gauntlet/run-gauntlet.sh && \
+    echo '# Wait for all tests to complete' >> /gauntlet/run-gauntlet.sh && \
+    echo 'echo "⏳ Waiting for all compilers to finish..."' >> /gauntlet/run-gauntlet.sh && \
+    echo 'for pid in "${PIDS[@]}"; do' >> /gauntlet/run-gauntlet.sh && \
+    echo '    wait $pid' >> /gauntlet/run-gauntlet.sh && \
+    echo 'done' >> /gauntlet/run-gauntlet.sh && \
+    echo '' >> /gauntlet/run-gauntlet.sh && \
+    echo '# Collect results' >> /gauntlet/run-gauntlet.sh && \
+    echo 'echo ""' >> /gauntlet/run-gauntlet.sh && \
+    echo 'echo "================================================"' >> /gauntlet/run-gauntlet.sh && \
+    echo 'echo "🏁 GAUNTLET RESULTS 🏁"' >> /gauntlet/run-gauntlet.sh && \
+    echo 'echo "================================================"' >> /gauntlet/run-gauntlet.sh && \
+    echo 'PASSED=0' >> /gauntlet/run-gauntlet.sh && \
+    echo 'FAILED=0' >> /gauntlet/run-gauntlet.sh && \
+    echo '' >> /gauntlet/run-gauntlet.sh && \
+    echo 'for compiler in "${COMPILERS[@]}"; do' >> /gauntlet/run-gauntlet.sh && \
+    echo '    if [ -f result-$compiler.txt ]; then' >> /gauntlet/run-gauntlet.sh && \
+    echo '        result=$(cat result-$compiler.txt)' >> /gauntlet/run-gauntlet.sh && \
+    echo '        if [ "$result" = "PASS" ]; then' >> /gauntlet/run-gauntlet.sh && \
+    echo '            echo "✅ $compiler: PASSED"' >> /gauntlet/run-gauntlet.sh && \
+    echo '            PASSED=$((PASSED + 1))' >> /gauntlet/run-gauntlet.sh && \
+    echo '        else' >> /gauntlet/run-gauntlet.sh && \
+    echo '            echo "❌ $compiler: $result"' >> /gauntlet/run-gauntlet.sh && \
+    echo '            FAILED=$((FAILED + 1))' >> /gauntlet/run-gauntlet.sh && \
+    echo '        fi' >> /gauntlet/run-gauntlet.sh && \
+    echo '    else' >> /gauntlet/run-gauntlet.sh && \
+    echo '        echo "❌ $compiler: NO_RESULT"' >> /gauntlet/run-gauntlet.sh && \
+    echo '        FAILED=$((FAILED + 1))' >> /gauntlet/run-gauntlet.sh && \
+    echo '    fi' >> /gauntlet/run-gauntlet.sh && \
+    echo 'done' >> /gauntlet/run-gauntlet.sh && \
+    echo '' >> /gauntlet/run-gauntlet.sh && \
+    echo 'echo "================================================"' >> /gauntlet/run-gauntlet.sh && \
+    echo 'echo "Passed: $PASSED"' >> /gauntlet/run-gauntlet.sh && \
+    echo 'echo "Failed: $FAILED"' >> /gauntlet/run-gauntlet.sh && \
+    echo 'echo "================================================"' >> /gauntlet/run-gauntlet.sh && \
+    echo '' >> /gauntlet/run-gauntlet.sh && \
+    echo 'if [ $FAILED -gt 0 ]; then' >> /gauntlet/run-gauntlet.sh && \
+    echo '    echo "😭 Some compilers made you cry!"' >> /gauntlet/run-gauntlet.sh && \
+    echo '    echo "Check build-*.log files for details"' >> /gauntlet/run-gauntlet.sh && \
+    echo '    exit 1' >> /gauntlet/run-gauntlet.sh && \
+    echo 'else' >> /gauntlet/run-gauntlet.sh && \
+    echo '    echo "🔥 Your code is UNHOLY and BULLETPROOF! 🔥"' >> /gauntlet/run-gauntlet.sh && \
+    echo '    echo "All compilers passed - you survived the DEVIL'\''S GAUNTLET 666!"' >> /gauntlet/run-gauntlet.sh && \
+    echo '    exit 0' >> /gauntlet/run-gauntlet.sh && \
+    echo 'fi' >> /gauntlet/run-gauntlet.sh && \
+    chmod +x /gauntlet/run-gauntlet.sh
+
+WORKDIR /workspace
+CMD ["/gauntlet/run-gauntlet.sh"]

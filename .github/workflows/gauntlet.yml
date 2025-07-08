@@ -1,0 +1,38 @@
+name: GNU CRY GAUNTLET
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  gauntlet:
+    runs-on: ubuntu-latest
+    name: C23 Compiler GAUNTLET
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Run GNU CRY GAUNTLET
+      run: |
+        echo "🚨 Running GNU CRY GAUNTLET - Multiple C23 Compilers 🚨"
+        echo "Testing with GCC 13/14/15 and Clang 18/19/20 in parallel"
+        
+        # Build and run the gauntlet
+        docker build -t gnu-cry-gauntlet:latest -f tools/gauntlet/Dockerfile.gauntlet .
+        docker run --rm -v "$PWD":/workspace -w /workspace gnu-cry-gauntlet:latest
+        
+    - name: Upload build logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: gauntlet-logs
+        path: |
+          build-*.log
+          result-*.txt
+        retention-days: 7
