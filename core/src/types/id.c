@@ -86,7 +86,9 @@ static uint32_t compute_siphash(const uint8_t *siphash_key, gm_id_t new_identifi
     uint64_t hash64;
     GM_MEMCPY_SAFE(&hash64, sizeof(hash64), hash_output, sizeof(hash64));
     
-    return (uint32_t)(hash64 ^ (hash64 >> 32));
+    /* Mix upper and lower 32 bits for better distribution */
+    #define HASH64_UPPER_SHIFT 32
+    return (uint32_t)(hash64 ^ (hash64 >> HASH64_UPPER_SHIFT));
 }
 
 /* Hash function for hash tables using SipHash-2-4 with injected context */
@@ -160,8 +162,8 @@ gm_result_id_t gm_id_generate_with_context(const gm_crypto_context_t *ctx) {
 #define HEX_FORMAT_2X "%2x"
 
 /* Error messages */
-static const char *const GM_ERR_MSG_INVALID_HEX_LEN = "Invalid hex ID: must be %d characters";
-static const char *const GM_ERR_MSG_INVALID_HEX_CHAR = "Invalid hex character at position %d";
+static const char *const gm_err_msg_invalid_hex_len = "Invalid hex ID: must be %d characters";
+static const char *const gm_err_msg_invalid_hex_char = "Invalid hex character at position %d";
 
 /* Convert ID to hex string (safe version with buffer size check) */
 gm_result_void_t gm_id_to_hex(gm_id_t new_identifier, char *out, size_t out_size) {
@@ -191,10 +193,14 @@ gm_result_void_t gm_id_to_hex(gm_id_t new_identifier, char *out, size_t out_size
 /* Validate hex string length */
 static gm_error_t *validate_hex_length(const char *hex) {
     if (!hex || strlen(hex) != GM_ID_HEX_CHARS) {
-        return GM_ERROR(GM_ERR_INVALID_FORMAT, GM_ERR_MSG_INVALID_HEX_LEN, GM_ID_HEX_CHARS);
+        return GM_ERROR(GM_ERR_INVALID_FORMAT, gm_err_msg_invalid_hex_len, GM_ID_HEX_CHARS);
     }
     return nullptr;
 }
+
+/* Hex parsing constants */
+#define HEX_BASE 16
+#define BYTE_MAX_VALUE 0xFF
 
 /* Parse single hex byte */
 static gm_error_t *parse_hex_byte(const char *hex, int pos, uint8_t *out) {
@@ -205,11 +211,11 @@ static gm_error_t *parse_hex_byte(const char *hex, int pos, uint8_t *out) {
     
     char *endptr = nullptr;
     errno = 0;
-    unsigned long value = strtoul(hex_pair, &endptr, 16);
+    unsigned long value = strtoul(hex_pair, &endptr, HEX_BASE);
     
     /* Check for conversion errors */
-    if (errno != 0 || endptr != hex_pair + 2 || value > 0xFF) {
-        return GM_ERROR(GM_ERR_INVALID_FORMAT, GM_ERR_MSG_INVALID_HEX_CHAR, 
+    if (errno != 0 || endptr != hex_pair + 2 || value > BYTE_MAX_VALUE) {
+        return GM_ERROR(GM_ERR_INVALID_FORMAT, gm_err_msg_invalid_hex_char, 
                        pos * HEX_CHARS_PER_BYTE);
     }
     

@@ -16,13 +16,17 @@ typedef struct gm_crypto_context gm_crypto_context_t;
 #define GM_SHA256_DIGEST_SIZE 32
 #define GM_SHA256_BLOCK_SIZE 64
 
+/* SHA256 context size - enough for any backend */
+#define GM_SHA256_CTX_SIZE 256
+#define GM_SHA256_CTX_ALIGN_UNITS (GM_SHA256_CTX_SIZE / 8)
+
 /* SHA256 context for streaming operations */
 typedef struct gm_sha256_ctx {
     /* Implementation-specific; users should treat as opaque */
     union {
-        uint8_t opaque[256];     /* Enough for any backend */
-        uint64_t align[256/8];   /* Ensure proper alignment */
-        void *ptr;               /* For pointer-based backends */
+        uint8_t opaque[GM_SHA256_CTX_SIZE];       /* Enough for any backend */
+        uint64_t align[GM_SHA256_CTX_ALIGN_UNITS]; /* Ensure proper alignment */
+        void *ptr;                                 /* For pointer-based backends */
     } u;
 } gm_sha256_ctx_t;
 

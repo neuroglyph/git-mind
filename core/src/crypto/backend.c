@@ -17,7 +17,7 @@
 #define U32_HIGH_SHIFT 32
 
 /* Forward declaration for default backend */
-static const gm_crypto_backend_t GM_LIBSODIUM_BACKEND;
+static const gm_crypto_backend_t gm_libsodium_backend;
 
 /* No global state - everything is context-based */
 
@@ -60,7 +60,7 @@ static uint64_t libsodium_random_u64(void) {
 }
 
 /* Libsodium backend instance */
-static const gm_crypto_backend_t GM_LIBSODIUM_BACKEND = {
+static const gm_crypto_backend_t gm_libsodium_backend = {
     .name = "libsodium",
     .sha256_init = libsodium_sha256_init,
     .sha256_update = libsodium_sha256_update,
@@ -73,7 +73,7 @@ static const gm_crypto_backend_t GM_LIBSODIUM_BACKEND = {
 
 /* Get libsodium backend */
 const gm_crypto_backend_t *gm_crypto_backend_libsodium(void) {
-    return &GM_LIBSODIUM_BACKEND;
+    return &gm_libsodium_backend;
 }
 
 

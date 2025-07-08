@@ -37,7 +37,7 @@
  * First 256 entries: maps bytes to character classes
  * Remaining entries: state transitions
  */
-static const uint8_t GM_UTF8D[] = {
+static const uint8_t GmUtf8d[] = {
     /* Byte classification (0-255) */
     0,
     0,
@@ -417,14 +417,20 @@ static const uint8_t GM_UTF8D[] = {
  * @param byte Input byte
  * @return New state (UTF8_ACCEPT, UTF8_REJECT, or intermediate)
  */
+/* UTF-8 decoding constants */
+#define UTF8_MASK_CONTINUATION 0x3fU
+#define UTF8_MASK_DECODE 0xffU
+#define UTF8_SHIFT_BITS 6
+#define UTF8_STATE_TABLE_OFFSET 256
+
 static GM_ALWAYS_INLINE uint32_t decode(uint32_t *state, uint32_t *codep,
                                         uint8_t byte) {
-    uint32_t type = GM_UTF8D[byte];
+    uint32_t type = GmUtf8d[byte];
 
-    *codep = (*state != UTF8_ACCEPT) ? (byte & 0x3fU) | (*codep << 6)
-                                     : (0xffU >> type) & (byte);
+    *codep = (*state != UTF8_ACCEPT) ? (byte & UTF8_MASK_CONTINUATION) | (*codep << UTF8_SHIFT_BITS)
+                                     : (UTF8_MASK_DECODE >> type) & (byte);
 
-    *state = GM_UTF8D[256 + *state + type];
+    *state = GmUtf8d[UTF8_STATE_TABLE_OFFSET + *state + type];
     return *state;
 }
 

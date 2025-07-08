@@ -218,7 +218,7 @@ gm_result_string_t gm_string_substring(const gm_string_t *str, size_t start,
 
 /* Helper to check if character is whitespace */
 static bool is_whitespace(char character) {
-    return (character == ' ') || (character == '\t') || (character == '\n') || (character == '\r');
+    return (bool)((character == ' ') || (character == '\t') || (character == '\n') || (character == '\r'));
 }
 
 /* Helper to find trim bounds */
@@ -248,7 +248,8 @@ gm_result_string_t gm_string_trim(const gm_string_t *str) {
         return gm_string_new("");
     }
 
-    size_t start, end;
+    size_t start;
+    size_t end;
     find_trim_bounds(str, &start, &end);
     
     if (start == str->length) {
