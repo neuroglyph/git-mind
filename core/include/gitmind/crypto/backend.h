@@ -44,12 +44,21 @@ typedef struct gm_crypto_backend {
     void *context;
 } gm_crypto_backend_t;
 
-/* Result type for backend operations */
-GM_RESULT_DEF(gm_result_backend, const gm_crypto_backend_t *);
+/* Crypto context for dependency injection */
+typedef struct gm_crypto_context {
+    const gm_crypto_backend_t *backend;
+} gm_crypto_context_t;
 
-/* Global backend management */
-gm_result_backend_t gm_crypto_set_backend(const gm_crypto_backend_t *backend);
-const gm_crypto_backend_t *gm_crypto_get_backend(void);
+/* Result type for crypto context operations */
+GM_RESULT_DEF(gm_result_crypto_context, gm_crypto_context_t);
+
+/* Legacy crypto options removed - use context-based approach */
+
+/* Context-based crypto management (preferred) */
+gm_result_crypto_context_t gm_crypto_context_create(const gm_crypto_backend_t *backend);
+const gm_crypto_backend_t *gm_crypto_context_get_backend(const gm_crypto_context_t *ctx);
+
+
 
 /* Default backends */
 const gm_crypto_backend_t *gm_crypto_backend_libsodium(void);
@@ -58,8 +67,6 @@ const gm_crypto_backend_t *gm_crypto_backend_libsodium(void);
 const gm_crypto_backend_t *gm_crypto_backend_test(void);
 #endif
 
-/* Backend initialization */
-gm_result_void_t gm_crypto_init(void);
-gm_result_void_t gm_crypto_cleanup(void);
+/* Legacy initialization removed - use gm_crypto_context_create() instead */
 
 #endif /* GITMIND_CRYPTO_BACKEND_H */

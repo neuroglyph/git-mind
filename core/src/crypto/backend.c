@@ -5,23 +5,21 @@
 
 #include "gitmind/crypto/sha256.h"
 #include "gitmind/error.h"
-#include "gitmind/result.h"
 
 #include <sodium/crypto_hash_sha256.h>
 #include <sodium/randombytes.h>
-#include <sodium/core.h>
 #include <stdint.h>
 #include <string.h>
+#include <stddef.h>
 
 #define BITS_PER_BYTE 8
 #define BYTE_MASK 0xFF
 #define U32_HIGH_SHIFT 32
 
 /* Forward declaration for default backend */
-static const gm_crypto_backend_t GM_LIBSODIUM_BACKEND;
+static const gm_crypto_backend_t GmLibsodiumBackend;
 
-/* Global backend instance - mutable to allow runtime backend switching */
-static const gm_crypto_backend_t *g_backend = &GM_LIBSODIUM_BACKEND;
+/* No global state - everything is context-based */
 
 /* Libsodium backend implementation */
 static int libsodium_sha256_init(gm_sha256_ctx_t *ctx) {
@@ -62,7 +60,7 @@ static uint64_t libsodium_random_u64(void) {
 }
 
 /* Libsodium backend instance */
-static const gm_crypto_backend_t GM_LIBSODIUM_BACKEND = {
+static const gm_crypto_backend_t GmLibsodiumBackend = {
     .name = "libsodium",
     .sha256_init = libsodium_sha256_init,
     .sha256_update = libsodium_sha256_update,
@@ -71,66 +69,39 @@ static const gm_crypto_backend_t GM_LIBSODIUM_BACKEND = {
     .random_bytes = libsodium_random_bytes,
     .random_u32 = libsodium_random_u32,
     .random_u64 = libsodium_random_u64,
-    .context = NULL};
+    .context = nullptr};
 
 /* Get libsodium backend */
 const gm_crypto_backend_t *gm_crypto_backend_libsodium(void) {
-    return &GM_LIBSODIUM_BACKEND;
+    return &GmLibsodiumBackend;
 }
 
 
-/* Set current backend */
-gm_result_backend_t gm_crypto_set_backend(const gm_crypto_backend_t *backend) {
+/* Context-based crypto management (preferred) */
+gm_result_crypto_context_t gm_crypto_context_create(const gm_crypto_backend_t *backend) {
     if (!backend) {
-        return (gm_result_backend_t){
+        return (gm_result_crypto_context_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL backend")};
+            .u.err = GM_ERROR(GM_ERR_INVALID_ARGUMENT, "Backend cannot be null")};
     }
-
+    
     /* Validate backend has all required functions */
     if (!backend->sha256_init || !backend->sha256_update ||
         !backend->sha256_final || !backend->sha256 || !backend->random_bytes ||
         !backend->random_u32 || !backend->random_u64) {
-        return (gm_result_backend_t){
+        return (gm_result_crypto_context_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERR_INVALID_ARGUMENT,
-                              "Backend missing required functions")};
+            .u.err = GM_ERROR(GM_ERR_INVALID_ARGUMENT, "Backend missing required functions")};
     }
-
-    g_backend = backend;
-    return (gm_result_backend_t){.ok = true, .u.val = backend};
+    
+    gm_crypto_context_t ctx = { .backend = backend };
+    return (gm_result_crypto_context_t){.ok = true, .u.val = ctx};
 }
 
-/* Get current backend */
-const gm_crypto_backend_t *gm_crypto_get_backend(void) {
-    return g_backend;
+const gm_crypto_backend_t *gm_crypto_context_get_backend(const gm_crypto_context_t *ctx) {
+    return ctx ? ctx->backend : NULL;
 }
 
-/* Initialize crypto subsystem */
-gm_result_void_t gm_crypto_init(void) {
-    /* Initialize libsodium if not already done */
-    static bool sodium_initialized = false;
-    if (!sodium_initialized) {
-        if (sodium_init() < 0) {
-            return gm_err_void(
-                GM_ERROR(GM_ERR_UNKNOWN, "Failed to initialize libsodium"));
-        }
-        sodium_initialized = true;
-    }
 
-    /* Set default backend if none set */
-    if (!g_backend) {
-        gm_result_backend_t result = gm_crypto_set_backend(&GM_LIBSODIUM_BACKEND);
-        if (GM_IS_ERR(result)) {
-            return gm_err_void(GM_UNWRAP_ERR(result));
-        }
-    }
 
-    return gm_ok_void();
-}
-
-/* Cleanup crypto subsystem */
-gm_result_void_t gm_crypto_cleanup(void) {
-    g_backend = NULL;
-    return gm_ok_void();
-}
+/* Legacy initialization removed - use gm_crypto_context_create() instead */

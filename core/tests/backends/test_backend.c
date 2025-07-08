@@ -58,7 +58,7 @@ static int test_sha256_update(gm_sha256_ctx_t *ctx, const void *data,
                               size_t len) {
     /* For test backend, just track total length */
     (void)data; /* Unused in test implementation */
-    uint64_t *total = (uint64_t *)ctx;
+    uint64_t *total = &ctx->u.align[0];
     *total += len;
     return 0;
 }
@@ -66,7 +66,7 @@ static int test_sha256_update(gm_sha256_ctx_t *ctx, const void *data,
 static int test_sha256_final(gm_sha256_ctx_t *ctx,
                              uint8_t out[GM_SHA256_DIGEST_SIZE]) {
     /* Output based on total length */
-    uint64_t *total = (uint64_t *)ctx;
+    uint64_t *total = &ctx->u.align[0];
     GM_MEMSET_SAFE(out, GM_SHA256_DIGEST_SIZE, 0, GM_SHA256_DIGEST_SIZE);
     GM_MEMCPY_SAFE(out, GM_SHA256_DIGEST_SIZE, total, sizeof(*total));
     return 0;

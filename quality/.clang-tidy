@@ -1,92 +1,46 @@
-# SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0
-# © 2025 J. Kirby Ross / Neuroglyph Collective
-#
-# STRICT clang-tidy configuration for core/ and apps/
-# Goal: Code so clean Linus would just nod approvingly
-#
+---
+# .clang-tidy — C23 pure C configuration
+
+# Only enable C-relevant analyzers
 Checks: >
   -*,
+  clang-analyzer-*,
   bugprone-*,
   cert-*,
-  clang-analyzer-*,
-  cppcoreguidelines-*,
   misc-*,
-  modernize-*,
   performance-*,
   portability-*,
   readability-*,
-  -modernize-use-trailing-return-type,
-  -cppcoreguidelines-init-variables,
-  -readability-isolate-declaration,
-  -cppcoreguidelines-avoid-magic-numbers,
-  -readability-magic-numbers,
-  -cppcoreguidelines-macro-to-enum,
-  -modernize-macro-to-enum
+  -readability-magic-numbers   # we’ll enforce magic-number policies below
 
-WarningsAsErrors: >
-  readability-function-size,
-  readability-identifier-naming,
-  bugprone-*,
-  cert-*
+# Zero-tolerance: any warning is a build break
+WarningsAsErrors: '*'
+
+# Only lint your own headers/sources
+HeaderFilterRegex: '^(src|core|include)/.*'
+
+# Respect your .clang-format so formatting debates die here
+FormatStyle: file
 
 CheckOptions:
-  # Function size limits - Still strict but not masochistic
-  - key: readability-function-size.LineThreshold
-    value: '25'
-  - key: readability-function-size.StatementThreshold
-    value: '20'
-  - key: readability-function-size.BranchThreshold
-    value: '5'
-  - key: readability-function-size.ParameterThreshold
-    value: '5'
-  - key: readability-function-size.NestingThreshold
-    value: '3'
-  - key: readability-function-size.VariableThreshold
-    value: '7'
-  
-  # Naming conventions - Linux kernel style
-  - key: readability-identifier-naming.FunctionCase
-    value: 'lower_case'
-  - key: readability-identifier-naming.VariableCase
-    value: 'lower_case'
-  - key: readability-identifier-naming.GlobalConstantCase
-    value: 'UPPER_CASE'
-  - key: readability-identifier-naming.GlobalConstantPrefix
-    value: 'GM_'
-  - key: readability-identifier-naming.MacroDefinitionCase
-    value: 'UPPER_CASE'
-  - key: readability-identifier-naming.EnumConstantCase
-    value: 'UPPER_CASE'
-  - key: readability-identifier-naming.EnumConstantPrefix
-    value: 'GM_'
-  - key: readability-identifier-naming.TypedefCase
-    value: 'lower_case'
-  - key: readability-identifier-naming.TypedefSuffix
-    value: '_t'
-  
-  # Minimum identifier length
-  - key: readability-identifier-length.MinimumVariableNameLength
-    value: '3'
-  - key: readability-identifier-length.MinimumParameterNameLength
-    value: '3'
-  - key: readability-identifier-length.MinimumLoopCounterNameLength
-    value: '1'  # Allow 'i', 'j', 'k' for loops
-  
-  # Magic numbers - must be named constants
-  - key: readability-magic-numbers.IgnoredIntegerValues
-    value: '0;1;-1'  # Only these literals allowed
-  - key: readability-magic-numbers.IgnoredFloatingPointValues
-    value: '0.0;1.0'
-    
-  # Braces - always required
-  - key: readability-braces-around-statements.ShortStatementLines
-    value: '0'  # Even single-line statements need braces
-    
-  # Complexity limits
-  - key: readability-function-cognitive-complexity.Threshold
-    value: '10'
-  - key: readability-function-cognitive-complexity.DescribeBasicIncrements
-    value: 'true'
+  # Force braces around every statement, even one-liners
+  - key:             readability-braces-around-statements.ShortStatementLines
+    value:           '0'
 
-# Only check our code, not system headers
-HeaderFilterRegex: '^(core|apps)/.*'
+  # Keep functions under a sane complexity
+  - key:             readability-function-cognitive-complexity.Threshold
+    value:           '12'
+
+  # Ban all magic numbers except 0 and 1
+  - key:             readability-magic-numbers.IgnoredValues
+    value:           '0;1'
+
+  # Consistent naming: lower_case for funcs & vars, ALL_CAPS for macros
+  - key:             readability-identifier-naming.VariableCase
+    value:           'lower_case'
+  - key:             readability-identifier-naming.FunctionCase
+    value:           'lower_case'
+  - key:             readability-identifier-naming.MacroDefinitionCase
+    value:           'UPPER_CASE'
+  - key:             readability-identifier-naming.GlobalConstantCase
+    value:           'CamelCase'

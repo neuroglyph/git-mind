@@ -1,5 +1,0 @@
-# git-mind/.clang-tidy
-Checks: '-*,bugprone-*,performance-*,readability-*,security-*'
-WarningsAsErrors: ''
-HeaderFilterRegex: '^(src|include|tests|core)/'
-# NOTE: Adjusted paths to include core/ directory where our code lives

@@ -153,3 +153,4 @@ char *gm_error_format(const gm_error_t *error);
 void gm_error_print(const gm_error_t *error);
 
 #endif /* GITMIND_ERROR_H */
+

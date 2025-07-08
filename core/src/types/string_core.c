@@ -5,6 +5,7 @@
 #include "gitmind/result.h"
 #include "gitmind/security/memory.h"
 #include "gitmind/types/string.h"
+#include "gitmind/types/path_internal.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -13,11 +14,13 @@
 #define MIN_CAPACITY 16
 #define GROWTH_FACTOR 2
 
-/* Helper to calculate next capacity */
-static size_t next_capacity(size_t current, size_t needed) {
-    size_t new_cap = current * GROWTH_FACTOR;
-    if (new_cap < needed) {
-        new_cap = needed;
+/* Helper to calculate next capacity - grows from current to accommodate needed */
+static size_t next_capacity(gm_current_capacity_t current /* current capacity */, 
+                           gm_needed_capacity_t needed /* minimum needed */) {
+    /* Parameter order: current capacity, then minimum needed capacity */
+    size_t new_cap = current.value * GROWTH_FACTOR;
+    if (new_cap < needed.value) {
+        new_cap = needed.value;
     }
     if (new_cap < MIN_CAPACITY) {
         new_cap = MIN_CAPACITY;
@@ -103,28 +106,40 @@ gm_result_string_t gm_string_copy(const gm_string_t *str) {
     return gm_string_new_n(str->data, str->length);
 }
 
+/* Helper to copy string data during concatenation */
+static void copy_concat_data(gm_string_t *dest, const gm_string_t *str_a, 
+                           const gm_string_t *str_b, size_t len_a, size_t len_b) {
+    if (str_a && len_a > 0) {
+        GM_MEMCPY_SAFE(dest->data, dest->capacity, str_a->data, len_a);
+    }
+    
+    if (str_b && len_b > 0) {
+        GM_MEMCPY_SAFE(dest->data + len_a, dest->capacity - len_a, str_b->data, len_b);
+    }
+    
+    dest->data[len_a + len_b] = '\0';
+    dest->length = len_a + len_b;
+}
+
 /* Concatenate strings */
 gm_result_string_t gm_string_concat(const gm_string_t *str_a, const gm_string_t *str_b) {
     size_t len_a = str_a ? str_a->length : 0;
     size_t len_b = str_b ? str_b->length : 0;
-    size_t total = len_a + len_b;
 
-    gm_result_string_t result = gm_string_with_capacity(total + 1);
+    /* Handle empty concatenation cases */
+    if (len_a == 0 && len_b == 0) {
+        return gm_string_new("");
+    }
+
+    gm_result_string_t result = gm_string_with_capacity(len_a + len_b + 1);
     if (GM_IS_ERR(result)) {
         return result;
     }
 
-    gm_string_t concat_str = GM_UNWRAP(result);
-    if (str_a && len_a > 0) {
-        GM_MEMCPY_SAFE(concat_str.data, concat_str.capacity, str_a->data, len_a);
-    }
-    if (str_b && len_b > 0) {
-        GM_MEMCPY_SAFE(concat_str.data + len_a, concat_str.capacity - len_a, str_b->data, len_b);
-    }
-    concat_str.data[total] = '\0';
-    concat_str.length = total;
-
-    return (gm_result_string_t){.ok = true, .u.val = concat_str};
+    /* Memory is properly managed through result structure - suppress false positive */
+    // NOLINTNEXTLINE(clang-analyzer-unix.Malloc)
+    copy_concat_data(&result.u.val, str_a, str_b, len_a, len_b);
+    return result;
 }
 
 /* Append to string */
@@ -135,40 +150,45 @@ gm_result_void_t gm_string_append(gm_string_t *str, const char *suffix) {
     return gm_string_append_n(str, suffix, strlen(suffix));
 }
 
+/* Helper to ensure string has enough capacity */
+static gm_result_void_t ensure_capacity(gm_string_t *str, size_t needed_size) {
+    if (needed_size > str->capacity) {
+        size_t new_cap = next_capacity(GM_CURRENT_CAPACITY(str->capacity), GM_NEEDED_CAPACITY(needed_size));
+        char *new_data = realloc(str->data, new_cap);
+        if (!new_data) {
+            return gm_err_void(GM_ERROR(GM_ERR_OUT_OF_MEMORY, "Failed to grow string"));
+        }
+        str->data = new_data;
+        str->capacity = new_cap;
+    }
+    return gm_ok_void();
+}
+
 /* Append with length */
-gm_result_void_t gm_string_append_n(gm_string_t *str, const char *suffix,
-                                  size_t len) {
+gm_result_void_t gm_string_append_n(gm_string_t *str, const char *suffix, size_t len) {
     if (!str) {
-        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL string"));
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr string"));
     }
     if (!suffix || len == 0) {
         return gm_ok_void();
     }
 
     size_t new_len = str->length + len;
-    if (new_len + 1 > str->capacity) {
-        size_t new_cap = next_capacity(str->capacity, new_len + 1);
-        char *new_data = realloc(str->data, new_cap);
-        if (!new_data) {
-            return gm_err_void(
-                GM_ERROR(GM_ERR_OUT_OF_MEMORY, "Failed to grow string"));
-        }
-        str->data = new_data;
-        str->capacity = new_cap;
+    gm_result_void_t result = ensure_capacity(str, new_len + 1);
+    if (GM_IS_ERR(result)) {
+        return result;
     }
 
-    GM_MEMCPY_SAFE(str->data + str->length, str->capacity - str->length, suffix,
-                   len);
+    GM_MEMCPY_SAFE(str->data + str->length, str->capacity - str->length, suffix, len);
     str->length = new_len;
     str->data[new_len] = '\0';
-
     return gm_ok_void();
 }
 
 /* Clear string contents */
 gm_result_void_t gm_string_clear(gm_string_t *str) {
     if (!str) {
-        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL string"));
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr string"));
     }
 
     str->length = 0;
@@ -183,7 +203,7 @@ gm_result_void_t gm_string_clear(gm_string_t *str) {
 gm_result_string_t gm_string_substring(const gm_string_t *str, size_t start,
                                      size_t len) {
     if (!str) {
-        return gm_err_string(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL string"));
+        return gm_err_string(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr string"));
     }
 
     /* Bounds check */
@@ -203,35 +223,44 @@ gm_result_string_t gm_string_substring(const gm_string_t *str, size_t start,
     return gm_string_new_n(str->data + start, len);
 }
 
+/* Helper to check if character is whitespace */
+static bool is_whitespace(char character) {
+    return (bool)((character == ' ') || (character == '\t') || (character == '\n') || (character == '\r'));
+}
+
+/* Helper to find trim bounds */
+static void find_trim_bounds(const gm_string_t *str, size_t *start, size_t *end) {
+    *start = 0;
+    while ((*start < str->length) && !!is_whitespace(str->data[*start])) {
+        (*start)++;
+    }
+
+    if (*start == str->length) {
+        *end = *start;
+        return;
+    }
+
+    *end = str->length - 1;
+    while ((*end > *start) && !!is_whitespace(str->data[*end])) {
+        (*end)--;
+    }
+}
+
 /* Trim whitespace from both ends */
 gm_result_string_t gm_string_trim(const gm_string_t *str) {
     if (!str) {
-        return gm_err_string(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "NULL string"));
+        return gm_err_string(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr string"));
     }
-
-    /* Empty string returns empty string */
     if (str->length == 0) {
         return gm_string_new("");
     }
 
-    /* Find first non-whitespace character */
-    size_t start = 0;
-    while (start < str->length &&
-           (str->data[start] == ' ' || str->data[start] == '\t' ||
-            str->data[start] == '\n' || str->data[start] == '\r')) {
-        start++;
-    }
-
-    /* All whitespace? Return empty string */
+    size_t start;
+    size_t end;
+    find_trim_bounds(str, &start, &end);
+    
     if (start == str->length) {
         return gm_string_new("");
-    }
-
-    /* Find last non-whitespace character */
-    size_t end = str->length - 1;
-    while (end > start && (str->data[end] == ' ' || str->data[end] == '\t' ||
-                           str->data[end] == '\n' || str->data[end] == '\r')) {
-        end--;
     }
 
     /* Extract the trimmed portion */
@@ -243,7 +272,7 @@ gm_result_string_t gm_string_trim(const gm_string_t *str) {
 void gm_string_free(gm_string_t *str) {
     if (str && str->data) {
         free(str->data);
-        str->data = NULL;
+        str->data = nullptr;
         str->length = 0;
         str->capacity = 0;
     }

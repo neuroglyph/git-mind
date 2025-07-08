@@ -34,15 +34,27 @@ typedef struct {
 static int hash_thread(void *arg) {
     thread_data_t *data = (thread_data_t *)arg;
 
+    /* Create a libsodium crypto context for this thread */
+    gm_result_crypto_context_t ctx_result = gm_crypto_context_create(gm_crypto_backend_libsodium());
+    if (GM_IS_ERR(ctx_result)) {
+        gm_error_free(GM_UNWRAP_ERR(ctx_result));
+        /* Fill with zeros on error */
+        for (int i = 0; i < HASHES_PER_THREAD; i++) {
+            data->hashes[i] = 0;
+        }
+        return 1;
+    }
+    gm_crypto_context_t ctx = GM_UNWRAP(ctx_result);
+
     /* Create a unique ID for this thread */
-    gm_id_t id;
+    gm_id_t thread_id;
     for (int i = 0; i < GM_ID_SIZE; i++) {
-        id.bytes[i] = (uint8_t)((data->thread_id + i * 13) % 256);
+        thread_id.bytes[i] = (uint8_t)((data->thread_id + i * 13) % 256);
     }
 
     /* Generate many hashes */
     for (int i = 0; i < HASHES_PER_THREAD; i++) {
-        gm_result_u32_t result = gm_id_hash(id);
+        gm_result_u32_t result = gm_id_hash_with_context(&ctx, thread_id);
         if (GM_IS_OK(result)) {
             data->hashes[i] = GM_UNWRAP(result);
         } else {
@@ -63,7 +75,7 @@ static void test_concurrent_hashing(void) {
     for (int i = 0; i < NUM_THREADS; i++) {
         thread_data[i].thread_id = i;
         thread_data[i].hashes = calloc(HASHES_PER_THREAD, sizeof(uint32_t));
-        assert(thread_data[i].hashes != NULL);
+        assert(thread_data[i].hashes != nullptr);
     }
 
     /* Start threads */
@@ -74,7 +86,8 @@ static void test_concurrent_hashing(void) {
 
     /* Wait for threads */
     for (int i = 0; i < NUM_THREADS; i++) {
-        thrd_join(threads[i], NULL);
+        int join_result = thrd_join(threads[i], nullptr);
+        (void)join_result; /* Explicitly ignore return value for test */
     }
 
     /* Verify results */
@@ -111,8 +124,22 @@ static void test_concurrent_hashing(void) {
 static int generate_thread(void *arg) {
     gm_id_t *ids = (gm_id_t *)arg;
 
+    /* Create a libsodium crypto context for this thread */
+    gm_result_crypto_context_t ctx_result = gm_crypto_context_create(gm_crypto_backend_libsodium());
+    if (GM_IS_ERR(ctx_result)) {
+        gm_error_free(GM_UNWRAP_ERR(ctx_result));
+        /* Fill with zeros on error */
+        for (int i = 0; i < 100; i++) {
+            for (int j = 0; j < GM_ID_SIZE; j++) {
+                ids[i].bytes[j] = 0;
+            }
+        }
+        return 1;
+    }
+    gm_crypto_context_t ctx = GM_UNWRAP(ctx_result);
+
     for (int i = 0; i < 100; i++) {
-        gm_result_id_t result = gm_id_generate();
+        gm_result_id_t result = gm_id_generate_with_context(&ctx);
         if (GM_IS_OK(result)) {
             ids[i] = GM_UNWRAP(result);
         } else {
@@ -140,7 +167,8 @@ static void test_concurrent_generation(void) {
 
     /* Wait for threads */
     for (int i = 0; i < NUM_THREADS; i++) {
-        thrd_join(threads[i], NULL);
+        int join_result = thrd_join(threads[i], nullptr);
+        (void)join_result; /* Explicitly ignore return value for test */
     }
 
     /* Verify all IDs are unique */
@@ -166,7 +194,7 @@ static void test_concurrent_generation(void) {
 static void test_initialization_race(void) {
     /* This test attempts to trigger the race condition in
      * g_siphash_key_initialized by having multiple threads
-     * call gm_id_hash simultaneously on first use */
+     * call gm_id_hash_with_context simultaneously on first use */
 
     thrd_t threads[NUM_THREADS];
     thread_data_t thread_data[NUM_THREADS];
@@ -175,7 +203,7 @@ static void test_initialization_race(void) {
     for (int i = 0; i < NUM_THREADS; i++) {
         thread_data[i].thread_id = i;
         thread_data[i].hashes = calloc(HASHES_PER_THREAD, sizeof(uint32_t));
-        assert(thread_data[i].hashes != NULL);
+        assert(thread_data[i].hashes != nullptr);
     }
 
     /* Start all threads at once to maximize race condition likelihood */
@@ -186,7 +214,8 @@ static void test_initialization_race(void) {
 
     /* Wait for threads */
     for (int i = 0; i < NUM_THREADS; i++) {
-        thrd_join(threads[i], NULL);
+        int join_result = thrd_join(threads[i], nullptr);
+        (void)join_result; /* Explicitly ignore return value for test */
     }
 
     /* If we get here without crashing, the implementation handled
@@ -202,13 +231,6 @@ static void test_initialization_race(void) {
 
 int main(void) {
     printf("Running ID thread safety tests...\n\n");
-
-    /* Initialize crypto subsystem */
-    gm_result_void_t init_result = gm_crypto_init();
-    if (GM_IS_ERR(init_result)) {
-        gm_error_print(GM_UNWRAP_ERR(init_result));
-        return 1;
-    }
 
     test_concurrent_hashing();
     test_concurrent_generation();

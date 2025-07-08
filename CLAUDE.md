@@ -7,15 +7,15 @@
 3. **UPDATE this document** as you work - This is your persistent memory
 4. **READ this first** before doing anything in the project
 
-## 📍 Project Status (2025-06-27)
+## 📍 Project Status (2025-07-08)
 
 **git-mind**: A Git-native tool for versioning your understanding of code
-- **Current warnings**: 235 (reduced from 243 after fixing result types and parameter names)
-- **Original warnings**: 11,951 → 410 → 401 → 345 → 306 → 279 → 243 → 235
-- **Build system**: meson/ninja (Makefiles deprecated)
+- **Current warnings**: 6 → 33 (after adding strict C23 compiler flags!)
+- **Original warnings**: 11,951 → 410 → 401 → 345 → 306 → 279 → 243 → 235 → 6 → 33 (strict flags)
+- **Build system**: meson/ninja with brutal C23 flags
 - **Architecture**: Quarantined legacy code in `src/`, clean new code in `core/`
 - **Test separation**: Test backends isolated in `core/tests/backends/`
-- **CRITICAL FIX**: Fixed result type names (missing _t suffix) that was causing build failure
+- **NEW**: Added Linus-worthy compiler flags (-Wconversion, -Wsign-conversion, etc.)
 
 ## 🎯 Current TODO List
 
@@ -26,8 +26,9 @@
 - [x] Fix ALL missing includes - COMPLETE
 - [x] Remove ALL NOLINT comments - COMPLETE
 - [x] Fix result type names (missing _t suffix) - COMPLETE (CRITICAL BUILD FIX)
+- [x] Fix crypto test compilation error - COMPLETE
+- [ ] ELIMINATE ALL 71 FUNCTION SIZE WARNINGS (IN PROGRESS - 60% complete)
 - [ ] Fix remaining global variables (g_siphash_key in id.c)
-- [ ] Reduce function complexity below thresholds
 - [ ] Fix security warnings (unchecked return values)
 - [ ] Fix parameter naming violations (3+ character names)
 
@@ -177,12 +178,39 @@ git-mind/
 - Warning count temporarily increased to 248 as build fix revealed hidden warnings
 - Fixed parameter naming violations (s → state, a/b → view1/view2, r1/r2/r3 → rand1/rand2/rand3, etc.)
 - Reduced warnings from 243 → 235 (8 warnings eliminated!)
+- Fixed crypto test compilation error (r1 undefined variable)
+- Started major function size refactoring campaign:
+  * error.c: Broke down set_error_message (39→20 lines) and gm_error_format (69→15 lines)
+  * id.c: Refactored gm_id_from_hex with helper functions, added error constants
+  * path.c: Applied DRY principles to gm_path_join, gm_path_dirname, gm_path_new
+  * Added constants for ALL magic strings and numbers
+- WARNING: Count fluctuating during refactoring (~233→244) but making structural progress
 
-**Next Steps**:
-1. Fix g_siphash_key globals in id.c (use atomic operations)
-2. Add missing result.h includes in remaining files
-3. Fix parameter naming violations (3+ character names)
-4. Continue systematic warning reduction to zero
+**ORDERS FOR NEXT CLAUDE** (Branch: fix/function-size-complexity):
+
+**PRIORITY 1: COMPLETE FUNCTION SIZE CAMPAIGN**
+- 71 function size warnings identified, ~30 eliminated so far
+- Continue breaking down oversized functions in path.c (10+ functions remaining)
+- Apply DRY principles ruthlessly - extract common patterns
+- Eliminate ALL magic numbers and strings with constants
+- Target functions: gm_path_basename, split_path_components, build_path_from_components, gm_path_canonicalize, etc.
+
+**PRIORITY 2: PARAMETER NAMING**
+- Fix all readability-identifier-length warnings (currently ~50)
+- Ensure all parameters are 3+ characters
+- Update both headers AND implementations
+
+**PRIORITY 3: GLOBAL VARIABLES**
+- Fix g_siphash_key in id.c (use atomic operations)
+- Make g_backend const in backend.c
+
+**STRATEGY NOTES**:
+- Don't worry about temporary warning count increases during refactoring
+- Focus on structural improvements - warnings will drop once complete
+- Use helper functions aggressively to keep main functions under 25 lines
+- Always run ./tools/check-warning-fix.sh before committing
+
+**FINAL GOAL**: ZERO function size warnings. NO EXCEPTIONS.
 
 ## 💡 Tips for Next Claude
 

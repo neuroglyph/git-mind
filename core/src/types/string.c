@@ -32,21 +32,21 @@ gm_string_view_t gm_string_view_from_string(const gm_string_t *str) {
 
 /* Check if string is empty */
 bool gm_string_is_empty(const gm_string_t *str) {
-    return !str || str->length == 0;
+    return (bool)(!str || str->length == 0);
 }
 
 /* Compare strings */
-bool gm_string_equals(const gm_string_t *str_a, const gm_string_t *str_b) {
-    if (str_a == str_b) {
+bool gm_string_equals(const gm_string_t *str1, const gm_string_t *str2) {
+    if (str1 == str2) {
         return true;
     }
-    if (!str_a || !str_b) {
+    if (!str1 || !str2) {
         return false;
     }
-    if (str_a->length != str_b->length) {
+    if (str1->length != str2->length) {
         return false;
     }
-    return memcmp(str_a->data, str_b->data, str_a->length) == 0;
+    return memcmp(str1->data, str2->data, str1->length) == 0;
 }
 
 /* Check prefix */

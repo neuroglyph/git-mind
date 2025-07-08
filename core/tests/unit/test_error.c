@@ -19,10 +19,10 @@ static void test_error_new(void) {
     gm_error_t *err =
         gm_error_new(GM_ERR_INVALID_ARGUMENT, "Test error: %d", 42);
 
-    assert(err != NULL);
+    assert(err != nullptr);
     assert(err->code == GM_ERR_INVALID_ARGUMENT);
     assert(strcmp(test_get_error_message(err), "Test error: 42") == 0);
-    assert(err->cause == NULL);
+    assert(err->cause == nullptr);
 
     gm_error_free(err);
     printf("✓ test_error_new\n");
@@ -33,12 +33,12 @@ static void test_error_with_location(void) {
     gm_error_t *err =
         GM_ERROR(GM_ERR_NOT_FOUND, "File not found: %s", "test.txt");
 
-    assert(err != NULL);
+    assert(err != nullptr);
     assert(err->code == GM_ERR_NOT_FOUND);
-    assert(err->file != NULL);
+    assert(err->file != nullptr);
     assert(err->line > 0);
-    assert(err->func != NULL);
-    assert(strstr(err->func, "test_error_with_location") != NULL);
+    assert(err->func != nullptr);
+    assert(strstr(err->func, "test_error_with_location") != nullptr);
 
     gm_error_free(err);
     printf("✓ test_error_with_location\n");
@@ -51,7 +51,7 @@ static void test_error_chain(void) {
     gm_error_t *err =
         gm_error_wrap(cause, GM_ERR_INVALID_STATE, "Failed to load config");
 
-    assert(err != NULL);
+    assert(err != nullptr);
     assert(err->code == GM_ERR_INVALID_STATE);
     assert(err->cause == cause);
     assert(err->cause->code == GM_ERR_FILE_NOT_FOUND);
@@ -126,10 +126,10 @@ static void test_error_format(void) {
         gm_error_wrap(cause, GM_ERR_INVALID_STATE, "Failed to initialize");
 
     char *formatted = gm_error_format(err);
-    assert(formatted != NULL);
-    assert(strstr(formatted, "Failed to initialize") != NULL);
-    assert(strstr(formatted, "caused by:") != NULL);
-    assert(strstr(formatted, "config.toml not found") != NULL);
+    assert(formatted != nullptr);
+    assert(strstr(formatted, "Failed to initialize") != nullptr);
+    assert(strstr(formatted, "caused by:") != nullptr);
+    assert(strstr(formatted, "config.toml not found") != nullptr);
 
     free(formatted);
     gm_error_free(err);
@@ -140,7 +140,7 @@ static void test_error_format(void) {
 static void test_error_sso(void) {
     /* Small message - should use inline storage */
     gm_error_t *err1 = gm_error_new(GM_ERR_INVALID_ARGUMENT, "Small msg");
-    assert(err1 != NULL);
+    assert(err1 != nullptr);
     assert(!err1->heap_alloc); /* Should use small buffer */
     assert(err1->len == strlen("Small msg"));
     assert(strcmp(test_get_error_message(err1), "Small msg") == 0);
@@ -150,7 +150,7 @@ static void test_error_sso(void) {
     assert(strlen(threshold_msg) == 45); /* Fits in 48-byte buffer */
     gm_error_t *err2 =
         gm_error_new(GM_ERR_INVALID_ARGUMENT, "%s", threshold_msg);
-    assert(err2 != NULL);
+    assert(err2 != nullptr);
     assert(!err2->heap_alloc); /* Should still use small buffer */
     assert(strcmp(test_get_error_message(err2), threshold_msg) == 0);
 
@@ -161,7 +161,7 @@ static void test_error_sso(void) {
                             "instead of using inline storage";
     assert(strlen(large_msg) > GM_ERROR_SMALL_SIZE);
     gm_error_t *err3 = gm_error_new(GM_ERR_INVALID_ARGUMENT, "%s", large_msg);
-    assert(err3 != NULL);
+    assert(err3 != nullptr);
     assert(err3->heap_alloc); /* Should use heap */
     assert(err3->len == strlen(large_msg));
     assert(strcmp(test_get_error_message(err3), large_msg) == 0);
