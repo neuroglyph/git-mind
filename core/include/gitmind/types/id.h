@@ -34,7 +34,7 @@ GM_RESULT_DEF(gm_result_id, gm_id_t);
 /* ID operations */
 bool gm_id_equal(gm_id_t id_a, gm_id_t id_b);
 int gm_id_compare(gm_id_t id_a, gm_id_t id_b);
-gm_result_u32_t gm_id_hash(gm_id_t new_identifier);
+gm_result_u32_t gm_id_hash_with_context(const gm_crypto_context_t *ctx, gm_id_t new_identifier);
 
 /* ID creation - all can fail */
 gm_result_id_t gm_id_from_data_with_context(const gm_crypto_context_t *ctx, const void *data, size_t len);

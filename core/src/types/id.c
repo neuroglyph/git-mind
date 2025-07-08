@@ -12,14 +12,13 @@
 
 #include <stdatomic.h>
 #include <stddef.h>
-#include "gitmind/portability/threads.h"
+#include <stdlib.h>
 #include <sodium/crypto_shorthash_siphash24.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <stdlib.h>
 
 /* Compare two IDs */
 bool gm_id_equal(gm_id_t new_id_a, gm_id_t new_id_b) {
@@ -31,64 +30,79 @@ int gm_id_compare(gm_id_t new_id_a, gm_id_t new_id_b) {
     return memcmp(new_id_a.bytes, new_id_b.bytes, GM_ID_SIZE);
 }
 
-/* Static storage for SipHash key - using a struct to group related data */
-static struct {
-    uint8_t key[crypto_shorthash_siphash24_KEYBYTES];
-    once_flag init_flag;
-} g_siphash_data = { .init_flag = ONCE_FLAG_INIT };
+/* Constants for deterministic SipHash key derivation */
+#define SIPHASH_KEY_SALT "gitmind_id_hash_salt_v1"
+#define SIPHASH_KEY_SALT_LEN 22
 
-/* Initialize SipHash key with default libsodium backend */
-static void init_siphash_key(void) {
-    /* Create default crypto context for initialization */
-    gm_result_crypto_context_t ctx_result = gm_crypto_context_create(gm_crypto_backend_libsodium());
-    if (GM_IS_ERR(ctx_result)) {
-        /* If context creation fails, use deterministic fallback */
-        for (size_t i = 0; i < sizeof(g_siphash_data.key); i++) {
-            g_siphash_data.key[i] = (uint8_t)(i ^ 0xAA);
-        }
-        gm_error_free(GM_UNWRAP_ERR(ctx_result));
-        return;
+/* Helper to create key derivation input */
+static gm_result_void_t create_key_input(const char *backend_name, char **input, size_t *total_len) {
+    if (!backend_name) {
+        backend_name = "unknown";
     }
     
-    gm_crypto_context_t ctx = GM_UNWRAP(ctx_result);
-    gm_result_void_t result = gm_random_bytes_with_context(&ctx, g_siphash_data.key, 
-                                                          sizeof(g_siphash_data.key));
-    if (GM_IS_ERR(result)) {
-        /* If random generation fails, use a deterministic fallback */
-        for (size_t i = 0; i < sizeof(g_siphash_data.key); i++) {
-            g_siphash_data.key[i] = (uint8_t)(i ^ 0xAA);
-        }
-        gm_error_free(GM_UNWRAP_ERR(result));
+    size_t backend_len = strlen(backend_name);
+    *total_len = backend_len + SIPHASH_KEY_SALT_LEN;
+    *input = malloc(*total_len);
+    if (!*input) {
+        return gm_err_void(GM_ERROR(GM_ERR_OUT_OF_MEMORY, "Failed to allocate derivation input"));
     }
+    
+    GM_MEMCPY_SAFE(*input, *total_len, backend_name, backend_len);
+    GM_MEMCPY_SAFE(*input + backend_len, *total_len - backend_len, SIPHASH_KEY_SALT, SIPHASH_KEY_SALT_LEN);
+    return gm_ok_void();
 }
 
-/* Get the SipHash key, initializing it once if needed */
-static const uint8_t *get_siphash_key(void) {
-    call_once(&g_siphash_data.init_flag, init_siphash_key);
-    return g_siphash_data.key;
+/* Derive deterministic SipHash key from crypto context */
+static gm_result_void_t derive_siphash_key(const gm_crypto_context_t *ctx, uint8_t key[crypto_shorthash_siphash24_KEYBYTES]) {
+    if (!ctx) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr crypto context"));
+    }
+    
+    char *input;
+    size_t total_len;
+    gm_result_void_t input_result = create_key_input(ctx->backend->name, &input, &total_len);
+    if (GM_IS_ERR(input_result)) {
+        return input_result;
+    }
+    
+    uint8_t hash[GM_SHA256_DIGEST_SIZE];
+    gm_result_void_t result = gm_sha256_with_context(ctx, input, total_len, hash);
+    free(input);
+    
+    if (GM_IS_ERR(result)) {
+        return result;
+    }
+    
+    GM_MEMCPY_SAFE(key, crypto_shorthash_siphash24_KEYBYTES, hash, crypto_shorthash_siphash24_KEYBYTES);
+    return gm_ok_void();
 }
-/* Hash function for hash tables using SipHash-2-4 */
-gm_result_u32_t gm_id_hash(gm_id_t new_identifier) {
-    /* Get the SipHash key (initialized once) */
-    const uint8_t *siphash_key = get_siphash_key();
 
-    /* SipHash produces 8-byte output */
+/* Compute SipHash and mix for better distribution */
+static uint32_t compute_siphash(const uint8_t *siphash_key, gm_id_t new_identifier) {
     uint8_t hash_output[crypto_shorthash_siphash24_BYTES];
-
-    /* Compute SipHash-2-4 of the ID bytes */
-    crypto_shorthash_siphash24(hash_output,      /* output buffer */
-                               new_identifier.bytes, /* input data */
-                               GM_ID_SIZE,       /* input length */
-                               siphash_key       /* 128-bit key */
-    );
-
-    /* Convert 8-byte output to uint64_t */
+    
+    crypto_shorthash_siphash24(hash_output, new_identifier.bytes, GM_ID_SIZE, siphash_key);
+    
     uint64_t hash64;
     GM_MEMCPY_SAFE(&hash64, sizeof(hash64), hash_output, sizeof(hash64));
+    
+    return (uint32_t)(hash64 ^ (hash64 >> 32));
+}
 
-    /* Mix upper and lower halves for better distribution */
-    uint32_t hash_value = (uint32_t)(hash64 ^ (hash64 >> 32));
+/* Hash function for hash tables using SipHash-2-4 with injected context */
+gm_result_u32_t gm_id_hash_with_context(const gm_crypto_context_t *ctx, gm_id_t new_identifier) {
+    if (!ctx) {
+        return (gm_result_u32_t){.ok = false, 
+                                .u.err = GM_ERROR(GM_ERR_INVALID_ARGUMENT, "nullptr crypto context")};
+    }
+    
+    uint8_t siphash_key[crypto_shorthash_siphash24_KEYBYTES];
+    gm_result_void_t key_result = derive_siphash_key(ctx, siphash_key);
+    if (GM_IS_ERR(key_result)) {
+        return (gm_result_u32_t){.ok = false, .u.err = GM_UNWRAP_ERR(key_result)};
+    }
 
+    uint32_t hash_value = compute_siphash(siphash_key, new_identifier);
     return (gm_result_u32_t){.ok = true, .u.val = hash_value};
 }
 
@@ -186,7 +200,7 @@ static gm_error_t *validate_hex_length(const char *hex) {
 static gm_error_t *parse_hex_byte(const char *hex, int pos, uint8_t *out) {
     char hex_pair[3];
     hex_pair[0] = hex[(size_t)pos * HEX_CHARS_PER_BYTE];
-    hex_pair[1] = hex[(size_t)pos * HEX_CHARS_PER_BYTE + 1];
+    hex_pair[1] = hex[((size_t)pos * HEX_CHARS_PER_BYTE) + 1];
     hex_pair[2] = '\0';
     
     char *endptr = nullptr;
