@@ -5,13 +5,19 @@
 #include <gitmind/cbor/constants_cbor.h>
 #include <gitmind/error.h>
 
+#include <stdint.h>
 #include <string.h>
 
 /* Error code constants */
-static const int GM_ERROR_CBOR_TYPE_MISMATCH = 6001;
-static const int GM_ERROR_CBOR_BUFFER_TOO_SMALL = 6002;
-static const int GM_ERROR_CBOR_INVALID_DATA = 6003;
-static const int GM_ERROR_CBOR_OVERFLOW = 6004;
+static const int GmErrorCborTypeMismatch = 6001;
+static const int GmErrorCborBufferTooSmall = 6002;
+static const int GmErrorCborInvalidData = 6003;
+static const int GmErrorCborOverflow = 6004;
+
+/* Size constants */
+static const size_t CborUint64Size = 8;
+static const size_t CborUint32HeaderSize = 5;
+static const size_t CborUint64HeaderSize = 9;
 
 /* Helper to check buffer bounds */
 static bool check_read_bounds(size_t offset, size_t read_size, size_t max_size) {
@@ -24,42 +30,18 @@ static bool check_read_bounds(size_t offset, size_t read_size, size_t max_size) 
     return true;
 }
 
-/* Read CBOR unsigned integer with bounds checking */
-gm_result_uint64_t gm_cbor_read_uint(const uint8_t *buf, size_t *offset, size_t max_size) {
-    if (!buf || !offset) {
-        return (gm_result_uint64_t){
-            .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_INVALID_DATA, "NULL buffer or offset")
-        };
-    }
-
-    if (!check_read_bounds(*offset, 1, max_size)) {
-        return (gm_result_uint64_t){
-            .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, "Buffer underrun reading type byte")
-        };
-    }
-
-    uint8_t initial = buf[(*offset)++];
-    uint8_t type = initial & CBOR_TYPE_MASK;
-    uint8_t info = initial & CBOR_ADDITIONAL_INFO_MASK;
+/* Helper to read CBOR uint value based on info type */
+static gm_result_uint64_t read_uint_value(const uint8_t *buf, size_t *offset, 
+                                          size_t max_size, uint8_t info) {
     uint64_t value = 0;
-
-    if (type != CBOR_TYPE_UNSIGNED) {
-        return (gm_result_uint64_t){
-            .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_TYPE_MISMATCH, 
-                             "Expected unsigned integer, got type 0x%02x", type)
-        };
-    }
-
+    
     if (info < CBOR_IMMEDIATE_THRESHOLD) {
         value = info;
     } else if (info == CBOR_UINT8_FOLLOWS) {
         if (!check_read_bounds(*offset, 1, max_size)) {
             return (gm_result_uint64_t){
                 .ok = false,
-                .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, "Buffer underrun reading uint8")
+                .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading uint8")
             };
         }
         value = buf[(*offset)++];
@@ -67,7 +49,7 @@ gm_result_uint64_t gm_cbor_read_uint(const uint8_t *buf, size_t *offset, size_t 
         if (!check_read_bounds(*offset, 2, max_size)) {
             return (gm_result_uint64_t){
                 .ok = false,
-                .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, "Buffer underrun reading uint16")
+                .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading uint16")
             };
         }
         value = (uint64_t)(((uint16_t)buf[*offset] << SHIFT_8) | (uint16_t)buf[*offset + 1]);
@@ -76,7 +58,7 @@ gm_result_uint64_t gm_cbor_read_uint(const uint8_t *buf, size_t *offset, size_t 
         if (!check_read_bounds(*offset, 4, max_size)) {
             return (gm_result_uint64_t){
                 .ok = false,
-                .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, "Buffer underrun reading uint32")
+                .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading uint32")
             };
         }
         value = ((uint32_t)buf[*offset] << SHIFT_24) |
@@ -85,10 +67,10 @@ gm_result_uint64_t gm_cbor_read_uint(const uint8_t *buf, size_t *offset, size_t 
                 (uint32_t)buf[*offset + 3];
         *offset += 4;
     } else if (info == CBOR_UINT64_FOLLOWS) {
-        if (!check_read_bounds(*offset, 8, max_size)) {
+        if (!check_read_bounds(*offset, CborUint64Size, max_size)) {
             return (gm_result_uint64_t){
                 .ok = false,
-                .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, "Buffer underrun reading uint64")
+                .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading uint64")
             };
         }
         for (int i = 0; i < BYTE_SIZE; i++) {
@@ -97,12 +79,43 @@ gm_result_uint64_t gm_cbor_read_uint(const uint8_t *buf, size_t *offset, size_t 
     } else {
         return (gm_result_uint64_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_INVALID_DATA, 
+            .u.err = GM_ERROR(GmErrorCborInvalidData, 
                              "Invalid additional info: 0x%02x", info)
         };
     }
 
     return (gm_result_uint64_t){.ok = true, .u.val = value};
+}
+
+/* Read CBOR unsigned integer with bounds checking */
+gm_result_uint64_t gm_cbor_read_uint(const uint8_t *buf, size_t *offset, size_t max_size) {
+    if (!buf || !offset) {
+        return (gm_result_uint64_t){
+            .ok = false,
+            .u.err = GM_ERROR(GmErrorCborInvalidData, "NULL buffer or offset")
+        };
+    }
+
+    if (!check_read_bounds(*offset, 1, max_size)) {
+        return (gm_result_uint64_t){
+            .ok = false,
+            .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading type byte")
+        };
+    }
+
+    uint8_t initial = buf[(*offset)++];
+    uint8_t type = initial & CBOR_TYPE_MASK;
+    uint8_t info = initial & CBOR_ADDITIONAL_INFO_MASK;
+
+    if (type != CBOR_TYPE_UNSIGNED) {
+        return (gm_result_uint64_t){
+            .ok = false,
+            .u.err = GM_ERROR(GmErrorCborTypeMismatch, 
+                             "Expected unsigned integer, got type 0x%02x", type)
+        };
+    }
+
+    return read_uint_value(buf, offset, max_size, info);
 }
 
 /* Read CBOR byte string with bounds checking */
@@ -111,14 +124,14 @@ gm_result_void_t gm_cbor_read_bytes(const uint8_t *buf, size_t *offset, size_t m
     if (!buf || !offset || !data) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_INVALID_DATA, "NULL buffer, offset, or data")
+            .u.err = GM_ERROR(GmErrorCborInvalidData, "NULL buffer, offset, or data")
         };
     }
 
     if (!check_read_bounds(*offset, 1, max_size)) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, "Buffer underrun reading type byte")
+            .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading type byte")
         };
     }
 
@@ -130,7 +143,7 @@ gm_result_void_t gm_cbor_read_bytes(const uint8_t *buf, size_t *offset, size_t m
     if (type != CBOR_TYPE_BYTES) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_TYPE_MISMATCH, 
+            .u.err = GM_ERROR(GmErrorCborTypeMismatch, 
                              "Expected byte string, got type 0x%02x", type)
         };
     }
@@ -141,7 +154,7 @@ gm_result_void_t gm_cbor_read_bytes(const uint8_t *buf, size_t *offset, size_t m
         if (!check_read_bounds(*offset, 1, max_size)) {
             return (gm_result_void_t){
                 .ok = false,
-                .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, "Buffer underrun reading length")
+                .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading length")
             };
         }
         len = buf[(*offset)++];
@@ -149,7 +162,7 @@ gm_result_void_t gm_cbor_read_bytes(const uint8_t *buf, size_t *offset, size_t m
         if (!check_read_bounds(*offset, 2, max_size)) {
             return (gm_result_void_t){
                 .ok = false,
-                .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, "Buffer underrun reading length")
+                .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading length")
             };
         }
         len = ((size_t)buf[*offset] << SHIFT_8) | (size_t)buf[*offset + 1];
@@ -157,7 +170,7 @@ gm_result_void_t gm_cbor_read_bytes(const uint8_t *buf, size_t *offset, size_t m
     } else {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_INVALID_DATA, 
+            .u.err = GM_ERROR(GmErrorCborInvalidData, 
                              "Invalid additional info: 0x%02x", info)
         };
     }
@@ -165,7 +178,7 @@ gm_result_void_t gm_cbor_read_bytes(const uint8_t *buf, size_t *offset, size_t m
     if (len != expected_len) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_INVALID_DATA, 
+            .u.err = GM_ERROR(GmErrorCborInvalidData, 
                              "Length mismatch: expected %zu, got %zu", expected_len, len)
         };
     }
@@ -173,7 +186,7 @@ gm_result_void_t gm_cbor_read_bytes(const uint8_t *buf, size_t *offset, size_t m
     if (!check_read_bounds(*offset, len, max_size)) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, 
+            .u.err = GM_ERROR(GmErrorCborBufferTooSmall, 
                              "Buffer underrun reading %zu bytes", len)
         };
     }
@@ -190,21 +203,21 @@ gm_result_void_t gm_cbor_read_text(const uint8_t *buf, size_t *offset, size_t ma
     if (!buf || !offset || !text) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_INVALID_DATA, "NULL buffer, offset, or text")
+            .u.err = GM_ERROR(GmErrorCborInvalidData, "NULL buffer, offset, or text")
         };
     }
 
     if (max_text_len == 0) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_INVALID_DATA, "Text buffer size is zero")
+            .u.err = GM_ERROR(GmErrorCborInvalidData, "Text buffer size is zero")
         };
     }
 
     if (!check_read_bounds(*offset, 1, max_size)) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, "Buffer underrun reading type byte")
+            .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading type byte")
         };
     }
 
@@ -216,7 +229,7 @@ gm_result_void_t gm_cbor_read_text(const uint8_t *buf, size_t *offset, size_t ma
     if (type != CBOR_TYPE_TEXT) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_TYPE_MISMATCH, 
+            .u.err = GM_ERROR(GmErrorCborTypeMismatch, 
                              "Expected text string, got type 0x%02x", type)
         };
     }
@@ -227,7 +240,7 @@ gm_result_void_t gm_cbor_read_text(const uint8_t *buf, size_t *offset, size_t ma
         if (!check_read_bounds(*offset, 1, max_size)) {
             return (gm_result_void_t){
                 .ok = false,
-                .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, "Buffer underrun reading length")
+                .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading length")
             };
         }
         len = buf[(*offset)++];
@@ -235,7 +248,7 @@ gm_result_void_t gm_cbor_read_text(const uint8_t *buf, size_t *offset, size_t ma
         if (!check_read_bounds(*offset, 2, max_size)) {
             return (gm_result_void_t){
                 .ok = false,
-                .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, "Buffer underrun reading length")
+                .u.err = GM_ERROR(GmErrorCborBufferTooSmall, "Buffer underrun reading length")
             };
         }
         len = ((size_t)buf[*offset] << SHIFT_8) | (size_t)buf[*offset + 1];
@@ -243,7 +256,7 @@ gm_result_void_t gm_cbor_read_text(const uint8_t *buf, size_t *offset, size_t ma
     } else {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_INVALID_DATA, 
+            .u.err = GM_ERROR(GmErrorCborInvalidData, 
                              "Invalid additional info: 0x%02x", info)
         };
     }
@@ -251,7 +264,7 @@ gm_result_void_t gm_cbor_read_text(const uint8_t *buf, size_t *offset, size_t ma
     if (len >= max_text_len) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_OVERFLOW, 
+            .u.err = GM_ERROR(GmErrorCborOverflow, 
                              "Text too long: %zu bytes, buffer size %zu", len, max_text_len)
         };
     }
@@ -259,7 +272,7 @@ gm_result_void_t gm_cbor_read_text(const uint8_t *buf, size_t *offset, size_t ma
     if (!check_read_bounds(*offset, len, max_size)) {
         return (gm_result_void_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, 
+            .u.err = GM_ERROR(GmErrorCborBufferTooSmall, 
                              "Buffer underrun reading %zu bytes", len)
         };
     }
@@ -276,7 +289,7 @@ gm_result_size_t gm_cbor_write_uint(uint8_t *buf, size_t buf_size, uint64_t valu
     if (!buf) {
         return (gm_result_size_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_INVALID_DATA, "NULL buffer")
+            .u.err = GM_ERROR(GmErrorCborInvalidData, "NULL buffer")
         };
     }
 
@@ -289,15 +302,15 @@ gm_result_size_t gm_cbor_write_uint(uint8_t *buf, size_t buf_size, uint64_t valu
     } else if (value <= UINT16_MAX) {
         required_size = 3;
     } else if (value <= UINT32_MAX) {
-        required_size = 5;
+        required_size = CborUint32HeaderSize;
     } else {
-        required_size = 9;
+        required_size = CborUint64HeaderSize;
     }
 
     if (buf_size < required_size) {
         return (gm_result_size_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, 
+            .u.err = GM_ERROR(GmErrorCborBufferTooSmall, 
                              "Need %zu bytes, have %zu", required_size, buf_size)
         };
     }
@@ -305,29 +318,35 @@ gm_result_size_t gm_cbor_write_uint(uint8_t *buf, size_t buf_size, uint64_t valu
     if (value < CBOR_IMMEDIATE_THRESHOLD) {
         buf[0] = CBOR_TYPE_UNSIGNED | (uint8_t)value;
         return (gm_result_size_t){.ok = true, .u.val = 1};
-    } else if (value <= UINT8_MAX) {
+    }
+    
+    if (value <= UINT8_MAX) {
         buf[0] = CBOR_TYPE_UNSIGNED | CBOR_UINT8_FOLLOWS;
         buf[1] = (uint8_t)value;
         return (gm_result_size_t){.ok = true, .u.val = 2};
-    } else if (value <= UINT16_MAX) {
+    }
+    
+    if (value <= UINT16_MAX) {
         buf[0] = CBOR_TYPE_UNSIGNED | CBOR_UINT16_FOLLOWS;
         buf[1] = (uint8_t)((value >> SHIFT_8) & BYTE_MASK);
         buf[2] = (uint8_t)(value & BYTE_MASK);
         return (gm_result_size_t){.ok = true, .u.val = 3};
-    } else if (value <= UINT32_MAX) {
+    }
+    
+    if (value <= UINT32_MAX) {
         buf[0] = CBOR_TYPE_UNSIGNED | CBOR_UINT32_FOLLOWS;
         buf[1] = (uint8_t)((value >> SHIFT_24) & BYTE_MASK);
         buf[2] = (uint8_t)((value >> SHIFT_16) & BYTE_MASK);
         buf[3] = (uint8_t)((value >> SHIFT_8) & BYTE_MASK);
         buf[4] = (uint8_t)(value & BYTE_MASK);
-        return (gm_result_size_t){.ok = true, .u.val = 5};
-    } else {
-        buf[0] = CBOR_TYPE_UNSIGNED | CBOR_UINT64_FOLLOWS;
-        for (int i = 0; i < BYTE_SIZE; i++) {
-            buf[1 + i] = (uint8_t)((value >> (SHIFT_56 - i * BYTE_SIZE)) & BYTE_MASK);
-        }
-        return (gm_result_size_t){.ok = true, .u.val = 9};
+        return (gm_result_size_t){.ok = true, .u.val = CborUint32HeaderSize};
     }
+    
+    buf[0] = CBOR_TYPE_UNSIGNED | CBOR_UINT64_FOLLOWS;
+    for (int i = 0; i < BYTE_SIZE; i++) {
+        buf[1 + i] = (uint8_t)((value >> (SHIFT_56 - i * BYTE_SIZE)) & BYTE_MASK);
+    }
+    return (gm_result_size_t){.ok = true, .u.val = CborUint64HeaderSize};
 }
 
 /* Write CBOR byte string with bounds checking */
@@ -336,7 +355,7 @@ gm_result_size_t gm_cbor_write_bytes(uint8_t *buf, size_t buf_size,
     if (!buf || !data) {
         return (gm_result_size_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_INVALID_DATA, "NULL buffer or data")
+            .u.err = GM_ERROR(GmErrorCborInvalidData, "NULL buffer or data")
         };
     }
 
@@ -351,7 +370,7 @@ gm_result_size_t gm_cbor_write_bytes(uint8_t *buf, size_t buf_size,
     } else {
         return (gm_result_size_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_OVERFLOW, 
+            .u.err = GM_ERROR(GmErrorCborOverflow, 
                              "Data length %zu exceeds maximum", data_len)
         };
     }
@@ -360,7 +379,7 @@ gm_result_size_t gm_cbor_write_bytes(uint8_t *buf, size_t buf_size,
     if (buf_size < total_size) {
         return (gm_result_size_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, 
+            .u.err = GM_ERROR(GmErrorCborBufferTooSmall, 
                              "Need %zu bytes, have %zu", total_size, buf_size)
         };
     }
@@ -385,7 +404,7 @@ gm_result_size_t gm_cbor_write_text(uint8_t *buf, size_t buf_size, const char *t
     if (!buf || !text) {
         return (gm_result_size_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_INVALID_DATA, "NULL buffer or text")
+            .u.err = GM_ERROR(GmErrorCborInvalidData, "NULL buffer or text")
         };
     }
 
@@ -401,7 +420,7 @@ gm_result_size_t gm_cbor_write_text(uint8_t *buf, size_t buf_size, const char *t
     } else {
         return (gm_result_size_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_OVERFLOW, 
+            .u.err = GM_ERROR(GmErrorCborOverflow, 
                              "Text length %zu exceeds maximum", text_len)
         };
     }
@@ -410,7 +429,7 @@ gm_result_size_t gm_cbor_write_text(uint8_t *buf, size_t buf_size, const char *t
     if (buf_size < total_size) {
         return (gm_result_size_t){
             .ok = false,
-            .u.err = GM_ERROR(GM_ERROR_CBOR_BUFFER_TOO_SMALL, 
+            .u.err = GM_ERROR(GmErrorCborBufferTooSmall, 
                              "Need %zu bytes, have %zu", total_size, buf_size)
         };
     }
