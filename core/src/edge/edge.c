@@ -2,11 +2,13 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind/edge.h"
-#include "gitmind/constants.h"
 #include "gitmind/context.h"
 #include "gitmind/error.h"
 #include "gitmind/types.h"
 #include "gitmind/cbor/cbor.h"
+#include "gitmind/result.h"
+#include "gitmind/types/ulid.h"
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
@@ -14,7 +16,8 @@
 /* Result type is defined in edge.h */
 
 /* Constants */
-static const uint16_t DEFAULT_CONFIDENCE = 0x3C00; /* 1.0 in IEEE-754 half-float */
+static const uint16_t DefaultConfidence = 0x3C00; /* 1.0 in IEEE-754 half-float */
+static const uint8_t CborMapType = 0xA0; /* CBOR map type prefix */
 
 /**
  * Get current timestamp in milliseconds
@@ -24,18 +27,18 @@ static uint64_t get_timestamp_millis(gm_context_t *ctx) {
     if (ctx && ctx->time_ops && ctx->time_ops->clock_gettime) {
         ctx->time_ops->clock_gettime(CLOCK_REALTIME, &time_spec);
     } else {
-        clock_gettime(CLOCK_REALTIME, &time_spec);
+        (void)clock_gettime(CLOCK_REALTIME, &time_spec);
     }
-    return (uint64_t)time_spec.tv_sec * MILLIS_PER_SECOND +
-           (uint64_t)time_spec.tv_nsec / NANOS_PER_MILLI;
+    return ((uint64_t)time_spec.tv_sec * MILLIS_PER_SECOND) +
+           ((uint64_t)time_spec.tv_nsec / NANOS_PER_MILLI);
 }
 
 /**
  * Initialize edge with default values
  */
 static void edge_init_defaults(gm_edge_t *edge) {
-    memset(edge, 0, sizeof(gm_edge_t));
-    edge->confidence = DEFAULT_CONFIDENCE;
+    (void)memset(edge, 0, sizeof(gm_edge_t));
+    edge->confidence = DefaultConfidence;
 }
 
 /**
@@ -95,10 +98,10 @@ gm_result_edge_t gm_edge_create(gm_context_t *ctx, const char *src_path,
     }
     
     /* Set fields */
-    strncpy(edge.src_path, src_path, GM_PATH_MAX - 1);
+    (void)strncpy(edge.src_path, src_path, GM_PATH_MAX - 1);
     edge.src_path[GM_PATH_MAX - 1] = '\0';
     
-    strncpy(edge.tgt_path, tgt_path, GM_PATH_MAX - 1);
+    (void)strncpy(edge.tgt_path, tgt_path, GM_PATH_MAX - 1);
     edge.tgt_path[GM_PATH_MAX - 1] = '\0';
     
     edge.rel_type = (uint16_t)rel_type;
@@ -188,6 +191,78 @@ gm_result_void_t gm_edge_format(const gm_edge_t *edge, char *buffer, size_t len)
 #define CBOR_EDGE_FIELDS    8
 
 /**
+ * Write CBOR key-value pair for bytes
+ */
+static gm_result_void_t write_cbor_bytes(uint64_t key, uint8_t *buffer, 
+                                       size_t available, size_t *offset,
+                                       const uint8_t *data, size_t data_size) {
+    gm_result_size_t key_result = gm_cbor_write_uint(key, buffer + *offset, available - *offset);
+    if (!key_result.ok) {
+        return gm_err_void(key_result.u.err);
+    }
+    *offset += key_result.u.val;
+    
+    gm_result_size_t val_result = gm_cbor_write_bytes(buffer + *offset, available - *offset, data, data_size);
+    if (!val_result.ok) {
+        return gm_err_void(val_result.u.err);
+    }
+    *offset += val_result.u.val;
+    return gm_ok_void();
+}
+
+/**
+ * Write CBOR key-value pair for uint64
+ */
+static gm_result_void_t write_cbor_uint64(uint64_t key, uint8_t *buffer, 
+                                        size_t available, size_t *offset,
+                                        uint64_t value) {
+    gm_result_size_t key_result = gm_cbor_write_uint(key, buffer + *offset, available - *offset);
+    if (!key_result.ok) {
+        return gm_err_void(key_result.u.err);
+    }
+    *offset += key_result.u.val;
+    
+    gm_result_size_t val_result = gm_cbor_write_uint(value, buffer + *offset, available - *offset);
+    if (!val_result.ok) {
+        return gm_err_void(val_result.u.err);
+    }
+    *offset += val_result.u.val;
+    return gm_ok_void();
+}
+
+/**
+ * Write CBOR key-value pair for text
+ */
+static gm_result_void_t write_cbor_text(uint64_t key, uint8_t *buffer, 
+                                      size_t available, size_t *offset,
+                                      const char *text) {
+    gm_result_size_t key_result = gm_cbor_write_uint(key, buffer + *offset, available - *offset);
+    if (!key_result.ok) {
+        return gm_err_void(key_result.u.err);
+    }
+    *offset += key_result.u.val;
+    
+    gm_result_size_t val_result = gm_cbor_write_text(buffer + *offset, available - *offset, text);
+    if (!val_result.ok) {
+        return gm_err_void(val_result.u.err);
+    }
+    *offset += val_result.u.val;
+    return gm_ok_void();
+}
+
+/**
+ * Write CBOR map header
+ */
+static gm_result_void_t write_cbor_map_header(uint8_t *buffer, size_t available, size_t *offset) {
+    if (available < 1) {
+        return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
+                                    "Buffer too small for CBOR map"));
+    }
+    buffer[(*offset)++] = CborMapType | CBOR_EDGE_FIELDS;
+    return gm_ok_void();
+}
+
+/**
  * Encode edge to CBOR format
  */
 gm_result_void_t gm_edge_encode_cbor(const gm_edge_t *edge, uint8_t *buffer,
@@ -200,63 +275,135 @@ gm_result_void_t gm_edge_encode_cbor(const gm_edge_t *edge, uint8_t *buffer,
     size_t offset = 0;
     size_t available = *len;
     
-    /* Write map header (8 fields) */
-    if (available < 1) {
-        return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
-                                    "Buffer too small for CBOR map"));
+    /* Write map header */
+    gm_result_void_t result = write_cbor_map_header(buffer, available, &offset);
+    if (!result.ok) {
+        return result;
     }
-    buffer[offset++] = 0xA0 | CBOR_EDGE_FIELDS; /* Fixed-size map */
     
-    /* Helper macro to write key-value pairs */
-    #define WRITE_CBOR_FIELD(key, write_fn, ...) do { \
-        gm_result_size_t key_result = gm_cbor_write_uint(key, buffer + offset, available - offset); \
-        if (!key_result.ok) { \
-            return gm_err_void(key_result.u.err); \
-        } \
-        offset += key_result.u.val; \
-        gm_result_size_t val_result = write_fn(__VA_ARGS__); \
-        if (!val_result.ok) { \
-            return gm_err_void(val_result.u.err); \
-        } \
-        offset += val_result.u.val; \
-    } while(0)
+    /* Write SHA fields */
+    result = write_cbor_bytes(CBOR_KEY_SRC_SHA, buffer, available, &offset, edge->src_sha, GM_SHA1_SIZE);
+    if (!result.ok) {
+        return result;
+    }
     
-    /* Write src_sha */
-    WRITE_CBOR_FIELD(CBOR_KEY_SRC_SHA, gm_cbor_write_bytes, 
-                     buffer + offset, available - offset, edge->src_sha, GM_SHA1_SIZE);
+    result = write_cbor_bytes(CBOR_KEY_TGT_SHA, buffer, available, &offset, edge->tgt_sha, GM_SHA1_SIZE);
+    if (!result.ok) {
+        return result;
+    }
     
-    /* Write tgt_sha */
-    WRITE_CBOR_FIELD(CBOR_KEY_TGT_SHA, gm_cbor_write_bytes,
-                     buffer + offset, available - offset, edge->tgt_sha, GM_SHA1_SIZE);
+    /* Write numeric fields */
+    result = write_cbor_uint64(CBOR_KEY_REL_TYPE, buffer, available, &offset, edge->rel_type);
+    if (!result.ok) {
+        return result;
+    }
     
-    /* Write rel_type */
-    WRITE_CBOR_FIELD(CBOR_KEY_REL_TYPE, gm_cbor_write_uint,
-                     edge->rel_type, buffer + offset, available - offset);
+    result = write_cbor_uint64(CBOR_KEY_CONFIDENCE, buffer, available, &offset, edge->confidence);
+    if (!result.ok) {
+        return result;
+    }
     
-    /* Write confidence */
-    WRITE_CBOR_FIELD(CBOR_KEY_CONFIDENCE, gm_cbor_write_uint,
-                     edge->confidence, buffer + offset, available - offset);
+    result = write_cbor_uint64(CBOR_KEY_TIMESTAMP, buffer, available, &offset, edge->timestamp);
+    if (!result.ok) {
+        return result;
+    }
     
-    /* Write timestamp */
-    WRITE_CBOR_FIELD(CBOR_KEY_TIMESTAMP, gm_cbor_write_uint,
-                     edge->timestamp, buffer + offset, available - offset);
+    /* Write string fields */
+    result = write_cbor_text(CBOR_KEY_SRC_PATH, buffer, available, &offset, edge->src_path);
+    if (!result.ok) {
+        return result;
+    }
     
-    /* Write src_path */
-    WRITE_CBOR_FIELD(CBOR_KEY_SRC_PATH, gm_cbor_write_text,
-                     buffer + offset, available - offset, edge->src_path);
+    result = write_cbor_text(CBOR_KEY_TGT_PATH, buffer, available, &offset, edge->tgt_path);
+    if (!result.ok) {
+        return result;
+    }
     
-    /* Write tgt_path */
-    WRITE_CBOR_FIELD(CBOR_KEY_TGT_PATH, gm_cbor_write_text,
-                     buffer + offset, available - offset, edge->tgt_path);
-    
-    /* Write ulid */
-    WRITE_CBOR_FIELD(CBOR_KEY_ULID, gm_cbor_write_text,
-                     buffer + offset, available - offset, edge->ulid);
-    
-    #undef WRITE_CBOR_FIELD
+    result = write_cbor_text(CBOR_KEY_ULID, buffer, available, &offset, edge->ulid);
+    if (!result.ok) {
+        return result;
+    }
     
     *len = offset;
     return gm_ok_void();
+}
+
+/**
+ * Helper to decode SHA bytes from CBOR
+ */
+static gm_result_void_t decode_cbor_sha(const uint8_t *buffer, size_t *offset, size_t len, uint8_t *sha) {
+    return gm_cbor_read_bytes(buffer, offset, len, sha, GM_SHA1_SIZE);
+}
+
+/**
+ * Helper to decode uint64 from CBOR
+ */
+static gm_result_uint64_t decode_cbor_uint64(const uint8_t *buffer, size_t *offset, size_t len) {
+    return gm_cbor_read_uint(buffer, offset, len);
+}
+
+/**
+ * Helper to decode text from CBOR
+ */
+static gm_result_void_t decode_cbor_text(const uint8_t *buffer, size_t *offset, size_t len, char *text, size_t max_len) {
+    return gm_cbor_read_text(buffer, offset, len, text, max_len);
+}
+
+/**
+ * Helper to decode one CBOR key-value pair
+ */
+static gm_result_void_t decode_cbor_field(const uint8_t *buffer, size_t *offset, size_t len, gm_edge_t *edge) {
+    /* Read key */
+    gm_result_uint64_t key_result = decode_cbor_uint64(buffer, offset, len);
+    if (!key_result.ok) {
+        return gm_err_void(key_result.u.err);
+    }
+    uint64_t key = key_result.u.val;
+    
+    /* Read value based on key */
+    switch (key) {
+    case CBOR_KEY_SRC_SHA: {
+        return decode_cbor_sha(buffer, offset, len, edge->src_sha);
+    }
+    case CBOR_KEY_TGT_SHA: {
+        return decode_cbor_sha(buffer, offset, len, edge->tgt_sha);
+    }
+    case CBOR_KEY_REL_TYPE: {
+        gm_result_uint64_t result = decode_cbor_uint64(buffer, offset, len);
+        if (!result.ok) {
+            return gm_err_void(result.u.err);
+        }
+        edge->rel_type = (uint16_t)result.u.val;
+        return gm_ok_void();
+    }
+    case CBOR_KEY_CONFIDENCE: {
+        gm_result_uint64_t result = decode_cbor_uint64(buffer, offset, len);
+        if (!result.ok) {
+            return gm_err_void(result.u.err);
+        }
+        edge->confidence = (uint16_t)result.u.val;
+        return gm_ok_void();
+    }
+    case CBOR_KEY_TIMESTAMP: {
+        gm_result_uint64_t result = decode_cbor_uint64(buffer, offset, len);
+        if (!result.ok) {
+            return gm_err_void(result.u.err);
+        }
+        edge->timestamp = result.u.val;
+        return gm_ok_void();
+    }
+    case CBOR_KEY_SRC_PATH: {
+        return decode_cbor_text(buffer, offset, len, edge->src_path, GM_PATH_MAX);
+    }
+    case CBOR_KEY_TGT_PATH: {
+        return decode_cbor_text(buffer, offset, len, edge->tgt_path, GM_PATH_MAX);
+    }
+    case CBOR_KEY_ULID: {
+        return decode_cbor_text(buffer, offset, len, edge->ulid, GM_ULID_SIZE + 1);
+    }
+    default:
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_FORMAT, "Unknown CBOR key"));
+    }
 }
 
 /**
@@ -273,7 +420,7 @@ gm_result_edge_t gm_edge_decode_cbor(const uint8_t *buffer, size_t len) {
     size_t offset = 0;
     
     /* Check map header */
-    if (buffer[offset] != (0xA0 | CBOR_EDGE_FIELDS)) {
+    if (buffer[offset] != (CborMapType | CBOR_EDGE_FIELDS)) {
         return (gm_result_edge_t){
             .ok = false,
             .u.err = GM_ERROR(GM_ERR_INVALID_FORMAT, "Invalid CBOR map header")
@@ -286,84 +433,9 @@ gm_result_edge_t gm_edge_decode_cbor(const uint8_t *buffer, size_t len) {
     
     /* Read key-value pairs */
     for (int i = 0; i < CBOR_EDGE_FIELDS; i++) {
-        /* Read key */
-        gm_result_uint64_t key_result = gm_cbor_read_uint(buffer, &offset, len);
-        if (!key_result.ok) {
-            return (gm_result_edge_t){.ok = false, .u.err = key_result.u.err};
-        }
-        uint64_t key = key_result.u.val;
-        
-        /* Read value based on key */
-        switch (key) {
-        case CBOR_KEY_SRC_SHA: {
-            gm_result_void_t result = gm_cbor_read_bytes(buffer, &offset, len,
-                                                         edge.src_sha, GM_SHA1_SIZE);
-            if (!result.ok) {
-                return (gm_result_edge_t){.ok = false, .u.err = result.u.err};
-            }
-            break;
-        }
-        case CBOR_KEY_TGT_SHA: {
-            gm_result_void_t result = gm_cbor_read_bytes(buffer, &offset, len,
-                                                         edge.tgt_sha, GM_SHA1_SIZE);
-            if (!result.ok) {
-                return (gm_result_edge_t){.ok = false, .u.err = result.u.err};
-            }
-            break;
-        }
-        case CBOR_KEY_REL_TYPE: {
-            gm_result_uint64_t result = gm_cbor_read_uint(buffer, &offset, len);
-            if (!result.ok) {
-                return (gm_result_edge_t){.ok = false, .u.err = result.u.err};
-            }
-            edge.rel_type = (uint16_t)result.u.val;
-            break;
-        }
-        case CBOR_KEY_CONFIDENCE: {
-            gm_result_uint64_t result = gm_cbor_read_uint(buffer, &offset, len);
-            if (!result.ok) {
-                return (gm_result_edge_t){.ok = false, .u.err = result.u.err};
-            }
-            edge.confidence = (uint16_t)result.u.val;
-            break;
-        }
-        case CBOR_KEY_TIMESTAMP: {
-            gm_result_uint64_t result = gm_cbor_read_uint(buffer, &offset, len);
-            if (!result.ok) {
-                return (gm_result_edge_t){.ok = false, .u.err = result.u.err};
-            }
-            edge.timestamp = result.u.val;
-            break;
-        }
-        case CBOR_KEY_SRC_PATH: {
-            gm_result_void_t result = gm_cbor_read_text(buffer, &offset, len,
-                                                        edge.src_path, GM_PATH_MAX);
-            if (!result.ok) {
-                return (gm_result_edge_t){.ok = false, .u.err = result.u.err};
-            }
-            break;
-        }
-        case CBOR_KEY_TGT_PATH: {
-            gm_result_void_t result = gm_cbor_read_text(buffer, &offset, len,
-                                                        edge.tgt_path, GM_PATH_MAX);
-            if (!result.ok) {
-                return (gm_result_edge_t){.ok = false, .u.err = result.u.err};
-            }
-            break;
-        }
-        case CBOR_KEY_ULID: {
-            gm_result_void_t result = gm_cbor_read_text(buffer, &offset, len,
-                                                        edge.ulid, GM_ULID_SIZE + 1);
-            if (!result.ok) {
-                return (gm_result_edge_t){.ok = false, .u.err = result.u.err};
-            }
-            break;
-        }
-        default:
-            return (gm_result_edge_t){
-                .ok = false,
-                .u.err = GM_ERROR(GM_ERR_INVALID_FORMAT, "Unknown CBOR key")
-            };
+        gm_result_void_t result = decode_cbor_field(buffer, &offset, len, &edge);
+        if (!result.ok) {
+            return (gm_result_edge_t){.ok = false, .u.err = result.u.err};
         }
     }
     
