@@ -1,5 +1,15 @@
 # OPERATIONAL ORDERS FOR CLAUDE
 
+> __Note__: This document contains AI-specific guidelines. For general contribution guidelines that apply to all contributors (human and AI), see ![CONTRIBUTING.md](CONTRIBUTING.md).
+
+## CROSS-REFERENCE
+
+For workflows that apply to ALL contributors (human and AI):
+
+- Code standards and quality checks → [CONTRIBUTING.md](CONTRIBUTING.md)
+- Making changes workflow → ![CONTRIBUTING.md#making-changes](CONTRIBUTING.md#making-changes)
+- Commit message format → [CONTRIBUTING.md#commit-messages](CONTRIBUTING.md#commit-messages)
+
 ## FORBIDDEN ACTIONS
 
 - __NEVER__ circumvent git hooks
