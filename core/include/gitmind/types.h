@@ -37,8 +37,6 @@ typedef enum {
 } gm_rel_type_t;
 
 /* Include sub-types */
-#include "gitmind/types/id.h"
-#include "gitmind/types/path.h"
 
 #ifdef __cplusplus
 }

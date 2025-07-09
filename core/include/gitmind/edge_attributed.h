@@ -8,6 +8,7 @@
 #include "gitmind/edge.h"
 #include "gitmind/result.h"
 #include "gitmind/types.h"
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
