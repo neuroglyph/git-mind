@@ -50,10 +50,12 @@ src = files(
   'core/src/types/string_utf8.c',
   'core/src/types/ulid.c',
   'core/src/utf8/validate.c',
+  'core/src/edge/edge.c',
+  'core/src/edge/attributed.c',
 )
 
 # Include directories
-inc = include_directories('core/include')
+inc = include_directories('core/include', 'include')
 
 # Build static library
 libgitmind = static_library(
