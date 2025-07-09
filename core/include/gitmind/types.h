@@ -40,7 +40,6 @@ typedef enum {
 #include "gitmind/types/id.h"
 #include "gitmind/types/path.h"
 #include "gitmind/types/string.h"
-#include "gitmind/types/ulid.h"
 
 #ifdef __cplusplus
 }
