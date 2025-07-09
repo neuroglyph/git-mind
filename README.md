@@ -1,155 +1,276 @@
-# git-mind 🧠
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
+<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 
-> **⚠️ MAJOR REWRITE IN PROGRESS**: This project is undergoing a complete architectural overhaul. We've reduced warnings from 11,951 to 353 and are migrating to meson/ninja build system. Not production-ready. See [The Great Migration](#the-great-migration) below.
+# `git-mind` 🧠
 
-## How We Gate Quality
+_A Git-integrated knowledge graph for tracking relationships between code artifacts._
 
-1. **Push whatever you want** - No pre-push hooks
-2. **GitHub Actions runs full CI** - Meson, clang-tidy, sanitizers, coverage  
-3. **If CI fails, fix & force-push** - Simple and deterministic
+__🚧 MAJOR ARCHITECTURAL MIGRATION IN PROGRESS 🏗️__
 
-![git-mind](./assets/images/wide-logo.png)
+We’re transforming `git-mind` from a monolithic CLI into a clean, embeddable C library with zero warnings under extreme compiler strictness. 
 
-## What is git-mind?
+__Progress__: Core library 50% complete | CLI separation 0% | New apps 0%
 
-A Git-native tool for versioning your understanding of code, not just the code itself.
+See [The Great Migration](#the-great-migration) below for details.
+
+---
+
+## What is `git-mind`?
+
+`git-mind` captures and versions the connections between your code, documentation, and design artifacts. It stores these relationships as Git objects, making them as permanent and trackable as your code.
 
 ```bash
-# Create semantic links between files
-git mind link design.md src/main.rs --type implements
+# Link a design document to its implementation
+git mind link docs/auth-flow.md src/auth.c --type implements
 
-# Time-travel through your mental model
-git checkout HEAD~10
-git mind list  # See what connections you understood 10 commits ago
+# Find all code that implements a specific design
+git mind traverse docs/auth-flow.md --direction forward
+
+# See how your understanding evolved
+git checkout v1.0
+git mind list  # View connections from that point in time
 ```
 
-**The key insight**: Your understanding of how code connects evolves over time. git-mind makes that evolution visible and queryable.
+---
 
-## Why?
+## Installation
 
-You know that `UserService.java` implements the design in `user-flows.md`. Six months later, that connection is lost. New team members can't find the relationships. The context dies with time.
-
-git-mind stores these relationships as Git objects, giving them the same permanence and version history as your code.
-
-## 🚧 The Great Migration
-
-**Current Status**: Major progress! Warnings reduced from 11,951 to 353 (97% reduction!)
-
-We're completing the architectural rebuild with modern build tools:
-
-- **Phase 1** (Near Complete): Built solid foundations in `core/`
-  - Error handling with Result types ✅
-  - Strong typedefs for domain concepts ✅
-  - Security primitives ✅
-  - Migrated to meson/ninja build system ✅
-  - Reduced warnings from 11,951 to 353 ✅ (97% reduction!)
-  - ZERO include-cleaner warnings ✅
-  - ZERO naming convention violations ✅
-  - Eliminated all global crypto state ✅
-  - Fixed all function size violations ✅
-
-- **Phase 2**: Migrate existing functionality
-  - Reimplement each module using new foundations
-  - Comprehensive test coverage
-  - Delete legacy code as we go
-
-- **Phase 3**: New features on solid base
-  - Web UI with graph visualization
-  - AI collaboration features
-  - Cross-repository relationships
-
-See [docs/enforcer/ROADMAP_TO_REFACTORING.md](docs/enforcer/ROADMAP_TO_REFACTORING.md) for the full plan.
-
-## Current State
-
-### What Works ✅
-- Basic CLI commands (link, list, traverse)
-- Git-native storage
-- Time-travel through git checkout
-- Tests pass (on legacy code)
-- Zero include-cleaner warnings ✅
-- Zero naming convention violations ✅
-- Eliminated all global crypto state ✅
-
-### What's Being Fixed 🔧
-- ~~11,951~~ 353 compiler warnings (97% reduction!)
-- Building "GNU CRY GAUNTLET" - extreme compiler strictness
-- Proper error handling with Result types
-- Memory safety improvements
-- Security-first design
-- Modern build system (meson/ninja)
-
-### What We're Building 🏗️
-- Clean modular architecture
-- Proper error handling (Result types)
-- Memory-safe operations
-- Security-first design
-- Zero warnings on all code
-- Compiler configuration that makes GNU developers cry
-
-## For Developers
-
-If you want to help or just watch the migration:
+### From Source
 
 ```bash
 git clone https://github.com/neuroglyph/git-mind
 cd git-mind
-
-# Build with meson/ninja
 meson setup build
 ninja -C build
-ninja -C build test
-
-# Check warnings (always in Docker for CI parity)
-./tools/docker-clang-tidy.sh
-
-# Verify fixes and update baseline
-./tools/check-warning-fix.sh
-
-# Don't touch src/ - it's quarantined
-# New development happens in core/
+sudo ninja -C build install
 ```
 
-**Important**: 
-- No pre-push hooks - CI does all validation
-- All new development happens in `core/` with goal of zero warnings
-- We're following "fix the code, not the tool" philosophy
-- Always run linting in Docker to match CI environment
+### Requirements
 
-## The Vision (Unchanged)
+- Git 2.28+
+- C23-compliant compiler (GCC 12+ or Clang 16+)
+- Meson build system
+- Ninja
+- libsodium
+- libgit2 (for Git object manipulation)
 
-git-mind will become infrastructure for versioning understanding:
+## Core Concepts
 
-- **For individuals**: Never lose context on why code connects
-- **For teams**: Share mental models that evolve with code
-- **For AI**: Collaborate on building knowledge graphs
-- **For the future**: Make understanding as permanent as code
+- __Links__: Directed relationships between files (e.g., “implements”, “documents”, “tests”)   
+- __Traversal__: Navigate your codebase through semantic connections, not just file paths   
+- __Time Travel__: Your knowledge graph evolves with your code - checkout any commit to see that era’s understanding   
 
-## Timeline
+## Usage
 
-- **Now - Week 4**: Build foundations (error handling, types, security)
-- **Week 5-8**: Migrate core functionality with zero warnings
-- **Week 9+**: New features on solid foundation
-- **Target**: Production-ready by Q2 2025
+### Creating Links
 
-## Contributing
+```bash
+# Basic link creation
+git mind link <source> <target> --type <relationship>
 
-Want to help? We need:
-- C developers who care about code quality
-- Feedback on the architecture
-- Ideas for the future
+# Common relationship types
+git mind link README.md src/main.c --type documents
+git mind link test_auth.c src/auth.c --type tests
+git mind link design.md src/module/ --type implements
+```
 
-But please understand: we're in heavy construction mode. Things will break and change rapidly.
+### Exploring Connections
 
-## License
+```bash
+# List all links
+git mind list
 
-This project uses a custom ethical license: `LicenseRef-MIND-UCAL-1.0`
+# Find what a file connects to
+git mind traverse src/auth.c
+
+# Find what connects to a file
+git mind traverse src/auth.c --direction backward
+
+# Filter by relationship type
+git mind list --type tests
+```
+
+### Advanced Features
+
+```bash
+# Export knowledge graph
+git mind export --format dot > graph.dot
+
+# Check link integrity
+git mind verify
+
+# Remove broken links
+git mind prune
+```
+
+## Architecture
+
+git-mind stores relationship data in `.git/refs/minds/` using Git’s object database. Each link is a Git object containing:
+
+- Source and target paths
+- Relationship type
+- Creation timestamp
+- Optional metadata
+
+This design ensures links are:
+
+- Version controlled
+- Distributed with the repository
+- Preserved through Git operations
+- Queryable at any point in history
+
+----
+
+## Development
+
+### Building
+
+```bash
+# Standard build
+meson setup build
+ninja -C build
+
+# Debug build
+meson setup build_debug -Dbuildtype=debug
+ninja -C build_debug
+
+# Run tests
+ninja -C build test
+```
+
+### Code Organization
+
+```
+core/           # Core library implementation
+├── include/    # Public headers
+├── src/        # Implementation
+└── tests/      # Unit tests
+
+cli/            # Command-line interface
+tools/          # Development utilities
+docs/           # Documentation
+```
+
+### Contributing
+
+See [CONTRIBUTING]('./CONTRIBUTING.md)
+
+----
+
+## 🚧 The Great Migration
+
+### Why We’re Migrating
+
+We started with 11,951 compiler warnings - a technical debt mountain that was holding us back. Rather than patch over problems, we’re rebuilding git-mind with extreme code quality standards:
+
+- __Zero Warnings Policy__: Every module in `core/` must have ZERO clang-tidy warnings
+- __GNU CRY GAUNTLET__: Our CI runs the strictest compiler settings that “make GNU developers cry”
+- __C23 Standard__: Leveraging the latest C standard for better type safety and modern features
+- __Library-First Design__: Transform from monolithic CLI to embeddable C library
+- __Single-Header Core__: Ultimate goal is a single `#include <gitmind.h>` for all functionality
+
+### Migration Milestones
+
+#### 🎯 Milestone 1: “Core Complete” (~50% done)
+
+__Status__: 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜  
+__Target__: January 2025
+
+✅ __Completed (Warning-Free™)__
+
+- Error handling, Result types
+- Type system (paths, strings, IDs, ULID)
+- Crypto backend (pluggable)
+- Time operations (mockable)
+- CBOR encoding
+- UTF-8 validation
+- I/O operations
+
+🚧 __Remaining for Core Library__
+
+- Edge system (graph operations) - ~50 warnings
+- Attribution (authorship) - ~50 warnings
+- Journal system (Git object storage)
+- Cache system (query optimization)
+
+#### 🎯 Milestone 2: “CLI: Oh My!” (0% done)
+
+__Status__: ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜  
+__Target__: February 2025
+
+📋 __Application Separation Tasks__
+
+- Extract CLI from src/cli/ to apps/cli/
+- Extract Git hooks to apps/hooks/
+- Create proper libgit2 integration layer
+- Implement against libgitmind API
+- Add modern CLI features (colors, progress bars)
+
+#### 🎯 Milestone 3: “Beyond CLI” (0% done)
+
+__Status__: ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜  
+__Target__: March 2025
+
+🚀 __New Applications__
+
+- MCP server for AI integration
+- Web UI daemon
+- Git hooks as separate binaries
+- Language bindings (Python, Rust)
+
+### Current Components (Being Migrated)
+
+```
+src/
+├── core/           # ✅ Low-level utilities (50% migrated)
+├── edge/           # 🚧 Graph operations (edges, relationships)
+├── attribution/    # 🚧 Authorship tracking
+├── journal/        # 📋 Git object storage (read/write edges)
+├── cache/          # 📋 Query optimization layer
+├── cli/            # 📋 Command-line interface
+└── hooks/          # 📋 Git hooks (post-commit, etc.)
+```
+
+### Target Architecture
+
+```
+git-mind/
+├── libgitmind/     # Single-header library
+│   ├── core/       # Foundation (types, crypto, I/O)
+│   ├── graph/      # Graph operations (edges, attribution)
+│   └── storage/    # Git persistence (journal, cache)
+├── apps/
+│   ├── cli/        # Command-line interface
+│   ├── hooks/      # Git hooks (separate binaries)
+│   ├── mcp/        # Model Context Protocol server
+│   └── web/        # Web UI daemon
+└── bindings/       # Language bindings (Python, Rust, etc.)
+```
+
+## 🚀 Beyond Migration: Coming Soon
+
+### 🧠 Semantic Intelligence (Q2 2025)
+
+- __AI-Powered Discovery__: Automatically detect and suggest relationships between code artifacts
+- __Natural Language Queries__: “Show me all code that implements authentication”
+- __Intelligent Refactoring__: Track concept migrations across architectural changes
+
+### 🌐 Distributed Knowledge (Q3 2025)
+
+- __Cross-Repository Links__: Connect knowledge across project boundaries
+- __Federated Graphs__: Share and merge knowledge graphs between teams
+- __Knowledge Synchronization__: Keep understanding in sync across distributed teams
+
+## Support
+
+- Issues: [GitHub Issues](https://github.com/neuroglyph/git-mind/issues)
+- Discussions: [GitHub Discussions](https://github.com/neuroglyph/git-mind/discussions)
+- Documentation: [docs/](docs/)
 
 ---
 
-**Bottom line**: git-mind is a tool for versioning your understanding of code. We're rebuilding it properly with nuclear-grade compiler strictness. Come back in a few months for the good stuff, or join us in our war against the last 353 warnings using the GNU CRY GAUNTLET. 🎯⚔️
+## License
 
-For the full vision and technical details, see:
-- [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture
-- [docs/enforcer/](docs/enforcer/) - Migration documentation
-- [CLAUDE_vs_THE_ENFORCER.md](CLAUDE_vs_THE_ENFORCER.md) - The story of how this started
+Licensed under `LicenseRef-MIND-UCAL-1.0`. See [LICENSE](./LICENSE) file for details.
+
+© 2025 – J. Kirby Ross • <https://github.com/flyingrobots>
