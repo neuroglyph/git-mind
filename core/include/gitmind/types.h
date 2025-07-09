@@ -39,7 +39,6 @@ typedef enum {
 /* Include sub-types */
 #include "gitmind/types/id.h"
 #include "gitmind/types/path.h"
-#include "gitmind/types/string.h"
 
 #ifdef __cplusplus
 }
