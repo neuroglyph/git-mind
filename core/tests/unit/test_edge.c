@@ -24,7 +24,7 @@ static void assert_error_code(gm_error_t *err, int expected_code) {
 
 /* Mock time operations for deterministic testing */
 static int mock_time_called = 0;
-static int mock_clock_gettime(clockid_t clk_id, struct timespec *ts) {
+static int mock_clock_gettime(int clk_id, struct timespec *ts) {
     (void)clk_id; /* Suppress unused parameter warning */
     mock_time_called++;
     ts->tv_sec = 1234567890;

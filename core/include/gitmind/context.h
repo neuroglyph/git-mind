@@ -1,10 +1,6 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
 #ifndef GITMIND_CONTEXT_H
 #define GITMIND_CONTEXT_H
 
@@ -24,7 +20,7 @@ extern "C" {
 /* Time operations for testing */
 typedef struct gm_time_ops {
     time_t (*time)(time_t *tloc);
-    int (*clock_gettime)(clockid_t clk_id, struct timespec *timespec);
+    int (*clock_gettime)(int clk_id, struct timespec *timespec);
 } gm_time_ops_t;
 
 /* Context for dependency injection */
