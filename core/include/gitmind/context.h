@@ -20,7 +20,7 @@ extern "C" {
 /* Time operations for testing */
 typedef struct gm_time_ops {
     time_t (*time)(time_t *tloc);
-    int (*clock_gettime)(clockid_t clk_id, struct timespec *tp);
+    int (*clock_gettime)(clockid_t clk_id, struct timespec *timespec);
 } gm_time_ops_t;
 
 /* Context for dependency injection */

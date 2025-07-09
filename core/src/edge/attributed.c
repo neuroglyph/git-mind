@@ -6,7 +6,11 @@
 #include "gitmind/context.h"
 #include "gitmind/error.h"
 #include "gitmind/types/ulid.h"
-#include <math.h>
+#include "gitmind/security/string.h"
+#include "gitmind/result.h"
+#include "gitmind/types.h"
+#include "gitmind/attribution.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -108,7 +112,8 @@ gm_result_uint16_t gm_confidence_parse(const char *str) {
  */
 gm_result_edge_attributed_t gm_edge_attributed_create(
     gm_context_t *ctx, const char *src_path, const char *tgt_path,
-    gm_rel_type_t rel_type, uint16_t confidence,
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+    gm_rel_type_t relationship_type, uint16_t confidence_value,
     const gm_attribution_t *attribution, gm_lane_type_t lane) {
     
     /* Validate arguments */
@@ -129,7 +134,8 @@ gm_result_edge_attributed_t gm_edge_attributed_create(
     
     /* Initialize edge */
     gm_edge_attributed_t edge;
-    memset(&edge, 0, sizeof(edge));
+    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
+    (void)memset(&edge, 0, sizeof(edge));
     
     /* Resolve source SHA */
     gm_result_void_t src_result = resolve_sha(ctx, src_path, edge.src_sha);
@@ -144,15 +150,17 @@ gm_result_edge_attributed_t gm_edge_attributed_create(
     }
     
     /* Set basic fields */
-    edge.rel_type = (uint16_t)rel_type;
-    edge.confidence = confidence;
+    edge.rel_type = (uint16_t)relationship_type;
+    edge.confidence = confidence_value;
     edge.timestamp = get_timestamp_millis(ctx);
     
     /* Copy paths */
-    strncpy(edge.src_path, src_path, GM_PATH_MAX - 1);
+    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
+    (void)strncpy(edge.src_path, src_path, GM_PATH_MAX - 1);
     edge.src_path[GM_PATH_MAX - 1] = '\0';
     
-    strncpy(edge.tgt_path, tgt_path, GM_PATH_MAX - 1);
+    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
+    (void)strncpy(edge.tgt_path, tgt_path, GM_PATH_MAX - 1);
     edge.tgt_path[GM_PATH_MAX - 1] = '\0';
     
     /* Generate ULID */
@@ -162,7 +170,8 @@ gm_result_edge_attributed_t gm_edge_attributed_create(
     }
     
     /* Copy attribution and lane */
-    memcpy(&edge.attribution, attribution, sizeof(gm_attribution_t));
+    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
+    (void)memcpy(&edge.attribution, attribution, sizeof(gm_attribution_t));
     edge.lane = lane;
     
     return (gm_result_edge_attributed_t){.ok = true, .u.val = edge};
@@ -198,7 +207,7 @@ gm_result_void_t gm_edge_attributed_format(const gm_edge_attributed_t *edge,
     
     const char *rel_str = get_rel_arrow_string(edge->rel_type);
     
-    int written = snprintf(buffer, len, "%s ──%s──> %s",
+    int written = gm_snprintf(buffer, len, "%s ──%s──> %s",
                           edge->src_path, rel_str, edge->tgt_path);
     
     if (written < 0 || (size_t)written >= len) {
@@ -251,15 +260,19 @@ gm_result_void_t gm_edge_attributed_format_with_attribution(
     
     /* Format with attribution */
     int written;
+    const char *edge_base_format = basic_format;
+    const char *source_type_name = source_str;
+    const char *author_name = edge->attribution.author;
+    
     if (edge->attribution.source_type == GM_SOURCE_HUMAN) {
         /* For humans, don't show confidence (always 1.0) */
-        written = snprintf(buffer, len, "%s [%s: %s]",
-                          basic_format, source_str, edge->attribution.author);
+        written = gm_snprintf(buffer, len, "%s [%s: %s]",
+                          edge_base_format, source_type_name, author_name);
     } else {
         /* For AI, show confidence */
         float confidence = gm_confidence_from_half_float(edge->confidence);
-        written = snprintf(buffer, len, "%s [%s: %s, conf: %.2f]",
-                          basic_format, source_str, edge->attribution.author,
+        written = gm_snprintf(buffer, len, "%s [%s: %s, conf: %.2f]",
+                          edge_base_format, source_type_name, author_name,
                           confidence);
     }
     

@@ -93,7 +93,7 @@ gm_result_uint16_t gm_confidence_parse(const char *str);
  */
 gm_result_edge_attributed_t gm_edge_attributed_create(
     gm_context_t *ctx, const char *src_path, const char *tgt_path,
-    gm_rel_type_t rel_type, uint16_t confidence,
+    gm_rel_type_t relationship_type, uint16_t confidence_value,
     const gm_attribution_t *attribution, gm_lane_type_t lane);
 
 /**

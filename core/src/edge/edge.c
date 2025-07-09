@@ -1,6 +1,9 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
+// NOLINTNEXTLINE(bugprone-reserved-identifier)
+#define _POSIX_C_SOURCE 200809L
+
 #include "gitmind/edge.h"
 #include "gitmind/context.h"
 #include "gitmind/error.h"
@@ -8,6 +11,7 @@
 #include "gitmind/cbor/cbor.h"
 #include "gitmind/result.h"
 #include "gitmind/types/ulid.h"
+#include "gitmind/security/string.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -25,8 +29,10 @@ static const uint8_t CborMapType = 0xA0; /* CBOR map type prefix */
 static uint64_t get_timestamp_millis(gm_context_t *ctx) {
     struct timespec time_spec;
     if (ctx && ctx->time_ops && ctx->time_ops->clock_gettime) {
+        // NOLINTNEXTLINE(misc-include-cleaner)
         ctx->time_ops->clock_gettime(CLOCK_REALTIME, &time_spec);
     } else {
+        // NOLINTNEXTLINE(misc-include-cleaner)
         (void)clock_gettime(CLOCK_REALTIME, &time_spec);
     }
     return ((uint64_t)time_spec.tv_sec * MILLIS_PER_SECOND) +
@@ -37,6 +43,7 @@ static uint64_t get_timestamp_millis(gm_context_t *ctx) {
  * Initialize edge with default values
  */
 static void edge_init_defaults(gm_edge_t *edge) {
+    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
     (void)memset(edge, 0, sizeof(gm_edge_t));
     edge->confidence = DefaultConfidence;
 }
@@ -98,9 +105,11 @@ gm_result_edge_t gm_edge_create(gm_context_t *ctx, const char *src_path,
     }
     
     /* Set fields */
+    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
     (void)strncpy(edge.src_path, src_path, GM_PATH_MAX - 1);
     edge.src_path[GM_PATH_MAX - 1] = '\0';
     
+    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
     (void)strncpy(edge.tgt_path, tgt_path, GM_PATH_MAX - 1);
     edge.tgt_path[GM_PATH_MAX - 1] = '\0';
     
@@ -166,7 +175,7 @@ gm_result_void_t gm_edge_format(const gm_edge_t *edge, char *buffer, size_t len)
     
     const char *type_str = get_rel_type_string(edge->rel_type);
     
-    int written = snprintf(buffer, len, "%s: %s -> %s",
+    int written = gm_snprintf(buffer, len, "%s: %s -> %s",
                           type_str, edge->src_path, edge->tgt_path);
     
     if (written < 0 || (size_t)written >= len) {

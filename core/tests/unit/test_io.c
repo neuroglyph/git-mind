@@ -127,7 +127,7 @@ static void test_dir_operations(void) {
     assert(rmdir_result.ok);
     
     /* Test error cases */
-    mkdir_result = io->dir->mkdir("/root/no_permission", TEST_DIR_MODE);
+    mkdir_result = io->dir->mkdir("/proc/invalid_path", TEST_DIR_MODE);
     assert(!mkdir_result.ok);
     gm_error_free(mkdir_result.u.err);
     

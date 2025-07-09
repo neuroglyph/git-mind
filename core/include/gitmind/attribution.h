@@ -16,6 +16,10 @@ extern "C" {
  * @brief Attribution metadata for edge tracking
  */
 
+/* Buffer sizes for attribution fields */
+#define GM_ATTRIBUTION_AUTHOR_SIZE 64
+#define GM_ATTRIBUTION_SESSION_ID_SIZE 32
+
 /* Source types for edge attribution */
 typedef enum {
     GM_SOURCE_HUMAN = 0,     /**< Human-created edge */
@@ -29,10 +33,10 @@ typedef enum {
 
 /* Attribution metadata */
 typedef struct {
-    gm_source_type_t source_type; /**< Who created this edge */
-    char author[64];              /**< Email or identifier */
-    char session_id[32];          /**< Session/conversation ID */
-    uint32_t flags;               /**< Future expansion */
+    gm_source_type_t source_type;                   /**< Who created this edge */
+    char author[GM_ATTRIBUTION_AUTHOR_SIZE];        /**< Email or identifier */
+    char session_id[GM_ATTRIBUTION_SESSION_ID_SIZE]; /**< Session/conversation ID */
+    uint32_t flags;                                 /**< Future expansion */
 } gm_attribution_t;
 
 #ifdef __cplusplus

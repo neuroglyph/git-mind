@@ -26,7 +26,7 @@ static inline int gm_vsnprintf(char *str, size_t size, const char *format, va_li
 }
 
 /* Safe snprintf wrapper that suppresses security warnings */
-static inline int gm_snprintf(char *str, size_t size, const char *format, ...) {
+static int gm_snprintf(char *str, size_t size, const char *format, ...) {
     va_list args;
     va_start(args, format);
     int result = gm_vsnprintf(str, size, format, args);
@@ -35,7 +35,7 @@ static inline int gm_snprintf(char *str, size_t size, const char *format, ...) {
 }
 
 /* Safe fprintf wrapper for stderr output */
-static inline int gm_fprintf_stderr(const char *format, ...) {
+__attribute__((unused)) static int gm_fprintf_stderr(const char *format, ...) {
     assert(format != nullptr && "gm_fprintf_stderr: format cannot be null");
     va_list args;
     va_start(args, format);
