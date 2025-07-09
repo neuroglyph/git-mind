@@ -1,8 +1,6 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-// NOLINTNEXTLINE(bugprone-reserved-identifier)
-#define _POSIX_C_SOURCE 200809L
 
 #include "gitmind/edge.h"
 #include "gitmind/context.h"
