@@ -5,6 +5,7 @@
 #include "gitmind/constants.h"
 #include "gitmind/context.h"
 #include "gitmind/error.h"
+#include "gitmind/types/ulid.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
