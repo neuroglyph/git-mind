@@ -112,7 +112,11 @@ static char detect_separator(const char *str) {
     }
     if (unix_sep && win_sep) {
         /* Use whichever comes first */
-        return (unix_sep < win_sep) ? (char)GmPathSepUnix : (char)GmPathSepWin;
+        if (unix_sep < win_sep) {
+            return GmPathSepUnix;
+        } else {
+            return GmPathSepWin;
+        }
     }
 
     /* Default to system separator */
