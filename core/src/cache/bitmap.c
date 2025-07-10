@@ -1,14 +1,16 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#include "bitmap.h"
+#include "gitmind/cache/bitmap.h"
 
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../include/gitmind.h"
+#include "gitmind/cache.h"
+#include "gitmind/constants.h"
+#include "gitmind/error.h"
 
 /* Magic number and version */
 #define BITMAP_MAGIC "GMCACHE\0"
@@ -76,7 +78,7 @@ int gm_bitmap_serialize(const roaring_bitmap_t *bitmap, uint8_t **buffer,
     if (written != bitmap_size) {
         free(*buffer);
         *buffer = NULL;
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     *size = total_size;
@@ -89,7 +91,7 @@ int gm_bitmap_deserialize(const uint8_t *buffer, size_t size,
 
     /* Validate size */
     if (size < header_size) {
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     /* Read and validate header */
@@ -97,17 +99,17 @@ int gm_bitmap_deserialize(const uint8_t *buffer, size_t size,
     memcpy(&header, buffer, header_size);
 
     if (memcmp(header.magic, BITMAP_MAGIC, BITMAP_MAGIC_SIZE) != 0) {
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     if (header.version != BITMAP_VERSION) {
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     /* Deserialize bitmap */
     *bitmap = roaring_bitmap_deserialize((const char *)(buffer + header_size));
     if (!*bitmap) {
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     return GM_OK;
@@ -156,26 +158,28 @@ int gm_bitmap_read_file(const char *path, roaring_bitmap_t **bitmap) {
 
     if (file_size < 0 || file_size > INT32_MAX) {
         fclose(f);
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
+    size_t buffer_size = (size_t)file_size;
+
     /* Read file */
-    uint8_t *buffer = malloc(file_size);
+    uint8_t *buffer = malloc(buffer_size);
     if (!buffer) {
         fclose(f);
         return GM_NO_MEMORY;
     }
 
-    size_t read = fread(buffer, 1, file_size, f);
+    size_t read = fread(buffer, 1, buffer_size, f);
     fclose(f);
 
-    if (read != (size_t)file_size) {
+    if (read != buffer_size) {
         free(buffer);
         return GM_IO_ERROR;
     }
 
     /* Deserialize */
-    int rc = gm_bitmap_deserialize(buffer, file_size, bitmap);
+    int rc = gm_bitmap_deserialize(buffer, buffer_size, bitmap);
     free(buffer);
     return rc;
 }
@@ -216,3 +220,4 @@ roaring_bitmap_t *gm_bitmap_andnot(const roaring_bitmap_t *a,
                                    const roaring_bitmap_t *b) {
     return roaring_bitmap_andnot(a, b);
 }
+

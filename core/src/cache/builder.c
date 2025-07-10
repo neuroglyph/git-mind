@@ -2,6 +2,11 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #define _POSIX_C_SOURCE 200809L
+#if defined(__APPLE__)
+#define _DARWIN_C_SOURCE
+#else
+#define _GNU_SOURCE
+#endif
 
 #include <git2.h>
 
@@ -12,16 +17,23 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
 
-#include "../../include/gitmind.h"
-#include "../../include/gitmind/constants_internal.h"
-#include "bitmap.h"
-#include "cache.h"
+#include "gitmind/cache.h"
+#include "gitmind/cache/bitmap.h"
+#include "gitmind/constants.h"
+#include "gitmind/context.h"
+#include "gitmind/edge.h"
+#include "gitmind/error.h"
+#include "gitmind/journal.h"
+#include "gitmind/types.h"
 
 /* Local constants */
 #define CACHE_TEMP_DIR "/tmp/gitmind-cache-XXXXXX"
 #define MAX_SHARD_PATH 32
-#define CLOCKS_PER_MS (CLOCKS_PER_SEC / MILLIS_PER_SECOND)
+#define CLOCKS_PER_MS (CLOCKS_PER_SEC / (clock_t)MILLIS_PER_SECOND)
 #define SHA_HASH_MULTIPLIER 31
 
 /* In-memory edge ID map entry */
@@ -190,9 +202,11 @@ static int write_bitmaps_to_temp(edge_map_t *forward, edge_map_t *reverse,
     return GM_OK;
 }
 
-/* Forward declaration */
+/* Forward declarations */
 int gm_build_tree_from_directory(git_repository *repo, const char *dir_path,
                                  git_oid *tree_oid);
+static int gm_cache_rebuild_internal(git_repository *repo, const char *branch,
+                                     bool force_full);
 
 /* Build Git tree from temp directory */
 static int build_tree_from_temp(git_repository *repo, const char *temp_dir,
@@ -235,13 +249,14 @@ static int collect_edge_callback(const gm_edge_t *edge, void *userdata) {
 }
 
 /* Helper functions for cache rebuild */
-static int cache_prepare_rebuild(gm_context_t *ctx, const char *branch,
+static int cache_prepare_rebuild(gm_context_t *ctx,
+                                 const char *branch __attribute__((unused)),
                                  bool force_full, gm_cache_meta_t *old_meta,
                                  bool *has_old_cache, char *temp_dir) {
     /* Load existing cache metadata if not forcing full rebuild */
     *has_old_cache = false;
     if (!force_full) {
-        int rc = gm_cache_load_meta(ctx->git_repo, branch, old_meta);
+        int rc = gm_cache_load_meta(ctx, branch, old_meta);
         *has_old_cache = (rc == GM_OK);
     }
 
@@ -308,7 +323,7 @@ static int cache_get_journal_tip(git_repository *repo, const char *branch,
             /* Also get the timestamp of the tip commit */
             git_commit *tip_commit = NULL;
             if (git_commit_lookup(&tip_commit, repo, tip_oid) == 0) {
-                meta->journal_tip_time = git_commit_time(tip_commit);
+                meta->journal_tip_time = (uint64_t)git_commit_time(tip_commit);
                 git_commit_free(tip_commit);
             }
         }
@@ -333,13 +348,13 @@ static int cache_create_commit(git_repository *repo, const git_oid *tree_oid,
     /* Create signature */
     rc = git_signature_default(&sig, repo);
     if (rc < 0)
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
 
     /* Lookup tree */
     rc = git_tree_lookup(&tree, repo, tree_oid);
     if (rc < 0) {
         git_signature_free(sig);
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     /* Create commit buffer */
@@ -363,7 +378,7 @@ static int cache_create_commit(git_repository *repo, const git_oid *tree_oid,
     git_tree_free(tree);
     git_signature_free(sig);
 
-    return (rc < 0) ? GM_ERROR : GM_OK;
+    return (rc < 0) ? GM_ERR_UNKNOWN : GM_OK;
 }
 
 static int cache_update_ref(git_repository *repo, const char *branch,
@@ -378,7 +393,7 @@ static int cache_update_ref(git_repository *repo, const char *branch,
     if (ref)
         git_reference_free(ref);
 
-    return (rc < 0) ? GM_ERROR : GM_OK;
+    return (rc < 0) ? GM_ERR_UNKNOWN : GM_OK;
 }
 
 static void cache_cleanup(edge_map_t *forward, edge_map_t *reverse,
@@ -389,8 +404,8 @@ static void cache_cleanup(edge_map_t *forward, edge_map_t *reverse,
 }
 
 /* Internal cache rebuild function */
-int gm_cache_rebuild_internal(git_repository *repo, const char *branch,
-                              bool force_full) {
+static int gm_cache_rebuild_internal(git_repository *repo, const char *branch,
+                                     bool force_full) {
     edge_map_t *forward = NULL;
     edge_map_t *reverse = NULL;
     char temp_dir[GM_PATH_MAX];
@@ -465,16 +480,11 @@ cleanup:
     return rc;
 }
 
-/* Public cache rebuild function matching gitmind.h signature */
-int gm_cache_rebuild(gm_context_t *ctx, const char *branch) {
-    if (!ctx || !ctx->git_repo) {
+/* Public cache rebuild function matching cache.h signature */
+int gm_cache_rebuild(gm_context_t *ctx, const char *branch, bool force_full) {
+    if (!ctx || !ctx->git_repo || !branch) {
         return GM_INVALID_ARG;
     }
-    /* Check if force flag is set in context user_data */
-    bool force = false;
-    if (ctx->user_data) {
-        force = *(bool *)ctx->user_data;
-    }
-    return gm_cache_rebuild_internal((git_repository *)ctx->git_repo, branch,
-                                     force);
+    return gm_cache_rebuild_internal((git_repository *)ctx->git_repo, 
+                                     branch, force_full);
 }

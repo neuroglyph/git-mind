@@ -34,6 +34,19 @@ add_project_arguments(
 libsodium_dep = dependency('libsodium', required : true)
 libgit2_dep = dependency('libgit2', required : true)
 thread_dep = dependency('threads')
+# CRoaring (Roaring Bitmaps) dependency
+roaring_dep = dependency('roaring', required : false)
+if not roaring_dep.found()
+  # Try croaring pkg-config
+  roaring_dep = dependency('croaring', required : false)
+  if not roaring_dep.found()
+    # Manual fallback
+    roaring_dep = declare_dependency(
+      include_directories : include_directories('/opt/homebrew/include'),
+      link_args : ['-L/opt/homebrew/lib', '-lroaring']
+    )
+  endif
+endif
 
 # Source files
 src = files(
@@ -56,6 +69,11 @@ src = files(
   'core/src/attribution/attribution.c',
   'core/src/journal/reader.c',
   'core/src/journal/writer.c',
+  'core/src/cache/bitmap.c',
+  'core/src/cache/builder.c',
+  'core/src/cache/query.c',
+  'core/src/cache/tree_builder.c',
+  'core/src/cache/tree_size.c',
 )
 
 # Include directories
@@ -66,7 +84,7 @@ libgitmind = static_library(
   'gitmind',
   src,
   include_directories : inc,
-  dependencies : [libsodium_dep, libgit2_dep, thread_dep]
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep, roaring_dep]
 )
 
 # Test backend - ONLY for tests

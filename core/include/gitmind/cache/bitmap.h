@@ -4,7 +4,13 @@
 #ifndef GM_BITMAP_H
 #define GM_BITMAP_H
 
-#include <roaring.h>
+/* Suppress warnings from external roaring library */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-conversion"
+#pragma clang diagnostic ignored "-Wnewline-eof"
+#include <roaring/roaring.h>
+#pragma clang diagnostic pop
+
 #include <stdbool.h>
 #include <stdint.h>
 

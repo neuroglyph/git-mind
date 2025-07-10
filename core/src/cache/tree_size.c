@@ -5,7 +5,9 @@
 
 #include <stdint.h>
 
-#include "../../include/gitmind.h"
+#include "gitmind/cache.h"
+#include "gitmind/context.h"
+#include "gitmind/error.h"
 
 /* Calculate size of a Git tree recursively */
 static int calculate_tree_size_recursive(git_repository *repo,
@@ -18,7 +20,7 @@ static int calculate_tree_size_recursive(git_repository *repo,
     /* Look up tree */
     rc = git_tree_lookup(&tree, repo, tree_oid);
     if (rc < 0) {
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     /* Get tree object size */
@@ -26,7 +28,7 @@ static int calculate_tree_size_recursive(git_repository *repo,
     rc = git_repository_odb(&odb, repo);
     if (rc < 0) {
         git_tree_free(tree);
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     size_t tree_size;

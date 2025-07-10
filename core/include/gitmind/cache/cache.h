@@ -9,7 +9,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../../include/gitmind.h"
+/* Forward declarations to avoid circular dependencies */
+typedef struct gm_context gm_context_t;
+typedef struct gm_edge gm_edge_t;
 
 /* Cache constants */
 #define GM_CACHE_MAGIC "GMCACHE\0"
