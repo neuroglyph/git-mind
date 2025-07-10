@@ -31,7 +31,7 @@
 #include "gitmind/types.h"
 
 /* Local constants */
-#define CACHE_TEMP_DIR "/tmp/gitmind-cache-XXXXXX"
+#define CACHE_TEMP_DIR "/tmp/gitmind-cache-" "XXXXXX"
 #define MAX_SHARD_PATH 32
 #define CLOCKS_PER_MS (CLOCKS_PER_SEC / (clock_t)MILLIS_PER_SECOND)
 #define SHA_HASH_MULTIPLIER 31
