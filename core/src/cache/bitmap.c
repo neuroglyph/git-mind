@@ -183,22 +183,22 @@ void gm_bitmap_stats(const gm_bitmap_t *bitmap, uint64_t *cardinality,
 }
 
 /* Bitmap operations */
-gm_bitmap_ptr gm_bitmap_or(const gm_bitmap_t *a,
-                           const gm_bitmap_t *b) {
-    return roaring_bitmap_or(a, b);
+gm_bitmap_ptr gm_bitmap_or(const gm_bitmap_t *left,
+                           const gm_bitmap_t *right) {
+    return roaring_bitmap_or(left, right);
 }
 
-gm_bitmap_ptr gm_bitmap_and(const gm_bitmap_t *a,
-                            const gm_bitmap_t *b) {
-    return roaring_bitmap_and(a, b);
+gm_bitmap_ptr gm_bitmap_and(const gm_bitmap_t *left,
+                            const gm_bitmap_t *right) {
+    return roaring_bitmap_and(left, right);
 }
 
-gm_bitmap_ptr gm_bitmap_xor(const gm_bitmap_t *a,
-                            const gm_bitmap_t *b) {
-    return roaring_bitmap_xor(a, b);
+gm_bitmap_ptr gm_bitmap_xor(const gm_bitmap_t *left,
+                            const gm_bitmap_t *right) {
+    return roaring_bitmap_xor(left, right);
 }
 
-gm_bitmap_ptr gm_bitmap_andnot(const gm_bitmap_t *a,
-                               const gm_bitmap_t *b) {
-    return roaring_bitmap_andnot(a, b);
+gm_bitmap_ptr gm_bitmap_andnot(const gm_bitmap_t *left,
+                               const gm_bitmap_t *right) {
+    return roaring_bitmap_andnot(left, right);
 }

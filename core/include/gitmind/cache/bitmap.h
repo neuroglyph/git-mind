@@ -27,25 +27,25 @@ static inline gm_bitmap_ptr gm_bitmap_create(void)
     return roaring_bitmap_create();
 }
 
-static inline void gm_bitmap_free(gm_bitmap_ptr bm)
+static inline void gm_bitmap_free(gm_bitmap_ptr bitmap)
 {
-    roaring_bitmap_free(bm);
+    roaring_bitmap_free(bitmap);
 }
 
-static inline void gm_bitmap_add(gm_bitmap_ptr bm, uint32_t value)
+static inline void gm_bitmap_add(gm_bitmap_ptr bitmap, uint32_t value)
 {
-    roaring_bitmap_add(bm, value);
+    roaring_bitmap_add(bitmap, value);
 }
 
-[[nodiscard]] static inline bool gm_bitmap_contains(const gm_bitmap_t *bm,
+[[nodiscard]] static inline bool gm_bitmap_contains(const gm_bitmap_t *bitmap,
                                                     uint32_t value)
 {
-    return roaring_bitmap_contains(bm, value);
+    return roaring_bitmap_contains(bitmap, value);
 }
 
-static inline uint64_t gm_bitmap_count(const gm_bitmap_t *bm)
+static inline uint64_t gm_bitmap_count(const gm_bitmap_t *bitmap)
 {
-    return roaring_bitmap_get_cardinality(bm);
+    return roaring_bitmap_get_cardinality(bitmap);
 }
 
 /* Non-inline functions for complex operations */
@@ -64,7 +64,7 @@ int gm_bitmap_read_file(const char *path, gm_bitmap_ptr *bitmap);
 void gm_bitmap_stats(const gm_bitmap_t *bitmap, uint64_t *cardinality, uint64_t *size_bytes);
 
 /* Bitmap operations */
-gm_bitmap_ptr gm_bitmap_or(const gm_bitmap_t *a, const gm_bitmap_t *b);
-gm_bitmap_ptr gm_bitmap_and(const gm_bitmap_t *a, const gm_bitmap_t *b);
-gm_bitmap_ptr gm_bitmap_xor(const gm_bitmap_t *a, const gm_bitmap_t *b);
-gm_bitmap_ptr gm_bitmap_andnot(const gm_bitmap_t *a, const gm_bitmap_t *b);
+gm_bitmap_ptr gm_bitmap_or(const gm_bitmap_t *left, const gm_bitmap_t *right);
+gm_bitmap_ptr gm_bitmap_and(const gm_bitmap_t *left, const gm_bitmap_t *right);
+gm_bitmap_ptr gm_bitmap_xor(const gm_bitmap_t *left, const gm_bitmap_t *right);
+gm_bitmap_ptr gm_bitmap_andnot(const gm_bitmap_t *left, const gm_bitmap_t *right);
