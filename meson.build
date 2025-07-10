@@ -1,15 +1,15 @@
 project('git-mind', 'c',
   version : '0.0.1',
-  default_options : ['warning_level=0',  # We'll add our own flags
-                     'c_std=c2x'])
+  default_options : [
+    'c_std=c2x',              # Use built-in C standard option
+    'warning_level=3',        # Use built-in warning level (equivalent to -Wall -Wextra)
+    'werror=true',            # Use built-in werror option
+    'optimization=2'          # Use built-in optimization option
+  ])
 
-# Linus-worthy C23 compiler flags - no warnings, no excuses
+# Additional Linus-worthy C23 compiler flags - no warnings, no excuses  
 add_project_arguments(
-  '-std=c2x',
   '-pedantic',
-  '-Wall',
-  '-Wextra',
-  '-Werror',
   '-Wvla',                    # Ban variable-length arrays
   '-Wshadow',                 # No variable shadowing
   '-Wstrict-prototypes',      # Require proper prototypes
@@ -24,7 +24,6 @@ add_project_arguments(
   '-Wredundant-decls',       # No duplicate declarations
   '-Wnested-externs',        # No nested extern declarations
   '-Winline',                # Failed inline is a bug
-  '-O2',                     # Optimize for real-world use
   '-fno-common',             # No common symbols
   '-fstrict-aliasing',       # We follow aliasing rules
   language : 'c'
@@ -34,18 +33,15 @@ add_project_arguments(
 libsodium_dep = dependency('libsodium', required : true)
 libgit2_dep = dependency('libgit2', required : true)
 thread_dep = dependency('threads')
-# CRoaring (Roaring Bitmaps) dependency
-roaring_dep = dependency('roaring', required : false)
+# CRoaring (Roaring Bitmaps) dependency - try multiple names
+roaring_dep = dependency('croaring', required : false)
 if not roaring_dep.found()
-  # Try croaring pkg-config
-  roaring_dep = dependency('croaring', required : false)
-  if not roaring_dep.found()
-    # Manual fallback
-    roaring_dep = declare_dependency(
-      include_directories : include_directories('/opt/homebrew/include'),
-      link_args : ['-L/opt/homebrew/lib', '-lroaring']
-    )
-  endif
+  roaring_dep = dependency('roaring', required : false)
+endif
+if not roaring_dep.found()
+  # Create a null dependency for now - cache module will be disabled
+  roaring_dep = declare_dependency()
+  warning('CRoaring library not found - cache module will be built without bitmap optimization')
 endif
 
 # Source files
