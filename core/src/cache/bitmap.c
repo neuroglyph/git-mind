@@ -17,24 +17,12 @@
 #define BITMAP_VERSION 1
 #define BITMAP_MAGIC_SIZE 8
 
-roaring_bitmap_t *gm_bitmap_create(void) {
-    return roaring_bitmap_create();
-}
-
-void gm_bitmap_add(roaring_bitmap_t *bitmap, uint32_t edge_id) {
-    roaring_bitmap_add(bitmap, edge_id);
-}
-
-void gm_bitmap_add_many(roaring_bitmap_t *bitmap, const uint32_t *edge_ids,
+void gm_bitmap_add_many(gm_bitmap_ptr bitmap, const uint32_t *edge_ids,
                         size_t count) {
     roaring_bitmap_add_many(bitmap, count, edge_ids);
 }
 
-bool gm_bitmap_contains(const roaring_bitmap_t *bitmap, uint32_t edge_id) {
-    return roaring_bitmap_contains(bitmap, edge_id);
-}
-
-uint32_t *gm_bitmap_to_array(const roaring_bitmap_t *bitmap, size_t *count) {
+uint32_t *gm_bitmap_to_array(const gm_bitmap_t *bitmap, size_t *count) {
     uint64_t cardinality = roaring_bitmap_get_cardinality(bitmap);
     if (cardinality == 0) {
         *count = 0;
@@ -52,7 +40,7 @@ uint32_t *gm_bitmap_to_array(const roaring_bitmap_t *bitmap, size_t *count) {
     return array;
 }
 
-int gm_bitmap_serialize(const roaring_bitmap_t *bitmap, uint8_t **buffer,
+int gm_bitmap_serialize(const gm_bitmap_t *bitmap, uint8_t **buffer,
                         size_t *size) {
     /* Calculate sizes */
     size_t header_size = sizeof(gm_bitmap_header_t);
@@ -86,7 +74,7 @@ int gm_bitmap_serialize(const roaring_bitmap_t *bitmap, uint8_t **buffer,
 }
 
 int gm_bitmap_deserialize(const uint8_t *buffer, size_t size,
-                          roaring_bitmap_t **bitmap) {
+                          gm_bitmap_ptr*bitmap) {
     size_t header_size = sizeof(gm_bitmap_header_t);
 
     /* Validate size */
@@ -115,7 +103,7 @@ int gm_bitmap_deserialize(const uint8_t *buffer, size_t size,
     return GM_OK;
 }
 
-int gm_bitmap_write_file(const roaring_bitmap_t *bitmap, const char *path) {
+int gm_bitmap_write_file(const gm_bitmap_ptrbitmap, const char *path) {
     uint8_t *buffer = NULL;
     size_t size = 0;
 
@@ -145,7 +133,7 @@ int gm_bitmap_write_file(const roaring_bitmap_t *bitmap, const char *path) {
     return GM_OK;
 }
 
-int gm_bitmap_read_file(const char *path, roaring_bitmap_t **bitmap) {
+int gm_bitmap_read_file(const char *path, gm_bitmap_ptr*bitmap) {
     FILE *f = fopen(path, "rb");
     if (!f) {
         return GM_NOT_FOUND;
@@ -184,13 +172,13 @@ int gm_bitmap_read_file(const char *path, roaring_bitmap_t **bitmap) {
     return rc;
 }
 
-void gm_bitmap_free(roaring_bitmap_t *bitmap) {
+void gm_bitmap_free(gm_bitmap_ptrbitmap) {
     if (bitmap) {
         roaring_bitmap_free(bitmap);
     }
 }
 
-void gm_bitmap_stats(const roaring_bitmap_t *bitmap, uint64_t *cardinality,
+void gm_bitmap_stats(const gm_bitmap_ptrbitmap, uint64_t *cardinality,
                      uint64_t *size_bytes) {
     if (cardinality) {
         *cardinality = roaring_bitmap_get_cardinality(bitmap);
@@ -201,23 +189,23 @@ void gm_bitmap_stats(const roaring_bitmap_t *bitmap, uint64_t *cardinality,
 }
 
 /* Bitmap operations */
-roaring_bitmap_t *gm_bitmap_or(const roaring_bitmap_t *a,
-                               const roaring_bitmap_t *b) {
+gm_bitmap_ptrgm_bitmap_or(const gm_bitmap_ptra,
+                               const gm_bitmap_ptrb) {
     return roaring_bitmap_or(a, b);
 }
 
-roaring_bitmap_t *gm_bitmap_and(const roaring_bitmap_t *a,
-                                const roaring_bitmap_t *b) {
+gm_bitmap_ptrgm_bitmap_and(const gm_bitmap_ptra,
+                                const gm_bitmap_ptrb) {
     return roaring_bitmap_and(a, b);
 }
 
-roaring_bitmap_t *gm_bitmap_xor(const roaring_bitmap_t *a,
-                                const roaring_bitmap_t *b) {
+gm_bitmap_ptrgm_bitmap_xor(const gm_bitmap_ptra,
+                                const gm_bitmap_ptrb) {
     return roaring_bitmap_xor(a, b);
 }
 
-roaring_bitmap_t *gm_bitmap_andnot(const roaring_bitmap_t *a,
-                                   const roaring_bitmap_t *b) {
+gm_bitmap_ptrgm_bitmap_andnot(const gm_bitmap_ptra,
+                                   const gm_bitmap_ptrb) {
     return roaring_bitmap_andnot(a, b);
 }
 

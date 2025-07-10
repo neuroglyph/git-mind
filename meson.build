@@ -1,15 +1,14 @@
 project('git-mind', 'c',
-  version : '0.0.1',
+  version : '0.6.0',
   default_options : [
-    'c_std=c2x',              # Use built-in C standard option
-    'warning_level=3',        # Use built-in warning level (equivalent to -Wall -Wextra)
-    'werror=true',            # Use built-in werror option
-    'optimization=2'          # Use built-in optimization option
+    'c_std=c23',              # Use C23 standard explicitly
+    'warning_level=3'         # Use built-in warning level (equivalent to -Wall -Wextra)
   ])
 
-# Additional Linus-worthy C23 compiler flags - no warnings, no excuses  
+# C23 compiler flags - strict and unforgiving
 add_project_arguments(
-  '-pedantic',
+  '-Wpedantic',
+  '-Werror',                  # CI stays brutally honest
   '-Wvla',                    # Ban variable-length arrays
   '-Wshadow',                 # No variable shadowing
   '-Wstrict-prototypes',      # Require proper prototypes
@@ -24,6 +23,8 @@ add_project_arguments(
   '-Wredundant-decls',       # No duplicate declarations
   '-Wnested-externs',        # No nested extern declarations
   '-Winline',                # Failed inline is a bug
+  '-Wdouble-promotion',      # Catch float->double promotions
+  '-fstrict-flex-arrays=3',  # C23 default; makes UB obvious
   '-fno-common',             # No common symbols
   '-fstrict-aliasing',       # We follow aliasing rules
   language : 'c'
@@ -33,15 +34,24 @@ add_project_arguments(
 libsodium_dep = dependency('libsodium', required : true)
 libgit2_dep = dependency('libgit2', required : true)
 thread_dep = dependency('threads')
-# CRoaring (Roaring Bitmaps) dependency - try multiple names
+# CRoaring (Roaring Bitmaps) dependency - mandatory but vendorable
 roaring_dep = dependency('croaring', required : false)
 if not roaring_dep.found()
   roaring_dep = dependency('roaring', required : false)
 endif
 if not roaring_dep.found()
-  # Create a null dependency for now - cache module will be disabled
-  roaring_dep = declare_dependency()
-  warning('CRoaring library not found - cache module will be built without bitmap optimization')
+  # Try pkg-config with different names
+  roaring_dep = dependency('CRoaring', required : false)
+endif
+if not roaring_dep.found()
+  error('CRoaring library is required but not found.\n' +
+        'Install via package manager:\n' +
+        '  Ubuntu/Debian: apt install libroaring-dev\n' +
+        '  Fedora/RHEL: dnf install CRoaring-devel\n' +
+        '  macOS: brew install croaring\n' +
+        '  Or build from source: https://github.com/RoaringBitmap/CRoaring\n' +
+        '\n' +
+        'Alternative: Add vendored CRoaring to deps/ directory')
 endif
 
 # Source files
