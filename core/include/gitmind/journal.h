@@ -7,6 +7,7 @@
 #include "gitmind/edge.h"
 #include "gitmind/edge_attributed.h"
 #include "gitmind/context.h"
+#include <stddef.h>  /* for size_t */
 
 #ifdef __cplusplus
 extern "C" {

@@ -71,14 +71,14 @@ static inline int gm_memmove_safe(void *dest, size_t dest_size,
  * @param n Number of bytes to set
  * @return 0 on success, -1 if would overflow buffer
  */
-static inline int gm_memset_safe(void *s, size_t s_size, int c, size_t n) {
-    if (!s || n > s_size) {
+static inline int gm_memset_safe(void *dest_ptr, size_t dest_size, int fill_value, size_t num_bytes) {
+    if (!dest_ptr || num_bytes > dest_size) {
         return -1;
     }
-    if (n == 0) {
+    if (num_bytes == 0) {
         return 0;
     }
-    memset(s, c, n);
+    memset(dest_ptr, fill_value, num_bytes);
     return 0;
 }
 
@@ -151,9 +151,9 @@ static inline void gm_memclear_sensitive(void *ptr, size_t size) {
     }
     
     /* Use volatile to prevent compiler from optimizing away */
-    volatile uint8_t *p = (volatile uint8_t *)ptr;
+    volatile uint8_t *byte_ptr = (volatile uint8_t *)ptr;
     for (size_t i = 0; i < size; i++) {
-        p[i] = 0;
+        byte_ptr[i] = 0;
     }
 }
 
