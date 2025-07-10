@@ -74,7 +74,7 @@ int gm_bitmap_serialize(const gm_bitmap_t *bitmap, uint8_t **buffer,
 }
 
 int gm_bitmap_deserialize(const uint8_t *buffer, size_t size,
-                          gm_bitmap_ptr*bitmap) {
+                          gm_bitmap_ptr *bitmap) {
     size_t header_size = sizeof(gm_bitmap_header_t);
 
     /* Validate size */
@@ -103,7 +103,7 @@ int gm_bitmap_deserialize(const uint8_t *buffer, size_t size,
     return GM_OK;
 }
 
-int gm_bitmap_write_file(const gm_bitmap_ptrbitmap, const char *path) {
+int gm_bitmap_write_file(const gm_bitmap_t *bitmap, const char *path) {
     uint8_t *buffer = NULL;
     size_t size = 0;
 
@@ -133,7 +133,7 @@ int gm_bitmap_write_file(const gm_bitmap_ptrbitmap, const char *path) {
     return GM_OK;
 }
 
-int gm_bitmap_read_file(const char *path, gm_bitmap_ptr*bitmap) {
+int gm_bitmap_read_file(const char *path, gm_bitmap_ptr *bitmap) {
     FILE *f = fopen(path, "rb");
     if (!f) {
         return GM_NOT_FOUND;
@@ -172,13 +172,7 @@ int gm_bitmap_read_file(const char *path, gm_bitmap_ptr*bitmap) {
     return rc;
 }
 
-void gm_bitmap_free(gm_bitmap_ptrbitmap) {
-    if (bitmap) {
-        roaring_bitmap_free(bitmap);
-    }
-}
-
-void gm_bitmap_stats(const gm_bitmap_ptrbitmap, uint64_t *cardinality,
+void gm_bitmap_stats(const gm_bitmap_t *bitmap, uint64_t *cardinality,
                      uint64_t *size_bytes) {
     if (cardinality) {
         *cardinality = roaring_bitmap_get_cardinality(bitmap);
@@ -189,23 +183,22 @@ void gm_bitmap_stats(const gm_bitmap_ptrbitmap, uint64_t *cardinality,
 }
 
 /* Bitmap operations */
-gm_bitmap_ptrgm_bitmap_or(const gm_bitmap_ptra,
-                               const gm_bitmap_ptrb) {
+gm_bitmap_ptr gm_bitmap_or(const gm_bitmap_t *a,
+                           const gm_bitmap_t *b) {
     return roaring_bitmap_or(a, b);
 }
 
-gm_bitmap_ptrgm_bitmap_and(const gm_bitmap_ptra,
-                                const gm_bitmap_ptrb) {
+gm_bitmap_ptr gm_bitmap_and(const gm_bitmap_t *a,
+                            const gm_bitmap_t *b) {
     return roaring_bitmap_and(a, b);
 }
 
-gm_bitmap_ptrgm_bitmap_xor(const gm_bitmap_ptra,
-                                const gm_bitmap_ptrb) {
+gm_bitmap_ptr gm_bitmap_xor(const gm_bitmap_t *a,
+                            const gm_bitmap_t *b) {
     return roaring_bitmap_xor(a, b);
 }
 
-gm_bitmap_ptrgm_bitmap_andnot(const gm_bitmap_ptra,
-                                   const gm_bitmap_ptrb) {
+gm_bitmap_ptr gm_bitmap_andnot(const gm_bitmap_t *a,
+                               const gm_bitmap_t *b) {
     return roaring_bitmap_andnot(a, b);
 }
-

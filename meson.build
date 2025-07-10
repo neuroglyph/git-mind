@@ -1,32 +1,30 @@
 project('git-mind', 'c',
-  version : '0.6.0',
-  default_options : [
-    'c_std=c23',              # Use C23 standard explicitly
-    'warning_level=3'         # Use built-in warning level (equivalent to -Wall -Wextra)
-  ])
+        version: '0.6.0',
+        default_options: ['c_std=c23', 'warning_level=3'])
 
-# C23 compiler flags - strict and unforgiving
+# C23 compiler flags as specified
 add_project_arguments(
-  '-Wpedantic',
-  '-Werror',                  # CI stays brutally honest
-  '-Wvla',                    # Ban variable-length arrays
-  '-Wshadow',                 # No variable shadowing
-  '-Wstrict-prototypes',      # Require proper prototypes
-  '-Wconversion',             # Catch implicit conversions
-  '-Wsign-conversion',        # Catch sign conversions
-  '-Wfloat-equal',           # No float equality comparisons
-  '-Wpointer-arith',         # Arithmetic on void pointers is stupid
-  '-Wcast-align',            # Catch alignment issues
-  '-Wwrite-strings',         # String literals are const
-  '-Wmissing-prototypes',    # Every function needs a prototype
-  '-Wmissing-declarations',  # No implicit declarations
-  '-Wredundant-decls',       # No duplicate declarations
-  '-Wnested-externs',        # No nested extern declarations
-  '-Winline',                # Failed inline is a bug
-  '-Wdouble-promotion',      # Catch float->double promotions
+  '-ffreestanding',          # library and want tight control
   '-fstrict-flex-arrays=3',  # C23 default; makes UB obvious
-  '-fno-common',             # No common symbols
-  '-fstrict-aliasing',       # We follow aliasing rules
+  '-Wdouble-promotion',
+  '-Wpedantic',
+  '-Werror',                 # CI stays brutally honest
+  '-Wvla',                   # Ban variable-length arrays
+  '-Wshadow',                # No variable shadowing
+  '-Wstrict-prototypes',     # Require proper prototypes
+  '-Wconversion',            # Catch implicit conversions
+  '-Wsign-conversion',       # Catch sign conversions
+  '-Wfloat-equal',          # No float equality comparisons
+  '-Wpointer-arith',        # Arithmetic on void pointers is stupid
+  '-Wcast-align',           # Catch alignment issues
+  '-Wwrite-strings',        # String literals are const
+  '-Wmissing-prototypes',   # Every function needs a prototype
+  '-Wmissing-declarations', # No implicit declarations
+  '-Wredundant-decls',      # No duplicate declarations
+  '-Wnested-externs',       # No nested extern declarations
+  '-Winline',               # Failed inline is a bug
+  '-fno-common',            # No common symbols
+  '-fstrict-aliasing',      # We follow aliasing rules
   language : 'c'
 )
 
