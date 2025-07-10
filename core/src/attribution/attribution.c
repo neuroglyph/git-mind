@@ -35,30 +35,31 @@ int gm_attribution_set_default(gm_attribution_t *attr,
         return -1;
     }
 
-    memset(attr, 0, sizeof(gm_attribution_t));
+    /* Zero-initialize structure */
+    *attr = (gm_attribution_t){0};
     attr->source_type = source;
 
     /* Set default author based on source */
     switch (source) {
     case GM_SOURCE_HUMAN:
         /* Try to get from git config */
-        snprintf(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_HUMAN);
+        (void)snprintf(attr->author, sizeof(attr->author), "%s", DEFAULT_AUTHOR_HUMAN);
         break;
 
     case GM_SOURCE_AI_CLAUDE:
-        snprintf(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_CLAUDE);
+        (void)snprintf(attr->author, sizeof(attr->author), "%s", DEFAULT_AUTHOR_CLAUDE);
         break;
 
     case GM_SOURCE_AI_GPT:
-        snprintf(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_GPT);
+        (void)snprintf(attr->author, sizeof(attr->author), "%s", DEFAULT_AUTHOR_GPT);
         break;
 
     case GM_SOURCE_SYSTEM:
-        snprintf(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_SYSTEM);
+        (void)snprintf(attr->author, sizeof(attr->author), "%s", DEFAULT_AUTHOR_SYSTEM);
         break;
 
     default:
-        snprintf(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_UNKNOWN);
+        (void)snprintf(attr->author, sizeof(attr->author), "%s", DEFAULT_AUTHOR_UNKNOWN);
         break;
     }
 
@@ -96,13 +97,25 @@ int gm_attribution_from_env(gm_attribution_t *attr) {
 
     /* Override with environment values if present */
     if (author) {
-        strncpy(attr->author, author, sizeof(attr->author) - 1);
-        attr->author[sizeof(attr->author) - 1] = '\0';
+        /* Copy author string safely */
+        size_t len = strlen(author);
+        size_t max_len = sizeof(attr->author) - 1;
+        if (len > max_len) {
+            len = max_len;
+        }
+        memcpy(attr->author, author, len);
+        attr->author[len] = '\0';
     }
 
     if (session) {
-        strncpy(attr->session_id, session, sizeof(attr->session_id) - 1);
-        attr->session_id[sizeof(attr->session_id) - 1] = '\0';
+        /* Copy session ID string safely */
+        size_t len = strlen(session);
+        size_t max_len = sizeof(attr->session_id) - 1;
+        if (len > max_len) {
+            len = max_len;
+        }
+        memcpy(attr->session_id, session, len);
+        attr->session_id[len] = '\0';
     }
 
     return 0;

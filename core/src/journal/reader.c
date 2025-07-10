@@ -4,10 +4,8 @@
 #include "gitmind/journal.h"
 #include "gitmind/types.h"
 #include "gitmind/context.h"
-#include "gitmind/cbor/cbor.h"
 #include "gitmind/cbor/constants_cbor.h"
 #include "gitmind/error.h"
-#include "gitmind/result.h"
 
 #include <git2.h>
 
