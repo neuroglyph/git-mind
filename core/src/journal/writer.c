@@ -245,16 +245,16 @@ static int edge_attributed_encoder_wrapper(const void *edge, uint8_t *buffer,
 
 /* Append edges to journal */
 int gm_journal_append(gm_context_t *ctx, const gm_edge_t *edges,
-                      size_t n_edges) {
-    return journal_append_generic(ctx, edges, n_edges, sizeof(gm_edge_t),
+                      size_t count) {
+    return journal_append_generic(ctx, edges, count, sizeof(gm_edge_t),
                                   edge_encoder_wrapper);
 }
 
 /* Append attributed edges to journal */
 int gm_journal_append_attributed(gm_context_t *ctx,
                                  const gm_edge_attributed_t *edges,
-                                 size_t n_edges) {
-    return journal_append_generic(ctx, edges, n_edges,
+                                 size_t count) {
+    return journal_append_generic(ctx, edges, count,
                                   sizeof(gm_edge_attributed_t),
                                   edge_attributed_encoder_wrapper);
 }
