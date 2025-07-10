@@ -215,9 +215,32 @@ static int edge_encoder_wrapper(const void *edge, uint8_t *buffer,
 /* Wrapper for attributed edge encoder */
 static int edge_attributed_encoder_wrapper(const void *edge, uint8_t *buffer,
                                            size_t *len) {
-    /* TODO: Implement attributed edge encoding */
-    (void)edge; (void)buffer; (void)len;
-    return GM_ERR_NOT_IMPLEMENTED;
+    const gm_edge_attributed_t *attr_edge = (const gm_edge_attributed_t *)edge;
+    
+    /* Create a basic edge from the attributed edge fields */
+    gm_edge_t basic_edge = {
+        .rel_type = attr_edge->rel_type,
+        .confidence = attr_edge->confidence,
+        .timestamp = attr_edge->timestamp
+    };
+    
+    /* Copy SHA arrays */
+    memcpy(basic_edge.src_sha, attr_edge->src_sha, GM_SHA1_SIZE);
+    memcpy(basic_edge.tgt_sha, attr_edge->tgt_sha, GM_SHA1_SIZE);
+    
+    /* Copy paths */
+    strncpy(basic_edge.src_path, attr_edge->src_path, sizeof(basic_edge.src_path) - 1);
+    basic_edge.src_path[sizeof(basic_edge.src_path) - 1] = '\0';
+    strncpy(basic_edge.tgt_path, attr_edge->tgt_path, sizeof(basic_edge.tgt_path) - 1);
+    basic_edge.tgt_path[sizeof(basic_edge.tgt_path) - 1] = '\0';
+    
+    /* Copy ULID */
+    strncpy(basic_edge.ulid, attr_edge->ulid, sizeof(basic_edge.ulid) - 1);
+    basic_edge.ulid[sizeof(basic_edge.ulid) - 1] = '\0';
+    
+    /* Encode the basic edge first */
+    gm_result_void_t result = gm_edge_encode_cbor(&basic_edge, buffer, len);
+    return result.ok ? GM_OK : GM_ERR_INVALID_FORMAT;
 }
 
 /* Append edges to journal */
