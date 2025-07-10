@@ -43,30 +43,38 @@ typedef struct {
 /* Convert legacy edge to attributed edge */
 static void convert_legacy_to_attributed(const gm_edge_t *legacy,
                                          gm_edge_attributed_t *attributed) {
-    /* Copy basic fields */
-    memcpy(attributed->src_sha, legacy->src_sha, GM_SHA1_SIZE);
-    memcpy(attributed->tgt_sha, legacy->tgt_sha, GM_SHA1_SIZE);
+    /* Copy basic fields using secure byte-by-byte copying */
+    for (size_t i = 0; i < GM_SHA1_SIZE; i++) {
+        attributed->src_sha[i] = legacy->src_sha[i];
+        attributed->tgt_sha[i] = legacy->tgt_sha[i];
+    }
     attributed->rel_type = legacy->rel_type;
     attributed->confidence = legacy->confidence;
     attributed->timestamp = legacy->timestamp;
 
-    /* Safe string copies */
+    /* Safe string copies using byte-by-byte copying */
     size_t src_len = strlen(legacy->src_path);
     if (src_len >= sizeof(attributed->src_path))
         src_len = sizeof(attributed->src_path) - 1;
-    memcpy(attributed->src_path, legacy->src_path, src_len);
+    for (size_t i = 0; i < src_len; i++) {
+        attributed->src_path[i] = legacy->src_path[i];
+    }
     attributed->src_path[src_len] = '\0';
 
     size_t tgt_len = strlen(legacy->tgt_path);
     if (tgt_len >= sizeof(attributed->tgt_path))
         tgt_len = sizeof(attributed->tgt_path) - 1;
-    memcpy(attributed->tgt_path, legacy->tgt_path, tgt_len);
+    for (size_t i = 0; i < tgt_len; i++) {
+        attributed->tgt_path[i] = legacy->tgt_path[i];
+    }
     attributed->tgt_path[tgt_len] = '\0';
 
     size_t ulid_len = strlen(legacy->ulid);
     if (ulid_len >= sizeof(attributed->ulid))
         ulid_len = sizeof(attributed->ulid) - 1;
-    memcpy(attributed->ulid, legacy->ulid, ulid_len);
+    for (size_t i = 0; i < ulid_len; i++) {
+        attributed->ulid[i] = legacy->ulid[i];
+    }
     attributed->ulid[ulid_len] = '\0';
 
     /* Set default attribution */

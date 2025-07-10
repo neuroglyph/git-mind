@@ -3,19 +3,12 @@
 
 #include "gitmind/attribution.h"
 
-#define __STDC_WANT_LIB_EXT1__ 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-/* Secure string functions - use Annex K where available, fallback otherwise */
-#ifdef __STDC_LIB_EXT1__
-#define HAVE_SECURE_STRINGS 1
-#else
-#define HAVE_SECURE_STRINGS 0
-
-/* Secure fallback implementations with proper bounds checking */
-static inline int secure_strcpy_fallback(char *dest, size_t dest_size, const char *src) {
+/* Secure string functions with proper bounds checking */
+static inline int gm_secure_strcpy(char *dest, size_t dest_size, const char *src) {
     if (!dest || !src || dest_size == 0) {
         return 1;
     }
@@ -30,7 +23,7 @@ static inline int secure_strcpy_fallback(char *dest, size_t dest_size, const cha
     return 0;
 }
 
-static inline int secure_strncpy_fallback(char *dest, size_t dest_size, const char *src, size_t count) {
+static inline int gm_secure_strncpy(char *dest, size_t dest_size, const char *src, size_t count) {
     if (!dest || !src || dest_size == 0) {
         return 1;
     }
@@ -48,10 +41,6 @@ static inline int secure_strncpy_fallback(char *dest, size_t dest_size, const ch
     dest[copy_len] = '\0';
     return 0;
 }
-
-#define strcpy_s(dest, dest_size, src) secure_strcpy_fallback(dest, dest_size, src)
-#define strncpy_s(dest, dest_size, src, count) secure_strncpy_fallback(dest, dest_size, src, count)
-#endif
 
 /* Default author strings */
 #define DEFAULT_AUTHOR_HUMAN "user@local"
@@ -89,23 +78,23 @@ int gm_attribution_set_default(gm_attribution_t *attr,
     switch (source) {
     case GM_SOURCE_HUMAN:
         /* Try to get from git config */
-        (void)strcpy_s(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_HUMAN);
+        (void)gm_secure_strcpy(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_HUMAN);
         break;
 
     case GM_SOURCE_AI_CLAUDE:
-        (void)strcpy_s(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_CLAUDE);
+        (void)gm_secure_strcpy(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_CLAUDE);
         break;
 
     case GM_SOURCE_AI_GPT:
-        (void)strcpy_s(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_GPT);
+        (void)gm_secure_strcpy(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_GPT);
         break;
 
     case GM_SOURCE_SYSTEM:
-        (void)strcpy_s(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_SYSTEM);
+        (void)gm_secure_strcpy(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_SYSTEM);
         break;
 
     default:
-        (void)strcpy_s(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_UNKNOWN);
+        (void)gm_secure_strcpy(attr->author, sizeof(attr->author), DEFAULT_AUTHOR_UNKNOWN);
         break;
     }
 
@@ -153,11 +142,11 @@ int gm_attribution_from_env(gm_attribution_t *attr) {
 
     /* Override with environment values if present */
     if (author) {
-        (void)strncpy_s(attr->author, sizeof(attr->author), author, strlen(author));
+        (void)gm_secure_strncpy(attr->author, sizeof(attr->author), author, strlen(author));
     }
 
     if (session) {
-        (void)strncpy_s(attr->session_id, sizeof(attr->session_id), session, strlen(session));
+        (void)gm_secure_strncpy(attr->session_id, sizeof(attr->session_id), session, strlen(session));
     }
 
     return 0;
