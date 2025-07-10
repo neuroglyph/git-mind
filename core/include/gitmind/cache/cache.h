@@ -7,6 +7,7 @@
 #include <git2.h>
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 /* Forward declarations to avoid circular dependencies */
@@ -19,6 +20,8 @@ typedef struct gm_edge gm_edge_t;
 #define GM_CACHE_VERSION 1
 #define GM_CACHE_SHARD_BITS 8 /* 2 hex chars = 256 shards */
 #define GM_CACHE_REF_PREFIX "refs/gitmind/cache/"
+#define GM_CACHE_BRANCH_NAME_SIZE 64  /* Maximum branch name length */
+#define GM_CACHE_OID_STRING_SIZE 41   /* Git OID as string + null terminator */
 
 /* Cache flags */
 #define GM_CACHE_FLAG_NONE 0
@@ -28,12 +31,12 @@ typedef struct gm_edge gm_edge_t;
 /* Cache metadata stored in commit message */
 typedef struct {
     uint64_t journal_tip_time; /* Timestamp of last processed journal commit */
-    char journal_tip_oid[41];  /* SHA of last processed journal commit */
+    char journal_tip_oid[GM_CACHE_OID_STRING_SIZE];  /* SHA of last processed journal commit */
     uint64_t edge_count;       /* Total edges in cache */
     uint64_t build_time_ms;    /* Time to build cache */
     uint32_t shard_bits;       /* Number of bits for sharding (8 = 2 chars) */
     uint32_t version;          /* Cache format version */
-    char branch[64];           /* Branch name */
+    char branch[GM_CACHE_BRANCH_NAME_SIZE];           /* Branch name */
 } gm_cache_meta_t;
 
 /* Cache query result */
