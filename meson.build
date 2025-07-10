@@ -50,10 +50,12 @@ src = files(
   'core/src/types/string_utf8.c',
   'core/src/types/ulid.c',
   'core/src/utf8/validate.c',
+  'core/src/edge/edge.c',
+  'core/src/edge/attributed.c',
 )
 
 # Include directories
-inc = include_directories('core/include')
+inc = include_directories('core/include', 'include')
 
 # Build static library
 libgitmind = static_library(
@@ -156,6 +158,12 @@ test_cbor = executable('test_cbor',
   link_with : libgitmind,
   dependencies : [libsodium_dep, thread_dep])
 
+test_edge = executable('test_edge',
+  'core/tests/unit/test_edge.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, thread_dep])
+
 # Register tests
 test('error', test_error)
 test('id', test_id)
@@ -170,3 +178,4 @@ test('ulid', test_ulid)
 test('io', test_io)
 test('time', test_time)
 test('cbor', test_cbor)
+test('edge', test_edge)

@@ -260,7 +260,7 @@ static void test_utf8_performance(void) {
 
     /* Fill with ASCII */
     for (size_t i = 0; i < size; i++) {
-        buf[i] = 'A' + (i % 26);
+        buf[i] = (char)('A' + (i % 26));
     }
 
     /* Time the validation (rough estimate) */
