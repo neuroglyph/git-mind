@@ -62,7 +62,7 @@ static inline void gm_memcpy(void *dst, const void *src, size_t n) {
 }
 
 static inline void gm_memset(void *dst, int val, size_t n) {
-    gm_memset_safe(dst, n, (unsigned char)val, n);
+    gm_memset_safe(n, dst, (unsigned char)val, n);
 }
 
 /* Compatibility macros - to be removed after migration */
