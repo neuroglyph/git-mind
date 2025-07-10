@@ -25,6 +25,13 @@ extern "C" {
  * indexed Git objects. It supports incremental updates and sharded storage.
  */
 
+/* Cache configuration constants */
+#define GM_CACHE_VERSION 1
+#define GM_CACHE_SHARD_BITS 8 /* 2 hex chars = 256 shards */
+#define GM_CACHE_REF_PREFIX "refs/gitmind/cache/"
+#define GM_CACHE_BRANCH_NAME_SIZE 64  /* Maximum branch name length */
+#define GM_CACHE_OID_STRING_SIZE 41   /* Git OID as string + null terminator */
+
 /* Cache result containing edge IDs matching a query */
 typedef struct {
     uint32_t *edge_ids; /**< Array of matching edge IDs */
@@ -42,13 +49,6 @@ typedef struct {
     uint32_t version;          /**< Cache format version */
     char branch[GM_CACHE_BRANCH_NAME_SIZE];           /**< Branch name */
 } gm_cache_meta_t;
-
-/* Cache configuration constants */
-#define GM_CACHE_VERSION 1
-#define GM_CACHE_SHARD_BITS 8 /* 2 hex chars = 256 shards */
-#define GM_CACHE_REF_PREFIX "refs/gitmind/cache/"
-#define GM_CACHE_BRANCH_NAME_SIZE 64  /* Maximum branch name length */
-#define GM_CACHE_OID_STRING_SIZE 41   /* Git OID as string + null terminator */
 
 /**
  * Initialize the cache subsystem
