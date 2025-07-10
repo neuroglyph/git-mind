@@ -86,7 +86,9 @@ static inline int gm_memmove_safe(void *dest, size_t dest_size,
  * Fills `span.ptr` with `n` bytes of `fill`.
  * Returns 0 on success, -1 if the span is too small.
  */
-static inline int gm_memset_span(gm_span_t span, unsigned char fill, size_t n) {
+static inline int gm_memset_span(gm_span_t span, unsigned char fill, size_t n)
+// NOLINT(bugprone-easily-swappable-parameters)
+{
     if (!span.ptr || n > span.cap) {
         return -1;
     }
