@@ -29,7 +29,7 @@ extern "C" {
  * @param src_size Number of bytes to copy
  * @return 0 on success, -1 if would overflow destination
  */
-static inline int gm_memcpy_safe(void *dest, size_t dest_size, 
+static inline int gm_memcpy_span(void *dest, size_t dest_size, 
                                 const void *src, size_t src_size) {
     if (!dest || !src || src_size > dest_size) {
         return -1;
