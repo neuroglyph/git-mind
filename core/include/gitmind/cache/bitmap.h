@@ -13,9 +13,12 @@ typedef gm_bitmap_t *gm_bitmap_ptr;
 /* C23 gives us single-argument static_assert and nullptr */
 static_assert(sizeof(gm_bitmap_t) == sizeof(roaring_bitmap_t));
 
+/* Bitmap constants */
+#define GM_BITMAP_MAGIC_SIZE 8
+
 /* Bitmap file header */
 typedef struct {
-    char magic[8];    /* "GMCACHE\0" */
+    char magic[GM_BITMAP_MAGIC_SIZE];    /* "GMCACHE\0" */
     uint32_t version; /* Format version */
     uint32_t flags;   /* Feature flags */
 } gm_bitmap_header_t;

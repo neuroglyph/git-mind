@@ -15,7 +15,6 @@
 /* Magic number and version */
 #define BITMAP_MAGIC "GMCACHE\0"
 #define BITMAP_VERSION 1
-#define BITMAP_MAGIC_SIZE 8
 
 void gm_bitmap_add_many(gm_bitmap_ptr bitmap, const uint32_t *edge_ids,
                         size_t count) {
@@ -55,7 +54,7 @@ int gm_bitmap_serialize(const gm_bitmap_t *bitmap, uint8_t **buffer,
 
     /* Write header */
     gm_bitmap_header_t header;
-    memcpy(header.magic, BITMAP_MAGIC, BITMAP_MAGIC_SIZE);
+    memcpy(header.magic, BITMAP_MAGIC, GM_BITMAP_MAGIC_SIZE);
     header.version = BITMAP_VERSION;
     header.flags = 0;
     memcpy(*buffer, &header, header_size);
@@ -86,7 +85,7 @@ int gm_bitmap_deserialize(const uint8_t *buffer, size_t size,
     gm_bitmap_header_t header;
     memcpy(&header, buffer, header_size);
 
-    if (memcmp(header.magic, BITMAP_MAGIC, BITMAP_MAGIC_SIZE) != 0) {
+    if (memcmp(header.magic, BITMAP_MAGIC, GM_BITMAP_MAGIC_SIZE) != 0) {
         return GM_ERR_UNKNOWN;
     }
 
