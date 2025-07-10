@@ -52,6 +52,7 @@ src = files(
   'core/src/utf8/validate.c',
   'core/src/edge/edge.c',
   'core/src/edge/attributed.c',
+  'core/src/attribution/attribution.c',
 )
 
 # Include directories
