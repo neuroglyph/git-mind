@@ -460,7 +460,7 @@ static int gm_cache_rebuild_internal(git_repository *repo, const char *branch,
     meta.build_time_ms = (uint64_t)((clock() - start_time) / CLOCKS_PER_MS);
     meta.shard_bits = GM_CACHE_SHARD_BITS;
     meta.version = GM_CACHE_VERSION;
-    strncpy(meta.branch, branch, sizeof(meta.branch) - 1);
+    strncpy(meta.branch, branch, GM_CACHE_BRANCH_NAME_SIZE - 1);
 
     /* Get journal tip info */
     rc = cache_get_journal_tip(repo, branch, &meta);
