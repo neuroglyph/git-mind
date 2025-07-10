@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>
+#include "gitmind/util/span.h"
 
 /* Safe memory copy with bounds checking
  * dst    : pointer to destination buffer
@@ -62,7 +63,7 @@ static inline void gm_memcpy(void *dst, const void *src, size_t n) {
 }
 
 static inline void gm_memset(void *dst, int val, size_t n) {
-    gm_memset_safe((gm_span_t){dst, n}, (unsigned char)val, n);
+    (void)gm_memset_safe(GM_SPAN(dst, n), (unsigned char)val, n);
 }
 
 /* Compatibility macros - to be removed after migration */

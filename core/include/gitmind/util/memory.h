@@ -80,34 +80,23 @@ static inline int gm_memmove_safe(void *dest, size_t dest_size,
     return 0;
 }
 
-/**
- * Memory span for safer buffer operations
- */
-typedef struct {
-    void *ptr;
-    size_t cap;
-} gm_span_t;
+#include "gitmind/util/span.h"
 
 /**
- * Safe memory set with bounds checking
- * 
- * @param dst Destination span (buffer + capacity)
- * @param fill_value Value to set
- * @param num_bytes Number of bytes to set
- * @return 0 on success, -1 if would overflow buffer
+ * Fills `span.ptr` with `n` bytes of `fill`.
+ * Returns 0 on success, -1 if the span is too small.
  */
-static inline int gm_memset_safe(gm_span_t dst, unsigned char fill_value, size_t num_bytes) {
-    if (!dst.ptr || num_bytes > dst.cap) {
+static inline int gm_memset_safe(gm_span_t span, unsigned char fill, size_t n) {
+    if (!span.ptr || n > span.cap) {
         return -1;
     }
-    if (num_bytes == 0) {
+    if (n == 0) {
         return 0;
     }
     /* Use byte-by-byte setting to avoid memset security warnings */
-    unsigned char *bytes = (unsigned char *)dst.ptr;
-    unsigned char fill_byte = fill_value;
-    for (size_t i = 0; i < num_bytes; i++) {
-        bytes[i] = fill_byte;
+    unsigned char *bytes = (unsigned char *)span.ptr;
+    for (size_t i = 0; i < n; i++) {
+        bytes[i] = fill;
     }
     return 0;
 }
