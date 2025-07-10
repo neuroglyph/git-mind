@@ -6,9 +6,9 @@
 #include <stdint.h>
 #include <roaring/roaring.h>
 
-/* Strongly-typed alias – clearer in diagnostics than raw typedef */
-using gm_bitmap_t   = roaring_bitmap_t;
-using gm_bitmap_ptr = gm_bitmap_t *;
+/* Strongly-typed aliases – clearer in diagnostics than raw typedef */
+typedef roaring_bitmap_t gm_bitmap_t;
+typedef gm_bitmap_t *gm_bitmap_ptr;
 
 /* C23 gives us single-argument static_assert and nullptr */
 static_assert(sizeof(gm_bitmap_t) == sizeof(roaring_bitmap_t));

@@ -273,7 +273,7 @@ gm_result_void_t gm_edge_attributed_format_with_attribution(
         float confidence = gm_confidence_from_half_float(edge->confidence);
         written = gm_snprintf(buffer, len, "%s [%s: %s, conf: %.2f]",
                           edge_base_format, source_type_name, author_name,
-                          confidence);
+                          (double)confidence);
     }
     
     if (written < 0 || (size_t)written >= len) {
