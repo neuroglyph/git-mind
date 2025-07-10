@@ -1,170 +1,392 @@
 [
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_cbor_cbor.c.o -MF libgitmind.a.p/core_src_cbor_cbor.c.o.d -o libgitmind.a.p/core_src_cbor_cbor.c.o -c ../core/src/cbor/cbor.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_cbor_cbor.c.o -MF libgitmind.a.p/core_src_cbor_cbor.c.o.d -o libgitmind.a.p/core_src_cbor_cbor.c.o -c ../core/src/cbor/cbor.c",
     "file": "../core/src/cbor/cbor.c",
     "output": "libgitmind.a.p/core_src_cbor_cbor.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_crypto_backend.c.o -MF libgitmind.a.p/core_src_crypto_backend.c.o.d -o libgitmind.a.p/core_src_crypto_backend.c.o -c ../core/src/crypto/backend.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_crypto_backend.c.o -MF libgitmind.a.p/core_src_crypto_backend.c.o.d -o libgitmind.a.p/core_src_crypto_backend.c.o -c ../core/src/crypto/backend.c",
     "file": "../core/src/crypto/backend.c",
     "output": "libgitmind.a.p/core_src_crypto_backend.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_crypto_random.c.o -MF libgitmind.a.p/core_src_crypto_random.c.o.d -o libgitmind.a.p/core_src_crypto_random.c.o -c ../core/src/crypto/random.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_crypto_random.c.o -MF libgitmind.a.p/core_src_crypto_random.c.o.d -o libgitmind.a.p/core_src_crypto_random.c.o -c ../core/src/crypto/random.c",
     "file": "../core/src/crypto/random.c",
     "output": "libgitmind.a.p/core_src_crypto_random.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_crypto_sha256.c.o -MF libgitmind.a.p/core_src_crypto_sha256.c.o.d -o libgitmind.a.p/core_src_crypto_sha256.c.o -c ../core/src/crypto/sha256.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_crypto_sha256.c.o -MF libgitmind.a.p/core_src_crypto_sha256.c.o.d -o libgitmind.a.p/core_src_crypto_sha256.c.o -c ../core/src/crypto/sha256.c",
     "file": "../core/src/crypto/sha256.c",
     "output": "libgitmind.a.p/core_src_crypto_sha256.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_error_error.c.o -MF libgitmind.a.p/core_src_error_error.c.o.d -o libgitmind.a.p/core_src_error_error.c.o -c ../core/src/error/error.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_error_error.c.o -MF libgitmind.a.p/core_src_error_error.c.o.d -o libgitmind.a.p/core_src_error_error.c.o -c ../core/src/error/error.c",
     "file": "../core/src/error/error.c",
     "output": "libgitmind.a.p/core_src_error_error.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_io_io.c.o -MF libgitmind.a.p/core_src_io_io.c.o.d -o libgitmind.a.p/core_src_io_io.c.o -c ../core/src/io/io.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_io_io.c.o -MF libgitmind.a.p/core_src_io_io.c.o.d -o libgitmind.a.p/core_src_io_io.c.o -c ../core/src/io/io.c",
     "file": "../core/src/io/io.c",
     "output": "libgitmind.a.p/core_src_io_io.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_time_time.c.o -MF libgitmind.a.p/core_src_time_time.c.o.d -o libgitmind.a.p/core_src_time_time.c.o -c ../core/src/time/time.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_time_time.c.o -MF libgitmind.a.p/core_src_time_time.c.o.d -o libgitmind.a.p/core_src_time_time.c.o -c ../core/src/time/time.c",
     "file": "../core/src/time/time.c",
     "output": "libgitmind.a.p/core_src_time_time.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_id.c.o -MF libgitmind.a.p/core_src_types_id.c.o.d -o libgitmind.a.p/core_src_types_id.c.o -c ../core/src/types/id.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_id.c.o -MF libgitmind.a.p/core_src_types_id.c.o.d -o libgitmind.a.p/core_src_types_id.c.o -c ../core/src/types/id.c",
     "file": "../core/src/types/id.c",
     "output": "libgitmind.a.p/core_src_types_id.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_path.c.o -MF libgitmind.a.p/core_src_types_path.c.o.d -o libgitmind.a.p/core_src_types_path.c.o -c ../core/src/types/path.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_path.c.o -MF libgitmind.a.p/core_src_types_path.c.o.d -o libgitmind.a.p/core_src_types_path.c.o -c ../core/src/types/path.c",
     "file": "../core/src/types/path.c",
     "output": "libgitmind.a.p/core_src_types_path.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_string.c.o -MF libgitmind.a.p/core_src_types_string.c.o.d -o libgitmind.a.p/core_src_types_string.c.o -c ../core/src/types/string.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_string.c.o -MF libgitmind.a.p/core_src_types_string.c.o.d -o libgitmind.a.p/core_src_types_string.c.o -c ../core/src/types/string.c",
     "file": "../core/src/types/string.c",
     "output": "libgitmind.a.p/core_src_types_string.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_string_core.c.o -MF libgitmind.a.p/core_src_types_string_core.c.o.d -o libgitmind.a.p/core_src_types_string_core.c.o -c ../core/src/types/string_core.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_string_core.c.o -MF libgitmind.a.p/core_src_types_string_core.c.o.d -o libgitmind.a.p/core_src_types_string_core.c.o -c ../core/src/types/string_core.c",
     "file": "../core/src/types/string_core.c",
     "output": "libgitmind.a.p/core_src_types_string_core.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_string_utf8.c.o -MF libgitmind.a.p/core_src_types_string_utf8.c.o.d -o libgitmind.a.p/core_src_types_string_utf8.c.o -c ../core/src/types/string_utf8.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_string_utf8.c.o -MF libgitmind.a.p/core_src_types_string_utf8.c.o.d -o libgitmind.a.p/core_src_types_string_utf8.c.o -c ../core/src/types/string_utf8.c",
     "file": "../core/src/types/string_utf8.c",
     "output": "libgitmind.a.p/core_src_types_string_utf8.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_ulid.c.o -MF libgitmind.a.p/core_src_types_ulid.c.o.d -o libgitmind.a.p/core_src_types_ulid.c.o -c ../core/src/types/ulid.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_types_ulid.c.o -MF libgitmind.a.p/core_src_types_ulid.c.o.d -o libgitmind.a.p/core_src_types_ulid.c.o -c ../core/src/types/ulid.c",
     "file": "../core/src/types/ulid.c",
     "output": "libgitmind.a.p/core_src_types_ulid.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_utf8_validate.c.o -MF libgitmind.a.p/core_src_utf8_validate.c.o.d -o libgitmind.a.p/core_src_utf8_validate.c.o -c ../core/src/utf8/validate.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_utf8_validate.c.o -MF libgitmind.a.p/core_src_utf8_validate.c.o.d -o libgitmind.a.p/core_src_utf8_validate.c.o -c ../core/src/utf8/validate.c",
     "file": "../core/src/utf8/validate.c",
     "output": "libgitmind.a.p/core_src_utf8_validate.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Ilibgitmind_test_backend.a.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o -MF libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o.d -o libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o -c ../core/tests/backends/test_backend.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_edge_edge.c.o -MF libgitmind.a.p/core_src_edge_edge.c.o.d -o libgitmind.a.p/core_src_edge_edge.c.o -c ../core/src/edge/edge.c",
+    "file": "../core/src/edge/edge.c",
+    "output": "libgitmind.a.p/core_src_edge_edge.c.o"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -pthread -MD -MQ libgitmind.a.p/core_src_edge_attributed.c.o -MF libgitmind.a.p/core_src_edge_attributed.c.o.d -o libgitmind.a.p/core_src_edge_attributed.c.o -c ../core/src/edge/attributed.c",
+    "file": "../core/src/edge/attributed.c",
+    "output": "libgitmind.a.p/core_src_edge_attributed.c.o"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "rm -f libgitmind.a && gcc-ar csrDT libgitmind.a libgitmind.a.p/core_src_cbor_cbor.c.o libgitmind.a.p/core_src_crypto_backend.c.o libgitmind.a.p/core_src_crypto_random.c.o libgitmind.a.p/core_src_crypto_sha256.c.o libgitmind.a.p/core_src_error_error.c.o libgitmind.a.p/core_src_io_io.c.o libgitmind.a.p/core_src_time_time.c.o libgitmind.a.p/core_src_types_id.c.o libgitmind.a.p/core_src_types_path.c.o libgitmind.a.p/core_src_types_string.c.o libgitmind.a.p/core_src_types_string_core.c.o libgitmind.a.p/core_src_types_string_utf8.c.o libgitmind.a.p/core_src_types_ulid.c.o libgitmind.a.p/core_src_utf8_validate.c.o libgitmind.a.p/core_src_edge_edge.c.o libgitmind.a.p/core_src_edge_attributed.c.o",
+    "file": "libgitmind.a.p/core_src_cbor_cbor.c.o",
+    "output": "libgitmind.a"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Ilibgitmind_test_backend.a.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -fPIC -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o -MF libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o.d -o libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o -c ../core/tests/backends/test_backend.c",
     "file": "../core/tests/backends/test_backend.c",
     "output": "libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Itest_error.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_error.p/core_tests_unit_test_error.c.o -MF test_error.p/core_tests_unit_test_error.c.o.d -o test_error.p/core_tests_unit_test_error.c.o -c ../core/tests/unit/test_error.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "rm -f libgitmind_test_backend.a && gcc-ar csrDT libgitmind_test_backend.a libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o",
+    "file": "libgitmind_test_backend.a.p/core_tests_backends_test_backend.c.o",
+    "output": "libgitmind_test_backend.a"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Itest_error.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_error.p/core_tests_unit_test_error.c.o -MF test_error.p/core_tests_unit_test_error.c.o.d -o test_error.p/core_tests_unit_test_error.c.o -c ../core/tests/unit/test_error.c",
     "file": "../core/tests/unit/test_error.c",
     "output": "test_error.p/core_tests_unit_test_error.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Itest_id.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_id.p/core_tests_unit_test_id.c.o -MF test_id.p/core_tests_unit_test_id.c.o.d -o test_id.p/core_tests_unit_test_id.c.o -c ../core/tests/unit/test_id.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc  -o test_error test_error.p/core_tests_unit_test_error.c.o -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group libgitmind.a /usr/lib/aarch64-linux-gnu/libsodium.so -Wl,--end-group -pthread",
+    "file": "test_error.p/core_tests_unit_test_error.c.o",
+    "output": "test_error"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Itest_id.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_id.p/core_tests_unit_test_id.c.o -MF test_id.p/core_tests_unit_test_id.c.o.d -o test_id.p/core_tests_unit_test_id.c.o -c ../core/tests/unit/test_id.c",
     "file": "../core/tests/unit/test_id.c",
     "output": "test_id.p/core_tests_unit_test_id.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Itest_id_thread_safety.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o -MF test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o.d -o test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o -c ../core/tests/unit/test_id_thread_safety.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc  -o test_id test_id.p/core_tests_unit_test_id.c.o -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group libgitmind.a /usr/lib/aarch64-linux-gnu/libsodium.so -Wl,--end-group -pthread",
+    "file": "test_id.p/core_tests_unit_test_id.c.o",
+    "output": "test_id"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Itest_id_thread_safety.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o -MF test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o.d -o test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o -c ../core/tests/unit/test_id_thread_safety.c",
     "file": "../core/tests/unit/test_id_thread_safety.c",
     "output": "test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Itest_string.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_string.p/core_tests_unit_test_string.c.o -MF test_string.p/core_tests_unit_test_string.c.o.d -o test_string.p/core_tests_unit_test_string.c.o -c ../core/tests/unit/test_string.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc  -o test_id_thread_safety test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group libgitmind.a /usr/lib/aarch64-linux-gnu/libsodium.so -Wl,--end-group -pthread",
+    "file": "test_id_thread_safety.p/core_tests_unit_test_id_thread_safety.c.o",
+    "output": "test_id_thread_safety"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Itest_string.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_string.p/core_tests_unit_test_string.c.o -MF test_string.p/core_tests_unit_test_string.c.o.d -o test_string.p/core_tests_unit_test_string.c.o -c ../core/tests/unit/test_string.c",
     "file": "../core/tests/unit/test_string.c",
     "output": "test_string.p/core_tests_unit_test_string.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Itest_path.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_path.p/core_tests_unit_test_path.c.o -MF test_path.p/core_tests_unit_test_path.c.o.d -o test_path.p/core_tests_unit_test_path.c.o -c ../core/tests/unit/test_path.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc  -o test_string test_string.p/core_tests_unit_test_string.c.o -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group libgitmind.a /usr/lib/aarch64-linux-gnu/libsodium.so -Wl,--end-group -pthread",
+    "file": "test_string.p/core_tests_unit_test_string.c.o",
+    "output": "test_string"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Itest_path.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_path.p/core_tests_unit_test_path.c.o -MF test_path.p/core_tests_unit_test_path.c.o.d -o test_path.p/core_tests_unit_test_path.c.o -c ../core/tests/unit/test_path.c",
     "file": "../core/tests/unit/test_path.c",
     "output": "test_path.p/core_tests_unit_test_path.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Itest_sha256.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_sha256.p/core_tests_unit_test_sha256.c.o -MF test_sha256.p/core_tests_unit_test_sha256.c.o.d -o test_sha256.p/core_tests_unit_test_sha256.c.o -c ../core/tests/unit/test_sha256.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc  -o test_path test_path.p/core_tests_unit_test_path.c.o -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group libgitmind.a /usr/lib/aarch64-linux-gnu/libsodium.so -Wl,--end-group -pthread",
+    "file": "test_path.p/core_tests_unit_test_path.c.o",
+    "output": "test_path"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Itest_sha256.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_sha256.p/core_tests_unit_test_sha256.c.o -MF test_sha256.p/core_tests_unit_test_sha256.c.o.d -o test_sha256.p/core_tests_unit_test_sha256.c.o -c ../core/tests/unit/test_sha256.c",
     "file": "../core/tests/unit/test_sha256.c",
     "output": "test_sha256.p/core_tests_unit_test_sha256.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Itest_random.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_random.p/core_tests_unit_test_random.c.o -MF test_random.p/core_tests_unit_test_random.c.o.d -o test_random.p/core_tests_unit_test_random.c.o -c ../core/tests/unit/test_random.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc  -o test_sha256 test_sha256.p/core_tests_unit_test_sha256.c.o -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group libgitmind.a libgitmind_test_backend.a /usr/lib/aarch64-linux-gnu/libsodium.so -Wl,--end-group -pthread",
+    "file": "test_sha256.p/core_tests_unit_test_sha256.c.o",
+    "output": "test_sha256"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Itest_random.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_random.p/core_tests_unit_test_random.c.o -MF test_random.p/core_tests_unit_test_random.c.o.d -o test_random.p/core_tests_unit_test_random.c.o -c ../core/tests/unit/test_random.c",
     "file": "../core/tests/unit/test_random.c",
     "output": "test_random.p/core_tests_unit_test_random.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Itest_utf8.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_utf8.p/core_tests_unit_test_utf8.c.o -MF test_utf8.p/core_tests_unit_test_utf8.c.o.d -o test_utf8.p/core_tests_unit_test_utf8.c.o -c ../core/tests/unit/test_utf8.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc  -o test_random test_random.p/core_tests_unit_test_random.c.o -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group libgitmind.a libgitmind_test_backend.a /usr/lib/aarch64-linux-gnu/libsodium.so -Wl,--end-group -pthread",
+    "file": "test_random.p/core_tests_unit_test_random.c.o",
+    "output": "test_random"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Itest_utf8.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_utf8.p/core_tests_unit_test_utf8.c.o -MF test_utf8.p/core_tests_unit_test_utf8.c.o.d -o test_utf8.p/core_tests_unit_test_utf8.c.o -c ../core/tests/unit/test_utf8.c",
     "file": "../core/tests/unit/test_utf8.c",
     "output": "test_utf8.p/core_tests_unit_test_utf8.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Itest_crypto_backend.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o -MF test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o.d -o test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o -c ../core/tests/unit/test_crypto_backend.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc  -o test_utf8 test_utf8.p/core_tests_unit_test_utf8.c.o -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group libgitmind.a /usr/lib/aarch64-linux-gnu/libsodium.so -Wl,--end-group -pthread",
+    "file": "test_utf8.p/core_tests_unit_test_utf8.c.o",
+    "output": "test_utf8"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Itest_crypto_backend.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o -MF test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o.d -o test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o -c ../core/tests/unit/test_crypto_backend.c",
     "file": "../core/tests/unit/test_crypto_backend.c",
     "output": "test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Itest_ulid.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_ulid.p/core_tests_unit_test_ulid.c.o -MF test_ulid.p/core_tests_unit_test_ulid.c.o.d -o test_ulid.p/core_tests_unit_test_ulid.c.o -c ../core/tests/unit/test_ulid.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc  -o test_crypto_backend test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group libgitmind.a libgitmind_test_backend.a /usr/lib/aarch64-linux-gnu/libsodium.so -Wl,--end-group -pthread",
+    "file": "test_crypto_backend.p/core_tests_unit_test_crypto_backend.c.o",
+    "output": "test_crypto_backend"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Itest_ulid.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -DGITMIND_ENABLE_TEST_BACKEND -MD -MQ test_ulid.p/core_tests_unit_test_ulid.c.o -MF test_ulid.p/core_tests_unit_test_ulid.c.o.d -o test_ulid.p/core_tests_unit_test_ulid.c.o -c ../core/tests/unit/test_ulid.c",
     "file": "../core/tests/unit/test_ulid.c",
     "output": "test_ulid.p/core_tests_unit_test_ulid.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Itest_io.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_io.p/core_tests_unit_test_io.c.o -MF test_io.p/core_tests_unit_test_io.c.o.d -o test_io.p/core_tests_unit_test_io.c.o -c ../core/tests/unit/test_io.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc  -o test_ulid test_ulid.p/core_tests_unit_test_ulid.c.o -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group libgitmind.a libgitmind_test_backend.a /usr/lib/aarch64-linux-gnu/libsodium.so -Wl,--end-group -pthread",
+    "file": "test_ulid.p/core_tests_unit_test_ulid.c.o",
+    "output": "test_ulid"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Itest_io.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_io.p/core_tests_unit_test_io.c.o -MF test_io.p/core_tests_unit_test_io.c.o.d -o test_io.p/core_tests_unit_test_io.c.o -c ../core/tests/unit/test_io.c",
     "file": "../core/tests/unit/test_io.c",
     "output": "test_io.p/core_tests_unit_test_io.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Itest_time.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_time.p/core_tests_unit_test_time.c.o -MF test_time.p/core_tests_unit_test_time.c.o.d -o test_time.p/core_tests_unit_test_time.c.o -c ../core/tests/unit/test_time.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc  -o test_io test_io.p/core_tests_unit_test_io.c.o -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group libgitmind.a /usr/lib/aarch64-linux-gnu/libsodium.so -Wl,--end-group -pthread",
+    "file": "test_io.p/core_tests_unit_test_io.c.o",
+    "output": "test_io"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Itest_time.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_time.p/core_tests_unit_test_time.c.o -MF test_time.p/core_tests_unit_test_time.c.o.d -o test_time.p/core_tests_unit_test_time.c.o -c ../core/tests/unit/test_time.c",
     "file": "../core/tests/unit/test_time.c",
     "output": "test_time.p/core_tests_unit_test_time.c.o"
   },
   {
-    "directory": "/workspace/build",
-    "command": "clang -Itest_cbor.p -I. -I.. -I../core/include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_cbor.p/core_tests_unit_test_cbor.c.o -MF test_cbor.p/core_tests_unit_test_cbor.c.o.d -o test_cbor.p/core_tests_unit_test_cbor.c.o -c ../core/tests/unit/test_cbor.c",
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc  -o test_time test_time.p/core_tests_unit_test_time.c.o -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group libgitmind.a /usr/lib/aarch64-linux-gnu/libsodium.so -Wl,--end-group -pthread",
+    "file": "test_time.p/core_tests_unit_test_time.c.o",
+    "output": "test_time"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Itest_cbor.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_cbor.p/core_tests_unit_test_cbor.c.o -MF test_cbor.p/core_tests_unit_test_cbor.c.o.d -o test_cbor.p/core_tests_unit_test_cbor.c.o -c ../core/tests/unit/test_cbor.c",
     "file": "../core/tests/unit/test_cbor.c",
     "output": "test_cbor.p/core_tests_unit_test_cbor.c.o"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc  -o test_cbor test_cbor.p/core_tests_unit_test_cbor.c.o -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group libgitmind.a /usr/lib/aarch64-linux-gnu/libsodium.so -Wl,--end-group -pthread",
+    "file": "test_cbor.p/core_tests_unit_test_cbor.c.o",
+    "output": "test_cbor"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc -Itest_edge.p -I. -I.. -I../core/include -I../include -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -std=c2x -O0 -g -std=c2x -pedantic -Wall -Wextra -Werror -Wvla -Wshadow -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wpointer-arith -Wcast-align -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Winline -O2 -fno-common -fstrict-aliasing -pthread -MD -MQ test_edge.p/core_tests_unit_test_edge.c.o -MF test_edge.p/core_tests_unit_test_edge.c.o.d -o test_edge.p/core_tests_unit_test_edge.c.o -c ../core/tests/unit/test_edge.c",
+    "file": "../core/tests/unit/test_edge.c",
+    "output": "test_edge.p/core_tests_unit_test_edge.c.o"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "cc  -o test_edge test_edge.p/core_tests_unit_test_edge.c.o -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group libgitmind.a /usr/lib/aarch64-linux-gnu/libsodium.so -Wl,--end-group -pthread",
+    "file": "test_edge.p/core_tests_unit_test_edge.c.o",
+    "output": "test_edge"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "",
+    "file": "meson-internal__test",
+    "output": "test"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "/usr/local/bin/meson test --no-rebuild --print-errorlogs",
+    "file": "all",
+    "output": "meson-internal__test"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "",
+    "file": "meson-internal__benchmark",
+    "output": "benchmark"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "/usr/local/bin/meson test --benchmark --logbase benchmarklog --num-processes=1 --no-rebuild",
+    "file": "all",
+    "output": "meson-internal__benchmark"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "",
+    "file": "meson-internal__install",
+    "output": "install"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "/usr/local/bin/meson install --no-rebuild",
+    "file": "PHONY",
+    "output": "meson-internal__install"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "",
+    "file": "meson-internal__dist",
+    "output": "dist"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "/usr/local/bin/meson dist",
+    "file": "PHONY",
+    "output": "meson-internal__dist"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "",
+    "file": "meson-internal__scan-build",
+    "output": "scan-build"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "/usr/local/bin/meson --internal scanbuild /workspace /workspace/build_gauntlet subprojects /usr/local/bin/meson setup",
+    "file": "PHONY",
+    "output": "meson-internal__scan-build"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "",
+    "file": "meson-internal__uninstall",
+    "output": "uninstall"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "/usr/local/bin/meson --internal uninstall",
+    "file": "PHONY",
+    "output": "meson-internal__uninstall"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "",
+    "file": "libgitmind.a",
+    "output": "all"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "",
+    "file": "test_error",
+    "output": "meson-test-prereq"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "",
+    "file": "meson-internal__clean",
+    "output": "clean"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "/usr/local/bin/ninja -t clean",
+    "file": "PHONY",
+    "output": "meson-internal__clean"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "/usr/local/bin/meson --internal regenerate /workspace .",
+    "file": "../meson.build",
+    "output": "build.ninja"
+  },
+  {
+    "directory": "/workspace/build_gauntlet",
+    "command": "/usr/local/bin/meson --internal regenerate /workspace .",
+    "file": "PHONY",
+    "output": "reconfigure"
   }
 ]
