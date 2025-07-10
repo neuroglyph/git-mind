@@ -2,6 +2,7 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #pragma once
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <roaring/roaring.h>
