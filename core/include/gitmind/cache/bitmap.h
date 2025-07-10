@@ -32,10 +32,9 @@ static inline void gm_bitmap_free(gm_bitmap_ptr bm)
     roaring_bitmap_free(bm);
 }
 
-[[nodiscard]] static inline bool gm_bitmap_add(gm_bitmap_ptr bm,
-                                               uint32_t value)
+static inline void gm_bitmap_add(gm_bitmap_ptr bm, uint32_t value)
 {
-    return roaring_bitmap_add(bm, value);
+    roaring_bitmap_add(bm, value);
 }
 
 [[nodiscard]] static inline bool gm_bitmap_contains(const gm_bitmap_t *bm,

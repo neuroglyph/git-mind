@@ -457,7 +457,7 @@ static int gm_cache_rebuild_internal(git_repository *repo, const char *branch,
     /* Create metadata */
     meta.journal_tip_time = (uint64_t)time(NULL);
     meta.edge_count = total_edges;
-    meta.build_time_ms = (clock() - start_time) / CLOCKS_PER_MS;
+    meta.build_time_ms = (uint64_t)((clock() - start_time) / CLOCKS_PER_MS);
     meta.shard_bits = GM_CACHE_SHARD_BITS;
     meta.version = GM_CACHE_VERSION;
     strncpy(meta.branch, branch, sizeof(meta.branch) - 1);
