@@ -6,8 +6,12 @@
 #include "gitmind/context.h"
 #include "gitmind/cbor/constants_cbor.h"
 #include "gitmind/error.h"
+#include "gitmind/edge.h"
+#include "gitmind/edge_attributed.h"
+#include "gitmind/attribution.h"
 
 #include <git2.h>
+#include <stdint.h>
 
 #include <stdio.h>
 #include <stdlib.h>
