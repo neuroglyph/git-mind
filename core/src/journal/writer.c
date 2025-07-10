@@ -224,9 +224,11 @@ static int edge_attributed_encoder_wrapper(const void *edge, uint8_t *buffer,
         .timestamp = attr_edge->timestamp
     };
     
-    /* Copy SHA arrays */
-    memcpy(basic_edge.src_sha, attr_edge->src_sha, GM_SHA1_SIZE);
-    memcpy(basic_edge.tgt_sha, attr_edge->tgt_sha, GM_SHA1_SIZE);
+    /* Copy SHA arrays securely */
+    for (size_t i = 0; i < GM_SHA1_SIZE; i++) {
+        basic_edge.src_sha[i] = attr_edge->src_sha[i];
+        basic_edge.tgt_sha[i] = attr_edge->tgt_sha[i];
+    }
     
     /* Copy paths securely */
     size_t src_len = strlen(attr_edge->src_path);

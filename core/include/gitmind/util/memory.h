@@ -122,8 +122,8 @@ static inline int gm_strcpy_safe(char *dest, size_t dest_size, const char *src) 
     if (src_len >= dest_size) {
         /* Truncate but still null-terminate */
         /* Byte-by-byte copy for truncation */
-        const char *src_chars = (const char *)src;
-        char *dest_chars = (char *)dest;
+        const char *src_chars = src;
+        char *dest_chars = dest;
         for (size_t i = 0; i < dest_size - 1; i++) {
             dest_chars[i] = src_chars[i];
         }
@@ -132,8 +132,8 @@ static inline int gm_strcpy_safe(char *dest, size_t dest_size, const char *src) 
     }
     
     /* Byte-by-byte copy including null terminator */
-    const char *src_chars = (const char *)src;
-    char *dest_chars = (char *)dest;
+    const char *src_chars = src;
+    char *dest_chars = dest;
     for (size_t i = 0; i <= src_len; i++) {
         dest_chars[i] = src_chars[i];
     }
@@ -168,8 +168,8 @@ static inline int gm_strcat_safe(char *dest, size_t dest_size, const char *src) 
     if (src_len > available) {
         /* Truncate but still null-terminate */
         /* Byte-by-byte copy for truncation */
-        const char *src_chars = (const char *)src;
-        char *dest_chars = (char *)(dest + dest_len);
+        const char *src_chars = src;
+        char *dest_chars = dest + dest_len;
         for (size_t i = 0; i < available; i++) {
             dest_chars[i] = src_chars[i];
         }
@@ -178,8 +178,8 @@ static inline int gm_strcat_safe(char *dest, size_t dest_size, const char *src) 
     }
     
     /* Byte-by-byte copy including null terminator */
-    const char *src_chars = (const char *)src;
-    char *dest_chars = (char *)(dest + dest_len);
+    const char *src_chars = src;
+    char *dest_chars = dest + dest_len;
     for (size_t i = 0; i <= src_len; i++) {
         dest_chars[i] = src_chars[i];
     }
