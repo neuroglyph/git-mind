@@ -71,7 +71,7 @@ static inline int gm_memmove_safe(void *dest, size_t dest_size,
  * @param n Number of bytes to set
  * @return 0 on success, -1 if would overflow buffer
  */
-static inline int gm_memset_safe(void *dest_ptr, int fill_value, size_t dest_size, size_t num_bytes) {
+static inline int gm_memset_safe(void *dest_ptr, size_t dest_size, size_t num_bytes, int fill_value) {
     if (!dest_ptr || num_bytes > dest_size) {
         return -1;
     }
