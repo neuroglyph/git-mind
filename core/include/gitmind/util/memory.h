@@ -81,23 +81,30 @@ static inline int gm_memmove_safe(void *dest, size_t dest_size,
 }
 
 /**
+ * Memory span for safer buffer operations
+ */
+typedef struct {
+    void *ptr;
+    size_t cap;
+} gm_span_t;
+
+/**
  * Safe memory set with bounds checking
  * 
- * @param s Buffer to set
- * @param s_size Size of buffer
- * @param c Value to set
- * @param n Number of bytes to set
+ * @param dst Destination span (buffer + capacity)
+ * @param fill_value Value to set
+ * @param num_bytes Number of bytes to set
  * @return 0 on success, -1 if would overflow buffer
  */
-static inline int gm_memset_safe(size_t dest_size, void *dest_ptr, unsigned char fill_value, size_t num_bytes) {
-    if (!dest_ptr || num_bytes > dest_size) {
+static inline int gm_memset_safe(gm_span_t dst, unsigned char fill_value, size_t num_bytes) {
+    if (!dst.ptr || num_bytes > dst.cap) {
         return -1;
     }
     if (num_bytes == 0) {
         return 0;
     }
     /* Use byte-by-byte setting to avoid memset security warnings */
-    unsigned char *bytes = (unsigned char *)dest_ptr;
+    unsigned char *bytes = (unsigned char *)dst.ptr;
     unsigned char fill_byte = fill_value;
     for (size_t i = 0; i < num_bytes; i++) {
         bytes[i] = fill_byte;
