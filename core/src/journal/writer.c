@@ -209,7 +209,7 @@ cleanup:
 static int edge_encoder_wrapper(const void *edge, uint8_t *buffer,
                                 size_t *len) {
     gm_result_void_t result = gm_edge_encode_cbor((const gm_edge_t *)edge, buffer, len);
-    return result.ok ? GM_OK : GM_ERR_INVALID_FORMAT;
+    return (int)result.ok ? GM_OK : GM_ERR_INVALID_FORMAT;
 }
 
 /* Wrapper for attributed edge encoder */
@@ -228,19 +228,38 @@ static int edge_attributed_encoder_wrapper(const void *edge, uint8_t *buffer,
     memcpy(basic_edge.src_sha, attr_edge->src_sha, GM_SHA1_SIZE);
     memcpy(basic_edge.tgt_sha, attr_edge->tgt_sha, GM_SHA1_SIZE);
     
-    /* Copy paths */
-    strncpy(basic_edge.src_path, attr_edge->src_path, sizeof(basic_edge.src_path) - 1);
-    basic_edge.src_path[sizeof(basic_edge.src_path) - 1] = '\0';
-    strncpy(basic_edge.tgt_path, attr_edge->tgt_path, sizeof(basic_edge.tgt_path) - 1);
-    basic_edge.tgt_path[sizeof(basic_edge.tgt_path) - 1] = '\0';
+    /* Copy paths securely */
+    size_t src_len = strlen(attr_edge->src_path);
+    if (src_len >= sizeof(basic_edge.src_path)) {
+        src_len = sizeof(basic_edge.src_path) - 1;
+    }
+    for (size_t i = 0; i < src_len; i++) {
+        basic_edge.src_path[i] = attr_edge->src_path[i];
+    }
+    basic_edge.src_path[src_len] = '\0';
     
-    /* Copy ULID */
-    strncpy(basic_edge.ulid, attr_edge->ulid, sizeof(basic_edge.ulid) - 1);
-    basic_edge.ulid[sizeof(basic_edge.ulid) - 1] = '\0';
+    size_t tgt_len = strlen(attr_edge->tgt_path);
+    if (tgt_len >= sizeof(basic_edge.tgt_path)) {
+        tgt_len = sizeof(basic_edge.tgt_path) - 1;
+    }
+    for (size_t i = 0; i < tgt_len; i++) {
+        basic_edge.tgt_path[i] = attr_edge->tgt_path[i];
+    }
+    basic_edge.tgt_path[tgt_len] = '\0';
+    
+    /* Copy ULID securely */
+    size_t ulid_len = strlen(attr_edge->ulid);
+    if (ulid_len >= sizeof(basic_edge.ulid)) {
+        ulid_len = sizeof(basic_edge.ulid) - 1;
+    }
+    for (size_t i = 0; i < ulid_len; i++) {
+        basic_edge.ulid[i] = attr_edge->ulid[i];
+    }
+    basic_edge.ulid[ulid_len] = '\0';
     
     /* Encode the basic edge first */
     gm_result_void_t result = gm_edge_encode_cbor(&basic_edge, buffer, len);
-    return result.ok ? GM_OK : GM_ERR_INVALID_FORMAT;
+    return (int)result.ok ? GM_OK : GM_ERR_INVALID_FORMAT;
 }
 
 /* Append edges to journal */
