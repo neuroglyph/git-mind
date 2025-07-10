@@ -20,7 +20,7 @@
 #define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
 #define REF_NAME_BUFFER_SIZE GM_PATH_MAX
 #define COMMIT_ENCODING "binary"
-#define CBOR_OVERFLOW_MARGIN ((size_t)512) /* CBOR encoding safety margin */
+#define CBOR_OVERFLOW_MARGIN GM_FORMAT_BUFFER_SIZE /* CBOR encoding safety margin */
 #define PARENT_COMMITS_MAX 1
 #define EMPTY_TREE_SHA "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 #define BRANCH_BUFFER_SIZE GM_PATH_MAX
