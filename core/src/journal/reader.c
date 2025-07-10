@@ -54,24 +54,27 @@ static void convert_legacy_to_attributed(const gm_edge_t *legacy,
 
     /* Safe string copies using byte-by-byte copying */
     size_t src_len = strlen(legacy->src_path);
-    if (src_len >= sizeof(attributed->src_path))
+    if (src_len >= sizeof(attributed->src_path)) {
         src_len = sizeof(attributed->src_path) - 1;
+    }
     for (size_t i = 0; i < src_len; i++) {
         attributed->src_path[i] = legacy->src_path[i];
     }
     attributed->src_path[src_len] = '\0';
 
     size_t tgt_len = strlen(legacy->tgt_path);
-    if (tgt_len >= sizeof(attributed->tgt_path))
+    if (tgt_len >= sizeof(attributed->tgt_path)) {
         tgt_len = sizeof(attributed->tgt_path) - 1;
+    }
     for (size_t i = 0; i < tgt_len; i++) {
         attributed->tgt_path[i] = legacy->tgt_path[i];
     }
     attributed->tgt_path[tgt_len] = '\0';
 
     size_t ulid_len = strlen(legacy->ulid);
-    if (ulid_len >= sizeof(attributed->ulid))
+    if (ulid_len >= sizeof(attributed->ulid)) {
         ulid_len = sizeof(attributed->ulid) - 1;
+    }
     for (size_t i = 0; i < ulid_len; i++) {
         attributed->ulid[i] = legacy->ulid[i];
     }
