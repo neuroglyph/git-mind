@@ -273,9 +273,15 @@ int gm_journal_create_commit(gm_context_t *ctx, const char *ref,
         return GM_ERR_UNKNOWN;
     }
 
-    /* Copy ref name */
-    strncpy(jctx.ref_name, ref, sizeof(jctx.ref_name) - 1);
-    jctx.ref_name[sizeof(jctx.ref_name) - 1] = '\0';
+    /* Copy ref name securely */
+    size_t ref_len = strlen(ref);
+    if (ref_len >= sizeof(jctx.ref_name)) {
+        ref_len = sizeof(jctx.ref_name) - 1;
+    }
+    for (size_t i = 0; i < ref_len; i++) {
+        jctx.ref_name[i] = ref[i];
+    }
+    jctx.ref_name[ref_len] = '\0';
 
     /* Create commit */
     return create_journal_commit(&jctx, data, len, &commit_oid);

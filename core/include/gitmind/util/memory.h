@@ -120,7 +120,11 @@ static inline int gm_strcat_safe(char *dest, size_t dest_size, const char *src) 
         return -2;
     }
     
-    size_t dest_len = strnlen(dest, dest_size);
+    /* Manually find string length with bounds checking instead of strnlen */
+    size_t dest_len = 0;
+    while (dest_len < dest_size && dest[dest_len] != '\0') {
+        dest_len++;
+    }
     if (dest_len >= dest_size) {
         return -2; /* dest is not properly null-terminated */
     }
