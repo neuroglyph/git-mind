@@ -32,6 +32,7 @@ add_project_arguments(
 
 # Dependencies
 libsodium_dep = dependency('libsodium', required : true)
+libgit2_dep = dependency('libgit2', required : true)
 thread_dep = dependency('threads')
 
 # Source files
@@ -52,6 +53,9 @@ src = files(
   'core/src/utf8/validate.c',
   'core/src/edge/edge.c',
   'core/src/edge/attributed.c',
+  'core/src/attribution/attribution.c',
+  'core/src/journal/reader.c',
+  'core/src/journal/writer.c',
 )
 
 # Include directories
@@ -62,7 +66,7 @@ libgitmind = static_library(
   'gitmind',
   src,
   include_directories : inc,
-  dependencies : [libsodium_dep, thread_dep]
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep]
 )
 
 # Test backend - ONLY for tests

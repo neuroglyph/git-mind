@@ -12,7 +12,7 @@
 
 typedef pthread_once_t once_flag;
 #define ONCE_FLAG_INIT PTHREAD_ONCE_INIT
-#define call_once(flag, func) pthread_once(flag, func)
+#define CALL_ONCE(flag, func) pthread_once(flag, func)
 
 #else
 /* Use standard C11 threads.h if available */

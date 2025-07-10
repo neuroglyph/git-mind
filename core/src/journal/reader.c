@@ -1,12 +1,17 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#include "gitmind.h"
-
-#include "gitmind/constants_cbor.h"
-#include "gitmind/constants_internal.h"
+#include "gitmind/journal.h"
+#include "gitmind/types.h"
+#include "gitmind/context.h"
+#include "gitmind/cbor/constants_cbor.h"
+#include "gitmind/error.h"
+#include "gitmind/edge.h"
+#include "gitmind/edge_attributed.h"
+#include "gitmind/attribution.h"
 
 #include <git2.h>
+#include <stdint.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +20,8 @@
 /* Constants */
 #define REFS_GITMIND_PREFIX "refs/gitmind/edges/"
 #define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
+#define REF_NAME_BUFFER_SIZE GM_PATH_MAX
+#define CURRENT_BRANCH_BUFFER_SIZE GM_PATH_MAX
 
 /* Forward declarations */
 int gm_edge_decode_cbor_ex(const uint8_t *buffer, size_t len, gm_edge_t *edge,
@@ -36,30 +43,41 @@ typedef struct {
 /* Convert legacy edge to attributed edge */
 static void convert_legacy_to_attributed(const gm_edge_t *legacy,
                                          gm_edge_attributed_t *attributed) {
-    /* Copy basic fields */
-    memcpy(attributed->src_sha, legacy->src_sha, SHA_BYTES_SIZE);
-    memcpy(attributed->tgt_sha, legacy->tgt_sha, SHA_BYTES_SIZE);
+    /* Copy basic fields using secure byte-by-byte copying */
+    for (size_t i = 0; i < GM_SHA1_SIZE; i++) {
+        attributed->src_sha[i] = legacy->src_sha[i];
+        attributed->tgt_sha[i] = legacy->tgt_sha[i];
+    }
     attributed->rel_type = legacy->rel_type;
     attributed->confidence = legacy->confidence;
     attributed->timestamp = legacy->timestamp;
 
-    /* Safe string copies */
+    /* Safe string copies using byte-by-byte copying */
     size_t src_len = strlen(legacy->src_path);
-    if (src_len >= sizeof(attributed->src_path))
+    if (src_len >= sizeof(attributed->src_path)) {
         src_len = sizeof(attributed->src_path) - 1;
-    memcpy(attributed->src_path, legacy->src_path, src_len);
+    }
+    for (size_t i = 0; i < src_len; i++) {
+        attributed->src_path[i] = legacy->src_path[i];
+    }
     attributed->src_path[src_len] = '\0';
 
     size_t tgt_len = strlen(legacy->tgt_path);
-    if (tgt_len >= sizeof(attributed->tgt_path))
+    if (tgt_len >= sizeof(attributed->tgt_path)) {
         tgt_len = sizeof(attributed->tgt_path) - 1;
-    memcpy(attributed->tgt_path, legacy->tgt_path, tgt_len);
+    }
+    for (size_t i = 0; i < tgt_len; i++) {
+        attributed->tgt_path[i] = legacy->tgt_path[i];
+    }
     attributed->tgt_path[tgt_len] = '\0';
 
     size_t ulid_len = strlen(legacy->ulid);
-    if (ulid_len >= sizeof(attributed->ulid))
+    if (ulid_len >= sizeof(attributed->ulid)) {
         ulid_len = sizeof(attributed->ulid) - 1;
-    memcpy(attributed->ulid, legacy->ulid, ulid_len);
+    }
+    for (size_t i = 0; i < ulid_len; i++) {
+        attributed->ulid[i] = legacy->ulid[i];
+    }
     attributed->ulid[ulid_len] = '\0';
 
     /* Set default attribution */
@@ -67,7 +85,7 @@ static void convert_legacy_to_attributed(const gm_edge_t *legacy,
     attributed->attribution.author[0] = '\0';
     attributed->attribution.session_id[0] = '\0';
     attributed->attribution.flags = 0;
-    attributed->lane = GM_LANE_DEFAULT;
+    attributed->lane = GM_LANE_PRIMARY;
 }
 
 /* Process attributed edge from CBOR */
@@ -87,7 +105,7 @@ static int process_attributed_edge(const uint8_t *cbor_data, size_t remaining,
         decode_result = gm_edge_decode_cbor_ex(cbor_data, remaining,
                                                &legacy_edge, &legacy_consumed);
         if (decode_result != GM_OK || legacy_consumed == 0) {
-            return GM_ERROR;
+            return GM_ERR_INVALID_FORMAT;
         }
 
         /* Convert legacy edge to attributed edge */
@@ -109,7 +127,7 @@ static int process_regular_edge(const uint8_t *cbor_data, size_t remaining,
     int decode_result =
         gm_edge_decode_cbor_ex(cbor_data, remaining, &edge, consumed);
     if (decode_result != GM_OK || *consumed == 0) {
-        return GM_ERROR;
+        return GM_ERR_INVALID_FORMAT;
     }
 
     /* Call regular callback */
@@ -127,7 +145,7 @@ static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
     /* Get raw commit message (contains CBOR data) */
     raw_message = git_commit_message_raw(commit);
     if (!raw_message) {
-        return GM_ERROR;
+        return GM_ERR_INVALID_FORMAT;
     }
 
     cbor_data = (const uint8_t *)raw_message;
@@ -147,7 +165,7 @@ static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
                                              rctx, &consumed);
         }
 
-        if (cb_result == GM_ERROR) {
+        if (cb_result == GM_ERR_INVALID_FORMAT) {
             break; /* No more edges to decode */
         }
 
@@ -170,7 +188,7 @@ static int walk_journal_generic(reader_ctx_t *rctx, const char *ref_name) {
     /* Create revision walker */
     error = git_revwalk_new(&walker, rctx->repo);
     if (error < 0) {
-        return GM_ERROR;
+        return GM_ERR_INVALID_FORMAT;
     }
 
     /* Set sorting to time order */
@@ -180,7 +198,7 @@ static int walk_journal_generic(reader_ctx_t *rctx, const char *ref_name) {
     error = git_revwalk_push_ref(walker, ref_name);
     if (error < 0) {
         git_revwalk_free(walker);
-        return GM_NOT_FOUND;
+        return GM_ERR_NOT_FOUND;
     }
 
     /* Walk commits */
@@ -209,7 +227,7 @@ static int walk_journal_generic(reader_ctx_t *rctx, const char *ref_name) {
     /* If no commits found, return NOT_FOUND */
     if (commit_count == 0) {
         git_revwalk_free(walker);
-        return GM_NOT_FOUND;
+        return GM_ERR_NOT_FOUND;
     }
 
     git_revwalk_free(walker);
@@ -222,10 +240,10 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
                                 int is_attributed) {
     reader_ctx_t rctx;
     char ref_name[REF_NAME_BUFFER_SIZE];
-    char current_branch[BUFFER_SIZE_TINY];
+    char current_branch[CURRENT_BRANCH_BUFFER_SIZE];
 
     if (!ctx || !callback) {
-        return GM_INVALID_ARG;
+        return GM_ERR_INVALID_ARGUMENT;
     }
 
     /* Initialize reader context */
@@ -242,13 +260,13 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
         git_reference *head = NULL;
         int error = git_repository_head(&head, rctx.repo);
         if (error < 0) {
-            return GM_ERROR;
+            return GM_ERR_INVALID_FORMAT;
         }
 
         const char *name = git_reference_shorthand(head);
         if (!name) {
             git_reference_free(head);
-            return GM_ERROR;
+            return GM_ERR_INVALID_FORMAT;
         }
 
         strncpy(current_branch, name, sizeof(current_branch) - 1);
@@ -267,15 +285,14 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
 
 /* Read journal for a branch */
 int gm_journal_read(gm_context_t *ctx, const char *branch,
-                    int (*callback)(const gm_edge_t *edge, void *userdata),
+                    gm_journal_read_callback_t callback,
                     void *userdata) {
-    return journal_read_generic(ctx, branch, callback, userdata, 0);
+    return journal_read_generic(ctx, branch, (void*)callback, userdata, 0);
 }
 
 /* Read attributed journal for a branch */
 int gm_journal_read_attributed(gm_context_t *ctx, const char *branch,
-                               int (*callback)(const gm_edge_attributed_t *edge,
-                                               void *userdata),
+                               gm_journal_read_attributed_callback_t callback,
                                void *userdata) {
-    return journal_read_generic(ctx, branch, callback, userdata, 1);
+    return journal_read_generic(ctx, branch, (void*)callback, userdata, 1);
 }

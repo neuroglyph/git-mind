@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     pkg-config \
     libsodium-dev \
+    libgit2-dev \
     git \
     curl \
     meson

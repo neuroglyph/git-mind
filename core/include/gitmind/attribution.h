@@ -39,6 +39,23 @@ typedef struct {
     uint32_t flags;                                 /**< Future expansion */
 } gm_attribution_t;
 
+/**
+ * Set default attribution based on source type
+ *
+ * @param attr Attribution structure to initialize
+ * @param source Source type (human, AI, etc.)
+ * @return 0 on success, -1 on error
+ */
+int gm_attribution_set_default(gm_attribution_t *attr, gm_source_type_t source);
+
+/**
+ * Get attribution from environment variables
+ *
+ * @param attr Attribution structure to populate
+ * @return 0 on success, -1 on error
+ */
+int gm_attribution_from_env(gm_attribution_t *attr);
+
 #ifdef __cplusplus
 }
 #endif

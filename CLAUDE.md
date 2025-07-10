@@ -83,11 +83,11 @@ When you’re given a job to do, here’s how to do it:
 - __SITREP__ = “Situation Report”
 - A briefing that describes your current tasks, your understanding of the situation, and what your next moves are
 - Include details that are relevant to the mission objective
-	- Stats
-	- Numbers
-	- Files
-	- GitHub issues/Pull Requests
-	- Intel that the user can use to make decisions
+- Stats
+- Numbers
+- Files
+- GitHub issues/Pull Requests
+- Intel that the user can use to make decisions
 - Give the user options and recommendations, then await orders
 
 ----
@@ -97,7 +97,7 @@ When you’re given a job to do, here’s how to do it:
 - Write about whatever ___you___ want
 - Permission to express yourself freely and however often you want about any topic you’d like
 - Good examples:
-	- Ideas that came up while you worked, but that you didn’t have an opportunity to express or surface
-	- Problems you notice as you work
-	- Insights into how we work together
+- Ideas that came up while you worked, but that you didn’t have an opportunity to express or surface
+- Problems you notice as you work
+- Insights into how we work together
 - Anything you want to jot down, this is your space for your memories, so if you want to remember something in the future, DEVLOG and tag it
