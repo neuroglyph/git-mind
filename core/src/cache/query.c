@@ -10,10 +10,12 @@
 #include <string.h>
 #include <time.h>
 
-#include "../../include/gitmind.h"
-#include "../../include/gitmind/constants_internal.h"
-#include "bitmap.h"
-#include "cache.h"
+#include "gitmind/cache.h"
+#include "gitmind/cache/bitmap.h"
+#include "gitmind/constants.h"
+#include "gitmind/context.h"
+#include "gitmind/error.h"
+#include "gitmind/journal.h"
 
 /* Constants */
 #define CACHE_MAX_AGE_SECONDS 3600 /* 1 hour */
@@ -32,8 +34,8 @@ static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
 }
 
 /* Load cache metadata from commit message */
-int gm_cache_load_meta(git_repository *repo, const char *branch,
-                       gm_cache_meta_t *meta) {
+int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *meta) {
+    git_repository *repo = (git_repository *)ctx->git_repo;
     git_reference *ref = NULL;
     git_commit *commit = NULL;
     char ref_name[REF_NAME_BUFFER_SIZE];
@@ -56,13 +58,13 @@ int gm_cache_load_meta(git_repository *repo, const char *branch,
 
     rc = git_commit_lookup(&commit, repo, &oid);
     if (rc < 0)
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
 
     /* Parse metadata from commit message */
     const char *msg = git_commit_message(commit);
     if (!msg || strlen(msg) < sizeof(gm_cache_meta_t)) {
         git_commit_free(commit);
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     memcpy(meta, msg, sizeof(gm_cache_meta_t));
@@ -72,17 +74,18 @@ int gm_cache_load_meta(git_repository *repo, const char *branch,
 }
 
 /* Check if cache is stale */
-bool gm_cache_is_stale(git_repository *repo, const char *branch) {
+bool gm_cache_is_stale(gm_context_t *ctx, const char *branch) {
     gm_cache_meta_t meta;
+    git_repository *repo = (git_repository *)ctx->git_repo;
 
     /* Try to load cache metadata */
-    if (gm_cache_load_meta(repo, branch, &meta) != GM_OK) {
+    if (gm_cache_load_meta(ctx, branch, &meta) != GM_OK) {
         return true; /* No cache = stale */
     }
 
     /* Check age */
     time_t now = time(NULL);
-    if (now - meta.journal_tip_time > CACHE_MAX_AGE_SECONDS) {
+    if ((uint64_t)now - meta.journal_tip_time > CACHE_MAX_AGE_SECONDS) {
         return true;
     }
 
@@ -143,7 +146,7 @@ static int load_bitmap_from_cache(git_repository *repo, git_tree *tree,
     rc = git_blob_lookup(&blob, repo, git_tree_entry_id(entry));
     git_tree_entry_free(entry);
     if (rc < 0)
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
 
     /* Deserialize bitmap */
     const void *data = git_blob_rawcontent(blob);
@@ -176,7 +179,7 @@ static int journal_scan_callback_generic(const gm_edge_t *edge,
         if (state->count >= state->capacity) {
             size_t new_capacity = state->capacity * 2;
             if (new_capacity > MAX_EDGE_IDS) {
-                return GM_ERROR; /* Too many edges */
+                return GM_ERR_UNKNOWN; /* Too many edges */
             }
 
             gm_edge_t *new_edges =
@@ -209,7 +212,9 @@ static int try_cache_query(git_repository *repo, const char *branch,
 
     /* Try to load cache metadata */
     gm_cache_meta_t meta;
-    rc = gm_cache_load_meta(repo, branch, &meta);
+    gm_context_t ctx = {0};
+    ctx.git_repo = repo;
+    rc = gm_cache_load_meta(&ctx, branch, &meta);
     if (rc != GM_OK) {
         return rc;
     }
@@ -223,14 +228,14 @@ static int try_cache_query(git_repository *repo, const char *branch,
 
     rc = git_commit_lookup(&cache_commit, repo, &cache_oid);
     if (rc < 0) {
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     /* Get cache tree */
     rc = git_commit_tree(&cache_tree, cache_commit);
     if (rc < 0) {
         git_commit_free(cache_commit);
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     /* Load bitmap for this SHA */
@@ -316,14 +321,16 @@ static int cache_query_generic(git_repository *repo, const char *branch,
 }
 
 /* Query edges by source SHA (forward index) */
-int gm_cache_query_fanout(git_repository *repo, const char *branch,
+int gm_cache_query_fanout(gm_context_t *ctx, const char *branch,
                           const uint8_t *src_sha, gm_cache_result_t *result) {
+    git_repository *repo = (git_repository *)ctx->git_repo;
     return cache_query_generic(repo, branch, src_sha, "forward", 1, result);
 }
 
 /* Query edges by target SHA (reverse index) */
-int gm_cache_query_fanin(git_repository *repo, const char *branch,
+int gm_cache_query_fanin(gm_context_t *ctx, const char *branch,
                          const uint8_t *tgt_sha, gm_cache_result_t *result) {
+    git_repository *repo = (git_repository *)ctx->git_repo;
     return cache_query_generic(repo, branch, tgt_sha, "reverse", 0, result);
 }
 
@@ -341,10 +348,11 @@ int gm_cache_calculate_size(git_repository *repo, const git_oid *tree_oid,
                             uint64_t *size_bytes);
 
 /* Get cache statistics */
-int gm_cache_stats(git_repository *repo, const char *branch,
+int gm_cache_stats(gm_context_t *ctx, const char *branch,
                    uint64_t *edge_count, uint64_t *cache_size_bytes) {
     gm_cache_meta_t meta;
-    int rc = gm_cache_load_meta(repo, branch, &meta);
+    git_repository *repo = (git_repository *)ctx->git_repo;
+    int rc = gm_cache_load_meta(ctx, branch, &meta);
     if (rc != GM_OK) {
         return rc;
     }

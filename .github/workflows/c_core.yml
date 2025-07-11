@@ -12,7 +12,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y wget gnupg lsb-release python3-pip
           wget -O - https://apt.llvm.org/llvm.sh | sudo bash -s -- 20
-          sudo apt-get install -y clang-20 clang-tidy-20 cppcheck libsodium-dev libgit2-dev
+          sudo apt-get install -y clang-20 clang-tidy-20 cppcheck libsodium-dev libgit2-dev libroaring-dev
           sudo ln -sf /usr/bin/clang-tidy-20 /usr/local/bin/clang-tidy
           sudo ln -sf /usr/bin/clang++-20    /usr/local/bin/clang++
           sudo ln -sf /usr/bin/clang-20      /usr/local/bin/clang

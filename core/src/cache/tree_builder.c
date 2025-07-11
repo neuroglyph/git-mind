@@ -11,7 +11,11 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "../../include/gitmind.h"
+#include "gitmind/cache.h"
+#include "gitmind/constants.h"
+#include "gitmind/context.h"
+#include "gitmind/error.h"
+#include "gitmind/types.h"
 
 /* Forward declaration */
 static int add_directory_to_tree(git_repository *repo,
@@ -27,13 +31,13 @@ static int add_file_to_tree(git_repository *repo, git_treebuilder *builder,
     /* Create blob from file */
     rc = git_blob_create_from_workdir(&blob_oid, repo, file_path);
     if (rc < 0) {
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     /* Add to tree */
     rc = git_treebuilder_insert(NULL, builder, name, &blob_oid,
                                 GIT_FILEMODE_BLOB);
-    return rc < 0 ? GM_ERROR : GM_OK;
+    return rc < 0 ? GM_ERR_UNKNOWN : GM_OK;
 }
 
 /* Process a single file system entry */
@@ -91,7 +95,7 @@ static int add_tree_to_parent(git_treebuilder *dir_builder,
     /* Write this directory's tree */
     rc = git_treebuilder_write(&tree_oid, dir_builder);
     if (rc < 0) {
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     if (parent_builder) {
@@ -101,7 +105,7 @@ static int add_tree_to_parent(git_treebuilder *dir_builder,
         rc = git_treebuilder_insert(NULL, parent_builder, dirname, &tree_oid,
                                     GIT_FILEMODE_TREE);
         if (rc < 0) {
-            return GM_ERROR;
+            return GM_ERR_UNKNOWN;
         }
     }
 
@@ -126,7 +130,7 @@ static int add_directory_to_tree(git_repository *repo,
     rc = git_treebuilder_new(&dir_builder, repo, NULL);
     if (rc < 0) {
         closedir(dir);
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     /* Process directory entries */
@@ -178,7 +182,7 @@ static int process_directory_entry(git_repository *repo,
 
     rc = git_treebuilder_new(&sub_builder, repo, NULL);
     if (rc < 0) {
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     rc = add_directory_to_tree(repo, sub_builder, full_path, NULL);
@@ -193,7 +197,7 @@ static int process_directory_entry(git_repository *repo,
     }
 
     git_treebuilder_free(sub_builder);
-    return rc < 0 ? GM_ERROR : GM_OK;
+    return rc < 0 ? GM_ERR_UNKNOWN : GM_OK;
 }
 
 /* Build directory tree */
@@ -224,7 +228,7 @@ int gm_build_tree_from_directory(git_repository *repo, const char *dir_path,
     /* Create root tree builder */
     rc = git_treebuilder_new(&root_builder, repo, NULL);
     if (rc < 0) {
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     /* Build directory tree */
@@ -234,7 +238,7 @@ int gm_build_tree_from_directory(git_repository *repo, const char *dir_path,
     if (rc == GM_OK) {
         rc = git_treebuilder_write(tree_oid, root_builder);
         if (rc < 0) {
-            rc = GM_ERROR;
+            rc = GM_ERR_UNKNOWN;
         }
     }
 
