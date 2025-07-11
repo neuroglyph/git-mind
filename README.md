@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
-<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+<!-- © J. Kirby Ross / Neuroglyph Collective -->
 
 # `git-mind` 🧠
 
@@ -9,7 +9,7 @@ __🚧 MAJOR ARCHITECTURAL MIGRATION IN PROGRESS 🏗️__
 
 We’re transforming `git-mind` from a monolithic CLI into a clean, embeddable C library with zero warnings under extreme compiler strictness. 
 
-__Progress__: Core library 90% complete | CLI separation 0% | New apps 0%
+__Progress__: Core library 95% complete | CLI separation 0% | New apps 0%
 
 See [The Great Migration](#the-great-migration) below for details.
 
@@ -53,6 +53,7 @@ sudo ninja -C build install
 - Ninja
 - libsodium
 - libgit2 (for Git object manipulation)
+- CRoaring/roaring (for bitmap operations)
 
 ## Core Concepts
 
@@ -175,10 +176,9 @@ We started with **11,951 compiler warnings** - a technical debt mountain that wa
 
 ### Migration Milestones
 
-#### 🎯 Milestone 1: "Core Complete" (~90% done)
+#### 🎯 Milestone 1: "Core Complete" (~95% done)
 
-__Status__: 🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜  
-__Target__: ~~January 2025~~ **AHEAD OF SCHEDULE**
+__Status__: 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟨
 
 ✅ __Completed (Warning-Free™)__
 
@@ -196,12 +196,12 @@ __Target__: ~~January 2025~~ **AHEAD OF SCHEDULE**
 
 🔄 __Final Core Components__
 
-- Utility consolidation (cleanup legacy duplicates) - **Only module remaining!**
+- Hooks system (2 files remaining)
+- Utility consolidation (conflict resolution needed)
 
-#### 🎯 Milestone 2: “CLI: Oh My!” (0% done)
+#### 🎯 Milestone 2: "CLI: Oh My!" (0% done)
 
-__Status__: ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜  
-__Target__: February 2025
+__Status__: ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
 
 📋 __Application Separation Tasks__
 
@@ -211,10 +211,9 @@ __Target__: February 2025
 - Implement against libgitmind API
 - Add modern CLI features (colors, progress bars)
 
-#### 🎯 Milestone 3: “Beyond CLI” (0% done)
+#### 🎯 Milestone 3: "Beyond CLI" (0% done)
 
-__Status__: ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜  
-__Target__: March 2025
+__Status__: ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
 
 🚀 __New Applications__
 
@@ -257,15 +256,15 @@ git-mind/
 └── bindings/       # Language bindings (Python, Rust, etc.)
 ```
 
-## 🚀 Beyond Migration: Coming Soon
+## 🚀 Beyond Migration: Future Ideas
 
-### 🧠 Semantic Intelligence (Q2 2025)
+### 🧠 Semantic Intelligence
 
 - __AI-Powered Discovery__: Automatically detect and suggest relationships between code artifacts
-- __Natural Language Queries__: “Show me all code that implements authentication”
+- __Natural Language Queries__: "Show me all code that implements authentication"
 - __Intelligent Refactoring__: Track concept migrations across architectural changes
 
-### 🌐 Distributed Knowledge (Q3 2025)
+### 🌐 Distributed Knowledge
 
 - __Cross-Repository Links__: Connect knowledge across project boundaries
 - __Federated Graphs__: Share and merge knowledge graphs between teams
@@ -283,4 +282,4 @@ git-mind/
 
 Licensed under `LicenseRef-MIND-UCAL-1.0`. See [LICENSE](./LICENSE) file for details.
 
-© 2025 – J. Kirby Ross • <https://github.com/flyingrobots>
+© J. Kirby Ross • <https://github.com/flyingrobots>
