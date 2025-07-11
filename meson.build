@@ -1,6 +1,6 @@
 project('git-mind', 'c',
         version: '0.6.0',
-        default_options: ['c_std=c23', 'warning_level=3'])
+        default_options: ['c_std=c23', 'warning_level=3', 'werror=true'])
 
 # C23 compiler flags as specified
 add_project_arguments(
@@ -8,7 +8,7 @@ add_project_arguments(
   '-fstrict-flex-arrays=3',  # C23 default; makes UB obvious
   '-Wdouble-promotion',
   '-Wpedantic',
-  '-Werror',                 # CI stays brutally honest
+  # Note: -Werror is set via werror=true in project() default_options
   '-Wvla',                   # Ban variable-length arrays
   '-Wshadow',                # No variable shadowing
   '-Wstrict-prototypes',     # Require proper prototypes
@@ -32,24 +32,23 @@ add_project_arguments(
 libsodium_dep = dependency('libsodium', required : true)
 libgit2_dep = dependency('libgit2', required : true)
 thread_dep = dependency('threads')
-# CRoaring (Roaring Bitmaps) dependency - mandatory but vendorable
-roaring_dep = dependency('croaring', required : false)
+# CRoaring (Roaring Bitmaps) dependency - robust detection
+roaring_dep = dependency('roaring', required : false)
 if not roaring_dep.found()
-  roaring_dep = dependency('roaring', required : false)
+  roaring_dep = dependency('croaring', required : false)
 endif
 if not roaring_dep.found()
-  # Try pkg-config with different names
   roaring_dep = dependency('CRoaring', required : false)
 endif
 if not roaring_dep.found()
-  error('CRoaring library is required but not found.\n' +
+  error('CRoaring/roaring library is required but not found.\n' +
         'Install via package manager:\n' +
         '  Ubuntu/Debian: apt install libroaring-dev\n' +
         '  Fedora/RHEL: dnf install CRoaring-devel\n' +
         '  macOS: brew install croaring\n' +
         '  Or build from source: https://github.com/RoaringBitmap/CRoaring\n' +
         '\n' +
-        'Alternative: Add vendored CRoaring to deps/ directory')
+        'Note: Different distributions may name the pkg-config file differently.')
 endif
 
 # Source files
@@ -86,7 +85,8 @@ inc = include_directories('core/include', 'include')
 # Mark roaring headers as system includes to suppress third-party warnings
 roaring_inc_args = []
 if roaring_dep.found()
-  roaring_inc_dir = roaring_dep.get_pkgconfig_variable('includedir')
+  # Use modern API that works with any dependency type
+  roaring_inc_dir = roaring_dep.get_variable(pkgconfig: 'includedir', default_value: '')
   if roaring_inc_dir != ''
     roaring_inc_args = ['-isystem', roaring_inc_dir]
   endif
