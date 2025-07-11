@@ -4,12 +4,12 @@
 #include "gitmind/cache/bitmap.h"
 
 #include <errno.h>
+#include <roaring/roaring.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "gitmind/cache.h"
 #include "gitmind/constants.h"
 #include "gitmind/error.h"
 
@@ -54,11 +54,13 @@ int gm_bitmap_serialize(const gm_bitmap_t *bitmap, uint8_t **buffer,
     }
 
     /* Write header */
-    gm_bitmap_header_t header;
-    memcpy(header.magic, BITMAP_MAGIC, GM_BITMAP_MAGIC_SIZE);
-    header.version = BITMAP_VERSION;
-    header.flags = 0;
-    memcpy(*buffer, &header, header_size);
+    gm_bitmap_header_t header = {
+        .magic = BITMAP_MAGIC,
+        .version = BITMAP_VERSION,
+        .flags = 0,
+    };
+    static_assert(sizeof(header) == header_size, "header size drift");
+    *(gm_bitmap_header_t *)*buffer = header;
 
     /* Serialize bitmap */
     size_t written =
@@ -83,14 +85,12 @@ int gm_bitmap_deserialize(const uint8_t *buffer, size_t size,
     }
 
     /* Read and validate header */
-    gm_bitmap_header_t header;
-    memcpy(&header, buffer, header_size);
-
-    if (memcmp(header.magic, BITMAP_MAGIC, GM_BITMAP_MAGIC_SIZE) != 0) {
+    const gm_bitmap_header_t *hdr = (const gm_bitmap_header_t *)buffer;
+    if (memcmp(hdr->magic, BITMAP_MAGIC, sizeof hdr->magic) != 0) {
         return GM_ERR_UNKNOWN;
     }
 
-    if (header.version != BITMAP_VERSION) {
+    if (hdr->version != BITMAP_VERSION) {
         return GM_ERR_UNKNOWN;
     }
 
@@ -108,21 +108,24 @@ int gm_bitmap_write_file(const gm_bitmap_t *bitmap, const char *path) {
     size_t size = 0;
 
     /* Serialize to buffer */
-    int rc = gm_bitmap_serialize(bitmap, &buffer, &size);
-    if (rc != GM_OK) {
-        return rc;
+    int result = gm_bitmap_serialize(bitmap, &buffer, &size);
+    if (result != GM_OK) {
+        return result;
     }
 
     /* Write to file */
-    FILE *f = fopen(path, "wb");
-    if (!f) {
+    FILE *file = fopen(path, "wb");
+    if (!file) {
         free(buffer);
         return GM_IO_ERROR;
     }
 
-    size_t written = fwrite(buffer, 1, size, f);
+    size_t written = fwrite(buffer, 1, size, file);
     int save_errno = errno;
-    fclose(f);
+    if (fclose(file) != 0) {
+        free(buffer);
+        return GM_IO_ERROR;
+    }
     free(buffer);
 
     if (written != size) {
@@ -134,18 +137,28 @@ int gm_bitmap_write_file(const gm_bitmap_t *bitmap, const char *path) {
 }
 
 int gm_bitmap_read_file(const char *path, gm_bitmap_ptr *bitmap) {
-    FILE *f = fopen(path, "rb");
-    if (!f) {
+    FILE *file = fopen(path, "rb");
+    if (!file) {
         return GM_NOT_FOUND;
     }
 
     /* Get file size */
-    fseek(f, 0, SEEK_END);
-    long file_size = ftell(f);
-    fseek(f, 0, SEEK_SET);
+    if (fseek(file, 0, SEEK_END) != 0) {
+        fclose(file);
+        return GM_IO_ERROR;
+    }
+    long file_size = ftell(file);
+    if (file_size < 0) {
+        fclose(file);
+        return GM_IO_ERROR;
+    }
+    if (fseek(file, 0, SEEK_SET) != 0) {
+        fclose(file);
+        return GM_IO_ERROR;
+    }
 
     if (file_size < 0 || file_size > INT32_MAX) {
-        fclose(f);
+        fclose(file);
         return GM_ERR_UNKNOWN;
     }
 
@@ -154,12 +167,15 @@ int gm_bitmap_read_file(const char *path, gm_bitmap_ptr *bitmap) {
     /* Read file */
     uint8_t *buffer = malloc(buffer_size);
     if (!buffer) {
-        fclose(f);
+        fclose(file);
         return GM_NO_MEMORY;
     }
 
-    size_t read = fread(buffer, 1, buffer_size, f);
-    fclose(f);
+    size_t read = fread(buffer, 1, buffer_size, file);
+    if (fclose(file) != 0) {
+        free(buffer);
+        return GM_IO_ERROR;
+    }
 
     if (read != buffer_size) {
         free(buffer);
@@ -167,13 +183,14 @@ int gm_bitmap_read_file(const char *path, gm_bitmap_ptr *bitmap) {
     }
 
     /* Deserialize */
-    int rc = gm_bitmap_deserialize(buffer, buffer_size, bitmap);
+    int result = gm_bitmap_deserialize(buffer, buffer_size, bitmap);
     free(buffer);
-    return rc;
+    return result;
 }
 
 void gm_bitmap_stats(const gm_bitmap_t *bitmap, uint64_t *cardinality,
                      uint64_t *size_bytes) {
+    /* Parameters are naturally similar - differentiate by names */
     if (cardinality) {
         *cardinality = roaring_bitmap_get_cardinality(bitmap);
     }
