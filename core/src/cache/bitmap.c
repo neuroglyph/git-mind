@@ -53,14 +53,18 @@ int gm_bitmap_serialize(const gm_bitmap_t *bitmap, uint8_t **buffer,
         return GM_NO_MEMORY;
     }
 
-    /* Write header */
+    /* Write header - buffer is malloc'd so alignment is guaranteed */
     gm_bitmap_header_t header = {
         .magic = BITMAP_MAGIC,
         .version = BITMAP_VERSION,
         .flags = 0,
     };
-    static_assert(sizeof(header) == header_size, "header size drift");
-    *(gm_bitmap_header_t *)*buffer = header;
+    /* Verify header size matches our expectation */
+    _Static_assert(sizeof(gm_bitmap_header_t) == 16, "header size drift");
+    
+    /* Direct struct assignment - malloc guarantees proper alignment */
+    gm_bitmap_header_t *header_ptr = (gm_bitmap_header_t *)(void *)*buffer;
+    *header_ptr = header;
 
     /* Serialize bitmap */
     size_t written =
@@ -84,13 +88,12 @@ int gm_bitmap_deserialize(const uint8_t *buffer, size_t size,
         return GM_ERR_UNKNOWN;
     }
 
-    /* Read and validate header */
-    const gm_bitmap_header_t *hdr = (const gm_bitmap_header_t *)buffer;
-    if (memcmp(hdr->magic, BITMAP_MAGIC, sizeof hdr->magic) != 0) {
-        return GM_ERR_UNKNOWN;
-    }
-
-    if (hdr->version != BITMAP_VERSION) {
+    /* Read header with bounce copy for alignment safety */
+    gm_bitmap_header_t hdr;
+    memcpy(&hdr, buffer, sizeof(hdr));
+    
+    if (memcmp(hdr.magic, BITMAP_MAGIC, sizeof hdr.magic) != 0 ||
+        hdr.version != BITMAP_VERSION) {
         return GM_ERR_UNKNOWN;
     }
 

@@ -83,12 +83,22 @@ src = files(
 # Include directories
 inc = include_directories('core/include', 'include')
 
+# Mark roaring headers as system includes to suppress third-party warnings
+roaring_inc_args = []
+if roaring_dep.found()
+  roaring_inc_dir = roaring_dep.get_pkgconfig_variable('includedir')
+  if roaring_inc_dir != ''
+    roaring_inc_args = ['-isystem', roaring_inc_dir]
+  endif
+endif
+
 # Build static library
 libgitmind = static_library(
   'gitmind',
   src,
   include_directories : inc,
-  dependencies : [libsodium_dep, libgit2_dep, thread_dep, roaring_dep]
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep, roaring_dep],
+  c_args : roaring_inc_args
 )
 
 # Test backend - ONLY for tests
