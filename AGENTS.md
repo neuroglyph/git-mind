@@ -40,6 +40,16 @@
 - Make minimal, focused diffs; avoid drive-by refactors. Match existing patterns in `core/` and headers under `include/`.
 - Run build, tests, and lint locally before proposing changes. Keep changes zero-warnings and formatted.
 
+## Working Knowledge (for agents)
+- Journal-first graph: Edges are CBOR commits under `refs/gitmind/edges/<branch>`; cache lives in `refs/gitmind/cache/<branch>` and is rebuildable (never merged).
+- Semantics as names: Store `type_name` and `lane_name` as UTF-8 strings on edges; do not collapse into a generic/custom type. Derive 64-bit IDs from names (NFC + stable hash) only for cache/filters.
+- Time-travel correctness: All semantics (and optional advice) are in-history; queries evaluate against the chosen commit and branch.
+- Merge/conflict model: Append-only journal; edge ULIDs form an OR-Set; “Semantics Advice” (optional) merges with hybrid CRDT (LWW scalars, OR-Set collections).
+- Link vs code authors: Edge attribution `author` is the link creator (from `git config` unless provided); code authorship at the chosen commit is recorded separately (per-file last commit author/time) when using Neo4j upsert tooling.
+- Docker hygiene: Images are namespaced/labeled (`gitmind/ci:clang-20`, `gitmind/gauntlet:<compiler>`; label `com.gitmind.project=git-mind`). Use `make docker-clean` to reclaim space safely.
+- CI/Tidy nuance: Local builds and tests pass. Clang-tidy in Docker depends on CRoaring headers in the CI image; add a source build step for deterministic results on aarch64 if CI flags it.
+
+
 ## Neo4j Codex Log (Memory Graph)
 - Purpose: record tasks, touched files, and relationships to enable impact/risk queries for this repo.
 - Project tagging: all nodes carry label `:GM` and `repo:'git-mind'`.

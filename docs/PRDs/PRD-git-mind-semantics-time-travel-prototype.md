@@ -65,8 +65,8 @@ erDiagram
   }
   ADVICE {
     string subject_name
-    string kind  // "type"|"lane"
-    json   props // e.g., symmetric, transitive, color, implies[]
+    string kind
+    json   props
   }
 ```
 
@@ -88,8 +88,8 @@ erDiagram
   COMPONENT ||--o{ EDGE : participates
 
   EDGE {
-    string type_name  // e.g., CALLS, IMPLEMENTS, TESTS
-    string lane_name  // e.g., verified, draft
+    string type_name
+    string lane_name
   }
 ```
 
@@ -119,7 +119,7 @@ sequenceDiagram
   participant J as Journal (refs/gitmind/edges)
 
   CLI->>Core: link A -> B (type=implements, lane=verified)
-  Core->>Core: resolve blob SHAs; nfc(type/lane)
+  Core->>Core: resolve blob SHAs, nfc(type/lane)
   Core->>Core: type_id=hash(type), lane_id=hash(lane)
   Core->>Plug: edge.pre_append(edge) [opt]
   Plug-->>Core: normalized edge (aliases, checks)
@@ -134,7 +134,7 @@ flowchart LR
   A[Filter: type=implements, lane=verified] --> B[Compute IDs]
   B --> C[Bitmap lookup: fanout/fanin by type_id/lane_id]
   C --> D[Materialize edge records]
-  D --> E[Apply advice (symmetric/transitive) if present]
+  D --> E[Apply advicem–symmetric/transitive–if present]
 E --> F[Return results]
 ```
 
