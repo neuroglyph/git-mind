@@ -1,14 +1,19 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#define _POSIX_C_SOURCE 200809L
-
-#include <git2.h>
-
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <roaring/roaring.h>
+
+#include <git2/repository.h>
+#include <git2/refs.h>
+#include <git2/commit.h>
+#include <git2/oid.h>
+#include <git2/tree.h>
+#include <git2/blob.h>
 
 #include "gitmind/cache.h"
 #include "gitmind/cache/bitmap.h"
@@ -16,6 +21,7 @@
 #include "gitmind/context.h"
 #include "gitmind/error.h"
 #include "gitmind/journal.h"
+#include "gitmind/security/memory.h"
 
 /* Constants */
 #define CACHE_MAX_AGE_SECONDS 3600 /* 1 hour */
@@ -28,9 +34,11 @@
 static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
     int chars = (bits + 3) / BITS_PER_HEX_CHAR; /* Round up to hex chars */
     for (int i = 0; i < chars; i++) {
-        sprintf(prefix + i * HEX_CHARS_PER_BYTE, "%02x", sha[i]);
+        size_t off = (size_t)i * (size_t)HEX_CHARS_PER_BYTE;
+        (void)snprintf(prefix + off, (size_t)HEX_CHARS_PER_BYTE + 1, "%02x",
+                       sha[i]);
     }
-    prefix[chars * HEX_CHARS_PER_BYTE] = '\0';
+    prefix[(size_t)chars * (size_t)HEX_CHARS_PER_BYTE] = '\0';
 }
 
 /* Load cache metadata from commit message */
@@ -42,23 +50,26 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
     int rc;
 
     /* Build cache ref name */
-    snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
+    (void)snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
 
     /* Look up cache reference */
     rc = git_reference_lookup(&ref, repo, ref_name);
-    if (rc < 0)
+    if (rc < 0) {
         return GM_NOT_FOUND;
+    }
 
     /* Get commit */
     git_oid oid;
     rc = git_reference_name_to_id(&oid, repo, ref_name);
     git_reference_free(ref);
-    if (rc < 0)
+    if (rc < 0) {
         return GM_NOT_FOUND;
+    }
 
     rc = git_commit_lookup(&commit, repo, &oid);
-    if (rc < 0)
+    if (rc < 0) {
         return GM_ERR_UNKNOWN;
+    }
 
     /* Parse metadata from commit message */
     const char *msg = git_commit_message(commit);
@@ -67,7 +78,7 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
         return GM_ERR_UNKNOWN;
     }
 
-    memcpy(meta, msg, sizeof(gm_cache_meta_t));
+    gm_memcpy_safe(meta, sizeof *meta, msg, sizeof(gm_cache_meta_t));
     git_commit_free(commit);
 
     return GM_OK;
@@ -92,7 +103,7 @@ bool gm_cache_is_stale(gm_context_t *ctx, const char *branch) {
     /* Check if journal has new commits since cache was built */
     git_reference *journal_ref = NULL;
     char journal_ref_name[REF_NAME_BUFFER_SIZE];
-    snprintf(journal_ref_name, sizeof(journal_ref_name),
+    (void)snprintf(journal_ref_name, sizeof(journal_ref_name),
              "refs/gitmind/edges/%s", branch);
 
     if (git_reference_lookup(&journal_ref, repo, journal_ref_name) == 0) {
@@ -130,12 +141,14 @@ static int load_bitmap_from_cache(git_repository *repo, git_tree *tree,
 
     /* Convert SHA to hex */
     for (int i = 0; i < GM_SHA1_SIZE; i++) {
-        sprintf(sha_hex + i * HEX_CHARS_PER_BYTE, "%02x", sha[i]);
+        size_t off = (size_t)i * (size_t)HEX_CHARS_PER_BYTE;
+        (void)snprintf(sha_hex + off, (size_t)HEX_CHARS_PER_BYTE + 1, "%02x",
+                       sha[i]);
     }
-    sha_hex[GM_SHA1_SIZE * HEX_CHARS_PER_BYTE] = '\0';
+    sha_hex[(size_t)GM_SHA1_SIZE * (size_t)HEX_CHARS_PER_BYTE] = '\0';
 
     /* Build path: prefix/sha.suffix */
-    snprintf(path, sizeof(path), "%s/%s.%s", prefix, sha_hex, suffix);
+    (void)snprintf(path, sizeof(path), "%s/%s.%s", prefix, sha_hex, suffix);
 
     /* Look up tree entry */
     rc = git_tree_entry_bypath(&entry, tree, path);
@@ -220,7 +233,7 @@ static int try_cache_query(git_repository *repo, const char *branch,
     }
 
     /* Get cache commit */
-    snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
+    (void)snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
     rc = git_reference_name_to_id(&cache_oid, repo, ref_name);
     if (rc < 0) {
         return GM_NOT_FOUND;

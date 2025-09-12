@@ -1,11 +1,8 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#define _POSIX_C_SOURCE 200809L
-
-#include <git2.h>
-
 #include <dirent.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +13,11 @@
 #include "gitmind/context.h"
 #include "gitmind/error.h"
 #include "gitmind/types.h"
+
+#include <git2/repository.h>
+#include <git2/tree.h>
+#include <git2/oid.h>
+#include <git2/blob.h>
 
 /* Forward declaration */
 static int add_directory_to_tree(git_repository *repo,
@@ -55,7 +57,7 @@ static int process_fs_entry(git_repository *repo, git_treebuilder *dir_builder,
     }
 
     /* Build full path */
-    snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry_name);
+    (void)snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry_name);
 
     /* Get file info - use lstat to avoid following symlinks */
     if (lstat(full_path, &st) < 0) {
@@ -65,11 +67,11 @@ static int process_fs_entry(git_repository *repo, git_treebuilder *dir_builder,
     if (S_ISDIR(st.st_mode)) {
         /* Build relative path for subdirectory */
         if (rel_path) {
-            snprintf(entry_rel_path, sizeof(entry_rel_path), "%s/%s", rel_path,
-                     entry_name);
+            (void)snprintf(entry_rel_path, sizeof(entry_rel_path), "%s/%s",
+                           rel_path, entry_name);
         } else {
-            strncpy(entry_rel_path, entry_name, sizeof(entry_rel_path) - 1);
-            entry_rel_path[sizeof(entry_rel_path) - 1] = '\0';
+            (void)snprintf(entry_rel_path, sizeof(entry_rel_path), "%s",
+                           entry_name);
         }
         rc =
             add_directory_to_tree(repo, dir_builder, full_path, entry_rel_path);

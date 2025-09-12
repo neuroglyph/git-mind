@@ -11,6 +11,7 @@
 #include "gitmind/types.h"
 #include "gitmind/attribution.h"
 #include <stdint.h>
+#include "gitmind/security/memory.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -160,8 +161,8 @@ gm_result_edge_attributed_t gm_edge_attributed_create(
     assert(src_len + 1 <= GM_PATH_MAX);  /* +1 for null terminator */
     assert(tgt_len + 1 <= GM_PATH_MAX);
     
-    memcpy(edge.src_path, src_path, src_len + 1);
-    memcpy(edge.tgt_path, tgt_path, tgt_len + 1);
+    gm_memcpy_safe(edge.src_path, sizeof edge.src_path, src_path, src_len + 1);
+    gm_memcpy_safe(edge.tgt_path, sizeof edge.tgt_path, tgt_path, tgt_len + 1);
     
     /* Generate ULID */
     gm_result_ulid_t ulid_result = gm_ulid_generate(edge.ulid);

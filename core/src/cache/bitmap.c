@@ -12,10 +12,12 @@
 
 #include "gitmind/constants.h"
 #include "gitmind/error.h"
+#include "gitmind/security/memory.h"
 
 /* Magic number and version */
 #define BITMAP_MAGIC "GMCACHE\0"
 #define BITMAP_VERSION 1
+#define GM_BITMAP_HEADER_SIZE 16
 
 void gm_bitmap_add_many(gm_bitmap_ptr bitmap, const uint32_t *edge_ids,
                         size_t count) {
@@ -60,11 +62,11 @@ int gm_bitmap_serialize(const gm_bitmap_t *bitmap, uint8_t **buffer,
         .flags = 0,
     };
     /* Verify header size matches our expectation */
-    _Static_assert(sizeof(gm_bitmap_header_t) == 16, "header size drift");
+    _Static_assert(sizeof(gm_bitmap_header_t) == GM_BITMAP_HEADER_SIZE,
+                   "header size drift");
     
-    /* Direct struct assignment - malloc guarantees proper alignment */
-    gm_bitmap_header_t *header_ptr = (gm_bitmap_header_t *)(void *)*buffer;
-    *header_ptr = header;
+    /* Copy header bytes safely */
+    gm_memcpy_safe(*buffer, total_size, &header, sizeof header);
 
     /* Serialize bitmap */
     size_t written =
@@ -90,7 +92,7 @@ int gm_bitmap_deserialize(const uint8_t *buffer, size_t size,
 
     /* Read header with bounce copy for alignment safety */
     gm_bitmap_header_t hdr;
-    memcpy(&hdr, buffer, sizeof(hdr));
+    gm_memcpy_safe(&hdr, sizeof hdr, buffer, sizeof hdr);
     
     if (memcmp(hdr.magic, BITMAP_MAGIC, sizeof hdr.magic) != 0 ||
         hdr.version != BITMAP_VERSION) {

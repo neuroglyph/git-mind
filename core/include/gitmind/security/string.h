@@ -45,10 +45,18 @@ int gm_vsnprintf(char *str, size_t size, const char *format, va_list args) {
 
     int result;
     if (size == 0) {
+#if defined(__clang__) || defined(__GNUC__)
+        result = __builtin___vsnprintf_chk(NULL, 0, 0, 0, format, args);
+#else
         result = vsnprintf(NULL, 0, format, args);
+#endif
     } else {
         assert(str != NULL && "gm_vsnprintf: buffer cannot be null with non-zero size");
+#if defined(__clang__) || defined(__GNUC__)
+        result = __builtin___vsnprintf_chk(str, size, 0, size, format, args);
+#else
         result = vsnprintf(str, size, format, args);
+#endif
     }
 
 #if defined(__clang__)
