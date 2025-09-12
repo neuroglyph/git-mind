@@ -4,7 +4,8 @@
 #ifndef GM_CACHE_H
 #define GM_CACHE_H
 
-#include <git2.h>
+#include <git2/oid.h>
+#include <git2/repository.h>
 
 #include <stdbool.h>
 #include <stddef.h>

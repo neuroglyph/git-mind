@@ -5,6 +5,10 @@
 
 set -euo pipefail
 
+# Namespace/prefix to keep images tidy and easy to prune
+GITMIND_NS=${GITMIND_NS:-gitmind}
+IMAGE_PREFIX="${GITMIND_NS}/gauntlet"
+
 echo "🔥 DEVIL'S COMPILER GAUNTLET 666 🔥"
 echo "Building Docker images for 5 compilers in parallel..."
 
@@ -15,7 +19,10 @@ COMPILERS=("gcc-12" "gcc-13" "clang-18" "clang-19" "clang-20")
 echo "Building Docker images..."
 for compiler in "${COMPILERS[@]}"; do
     echo "Building $compiler image..."
-    docker build --target $compiler -t gauntlet-$compiler:latest -f tools/gauntlet/Dockerfile.gauntlet . &
+    docker build --target "$compiler" \
+      -t "${IMAGE_PREFIX}:$compiler" \
+      --label com.gitmind.project=git-mind \
+      -f tools/gauntlet/Dockerfile.gauntlet . &
 done
 
 # Wait for all builds to complete
@@ -33,7 +40,8 @@ echo ""
 PIDS=()
 for compiler in "${COMPILERS[@]}"; do
     echo "Starting $compiler test..."
-    docker run --rm -v "$PWD":/workspace -w /workspace gauntlet-$compiler:latest > $compiler.log 2>&1 &
+    docker run --rm --label com.gitmind.project=git-mind -v "$PWD":/workspace -w /workspace \
+      "${IMAGE_PREFIX}:$compiler" > "$compiler.log" 2>&1 &
     PIDS+=($!)
 done
 

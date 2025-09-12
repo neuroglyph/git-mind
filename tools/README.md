@@ -18,6 +18,7 @@ This directory contains build, CI, and development tools for the git-mind projec
 - **Output**: 
   - `clang-tidy-report-full.txt` - Complete output
   - `clang-tidy-report.txt` - Filtered to project warnings only
+ - **Images**: Tags under `${GITMIND_NS:-gitmind}/ci:<version>` (labeled `com.gitmind.project=git-mind`)
 
 ### 🎉 `check-warning-fix.sh`
 - **Purpose**: Verifies warning fixes and celebrates progress
@@ -41,6 +42,11 @@ This directory contains build, CI, and development tools for the git-mind projec
 ### 🔍 `parse_warnings.py`
 - **Purpose**: More sophisticated warning parser (deprecated)
 - **Note**: Replaced by simpler `count_warnings.py`
+
+### 🧹 `docker-clean.sh`
+- **Purpose**: Removes only git-mind containers/images and prunes builder cache
+- **Usage**: `./tools/docker-clean.sh`
+- **Scope**: Targets images labeled `com.gitmind.project=git-mind` and repositories prefixed with `${GITMIND_NS:-gitmind}/...`
 
 ## Workflow
 
@@ -67,7 +73,7 @@ This directory contains build, CI, and development tools for the git-mind projec
 
 ## Docker Image
 
-The Docker image (`gitmind-ci:latest`) is built on first run and includes:
+The Docker image (`${GITMIND_NS:-gitmind}/ci:clang-20`) is built on first run and includes:
 - Ubuntu 22.04 (matching GitHub Actions)
 - LLVM/Clang 20
 - libsodium-dev
@@ -80,3 +86,9 @@ The Docker image (`gitmind-ci:latest`) is built on first run and includes:
 - The baseline should decrease with every warning-fixing commit
 - Use `check-warning-fix.sh` instead of manually updating baseline
 - Celebrate every warning eliminated! 🎯
+
+### Image naming and cleanup
+- All project images use a consistent namespace: `${GITMIND_NS:-gitmind}`
+- CI image: `${GITMIND_NS}/ci:clang-20`
+- Gauntlet images: `${GITMIND_NS}/gauntlet:<compiler>` (e.g., `gcc-13`, `clang-20`)
+- Clean up safely: `./tools/docker-clean.sh`

@@ -15,4 +15,7 @@ test:
 clean:
 	rm -rf $(builddir)
 
-.PHONY: all test clean
+docker-clean:
+	./tools/docker-clean.sh
+
+.PHONY: all test clean docker-clean

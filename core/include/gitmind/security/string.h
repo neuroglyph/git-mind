@@ -33,7 +33,9 @@ static inline __attribute__((always_inline, format(printf, 3, 0)))
 static inline
 #endif
 int gm_vsnprintf(char *str, size_t size, const char *format, va_list args) {
-    if (!format) return -1;  /* Invalid argument */
+    if (!format) {
+        return -1; /* Invalid argument */
+    }
 
 #if defined(__clang__)
 #   pragma clang diagnostic push
@@ -53,7 +55,9 @@ int gm_vsnprintf(char *str, size_t size, const char *format, va_list args) {
 #endif
 
     /* Protect against overflow */
-    if (result > INT_MAX) return -1;
+    if (result > INT_MAX) {
+        return -1;
+    }
     return result;
 }
 
@@ -68,7 +72,7 @@ static int gm_snprintf(char *str, size_t size, const char *format, ...) {
 
 /* Safe fprintf wrapper for stderr output */
 __attribute__((unused)) static int gm_fprintf_stderr(const char *format, ...) {
-    assert(format != nullptr && "gm_fprintf_stderr: format cannot be null");
+    assert(format != NULL && "gm_fprintf_stderr: format cannot be null");
     va_list args;
     va_start(args, format);
     int result = vfprintf(stderr, format, args);
