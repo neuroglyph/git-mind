@@ -1,4 +1,6 @@
 name: GNU CRY GAUNTLET
+permissions:
+  contents: read
 
 on:
   push:
