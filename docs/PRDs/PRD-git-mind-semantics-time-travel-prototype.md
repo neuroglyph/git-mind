@@ -70,6 +70,31 @@ erDiagram
   }
 ```
 
+### Entity Vocabulary (Nodes) and Relationship Types (Examples)
+- Nodes are repo artifacts and concepts; edges link them semantically. The core stays file/blob-centric for identity but higher-level entities are resolvable overlays.
+- Canonical examples (non-exhaustive, all stored as names):
+  - Nodes: `File`, `Function`, `RPC`, `Test`, `Feature`, `Migration`, `Issue`, `Component`, `Doc`.
+  - Edge types (i.e., `type_name`): `DEFINES`, `CALLS`, `IMPLEMENTS`, `TESTS`, `DOCUMENTS`, `DEPENDS_ON`, `AUGMENTS`.
+
+```mermaid
+erDiagram
+  FILE ||--o{ EDGE : participates
+  FUNCTION ||--o{ EDGE : participates
+  RPC ||--o{ EDGE : participates
+  TEST ||--o{ EDGE : participates
+  FEATURE ||--o{ EDGE : participates
+  MIGRATION ||--o{ EDGE : participates
+  ISSUE ||--o{ EDGE : participates
+  COMPONENT ||--o{ EDGE : participates
+
+  EDGE {
+    string type_name  // e.g., CALLS, IMPLEMENTS, TESTS
+    string lane_name  // e.g., verified, draft
+  }
+```
+
+Resolution note: In the C core, identity is via `src_sha`/`tgt_sha` (blob nodes). Higher-level entities are resolved by tooling (e.g., symbol index, SQL parser) and written as edges between the blobs that define them; names capture semantics.
+
 ### Deterministic IDs for Cache
 - IDs are derived at runtime from names; used as bitmap keys:
   - `type_id = fnv1a64("gm_type:" + nfc(type_name))`
@@ -110,7 +135,7 @@ flowchart LR
   B --> C[Bitmap lookup: fanout/fanin by type_id/lane_id]
   C --> D[Materialize edge records]
   D --> E[Apply advice (symmetric/transitive) if present]
-  E --> F[Return results]
+E --> F[Return results]
 ```
 
 ### Branch/Timeline Safety
@@ -127,6 +152,46 @@ gitGraph
   checkout main
   merge feature
   commit id: "merge" tag: "union(edges, advice)"
+```
+
+### Merge Semantics for Advice (CRDT choices)
+We must deterministically merge advice from multiple branches. Recommended hybrid strategy:
+- Scalars (bool/enum/number/color): Last‑Write‑Wins (LWW) per property; tie‑break by (logical_clock||timestamp, actor_id, ulid).
+- Collections (aliases, implies, tags): Observed‑Remove Set (OR‑Set) union with tombstones (removes beat prior adds; later adds can re‑introduce).
+- Maps: OR‑Set of keys, then per‑key LWW for values.
+
+```mermaid
+flowchart LR
+  A[Advice A] -->|merge| C[Hybrid]
+  B[Advice B] -->|merge| C
+  C --> D[Scalars: LWW]
+  C --> E[Sets: OR-Set]
+  C --> F[Maps: OR-Set keys + LWW per key]
+```
+
+Table (examples):
+- symmetric: true vs false → winner by LWW.
+- aliases: {calls, invokes} vs {uses} → OR‑Set union {calls, invokes, uses}.
+- aliases: add "calls" vs remove "calls" → tombstone removes earlier add; later add re‑introduces with new tag.
+
+Optional policy advice (later): allow field‑level override (LWW vs OR_SET) committed in history; default remains hybrid.
+
+### Cohesion Report (after merge)
+Provide a deterministic summary of semantic changes post‑merge.
+- CLI: `git mind cohesion-report [--since <rev>] [--until <rev>] [--branch <name>]`
+- Outputs (machine + human):
+  - Scalar flips per type/lane advice with winner metadata
+  - Set diffs (adds, removes, tombstones) for aliases/implies
+  - Newly introduced cycles or deep chains in `implies` (with capped depth)
+
+```mermaid
+sequenceDiagram
+  participant CLI
+  participant Core
+  participant J as Journal
+  CLI->>Core: cohesion-report --since <mb> --until HEAD
+  Core->>J: scan advice/edges between revs
+  Core-->>CLI: JSON + table summary
 ```
 
 ## API Surfaces (C, minimal)
@@ -167,6 +232,7 @@ gitGraph
 - Cache uses derived type/lane IDs; query by name matches IDs.
 - Merge two branches with different edges/advice yields union without textual conflicts.
 - Time‑travel: querying older commits reflects semantics at that point in history.
+- Cohesion report implemented for merges; deterministic hybrid advice merge rules documented and covered by tests.
 
 ## Open Questions
 - Advice CRDT flavor: LWW per property vs OR‑Set of facts — pick one for v1.
@@ -180,4 +246,4 @@ gitGraph
 4) Optional: advice reader and minimal application (e.g., symmetric handling).
 5) CLI surface: allow any names; drop special “custom” handling.
 6) Document plugin hooks; stub no‑op runner for tests.
-
+7) Implement `cohesion-report` CLI and tests; document CRDT rules.
