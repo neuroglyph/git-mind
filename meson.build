@@ -3,12 +3,9 @@ project('git-mind', 'c',
         default_options: ['c_std=c23', 'warning_level=3', 'werror=true'])
 
 # HARD E-BRAKE: refuse host builds unless in Docker or CI
-docker_env = meson.get_env('GITMIND_DOCKER')
-ci_env = meson.get_env('GITHUB_ACTIONS')
-host_override = meson.get_env('GITMIND_ALLOW_HOST_BUILD')
-in_docker = docker_env == '1'
-in_ci = ci_env != ''
-override = host_override == '1'
+in_docker = run_command('sh', '-lc', '[ "$GITMIND_DOCKER" = "1" ] && echo 1 || echo 0').stdout().strip() == '1'
+in_ci = run_command('sh', '-lc', '[ -n "$GITHUB_ACTIONS" ] && echo 1 || echo 0').stdout().strip() == '1'
+override = run_command('sh', '-lc', '[ "$GITMIND_ALLOW_HOST_BUILD" = "1" ] && echo 1 || echo 0').stdout().strip() == '1'
 if not in_docker and not in_ci and not override
   error('\n\n💥 Build refused: git-mind must be built in Docker.\n\n' +
         'Why: this project touches Git internals; host builds can corrupt your repo.\n' +
