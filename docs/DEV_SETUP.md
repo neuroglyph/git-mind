@@ -34,23 +34,9 @@ pre-commit install
 
 ## Docker Development (CI parity)
 
-Always work via the CI container for builds/tests:
-```bash
-# Open CI dev shell (Meson/Ninja, LLVM 20, libsodium, libgit2, CRoaring)
-make dev
+Always work via the CI container for builds/tests. Local LLVM installs are optional (for editor tooling);
+CI and Docker scripts use LLVM 20 inside the container:
 
-# Build and test inside Docker
-make build-docker
-make test-docker
-
-# Clang‑tidy parity
-./tools/docker-clang-tidy.sh
-# Or only changed core files vs main
-./tools/tidy-diff-docker.sh origin/main
-
-# Optional: strict multi‑compiler gauntlet
-./tools/gauntlet/run-gauntlet.sh
-```
 
 Tip: install local Git hooks for a quick pre‑push gate that runs the fast Docker checks:
 ```bash
