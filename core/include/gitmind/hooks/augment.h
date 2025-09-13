@@ -4,12 +4,14 @@
 #ifndef GM_AUGMENT_H
 #define GM_AUGMENT_H
 
-#include "gitmind.h"
+#include "gitmind/context.h"
+#include "gitmind/edge.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <git2/types.h>
+#include <git2/repository.h>
 
 /* Constants */
 #define MAX_CHANGED_FILES 50 /* Skip if more files changed */
