@@ -31,5 +31,22 @@ jobs:
           grep -E "^/.*core/|^core/" clang-tidy-report-full.txt > clang-tidy-report.txt || true
       - name: Enforce no new warnings
         run: python3 tools/count_warnings.py check clang-tidy-report.txt tools/baseline_count.txt
+      - name: Build CI Docker image for E2E (parity)
+        run: |
+          bash ./tools/dev-shell.sh -c true >/dev/null 2>&1 || true
+      - name: Run E2E tests inside CI Docker image
+        run: |
+          IMAGE=${GITMIND_CI_IMAGE:-gitmind/ci:clang-20}
+          docker run --rm --label com.gitmind.project=git-mind \
+            -v "$PWD":/workspace -w /workspace -e GITMIND_DOCKER=1 "$IMAGE" bash -lc '
+              set -e
+              CC=clang meson setup build >/dev/null 2>&1 || true
+              ninja -C build git-mind
+              export GIT_MIND=/workspace/build/git-mind
+              rm -rf /tmp/gm-e2e && mkdir -p /tmp/gm-e2e
+              cp -r tests/e2e /tmp/gm-e2e/
+              cd /tmp/gm-e2e/e2e
+              bash ./run_all_tests.sh
+            '
       - run: cppcheck --enable=all --inconclusive --quiet apps/cli || true
       - run: python tools/run_fuzz.py 60 || true
