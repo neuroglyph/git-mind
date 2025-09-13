@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
 # Install base dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ninja-build \
     python3 \
@@ -16,29 +16,51 @@ RUN apt-get update && apt-get install -y \
     libroaring-dev \
     git \
     curl \
-    meson
+    meson && rm -rf /var/lib/apt/lists/*
+
+# Shared test runner and defaults for all compiler stages
+RUN echo '#!/bin/bash' > /test-compiler.sh && \
+    echo 'set -e' >> /test-compiler.sh && \
+    echo 'echo "🔫 Testing $CC..."' >> /test-compiler.sh && \
+    echo 'echo "Compiler: $CC"' >> /test-compiler.sh && \
+    echo 'echo "C++ Compiler: $CXX"' >> /test-compiler.sh && \
+    echo 'rm -rf build' >> /test-compiler.sh && \
+    echo 'if meson setup build --warnlevel=3; then' >> /test-compiler.sh && \
+    echo '  echo "✅ Meson setup successful"' >> /test-compiler.sh && \
+    echo '  if ninja -C build; then' >> /test-compiler.sh && \
+    echo '    echo "✅ Build successful"' >> /test-compiler.sh && \
+    echo '    if ninja -C build test; then' >> /test-compiler.sh && \
+    echo '      echo "✅ Tests passed"' >> /test-compiler.sh && \
+    echo '      echo "PASS"' >> /test-compiler.sh && \
+    echo '    else echo "❌ Tests failed"; echo "FAIL_TEST"; fi' >> /test-compiler.sh && \
+    echo '  else echo "❌ Build failed"; echo "FAIL_BUILD"; fi' >> /test-compiler.sh && \
+    echo 'else echo "❌ Meson setup failed"; echo "FAIL_SETUP"; fi' >> /test-compiler.sh && \
+    chmod +x /test-compiler.sh
+WORKDIR /workspace
+CMD ["/test-compiler.sh"]
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD bash -lc "$CC --version >/dev/null 2>&1 || exit 1"
 
 # GCC 12 (THE DEVIL) - Pre-C23 image
 FROM base AS gcc-12
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     software-properties-common \
     wget \
     gnupg && \
     add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
-    apt-get update && \
-    apt-get install -y gcc-12 g++-12
+    apt-get update && apt-get install -y --no-install-recommends gcc-12 g++-12 && \
+    rm -rf /var/lib/apt/lists/*
 ENV CC=gcc-12
 ENV CXX=g++-12
 
 # GCC 13 - C23 support image
 FROM base AS gcc-13
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     software-properties-common \
     wget \
     gnupg && \
     add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
-    apt-get update && \
-    apt-get install -y gcc-13 g++-13
+    apt-get update && apt-get install -y --no-install-recommends gcc-13 g++-13 && \
+    rm -rf /var/lib/apt/lists/*
 ENV CC=gcc-13
 ENV CXX=g++-13
 
@@ -46,7 +68,7 @@ ENV CXX=g++-13
 FROM ubuntu:24.04 AS base-noble
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ninja-build \
     python3 \
@@ -57,88 +79,48 @@ RUN apt-get update && apt-get install -y \
     libroaring-dev \
     git \
     curl \
-    meson
+    meson && rm -rf /var/lib/apt/lists/*
 
 # GCC 14 - Modern C23 support image (gating)
 FROM base-noble AS gcc-14
-RUN apt-get update && apt-get install -y gcc-14 g++-14
+RUN apt-get update && apt-get install -y --no-install-recommends gcc-14 g++-14 && rm -rf /var/lib/apt/lists/*
 ENV CC=gcc-14
 ENV CXX=g++-14
 
 # Clang 18 - C23 support image
 FROM base AS clang-18
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     gnupg \
     lsb-release \
     software-properties-common && \
     wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 18 all && \
-    apt-get install -y clang-18 clang++-18 clang-tidy-18
+    apt-get install -y --no-install-recommends clang-18 clang++-18 clang-tidy-18 && rm -rf /var/lib/apt/lists/*
 ENV CC=clang-18
 ENV CXX=clang++-18
 
 # Clang 19 - C23 support image
 FROM base AS clang-19
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     gnupg \
     lsb-release \
     software-properties-common && \
     wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 19 all && \
-    apt-get install -y clang-19 clang++-19 clang-tidy-19
+    apt-get install -y --no-install-recommends clang-19 clang++-19 clang-tidy-19 && rm -rf /var/lib/apt/lists/*
 ENV CC=clang-19
 ENV CXX=clang++-19
 
 # Clang 20 - Latest C23 support image
 FROM base AS clang-20
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     gnupg \
     lsb-release \
     software-properties-common && \
     wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 20 all && \
-    apt-get install -y clang-20 clang++-20 clang-tidy-20
+    apt-get install -y --no-install-recommends clang-20 clang++-20 clang-tidy-20 && rm -rf /var/lib/apt/lists/*
 ENV CC=clang-20
 ENV CXX=clang++-20
 
-# Default to clang-20 for standalone usage
-FROM clang-20
-
-# Simple test script that works with any compiler
-RUN echo '#!/bin/bash' > /test-compiler.sh && \
-    echo 'set -e' >> /test-compiler.sh && \
-    echo 'echo "🔫 Testing $CC..."' >> /test-compiler.sh && \
-    echo 'echo "Compiler: $CC"' >> /test-compiler.sh && \
-    echo 'echo "C++ Compiler: $CXX"' >> /test-compiler.sh && \
-    echo '' >> /test-compiler.sh && \
-    echo '# Clean previous build' >> /test-compiler.sh && \
-    echo 'rm -rf build' >> /test-compiler.sh && \
-    echo '' >> /test-compiler.sh && \
-    echo '# Setup build with current compiler' >> /test-compiler.sh && \
-    echo 'if meson setup build --warnlevel=3; then' >> /test-compiler.sh && \
-    echo '    echo "✅ Meson setup successful"' >> /test-compiler.sh && \
-    echo '    ' >> /test-compiler.sh && \
-    echo '    # Build' >> /test-compiler.sh && \
-    echo '    if ninja -C build; then' >> /test-compiler.sh && \
-    echo '        echo "✅ Build successful"' >> /test-compiler.sh && \
-    echo '        ' >> /test-compiler.sh && \
-    echo '        # Run tests' >> /test-compiler.sh && \
-    echo '        if ninja -C build test; then' >> /test-compiler.sh && \
-    echo '            echo "✅ Tests passed"' >> /test-compiler.sh && \
-    echo '            echo "PASS"' >> /test-compiler.sh && \
-    echo '        else' >> /test-compiler.sh && \
-    echo '            echo "❌ Tests failed"' >> /test-compiler.sh && \
-    echo '            echo "FAIL_TEST"' >> /test-compiler.sh && \
-    echo '        fi' >> /test-compiler.sh && \
-    echo '    else' >> /test-compiler.sh && \
-    echo '        echo "❌ Build failed"' >> /test-compiler.sh && \
-    echo '        echo "FAIL_BUILD"' >> /test-compiler.sh && \
-    echo '    fi' >> /test-compiler.sh && \
-    echo 'else' >> /test-compiler.sh && \
-    echo '    echo "❌ Meson setup failed"' >> /test-compiler.sh && \
-    echo '    echo "FAIL_SETUP"' >> /test-compiler.sh && \
-    echo 'fi' >> /test-compiler.sh && \
-    chmod +x /test-compiler.sh
-
-WORKDIR /workspace
-CMD ["/test-compiler.sh"]
+## No final default stage; each compiler stage inherits test runner

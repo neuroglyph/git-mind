@@ -17,23 +17,23 @@ jobs:
         compiler: [gcc-14, clang-20]
       fail-fast: false
     steps:
-    - uses: actions/checkout@v4
-    - uses: docker/setup-buildx-action@v3
-    - name: Build ${{ matrix.compiler }} Docker image
-      run: |
-        echo "🔥 Building ${{ matrix.compiler }} Docker image (gating)..."
-        docker build --target ${{ matrix.compiler }} -t gauntlet-${{ matrix.compiler }}:latest -f tools/gauntlet/Dockerfile.gauntlet .
-    - name: Run ${{ matrix.compiler }} GAUNTLET
-      run: |
-        echo "🔫 Running ${{ matrix.compiler }} GAUNTLET (gating)..."
-        docker run --rm -v "$PWD":/workspace -w /workspace gauntlet-${{ matrix.compiler }}:latest
-    - name: Upload build logs on failure
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: gauntlet-logs-${{ matrix.compiler }}
-        path: build/
-        retention-days: 7
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build ${{ matrix.compiler }} Docker image
+        run: |
+          echo "🔥 Building ${{ matrix.compiler }} Docker image (gating)..."
+          docker build --target ${{ matrix.compiler }} -t gauntlet-${{ matrix.compiler }}:latest -f tools/gauntlet/Dockerfile.gauntlet .
+      - name: Run ${{ matrix.compiler }} GAUNTLET
+        run: |
+          echo "🔫 Running ${{ matrix.compiler }} GAUNTLET (gating)..."
+          docker run --rm -v "$PWD":/workspace -w /workspace gauntlet-${{ matrix.compiler }}:latest
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gauntlet-logs-${{ matrix.compiler }}
+          path: build/
+          retention-days: 7
 
   canary:
     runs-on: ubuntu-latest
@@ -45,20 +45,20 @@ jobs:
         compiler: [gcc-12, gcc-13, clang-18, clang-19]
       fail-fast: false
     steps:
-    - uses: actions/checkout@v4
-    - uses: docker/setup-buildx-action@v3
-    - name: Build ${{ matrix.compiler }} Docker image
-      run: |
-        echo "🐤 Building ${{ matrix.compiler }} Docker image (canary)..."
-        docker build --target ${{ matrix.compiler }} -t gauntlet-${{ matrix.compiler }}:latest -f tools/gauntlet/Dockerfile.gauntlet .
-    - name: Run ${{ matrix.compiler }} GAUNTLET
-      run: |
-        echo "🐤 Running ${{ matrix.compiler }} GAUNTLET (canary)..."
-        docker run --rm -v "$PWD":/workspace -w /workspace gauntlet-${{ matrix.compiler }}:latest
-    - name: Upload build logs on failure
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: gauntlet-logs-${{ matrix.compiler }}
-        path: build/
-        retention-days: 7
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build ${{ matrix.compiler }} Docker image
+        run: |
+          echo "🐤 Building ${{ matrix.compiler }} Docker image (canary)..."
+          docker build --target ${{ matrix.compiler }} -t gauntlet-${{ matrix.compiler }}:latest -f tools/gauntlet/Dockerfile.gauntlet .
+      - name: Run ${{ matrix.compiler }} GAUNTLET
+        run: |
+          echo "🐤 Running ${{ matrix.compiler }} GAUNTLET (canary)..."
+          docker run --rm -v "$PWD":/workspace -w /workspace gauntlet-${{ matrix.compiler }}:latest
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gauntlet-logs-${{ matrix.compiler }}
+          path: build/
+          retention-days: 7
