@@ -5,11 +5,11 @@
 #define GITMIND_H
 
 #include "gitmind/attribution.h"
+#include "gitmind/cache.h"
 #include "gitmind/constants.h"
-#include "gitmind/io_ops.h"
-#include "gitmind/output.h"
-#include "gitmind/random_ops.h"
-#include "gitmind/time_ops.h"
+#include "gitmind/context.h"
+#include "gitmind/edge.h"
+#include "gitmind/journal.h"
 
 #include <stdbool.h>
 #include <stdint.h>

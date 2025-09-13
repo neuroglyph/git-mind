@@ -5,6 +5,13 @@
 
 > *"The great kings of the past look down on us from those stars... So whenever you feel alone, just remember that those kings will always be there to guide you, and so will I."* - Mufasa
 
+Table of Contents
+- [Overview](#overview)
+- [Core Commands](#core-commands)
+- [Performance Commands](#performance-commands)
+- [Evolution Commands](#evolution-commands)
+- [Coming Soon](#coming-soon)
+
 ## Overview
 
 Welcome to the git-mind command reference. These guides will teach you not just how to use each command, but why they exist and what they enable.

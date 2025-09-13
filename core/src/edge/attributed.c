@@ -11,6 +11,8 @@
 #include "gitmind/types.h"
 #include "gitmind/attribution.h"
 #include <stdint.h>
+#include "gitmind/security/memory.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -133,9 +135,7 @@ gm_result_edge_attributed_t gm_edge_attributed_create(
     }
     
     /* Initialize edge */
-    gm_edge_attributed_t edge;
-    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
-    (void)memset(&edge, 0, sizeof(edge));
+    gm_edge_attributed_t edge = {0};
     
     /* Resolve source SHA */
     gm_result_void_t src_result = resolve_sha(ctx, src_path, edge.src_sha);
@@ -154,14 +154,15 @@ gm_result_edge_attributed_t gm_edge_attributed_create(
     edge.confidence = confidence_value;
     edge.timestamp = get_timestamp_millis(ctx);
     
-    /* Copy paths */
-    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
-    (void)strncpy(edge.src_path, src_path, GM_PATH_MAX - 1);
-    edge.src_path[GM_PATH_MAX - 1] = '\0';
+    /* Copy paths - lengths already validated above */
+    size_t src_len = strlen(src_path);
+    size_t tgt_len = strlen(tgt_path);
     
-    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
-    (void)strncpy(edge.tgt_path, tgt_path, GM_PATH_MAX - 1);
-    edge.tgt_path[GM_PATH_MAX - 1] = '\0';
+    assert(src_len + 1 <= GM_PATH_MAX);  /* +1 for null terminator */
+    assert(tgt_len + 1 <= GM_PATH_MAX);
+    
+    gm_memcpy_safe(edge.src_path, sizeof edge.src_path, src_path, src_len + 1);
+    gm_memcpy_safe(edge.tgt_path, sizeof edge.tgt_path, tgt_path, tgt_len + 1);
     
     /* Generate ULID */
     gm_result_ulid_t ulid_result = gm_ulid_generate(edge.ulid);
@@ -170,8 +171,7 @@ gm_result_edge_attributed_t gm_edge_attributed_create(
     }
     
     /* Copy attribution and lane */
-    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
-    (void)memcpy(&edge.attribution, attribution, sizeof(gm_attribution_t));
+    edge.attribution = *attribution;
     edge.lane = lane;
     
     return (gm_result_edge_attributed_t){.ok = true, .u.val = edge};
@@ -273,7 +273,7 @@ gm_result_void_t gm_edge_attributed_format_with_attribution(
         float confidence = gm_confidence_from_half_float(edge->confidence);
         written = gm_snprintf(buffer, len, "%s [%s: %s, conf: %.2f]",
                           edge_base_format, source_type_name, author_name,
-                          confidence);
+                          (double)confidence);
     }
     
     if (written < 0 || (size_t)written >= len) {

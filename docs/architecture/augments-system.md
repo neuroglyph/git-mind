@@ -1,5 +1,11 @@
 # AUGMENTS System Architecture
 
+Table of Contents
+- [Overview](#overview)
+- [Core Concepts](#core-concepts)
+- [How It Works](#how-it-works)
+- [Detailed Design](#detailed-design)
+
 ## Overview
 
 The AUGMENTS system automatically tracks file evolution by creating edges between old and new blob SHAs whenever files are modified. This happens transparently via a post-commit hook, creating a complete history of how content evolves over time.

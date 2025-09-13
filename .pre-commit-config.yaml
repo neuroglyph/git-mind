@@ -16,6 +16,21 @@ repos:
       language: system
       files: \.(c|h)$
       pass_filenames: false
+    - id: docs-link-check
+      name: docs: link check
+      entry: python3 tools/docs/check_docs.py --mode link
+      language: python
+      files: ^docs/.*\.md$
+    - id: docs-toc-check
+      name: docs: TOC check
+      entry: python3 tools/docs/check_docs.py --mode toc
+      language: python
+      files: ^docs/.*\.md$
+    - id: enforce-public-includes
+      name: enforce public includes (no core/src)
+      entry: bash tools/enforce-public-includes.sh
+      language: system
+      pass_filenames: false
 - repo: https://github.com/Yelp/detect-secrets
   rev: v1.4.0
   hooks:

@@ -5,6 +5,13 @@
 
 > *"Everything the light touches is our kingdom... But a king's time as ruler rises and falls like the sun."* - Mufasa
 
+Table of Contents
+- [Name](#name)
+- [Synopsis](#synopsis)
+- [Description](#description)
+- [The Heart of Git-Mind](#the-heart-of-git-mind)
+- [Options](#options)
+
 ## NAME
 
 `git-mind link` - Create semantic connections between files

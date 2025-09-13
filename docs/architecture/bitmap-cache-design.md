@@ -1,6 +1,12 @@
 # Bitmap Cache Design 🦁⚡
 ## High-Performance Query Layer for git-mind
 
+Table of Contents
+- [Overview](#overview)
+- [Storage Design](#storage-design)
+- [Cache Structure](#cache-structure)
+- [Query Path](#overview)
+
 **Date**: June 2025  
 **Status**: IN PROGRESS  
 **Goal**: O(log N) queries on millions of edges

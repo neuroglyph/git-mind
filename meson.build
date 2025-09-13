@@ -1,32 +1,44 @@
 project('git-mind', 'c',
-  version : '0.0.1',
-  default_options : ['warning_level=0',  # We'll add our own flags
-                     'c_std=c2x'])
+        version: '0.6.0',
+        default_options: ['c_std=c23', 'warning_level=3', 'werror=true'])
 
-# Linus-worthy C23 compiler flags - no warnings, no excuses
+# HARD E-BRAKE: refuse host builds unless in Docker or CI
+in_docker = run_command('sh', '-lc', '[ "$GITMIND_DOCKER" = "1" ] && echo 1 || echo 0').stdout().strip() == '1'
+in_ci = run_command('sh', '-lc', '[ -n "$GITHUB_ACTIONS" ] && echo 1 || echo 0').stdout().strip() == '1'
+override = run_command('sh', '-lc', '[ "$GITMIND_ALLOW_HOST_BUILD" = "1" ] && echo 1 || echo 0').stdout().strip() == '1'
+if not in_docker and not in_ci and not override
+  error('\n\n💥 Build refused: git-mind must be built in Docker.\n\n' +
+        'Why: this project touches Git internals; host builds can corrupt your repo.\n' +
+        'Do this instead:\n' +
+        '  make dev           # open dev shell in CI container\n' +
+        '  make build-docker  # build in container\n' +
+        '  make test-docker   # test in container\n\n' +
+        'If you REALLY know what you are doing, set GITMIND_ALLOW_HOST_BUILD=1.\n')
+endif
+
+# C23 compiler flags as specified
 add_project_arguments(
-  '-std=c2x',
-  '-pedantic',
-  '-Wall',
-  '-Wextra',
-  '-Werror',
-  '-Wvla',                    # Ban variable-length arrays
-  '-Wshadow',                 # No variable shadowing
-  '-Wstrict-prototypes',      # Require proper prototypes
-  '-Wconversion',             # Catch implicit conversions
-  '-Wsign-conversion',        # Catch sign conversions
-  '-Wfloat-equal',           # No float equality comparisons
-  '-Wpointer-arith',         # Arithmetic on void pointers is stupid
-  '-Wcast-align',            # Catch alignment issues
-  '-Wwrite-strings',         # String literals are const
-  '-Wmissing-prototypes',    # Every function needs a prototype
-  '-Wmissing-declarations',  # No implicit declarations
-  '-Wredundant-decls',       # No duplicate declarations
-  '-Wnested-externs',        # No nested extern declarations
-  '-Winline',                # Failed inline is a bug
-  '-O2',                     # Optimize for real-world use
-  '-fno-common',             # No common symbols
-  '-fstrict-aliasing',       # We follow aliasing rules
+  '-ffreestanding',          # library and want tight control
+  '-fstrict-flex-arrays=3',  # C23 default; makes UB obvious
+  '-Wdouble-promotion',
+  '-Wpedantic',
+  # Note: -Werror is set via werror=true in project() default_options
+  '-Wvla',                   # Ban variable-length arrays
+  '-Wshadow',                # No variable shadowing
+  '-Wstrict-prototypes',     # Require proper prototypes
+  '-Wconversion',            # Catch implicit conversions
+  '-Wsign-conversion',       # Catch sign conversions
+  '-Wfloat-equal',          # No float equality comparisons
+  '-Wpointer-arith',        # Arithmetic on void pointers is stupid
+  '-Wcast-align',           # Catch alignment issues
+  '-Wwrite-strings',        # String literals are const
+  '-Wmissing-prototypes',   # Every function needs a prototype
+  '-Wmissing-declarations', # No implicit declarations
+  '-Wredundant-decls',      # No duplicate declarations
+  '-Wnested-externs',       # No nested extern declarations
+  '-Winline',               # Failed inline is a bug
+  '-fno-common',            # No common symbols
+  '-fstrict-aliasing',      # We follow aliasing rules
   language : 'c'
 )
 
@@ -34,6 +46,24 @@ add_project_arguments(
 libsodium_dep = dependency('libsodium', required : true)
 libgit2_dep = dependency('libgit2', required : true)
 thread_dep = dependency('threads')
+# CRoaring (Roaring Bitmaps) dependency - robust detection
+roaring_dep = dependency('roaring', required : false)
+if not roaring_dep.found()
+  roaring_dep = dependency('croaring', required : false)
+endif
+if not roaring_dep.found()
+  roaring_dep = dependency('CRoaring', required : false)
+endif
+if not roaring_dep.found()
+  error('CRoaring/roaring library is required but not found.\n' +
+        'Install via package manager:\n' +
+        '  Ubuntu/Debian: apt install libroaring-dev\n' +
+        '  Fedora/RHEL: dnf install CRoaring-devel\n' +
+        '  macOS: brew install croaring\n' +
+        '  Or build from source: https://github.com/RoaringBitmap/CRoaring\n' +
+        '\n' +
+        'Note: Different distributions may name the pkg-config file differently.')
+endif
 
 # Source files
 src = files(
@@ -56,17 +86,33 @@ src = files(
   'core/src/attribution/attribution.c',
   'core/src/journal/reader.c',
   'core/src/journal/writer.c',
+  'core/src/cache/bitmap.c',
+  'core/src/cache/builder.c',
+  'core/src/cache/query.c',
+  'core/src/cache/tree_builder.c',
+  'core/src/cache/tree_size.c',
 )
 
 # Include directories
 inc = include_directories('core/include', 'include')
+
+# Mark roaring headers as system includes to suppress third-party warnings
+roaring_inc_args = []
+if roaring_dep.found()
+  # Use modern API that works with any dependency type
+  roaring_inc_dir = roaring_dep.get_variable(pkgconfig: 'includedir', default_value: '')
+  if roaring_inc_dir != ''
+    roaring_inc_args = ['-isystem', roaring_inc_dir]
+  endif
+endif
 
 # Build static library
 libgitmind = static_library(
   'gitmind',
   src,
   include_directories : inc,
-  dependencies : [libsodium_dep, libgit2_dep, thread_dep]
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep, roaring_dep],
+  c_args : roaring_inc_args
 )
 
 # Test backend - ONLY for tests

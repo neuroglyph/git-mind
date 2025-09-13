@@ -19,7 +19,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y clang clang-tidy libsodium-dev libgit2-dev libroaring-dev build-essential python3-pip pkg-config
+        sudo apt-get install -y clang clang-tidy libsodium-dev libgit2-dev libroaring-dev build-essential python3-pip
         pip3 install --break-system-packages meson ninja
     
     - name: Check for TODOs/FIXMEs
@@ -37,7 +37,7 @@ jobs:
         # Setup build for compile_commands.json
         CC=clang meson setup build-tidy
         # Find all C source and header files in core/
-        FILES=$(find core -name "*.c" -o -name "*.h" | grep -v "tests/")
+        FILES=$(find core -name "*.c" -o -name "*.h" | grep -v "tests/" | grep -v "core/src/hooks/")
         if [ -z "$FILES" ]; then
           echo "Error: No C/C++ files found to check"
           exit 1

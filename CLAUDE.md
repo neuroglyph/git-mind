@@ -16,6 +16,8 @@ For workflows that apply to ALL contributors (human and AI):
 - __NEVER__ alter, disable, or otherwise circumvent git hooks or tests
 - __NEVER__ use `git add -A`, __ALWAYS__ stage changes intentionally
 
+> [!DANGER] __NEVER__ use `NOLINT` to suppress clang tidy warnings. __ALWAYS__ fix them problem in your code. Suppressions lead to real bugs. Static analysis is part of the CI gate. Silencing it violates the repo’s “no warnings” contract and kills developer trust. No excuses, push clean builds. End of story.
+
 ## ENCOURAGED ACTIONS
 
 - __USE SEQUENTIAL THINKING__ if you’re planning, doing __RECON__, or find yourself thrashing on an issue

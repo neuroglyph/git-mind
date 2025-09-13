@@ -3,9 +3,50 @@
 
 # Attribution System Architecture
 
+Table of Contents
+- [Overview](#overview)
+- [Quickstart: Lanes & Filters](#quickstart-lanes--filters)
+- [Core Concepts](#core-concepts)
+- [Source Types](#source-types)
+- [Attribution Metadata](#attribution-metadata)
+- [Lanes System](#lanes-system)
+- [Filter System](#filter-system)
+- [Usage Patterns](#usage-patterns)
+- [Collaboration Workflows](#collaboration-workflows)
 ## Overview
 
 The attribution system is the foundation for human-AI collaboration in git-mind. It tracks who created each semantic edge (human or AI), enabling filtered views, collaborative workflows, and consensus building.
+
+## Quickstart: Lanes & Filters
+
+Use lanes and attribution to separate AI suggestions from human‑curated edges, then filter accordingly.
+
+- Lane conventions
+  - `suggested` — proposals from tools/agents (unreviewed)
+  - `verified` — accepted/curated edges (reviewed by a human)
+
+- Attribution flags
+  - `--source ai` shows tool/agent edges
+  - `--source human` limits to human‑created edges
+
+- CLI filters (examples)
+```bash
+# Review AI suggestions
+git mind list --lane suggested --source ai
+
+# Focus on curated understanding
+git mind list --lane verified --source human
+
+# Combine with other filters
+git mind list --lane suggested --source ai --type implements --from notes/idea.md
+```
+
+Promotion workflow (concept)
+- Write suggestions to `suggested` (source=ai), review them, then promote selected edges to `verified`.
+- Promotion can be implemented via a CLI helper or the MCP service (see PRD: Co‑Thought MCP) to re‑append the edge in the new lane while preserving attribution.
+
+Privacy note
+- Co‑thought remains local by default. Keep tools and MCP local‑only and avoid sending repo content off‑machine unless you explicitly export it.
 
 ## Core Concepts
 
