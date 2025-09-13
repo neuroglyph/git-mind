@@ -1,7 +1,11 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#include "gitmind.h"
+#include "gitmind/output.h"
+#include "gitmind/context.h"
+#include "gitmind/error.h"
+#include "gitmind/safety.h"
+#include "cli_runtime.h"
 
 #include "gitmind/constants_internal.h"
 
@@ -10,20 +14,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 
 /* External command functions */
-int gm_cmd_link(gm_context_t *ctx, int argc, char **argv);
-int gm_cmd_list(gm_context_t *ctx, int argc, char **argv);
-int gm_cmd_install_hooks(gm_context_t *ctx, int argc, char **argv);
-int gm_cmd_cache_rebuild(gm_context_t *ctx, int argc, char **argv);
+int gm_cmd_link(gm_context_t *ctx, gm_cli_ctx_t *cli, int argc, char **argv);
+int gm_cmd_list(gm_context_t *ctx, gm_cli_ctx_t *cli, int argc, char **argv);
+int gm_cmd_install_hooks(gm_context_t *ctx, gm_cli_ctx_t *cli, int argc, char **argv);
+int gm_cmd_cache_rebuild(gm_context_t *ctx, gm_cli_ctx_t *cli, int argc, char **argv);
 
 /* External utility functions */
 const char *gm_error_string(int error_code);
 void gm_log_default(int level, const char *fmt, ...);
 
 /* SAFETY: Prevent running in development repo */
+/* URL match helper is provided by include/gitmind/safety.h */
+
 static void safety_check(void) {
+    /* Allow explicit override for CI/E2E or advanced users */
+    const char *safety_env = getenv("GITMIND_SAFETY");
+    if (safety_env && (
+            strcmp(safety_env, "off") == 0 || strcmp(safety_env, "0") == 0 ||
+            strcasecmp(safety_env, "false") == 0)) {
+        return;
+    }
+
     char cwd[BUFFER_SIZE_SMALL];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
         return;
@@ -32,7 +47,7 @@ static void safety_check(void) {
     /* Check for known dangerous paths */
     const char *dangerous[] = {"/" SAFETY_PATTERN_GITMIND,
                                "/" SAFETY_PATTERN_GITMIND "/",
-                               REMOTE_PATTERN_NEUROGLYPH, NULL};
+                               NULL};
 
     for (const char **p = dangerous; *p; p++) {
         if (strstr(cwd, *p) != NULL) {
@@ -64,25 +79,35 @@ static void safety_check(void) {
         }
     }
 
-    /* Also check for .git/config containing git-mind */
-    FILE *f = fopen(".git/config", "r");
-    if (f) {
-        char line[BUFFER_SIZE_TINY];
-        while (fgets(line, sizeof(line), f)) {
-            if (strstr(line, REMOTE_PATTERN_NEUROGLYPH) ||
-                strstr(line, REMOTE_PATTERN_GITMIND_GIT) ||
-                strstr(line, REMOTE_PATTERN_GITMIND)) {
-                fclose(f);
-                fprintf(stderr, "\n");
-                fprintf(stderr,
-                        "🚨 SAFETY: Detected git-mind development repo! 🚨\n");
-                fprintf(stderr, "Use 'make test' instead.\n");
-                fprintf(stderr, "\n");
-                exit(EXIT_SAFETY_VIOLATION);
+    /* Also check remotes via libgit2 (strict match on official repo) */
+    git_libgit2_init();
+    git_repository *repo = NULL;
+    if (git_repository_open(&repo, ".") == 0 && repo) {
+        git_strarray list = {0};
+        if (git_remote_list(&list, repo) == 0) {
+            for (size_t i = 0; i < list.count; i++) {
+                git_remote *remote = NULL;
+                if (git_remote_lookup(&remote, repo, list.strings[i]) == 0 && remote) {
+                    const char *url = git_remote_url(remote);
+                    if (gm_url_is_official_repo(url)) {
+                        git_remote_free(remote);
+                        git_strarray_dispose(&list);
+                        git_repository_free(repo);
+                        git_libgit2_shutdown();
+                        fprintf(stderr, "\n");
+                        fprintf(stderr, "🚨 SAFETY: Detected git-mind development repo! 🚨\n");
+                        fprintf(stderr, "Use 'make test' instead.\n");
+                        fprintf(stderr, "\n");
+                        exit(EXIT_SAFETY_VIOLATION);
+                    }
+                    git_remote_free(remote);
+                }
             }
+            git_strarray_dispose(&list);
         }
-        fclose(f);
+        git_repository_free(repo);
     }
+    git_libgit2_shutdown();
 }
 
 /* Print usage */
@@ -134,7 +159,7 @@ static int parse_global_flags(int *argc, char ***argv, gm_output_level_t *level,
 
 /* Initialize context with libgit2 */
 static int init_context(gm_context_t *ctx, gm_output_level_t level,
-                        gm_output_format_t format) {
+                        gm_output_format_t format, gm_cli_ctx_t *cli) {
     git_repository *repo = NULL;
     int error;
 
@@ -149,28 +174,28 @@ static int init_context(gm_context_t *ctx, gm_output_level_t level,
         if (e) {
             fprintf(stderr, "Git error: %s\n", e->message);
         }
-        return GM_ERROR;
+        return GM_ERR_NOT_FOUND;
     }
 
-    /* Set up context */
+    /* Set up core context */
     memset(ctx, 0, sizeof(gm_context_t));
     ctx->git_repo = repo;
-    ctx->log_fn = gm_log_default;
-
-    /* Create output context */
-    ctx->output = gm_output_create(level, format);
-    if (!ctx->output) {
+    
+    /* Create CLI output context (separate from core context) */
+    cli->out = gm_output_create(level, format);
+    if (!cli->out) {
         git_repository_free(repo);
-        return GM_NO_MEMORY;
+        return GM_ERR_OUT_OF_MEMORY;
     }
 
     return GM_OK;
 }
 
 /* Cleanup context */
-static void cleanup_context(gm_context_t *ctx) {
-    if (ctx->output) {
-        gm_output_destroy(ctx->output);
+static void cleanup_context(gm_context_t *ctx, gm_cli_ctx_t *cli) {
+    if (cli && cli->out) {
+        gm_output_destroy(cli->out);
+        cli->out = NULL;
     }
     if (ctx->git_repo) {
         git_repository_free((git_repository *)ctx->git_repo);
@@ -181,6 +206,7 @@ static void cleanup_context(gm_context_t *ctx) {
 /* Main entry point */
 int main(int argc, char **argv) {
     gm_context_t ctx;
+    gm_cli_ctx_t cli = {0};
     gm_output_level_t output_level;
     gm_output_format_t output_format;
     int result;
@@ -197,7 +223,7 @@ int main(int argc, char **argv) {
     }
 
     /* Initialize context */
-    result = init_context(&ctx, output_level, output_format);
+    result = init_context(&ctx, output_level, output_format, &cli);
     if (result != GM_OK) {
         return EXIT_FAILURE;
     }
@@ -205,24 +231,24 @@ int main(int argc, char **argv) {
     /* Dispatch command */
     const char *cmd = argv[1];
     if (strcmp(cmd, "link") == 0) {
-        result = gm_cmd_link(&ctx, argc - 2, argv + 2);
+        result = gm_cmd_link(&ctx, &cli, argc - 2, argv + 2);
     } else if (strcmp(cmd, "list") == 0) {
-        result = gm_cmd_list(&ctx, argc - 2, argv + 2);
+        result = gm_cmd_list(&ctx, &cli, argc - 2, argv + 2);
     } else if (strcmp(cmd, "install-hooks") == 0) {
-        result = gm_cmd_install_hooks(&ctx, argc - 2, argv + 2);
+        result = gm_cmd_install_hooks(&ctx, &cli, argc - 2, argv + 2);
     } else if (strcmp(cmd, "cache-rebuild") == 0) {
-        result = gm_cmd_cache_rebuild(&ctx, argc - 2, argv + 2);
+        result = gm_cmd_cache_rebuild(&ctx, &cli, argc - 2, argv + 2);
     } else if (strcmp(cmd, "--help") == 0 || strcmp(cmd, "-h") == 0) {
         print_usage(argv[0]);
         result = GM_OK;
     } else {
         fprintf(stderr, "Error: Unknown command '%s'\n", cmd);
         print_usage(argv[0]);
-        result = GM_INVALID_ARG;
+        result = GM_ERR_INVALID_ARGUMENT;
     }
 
     /* Cleanup */
-    cleanup_context(&ctx);
+    cleanup_context(&ctx, &cli);
 
     return (result == GM_OK) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
