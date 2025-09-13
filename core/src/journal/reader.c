@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "gitmind/security/memory.h"
+#include "gitmind/security/string.h"
 
 /* Constants */
 #define REFS_GITMIND_PREFIX "refs/gitmind/edges/"
@@ -120,7 +122,7 @@ static void convert_legacy_to_attributed(const gm_edge_t *legacy,
 static int process_attributed_edge(const uint8_t *cbor_data, size_t remaining,
                                    reader_ctx_t *rctx, size_t *consumed) {
     gm_edge_attributed_t edge;
-    memset(&edge, 0, sizeof(edge));
+    GM_MEMSET_SAFE(&edge, sizeof(edge), 0, sizeof(edge));
 
     /* Try to decode an attributed edge */
     int decode_result = gm_edge_attributed_decode_cbor_ex(cbor_data, remaining,
@@ -297,15 +299,19 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
             return GM_ERR_INVALID_FORMAT;
         }
 
-        strncpy(current_branch, name, sizeof(current_branch) - 1);
-        current_branch[sizeof(current_branch) - 1] = '\0';
+        size_t name_len = strlen(name);
+        if (name_len >= sizeof(current_branch)) {
+            name_len = sizeof(current_branch) - 1;
+        }
+        gm_memcpy_safe(current_branch, sizeof(current_branch), name, name_len);
+        current_branch[name_len] = '\0';
         branch = current_branch;
 
         git_reference_free(head);
     }
 
     /* Build ref name */
-    snprintf(ref_name, sizeof(ref_name), "%s%s", REFS_GITMIND_PREFIX, branch);
+    gm_snprintf(ref_name, sizeof(ref_name), "%s%s", REFS_GITMIND_PREFIX, branch);
 
     /* Walk the journal */
     return walk_journal_generic(&rctx, ref_name);
