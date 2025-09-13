@@ -13,6 +13,7 @@ Testing emphasizes determinism, backward compatibility, and performance. Targets
 ## Coverage Goals
 - Unit: ≥ 80% for new/changed core (IDs, CBOR, cache routing)
 - Integration: Exercise CLI flows (link, list, cache-rebuild, cohesion-report)
+  - CLI error handling: invalid paths for link produce clear messages identifying the offending path; directory paths are rejected
 - E2E: Repo-level tests with small synthetic graphs; branch merge scenarios
 
 ## Test Scenarios for Critical Paths
@@ -28,6 +29,10 @@ Testing emphasizes determinism, backward compatibility, and performance. Targets
 - Cohesion Report
   - Scalar flips and set diffs across simulated merges
   - Depth capping for `implies` chains; cycle detection
+- CLI Error Handling
+  - `git-mind link` with missing source/target prints `Error: Path not found: <path>` and exits non-zero
+  - `git-mind link` with a directory as source/target prints `Error: Not a regular file: <path>` and exits non-zero
+  - E2E coverage in `tests/e2e/02_edge_cases.sh:test_invalid_path_errors`
 - Advice Merge (if enabled)
   - LWW and OR-Set behaviors; tombstone wins/remains until re-added
 

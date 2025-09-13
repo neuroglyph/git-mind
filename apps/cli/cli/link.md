@@ -54,7 +54,13 @@ Clear feedback:
 ### Error Cases
 ```bash
 $ git-mind link missing.md README.md
-Error: Not found
+Error: Path not found: missing.md
+
+$ git-mind link README.md missing.md
+Error: Path not found: missing.md
+
+$ mkdir dir && git-mind link README.md dir
+Error: Not a regular file: dir
 
 $ git-mind link 
 Usage: git-mind link <source> <target> [--type <type>]
@@ -62,6 +68,7 @@ Types: implements, references, depends_on, augments
 ```
 
 Helpful errors:
+- Specific path names in messages
 - Brief error message
 - Usage hint when args missing
 - List valid types
