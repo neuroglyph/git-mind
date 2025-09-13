@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 /* Parse relationship type from string using constants */
 static gm_rel_type_t parse_rel_type(const char *str) {
@@ -102,6 +104,32 @@ static int create_edge_from_args(gm_context_t *ctx, const char *src_path,
     return result;
 }
 
+/* Validate that paths exist and are regular files */
+static int validate_paths_exist(gm_context_t *ctx, const char *src_path,
+                                const char *tgt_path) {
+    struct stat st;
+
+    if (stat(src_path, &st) != 0) {
+        gm_output_error(ctx->output, GM_ERR_PATH_NOT_FOUND "\n", src_path);
+        return GM_INVALID_ARG;
+    }
+    if (!S_ISREG(st.st_mode)) {
+        gm_output_error(ctx->output, GM_ERR_NOT_REGULAR_FILE "\n", src_path);
+        return GM_INVALID_ARG;
+    }
+
+    if (stat(tgt_path, &st) != 0) {
+        gm_output_error(ctx->output, GM_ERR_PATH_NOT_FOUND "\n", tgt_path);
+        return GM_INVALID_ARG;
+    }
+    if (!S_ISREG(st.st_mode)) {
+        gm_output_error(ctx->output, GM_ERR_NOT_REGULAR_FILE "\n", tgt_path);
+        return GM_INVALID_ARG;
+    }
+
+    return GM_OK;
+}
+
 /* Save edge to journal */
 static int save_edge_to_journal(gm_context_t *ctx,
                                 const gm_edge_attributed_t *edge) {
@@ -166,6 +194,12 @@ int gm_cmd_link(gm_context_t *ctx, int argc, char **argv) {
     /* Validate inputs */
     result = validate_link_inputs(ctx, type_str, confidence_str, &rel_type,
                                   &confidence, &attribution);
+    if (result != GM_OK) {
+        return result;
+    }
+
+    /* Validate paths exist and are files (helpful CLI errors) */
+    result = validate_paths_exist(ctx, src_path, tgt_path);
     if (result != GM_OK) {
         return result;
     }

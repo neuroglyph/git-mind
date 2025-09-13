@@ -60,6 +60,9 @@
 #define GM_ERR_WRITE_FAILED "Error: Failed to write link"
 #define GM_ERR_INVALID_CONF "Error: Invalid confidence value (must be 0.0-1.0)"
 #define GM_ERR_PARSE_ARGS "Error: Failed to parse arguments"
+/* Path validation errors */
+#define GM_ERR_PATH_NOT_FOUND "Error: Path not found: %s"
+#define GM_ERR_NOT_REGULAR_FILE "Error: Not a regular file: %s"
 
 /* Format buffer sizes */
 #define GM_FORMAT_BUFFER_SIZE 512
