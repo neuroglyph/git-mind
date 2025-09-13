@@ -32,17 +32,15 @@ Install pre-commit hooks to ensure code quality:
 pre-commit install
 ```
 
-## Docker Development
+## Docker Development (CI parity)
 
-For consistent development environment:
+Always work via the CI container for builds/tests. Local LLVM installs are optional (for editor tooling);
+CI and Docker scripts use LLVM 20 inside the container:
+
+
+Tip: install local Git hooks for a quick pre‑push gate that runs the fast Docker checks:
 ```bash
-make dev  # Opens a shell in the Docker container
+make install-hooks
 ```
 
-## Building
-
-Always build in Docker to match CI:
-```bash
-make test-core  # Run core tests
-make check      # Run quality checks
-```
+For details, see: docs/quality/local-ci-parity.md

@@ -14,6 +14,7 @@ This index organizes documentation with stable links so the project can be pause
 - Planning hub: [Planning docs](planning/)
 - Developer setup: [DEV_SETUP](DEV_SETUP.md)
 - Static analysis: [Static Analysis Guide](quality/static-analysis-guide.md), [Tidy Crusade](quality/TIDY_CLANG_CRUSADE.md)
+- Local CI parity (Docker): [Local CI Parity](quality/local-ci-parity.md)
 
 ## Planned Structure
 
