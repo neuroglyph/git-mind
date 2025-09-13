@@ -30,6 +30,34 @@ int gm_edge_attributed_decode_cbor_ex(const uint8_t *buffer, size_t len,
                                       gm_edge_attributed_t *edge,
                                       size_t *consumed);
 
+/* Temporary compatibility wrappers until attributed CBOR decode is implemented */
+int gm_edge_decode_cbor_ex(const uint8_t *buffer, size_t len, gm_edge_t *edge,
+                           size_t *consumed) {
+    gm_result_edge_t r = gm_edge_decode_cbor(buffer, len);
+    if (!r.ok) {
+        return GM_ERR_INVALID_FORMAT;
+    }
+    if (edge) {
+        *edge = r.u.val;
+    }
+    if (consumed) {
+        *consumed = len; /* Assume full buffer consumed in legacy decoder */
+    }
+    return GM_OK;
+}
+
+int gm_edge_attributed_decode_cbor_ex(const uint8_t *buffer, size_t len,
+                                      gm_edge_attributed_t *edge,
+                                      size_t *consumed) {
+    (void)buffer;
+    (void)len;
+    (void)edge;
+    if (consumed) {
+        *consumed = 0; /* Signal no bytes consumed to trigger legacy fallback */
+    }
+    return -1; /* Indicate decode failure to use legacy path */
+}
+
 /* Generic reader context */
 typedef struct {
     gm_context_t *gm_ctx;
