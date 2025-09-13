@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <time.h>
+/* Keep time ops local here to preserve stable test interfaces */
 
 #ifdef __cplusplus
 extern "C" {
