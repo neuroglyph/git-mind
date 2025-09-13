@@ -68,6 +68,7 @@ Types: implements, references, depends_on, augments
 ```
 
 Helpful errors:
+
 - Specific path names in messages
 - Brief error message
 - Usage hint when args missing
