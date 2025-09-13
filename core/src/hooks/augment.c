@@ -6,7 +6,7 @@
 #include <string.h>
 #include <time.h>
 
-/* TODO: replace any private header usage with public equivalents. */
+/* Note: replace any private header usage with public equivalents when available. */
 
 /* Array management constants */
 #define INITIAL_EDGE_ARRAY_SIZE 10
