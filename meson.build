@@ -2,6 +2,20 @@ project('git-mind', 'c',
         version: '0.6.0',
         default_options: ['c_std=c23', 'warning_level=3', 'werror=true'])
 
+# HARD E-BRAKE: refuse host builds unless in Docker or CI
+in_docker = run_command('sh', '-lc', '[ "$GITMIND_DOCKER" = "1" ] && echo 1 || echo 0').stdout().strip() == '1'
+in_ci = run_command('sh', '-lc', '[ -n "$GITHUB_ACTIONS" ] && echo 1 || echo 0').stdout().strip() == '1'
+override = run_command('sh', '-lc', '[ "$GITMIND_ALLOW_HOST_BUILD" = "1" ] && echo 1 || echo 0').stdout().strip() == '1'
+if not in_docker and not in_ci and not override
+  error('\n\n💥 Build refused: git-mind must be built in Docker.\n\n' +
+        'Why: this project touches Git internals; host builds can corrupt your repo.\n' +
+        'Do this instead:\n' +
+        '  make dev           # open dev shell in CI container\n' +
+        '  make build-docker  # build in container\n' +
+        '  make test-docker   # test in container\n\n' +
+        'If you REALLY know what you are doing, set GITMIND_ALLOW_HOST_BUILD=1.\n')
+endif
+
 # C23 compiler flags as specified
 add_project_arguments(
   '-ffreestanding',          # library and want tight control

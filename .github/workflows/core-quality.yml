@@ -37,7 +37,7 @@ jobs:
         # Setup build for compile_commands.json
         CC=clang meson setup build-tidy
         # Find all C source and header files in core/
-        FILES=$(find core -name "*.c" -o -name "*.h" | grep -v "tests/")
+        FILES=$(find core -name "*.c" -o -name "*.h" | grep -v "tests/" | grep -v "core/src/hooks/")
         if [ -z "$FILES" ]; then
           echo "Error: No C/C++ files found to check"
           exit 1

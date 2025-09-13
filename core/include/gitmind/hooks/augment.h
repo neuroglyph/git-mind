@@ -6,7 +6,10 @@
 
 #include "gitmind.h"
 
-#include <git2.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <git2/types.h>
 
 /* Constants */
 #define MAX_CHANGED_FILES 50 /* Skip if more files changed */

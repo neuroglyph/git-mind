@@ -8,8 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <git2/oid.h>
-#include <git2/repository.h>
+#include <git2/types.h>
 
 #include "gitmind/context.h"
 #include "gitmind/result.h"

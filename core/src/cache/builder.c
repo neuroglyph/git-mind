@@ -29,6 +29,7 @@
 #include "gitmind/error.h"
 #include "gitmind/journal.h"
 #include "gitmind/types.h"
+#include "gitmind/security/string.h"
 
 /* Local constants */
 #define CACHE_TEMP_DIR "/tmp/gitmind-cache-\x58\x58\x58\x58\x58\x58"
@@ -128,83 +129,68 @@ static void edge_map_free(edge_map_t *map) {
 
 /* Get SHA prefix for sharding */
 static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
-    int chars = (bits + 3) / BITS_PER_HEX_CHAR; /* Round up to hex chars */
-    for (int i = 0; i < chars; i++) {
-        sprintf(prefix + i * HEX_CHARS_PER_BYTE, "%02x", sha[i]);
+    size_t bytes = (size_t)((bits + 7) / 8);
+    size_t offset = 0;
+    for (size_t i = 0; i < bytes; i++) {
+        (void)gm_snprintf(prefix + offset, (size_t)MAX_SHARD_PATH - offset,
+                          "%02x", sha[i]);
+        offset += HEX_CHARS_PER_BYTE;
     }
-    prefix[chars * HEX_CHARS_PER_BYTE] = '\0';
+    prefix[offset] = '\0';
 }
 
-/* Write bitmaps to temp directory */
-static int write_bitmaps_to_temp(edge_map_t *forward, edge_map_t *reverse,
-                                 const char *temp_dir, int shard_bits) {
-    char path[GM_PATH_MAX];
-    int rc;
-
-    /* Process forward index */
-    for (size_t i = 0; i < forward->size; i++) {
-        edge_map_entry_t *entry = forward->buckets[i];
-        while (entry) {
-            char prefix[MAX_SHARD_PATH];
-            get_sha_prefix(entry->sha, prefix, shard_bits);
-
-            /* Create shard directory */
-            snprintf(path, sizeof(path), "%s/%s", temp_dir, prefix);
-            mkdir(path, DIR_PERMS_NORMAL);
-
-            /* Write forward bitmap */
-            char sha_hex[SHA_HEX_SIZE];
-            for (int j = 0; j < GM_SHA1_SIZE; j++) {
-                sprintf(sha_hex + j * HEX_CHARS_PER_BYTE, "%02x",
-                        entry->sha[j]);
-            }
-            sha_hex[GM_SHA1_SIZE * HEX_CHARS_PER_BYTE] = '\0';
-
-            snprintf(path, sizeof(path), "%s/%s/%s.forward", temp_dir, prefix,
-                     sha_hex);
-            rc = gm_bitmap_write_file(entry->bitmap, path);
-            if (rc != GM_OK)
-                return rc;
-
-            entry = entry->next;
-        }
+static int sha_to_hex(const uint8_t *sha, char *out, size_t out_size) {
+    const size_t need = (size_t)GM_SHA1_SIZE * HEX_CHARS_PER_BYTE + 1;
+    if (out_size < need) {
+        return GM_INVALID_ARG;
     }
-
-    /* Process reverse index */
-    for (size_t i = 0; i < reverse->size; i++) {
-        edge_map_entry_t *entry = reverse->buckets[i];
-        while (entry) {
-            char prefix[MAX_SHARD_PATH];
-            get_sha_prefix(entry->sha, prefix, shard_bits);
-
-            /* Create shard directory */
-            snprintf(path, sizeof(path), "%s/%s", temp_dir, prefix);
-            mkdir(path, DIR_PERMS_NORMAL);
-
-            /* Write reverse bitmap */
-            char sha_hex[SHA_HEX_SIZE];
-            for (int j = 0; j < GM_SHA1_SIZE; j++) {
-                sprintf(sha_hex + j * HEX_CHARS_PER_BYTE, "%02x",
-                        entry->sha[j]);
-            }
-            sha_hex[GM_SHA1_SIZE * HEX_CHARS_PER_BYTE] = '\0';
-
-            snprintf(path, sizeof(path), "%s/%s/%s.reverse", temp_dir, prefix,
-                     sha_hex);
-            rc = gm_bitmap_write_file(entry->bitmap, path);
-            if (rc != GM_OK)
-                return rc;
-
-            entry = entry->next;
-        }
+    size_t offset = 0;
+    for (size_t i = 0; i < (size_t)GM_SHA1_SIZE; i++) {
+        (void)gm_snprintf(out + offset, out_size - offset, "%02x", sha[i]);
+        offset += HEX_CHARS_PER_BYTE;
     }
-
+    out[offset] = '\0';
     return GM_OK;
 }
 
+/* Write bitmaps to temp directory */
+static int write_map_to_temp(edge_map_t *map, const char *temp_dir,
+                             int shard_bits, const char *suffix) {
+    char path[GM_PATH_MAX];
+    for (size_t i = 0; i < map->size; i++) {
+        edge_map_entry_t *entry = map->buckets[i];
+        while (entry) {
+            char prefix[MAX_SHARD_PATH];
+            get_sha_prefix(entry->sha, prefix, shard_bits);
+            (void)gm_snprintf(path, sizeof(path), "%s/%s", temp_dir, prefix);
+            (void)mkdir(path, DIR_PERMS_NORMAL);
+
+            char sha_hex[SHA_HEX_SIZE];
+            int hexrc = sha_to_hex(entry->sha, sha_hex, sizeof(sha_hex));
+            if (hexrc != GM_OK) {
+                return hexrc;
+            }
+            (void)gm_snprintf(path, sizeof(path), "%s/%s/%s.%s", temp_dir,
+                              prefix, sha_hex, suffix);
+            int status = gm_bitmap_write_file(entry->bitmap, path);
+            if (status != GM_OK) {
+                return status;
+            }
+            entry = entry->next;
+        }
+    }
+    return GM_OK;
+}
+
+static int write_bitmaps_to_temp(edge_map_t *forward, edge_map_t *reverse,
+                                 const char *temp_dir, int shard_bits) {
+    int status = write_map_to_temp(forward, temp_dir, shard_bits, "forward");
+    if (status != GM_OK) return status;
+    return write_map_to_temp(reverse, temp_dir, shard_bits, "reverse");
+}
+
 /* Forward declarations */
-int gm_build_tree_from_directory(git_repository *repo, const char *dir_path,
-                                 git_oid *tree_oid);
+/* Declared in public headers */
 static int gm_cache_rebuild_internal(git_repository *repo, const char *branch,
                                      bool force_full);
 
@@ -216,11 +202,17 @@ static int build_tree_from_temp(git_repository *repo, const char *temp_dir,
 }
 
 /* Remove temp directory recursively */
+#include <ftw.h>
+static int unlink_cb(const char *fpath, const struct stat *sb,
+                     int typeflag, struct FTW *ftwbuf) {
+    (void)sb; (void)ftwbuf;
+    if (typeflag == FTW_DP || typeflag == FTW_D) {
+        return rmdir(fpath);
+    }
+    return unlink(fpath);
+}
 static void remove_temp_dir(const char *path) {
-    char cmd[GM_PATH_MAX + RM_COMMAND_EXTRA_SIZE];
-    snprintf(cmd, sizeof(cmd), "rm -rf %s", path);
-    int rc = system(cmd); /* Safe since we control the path */
-    (void)rc;             /* Ignore return value */
+    (void)nftw(path, unlink_cb, 16, FTW_DEPTH | FTW_PHYS);
 }
 
 /* Edge collector callback */
@@ -261,7 +253,7 @@ static int cache_prepare_rebuild(gm_context_t *ctx,
     }
 
     /* Create temp directory */
-    strcpy(temp_dir, CACHE_TEMP_DIR);
+    (void)gm_snprintf(temp_dir, GM_PATH_MAX, "%s", CACHE_TEMP_DIR);
     if (!mkdtemp(temp_dir)) {
         return GM_IO_ERROR;
     }
