@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include "gitmind/security/memory.h"
 
 /* Error code constants */
 static const int GmErrorCborTypeMismatch = 6001;
@@ -236,8 +237,7 @@ gm_result_void_t gm_cbor_read_bytes(const uint8_t *buf, size_t *offset, size_t m
         };
     }
 
-    /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) - bounds checked */
-    memcpy(data, buf + *offset, len);
+    gm_memcpy_safe(data, expected_len, buf + *offset, len);
     *offset += len;
 
     return (gm_result_void_t){.ok = true};
@@ -301,8 +301,7 @@ gm_result_void_t gm_cbor_read_text(const uint8_t *buf, size_t *offset, size_t ma
         };
     }
 
-    /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) - bounds checked */
-    memcpy(text, buf + *offset, len);
+    gm_memcpy_safe(text, max_text_len, buf + *offset, len);
     text[len] = '\0';
     *offset += len;
 
@@ -420,8 +419,7 @@ gm_result_size_t gm_cbor_write_bytes(uint8_t *buf, size_t buf_size,
         buf[2] = (uint8_t)(data_len & BYTE_MASK);
     }
 
-    /* NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) - bounds checked */
-    memcpy(buf + header_size, data, data_len);
+    gm_memcpy_safe(buf + header_size, buf_size - header_size, data, data_len);
     return (gm_result_size_t){.ok = true, .u.val = total_size};
 }
 
@@ -472,7 +470,6 @@ gm_result_size_t gm_cbor_write_text(uint8_t *buf, size_t buf_size, const char *t
     }
 
     /* CBOR text strings have explicit length and don't require null termination */
-    /* NOLINTNEXTLINE(bugprone-not-null-terminated-result,clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling) - CBOR strings are length-prefixed, bounds checked above */
-    memcpy(buf + header_size, text, text_len);
+    gm_memcpy_safe(buf + header_size, buf_size - header_size, text, text_len);
     return (gm_result_size_t){.ok = true, .u.val = total_size};
 }

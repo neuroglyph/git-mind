@@ -999,7 +999,7 @@ WASM is the future of universal deployment. Get there first.
 ## 12. 🗄️ Graph Database Backend Option
 
 ### Idea Overview
-Optional Neo4j/DGraph backend for massive scale graph operations.
+Optional external graph database backend for massive scale graph operations.
 
 ### How It Works
 ```cypher
@@ -1042,8 +1042,9 @@ typedef struct {
 } gm_backend_ops_t;
 
 // Dual-write for migration
-gm_backend_t *neo4j = gm_backend_create(GM_BACKEND_NEO4J, "bolt://localhost");
-gm_repo_add_backend(repo, neo4j);
+/* Example placeholder for external graph DB backend integration (out-of-repo scope) */
+// gm_backend_t *graphdb = gm_backend_create(GM_BACKEND_GRAPHDB, "bolt://localhost");
+// gm_repo_add_backend(repo, graphdb);
 ```
 
 ### Stats
@@ -1645,7 +1646,7 @@ Would make people think differently about code. Also great for marketing.
 ## Nice-to-Haves (3/5)
 4. **Real-time Collaboration** - Figma for code
 9. **Code DNA Mapping** - Semantic similarity
-12. **Graph Database Backend** - Optional Neo4j
+12. **Graph Database Backend** - Optional external graph DB
 15. **Predictive Evolution** - See the future
 
 ## Experimental (2/5)

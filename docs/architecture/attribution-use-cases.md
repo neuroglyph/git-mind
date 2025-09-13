@@ -3,6 +3,9 @@
 
 # Attribution System Use Cases
 
+Table of Contents
+- [Use Case 1: AI-Assisted Code Review](#use-case-1-ai-assisted-code-review)
+
 Real-world scenarios showing how the attribution system enables human-AI collaboration.
 
 ## Use Case 1: AI-Assisted Code Review

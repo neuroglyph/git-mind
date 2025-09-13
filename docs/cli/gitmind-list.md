@@ -5,6 +5,12 @@
 
 > *"Look beyond what you see."* - Rafiki
 
+Table of Contents
+- [Name](#name)
+- [Synopsis](#synopsis)
+- [Description](#description)
+- [The Power of Seeing](#the-power-of-seeing)
+
 ## NAME
 
 `git-mind list` - Query and explore semantic connections

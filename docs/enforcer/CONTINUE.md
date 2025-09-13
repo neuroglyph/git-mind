@@ -33,7 +33,7 @@ Before continuing, familiarize yourself with:
 1. **Context Documents:**
    - [ARCHITECTURE.md](../../ARCHITECTURE.md) - Overall architecture vision
    - [MIGRATION_PHILOSOPHY.md](../architecture/MIGRATION_PHILOSOPHY.md) - Why we're doing this
-   - [CLAUDE_vs_THE_ENFORCER.md](../../CLAUDE_vs_THE_ENFORCER.md) - The battle that started it all
+   - [CLAUDE.md](../../CLAUDE.md) - The battle that started it all
 
 2. **Planning Documents:**
    - [ROADMAP_TO_REFACTORING.md](./ROADMAP_TO_REFACTORING.md) - **START HERE** - The 9-week plan

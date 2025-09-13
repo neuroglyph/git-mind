@@ -67,7 +67,7 @@ Build extensibility into git-mind's DNA by creating a robust hook system, plugin
     <rect width="150" height="80" fill="#dda0dd" stroke="black" stroke-width="2"/>
     <text x="75" y="30" text-anchor="middle" font-size="14" font-weight="bold">Import/Export</text>
     <text x="75" y="50" text-anchor="middle" font-size="11">• GraphML</text>
-    <text x="75" y="65" text-anchor="middle" font-size="11">• Neo4j</text>
+    <text x="75" y="65" text-anchor="middle" font-size="11">• Graph DB</text>
     <path d="M 125 0 L 250 350" stroke="black" stroke-width="2" stroke-dasharray="5,5"/>
   </g>
   

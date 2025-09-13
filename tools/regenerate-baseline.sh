@@ -3,16 +3,19 @@ set -euo pipefail
 
 echo "🔄  Regenerating baseline using CI Docker image…"
 
-IMAGE=gitmind-ci:latest
+GITMIND_NS=${GITMIND_NS:-gitmind}
+CI_TAG=${CI_TAG:-clang-20}
+IMAGE=${GITMIND_CI_IMAGE:-$GITMIND_NS/ci:$CI_TAG}
 
 # Build the image
-docker build -q -t $IMAGE .ci 2>/dev/null || docker build -t $IMAGE .ci
+docker build -q -t "$IMAGE" --label com.gitmind.project=git-mind .ci 2>/dev/null || \
+docker build -t "$IMAGE" --label com.gitmind.project=git-mind .ci
 
 # Run clang-tidy and generate baseline
-docker run --rm -t \
+docker run --rm -t --label com.gitmind.project=git-mind \
   -v "$PWD":/workspace \
   -w /workspace \
-  $IMAGE \
+  "$IMAGE" \
   bash -c '
     set -e
     rm -rf build-container

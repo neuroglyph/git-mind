@@ -85,6 +85,15 @@ out/
 *.pid.lock
 compile_commands.json
 
+# Additional build directories (variants)
+build-*/
+build_*/
+build_gauntlet/
+build_journal/
+build_local/
+build_test/
+build_docker/
+
 # Rust/CLI specific
 cli/target/
 cli/Cargo.lock
@@ -192,9 +201,19 @@ c/*.log
 # CRITICAL: Never allow git-mind binary in root
 /git-mind
 ci-artifacts/
-docs/audits/
+# docs/audits is tracked (vision drift reports)
+# docs/hn-demo and docs/engineering remain ignored
 docs/hn-demo/
 docs/engineering/
 archive/
 build-container/
 clang-tidy-report*.txt
+
+# Analysis reports
+quality-reports/
+
+# Local CI artifacts
+ci_logs.zip
+
+# Local test binaries
+test_edge_compile_check

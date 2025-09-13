@@ -5,20 +5,23 @@
 
 set -euo pipefail
 
+# Namespace/prefix to keep images tidy and easy to prune
+GITMIND_NS=${GITMIND_NS:-gitmind}
+
 echo "🧪 Testing GNU CRY GAUNTLET infrastructure..."
 
 # Run with just GCC 14 and Clang 20 to test quickly
-GAUNTLET_IMAGE="gnu-cry-gauntlet:latest"
+GAUNTLET_IMAGE="${GITMIND_NS}/gauntlet:latest"
 
 # Build if needed
-if ! docker image inspect $GAUNTLET_IMAGE >/dev/null 2>&1; then
+if ! docker image inspect "$GAUNTLET_IMAGE" >/dev/null 2>&1; then
     echo "Building GAUNTLET Docker image..."
-    docker build -t $GAUNTLET_IMAGE -f tools/gauntlet/Dockerfile.gauntlet .
+    docker build -t "$GAUNTLET_IMAGE" --label com.gitmind.project=git-mind -f tools/gauntlet/Dockerfile.gauntlet .
 fi
 
 # Test run with a subset of compilers
 echo "Testing with GCC 14 and Clang 20..."
-docker run --rm -v "$PWD":/workspace -w /workspace $GAUNTLET_IMAGE bash -c '
+docker run --rm --label com.gitmind.project=git-mind -v "$PWD":/workspace -w /workspace "$GAUNTLET_IMAGE" bash -c '
     echo "🧪 GAUNTLET INFRASTRUCTURE TEST"
     echo "Running subset: GCC 14 and Clang 20"
     echo ""

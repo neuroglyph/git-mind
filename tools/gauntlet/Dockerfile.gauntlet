@@ -1,5 +1,7 @@
 # Base image with common dependencies
 FROM ubuntu:22.04 as base
+LABEL com.gitmind.project="git-mind" \
+      org.opencontainers.image.title="git-mind-gauntlet"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC

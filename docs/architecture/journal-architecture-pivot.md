@@ -1,6 +1,19 @@
 # Project: No Tux Given 🐧⚡
 ## The git-mind Final Architecture
 
+Table of Contents
+- [Executive Summary](#executive-summary)
+- [Core Design Principles](#core-design-principles)
+- [The Two-Layer Architecture](#the-two-layer-architecture)
+- [Implementation Details](#implementation-details)
+- [Solving the Hard Problems](#solving-the-hard-problems)
+- [Migration Plan (Fresh Start)](#migration-plan-fresh-start)
+- [Code Structure](#code-structure)
+- [Why This Wins](#why-this-wins)
+- [Potential Gotchas & Solutions](#potential-gotchas--solutions)
+- [The Payoff](#the-payoff)
+- [Next Steps](#next-steps)
+
 **Date**: June 16, 2025  
 **Status**: BLANK SLATE - LET'S GO HARD  
 **Motto**: "Keep code in files, truth in commits, speed in shards"

@@ -1,235 +1,172 @@
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
-<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+<!-- © J. Kirby Ross / Neuroglyph Collective -->
 
-# `git-mind` 🧠
+# git-mind 🧠
 
-_A Git-integrated knowledge graph for tracking relationships between code artifacts._
+<p align="center">
+  <img src="assets/logo.jpg" alt="git-mind logo" width="200" />
+</p>
 
-__🚧 MAJOR ARCHITECTURAL MIGRATION IN PROGRESS 🏗️__
+This is the vision...
 
-We’re transforming `git-mind` from a monolithic CLI into a clean, embeddable C library with zero warnings under extreme compiler strictness. 
+## `git‑mind` turns Git repositories into serverless, distributed graph databases where relationships are first‑class and move through time with your history.
 
-__Progress__: Core library 50% complete | CLI separation 0% | New apps 0%
-
-See [The Great Migration](#the-great-migration) below for details.
-
----
-
-## What is `git-mind`?
-
-`git-mind` captures and versions the connections between your code, documentation, and design artifacts. It stores these relationships as Git objects, making them as permanent and trackable as your code.
-
-```bash
-# Link a design document to its implementation
-git mind link docs/auth-flow.md src/auth.c --type implements
-
-# Find all code that implements a specific design
-git mind traverse docs/auth-flow.md --direction forward
-
-# See how your understanding evolved
-git checkout v1.0
-git mind list  # View connections from that point in time
-```
+- Version your thoughts
+- Travel back in time to see what you were thinking and then step forward, watching your thoughts evolve and change over time
+- Branch your mind
+- Fork someone else's
+- Merge your thoughts
+- AI/human/human co-cognition platform
 
 ---
 
-## Installation
+Table of Contents
+- [Overview](#overview)
+- [Why git-mind](#why-git-mind)
+- [How It Works](#how-it-works)
+- [Core Concepts](#core-concepts)
+- [Quickstart](#quickstart)
+- [Human + AI Co‑Thought](#human--ai-co-thought)
+- [Status & Roadmap](#status--roadmap)
+- [Architecture](#architecture)
+- [Contributing](#contributing)
+- [License](#license)
 
-### From Source
+## Overview
+git‑mind lets you link code, docs, notes, experiments — anything tracked in Git — with first‑class semantic edges (e.g., “implements”, “tests”, “documents”, “refines”, “depends_on”).
 
-```bash
-git clone https://github.com/neuroglyph/git-mind
-cd git-mind
-meson setup build
-ninja -C build
-sudo ninja -C build install
-```
+These edges are stored in your repository (no servers), replicate with `git clone`, and are scoped to branches and commits. Check out an old commit and you get the semantics from that moment in time. Merge branches and the graph merges deterministically, just like your code.
 
-### Requirements
+In short: organize ideas and artifacts as a graph, with Git as the transport, history, and security model.
 
-- Git 2.28+
-- C23-compliant compiler (GCC 12+ or Clang 16+)
-- Meson build system
-- Ninja
-- libsodium
-- libgit2 (for Git object manipulation)
+## Why git-mind
+- Version your thoughts: track the “why” and “how” alongside the “what”.
+- Serverless graph DB: your repo is the database — clone, branch, merge.
+- Time‑travel semantics: branch/commit‑scoped relationships that evolve.
+- Query by meaning: stop guessing with `grep`; ask the graph directly.
+- Fast locally: a Roaring Bitmap cache makes common queries instant.
+- Cross‑repo, forkable semantics: share, branch, and merge understanding across clones.
+
+Human + AI co‑thought
+- Shared memory for people and tools: the repo holds both your links and AI‑suggested links.
+- Trust and review: filter by attribution (human/AI) and lanes (e.g., suggested, verified).
+- Forkable cognition: try ideas in branches, then merge deterministic edges back.
+
+Use cases
+- Architecture: link docs ⇄ code ⇄ tests; explore fan‑in/out and evolution.
+- Notes/Zettelkasten: link ideas, excerpts, and references across a repo.
+- Research: connect papers, datasets, scripts, and results with provenance.
+- Product: trace features through specs, issues, code, tests, and docs.
+- Decisions: tie ADRs to impacted modules and follow their downstream effects.
+
+## How It Works
+- Journal (truth)
+  - Each edge append becomes a Git commit under `refs/gitmind/edges/<branch>` with a compact CBOR payload.
+  - Append‑only, branch‑scoped, time‑travel‑safe; merges behave like code.
+- Cache (speed)
+  - Optional Roaring Bitmap indices under `refs/gitmind/cache/<branch>` for O(log N) set ops.
+  - Rebuildable; never merged; safe to delete.
 
 ## Core Concepts
+- Edge: A directed link (source → target) between any two Git blobs with metadata.
+- Names‑as‑truth: `type_name`/`lane_name` are stored as strings on the edge; IDs are derived only for performance.
+- Attribution: Who/what created the edge (human/AI), with author/session metadata. Surfaces as filters and review signals.
+- AUGMENTS: Evolution links (old blob → new blob) created on edits to preserve meaning through change.
+- Advice (optional): Data‑driven semantics (e.g., symmetry, implies) that merge deterministically.
 
-- __Links__: Directed relationships between files (e.g., “implements”, “documents”, “tests”)   
-- __Traversal__: Navigate your codebase through semantic connections, not just file paths   
-- __Time Travel__: Your knowledge graph evolves with your code - checkout any commit to see that era’s understanding   
+## Quickstart
+Requirements (dev): Git, Meson, Ninja, C23 compiler (gcc‑14 or clang‑20 recommended). See [DEV_SETUP](docs/DEV_SETUP.md).
 
-## Usage
-
-### Creating Links
-
+Build and test
 ```bash
-# Basic link creation
-git mind link <source> <target> --type <relationship>
-
-# Common relationship types
-git mind link README.md src/main.c --type documents
-git mind link test_auth.c src/auth.c --type tests
-git mind link design.md src/module/ --type implements
+make            # meson+ninja build in ./build
+make test       # runs unit tests
 ```
 
-### Exploring Connections
-
+Create and query links (code, docs, notes)
 ```bash
-# List all links
-git mind list
+# Link a design doc to its implementation
+git mind link docs/auth-flow.md src/auth.c --type implements --lane verified
 
-# Find what a file connects to
-git mind traverse src/auth.c
+# List links (human)
+git mind list --from src/auth.c
 
-# Find what connects to a file
-git mind traverse src/auth.c --direction backward
+# Example (stub) output
+> docs/auth-flow.md  (type: implements, lane: verified)
 
-# Filter by relationship type
-git mind list --type tests
+# List links (JSON)
+git mind list --from src/auth.c --format json
+
+# Rebuild performance cache for current branch
+git mind cache-rebuild
+
+# Link notes and research
+git mind link notes/idea.md notes/followup.md --type refines --lane journal
+git mind link notes/notes-on-paper.md data/paper.pdf --type cites
 ```
 
-### Advanced Features
+What to expect
+- Links are stored under `refs/gitmind/edges/<branch>` and show up in history.
+- Queries use the cache when available; otherwise scan the journal.
 
+## Human + AI Co‑Thought
+git‑mind is designed to be a shared, versioned memory for humans and AI — a place where both parties can write edges, discover connections, and converge by merging branches.
+
+- Shared memory, no servers: the repo is the database; AI tools can read/write edges locally just like you.
+- Clear authorship: attribution marks edges as human/AI with author/session metadata.
+- Lanes for review: AI can write to a `suggested` lane; humans accept into `verified`.
+- Deterministic merges: edges are append‑only with ULIDs; advice uses hybrid CRDT rules, so branches converge predictably.
+- Control and safety: filter by attribution, lanes, or commit; disable advice application; keep AI ops in a branch until reviewed.
+
+Example flows (concept)
 ```bash
-# Export knowledge graph
-git mind export --format dot > graph.dot
+# AI suggests edges into a separate branch/lane
+git checkout -b ai/suggestions
+git mind link notes/idea.md src/feature.c --type implements --lane suggested --source ai
 
-# Check link integrity
-git mind verify
+# Human reviews and merges
+git checkout main
+git merge ai/suggestions
+git mind list --lane verified   # or filter out --source ai
 
-# Remove broken links
-git mind prune
+# Inspect AI suggestions (stub output)
+git mind list --lane suggested --source ai
+> notes/idea.md  ->  src/feature.c  (type: implements, lane: suggested, source: ai)
 ```
+
+See: [Attribution System](docs/architecture/attribution-system.md) and [ADR 0001](docs/adr/0001-first-class-semantics.md).
+
+## Status & Roadmap
+Project status: early‑stage and evolving. The vision is a shared, serverless, forkable thought‑graph for humans and AI. Today we are focused on the core that makes that vision real over time:
+
+- Shipping now/next: journal (edges‑as‑commits), cache (fast queries), CLI (link/list/cache‑rebuild), names‑as‑truth semantics, AUGMENTS for evolution.
+- Optional (behind flags, later): advice application (symmetry/implies), co‑thought workflows (AI “suggested” lanes, attribution filters), MCP service for tools to read/write edges locally.
+
+Expect CLI and APIs to change as we stabilize the core. See the planning docs for the full project scope and staging.
+
+- Roadmap: [Product Roadmap](docs/planning/Product_Roadmap.md)
+- Releases: [Release Plans](docs/planning/Release_Plans.md)
+- Milestones & Sprints: [Milestones](docs/planning/Milestones.md), [Sprint Plans](docs/planning/Sprint_Plans.md)
 
 ## Architecture
+- System overview: [System Architecture](docs/architecture/System_Architecture.md)
+- Data model: edges as commits, names‑as‑truth, branch/time scoping — see [Journal Architecture Pivot](docs/architecture/journal-architecture-pivot.md)
+- Cache design: [Bitmap Cache](docs/architecture/bitmap-cache-design.md)
+- Semantics PRD & ADR: [PRD](docs/PRDs/PRD-git-mind-semantics-time-travel-prototype.md), [ADR 0001](docs/adr/0001-first-class-semantics.md)
 
-git-mind stores relationship data in `.git/refs/minds/` using Git’s object database. Each link is a Git object containing:
+## Contributing
+- Start here: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Dev setup: [DEV_SETUP](docs/DEV_SETUP.md)
+- Docs index: [docs/README.md](docs/README.md)
+- Pre‑commit: `pre-commit install` (clang‑format, docs link/TOC checks, secrets)
 
-- Source and target paths
-- Relationship type
-- Creation timestamp
-- Optional metadata
+Principles
+- C23, warnings‑as‑errors; keep clang‑tidy warnings at zero in target modules.
+- Names‑as‑truth for semantics; caches are derived and rebuildable.
+- Small, pause‑safe increments; document decisions (ADRs) as you go.
 
-This design ensures links are:
-
-- Version controlled
-- Distributed with the repository
-- Preserved through Git operations
-- Queryable at any point in history
-
-----
-
-## Development
-
-### Building
-
-```bash
-# Standard build
-meson setup build
-ninja -C build
-
-# Debug build
-meson setup build_debug -Dbuildtype=debug
-ninja -C build_debug
-
-# Run tests
-ninja -C build test
-```
-
-### Code Organization
-
-```
-core/           # Core library implementation
-├── include/    # Public headers
-├── src/        # Implementation
-└── tests/      # Unit tests
-
-cli/            # Command-line interface
-tools/          # Development utilities
-docs/           # Documentation
-```
-
-### Contributing
-
-See [CONTRIBUTING]('./CONTRIBUTING.md)
-
-----
-
-## 🚧 The Great Migration
-
-### Why We’re Migrating
-
-We started with 11,951 compiler warnings - a technical debt mountain that was holding us back. Rather than patch over problems, we’re rebuilding git-mind with extreme code quality standards:
-
-- __Zero Warnings Policy__: Every module in `core/` must have ZERO clang-tidy warnings
-- __GNU CRY GAUNTLET__: Our CI runs the strictest compiler settings that “make GNU developers cry”
-- __C23 Standard__: Leveraging the latest C standard for better type safety and modern features
-- __Library-First Design__: Transform from monolithic CLI to embeddable C library
-- __Single-Header Core__: Ultimate goal is a single `#include <gitmind.h>` for all functionality
-
-### Migration Milestones
-
-#### 🎯 Milestone 1: “Core Complete” (~50% done)
-
-__Status__: 🟩🟩🟩🟩🟩⬜⬜⬜⬜⬜  
-__Target__: January 2025
-
-✅ __Completed (Warning-Free™)__
-
-- Error handling, Result types
-- Type system (paths, strings, IDs, ULID)
-- Crypto backend (pluggable)
-- Time operations (mockable)
-- CBOR encoding
-- UTF-8 validation
-- I/O operations
-
-🚧 __Remaining for Core Library__
-
-- Edge system (graph operations) - ~50 warnings
-- Attribution (authorship) - ~50 warnings
-- Journal system (Git object storage)
-- Cache system (query optimization)
-
-#### 🎯 Milestone 2: “CLI: Oh My!” (0% done)
-
-__Status__: ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜  
-__Target__: February 2025
-
-📋 __Application Separation Tasks__
-
-- Extract CLI from src/cli/ to apps/cli/
-- Extract Git hooks to apps/hooks/
-- Create proper libgit2 integration layer
-- Implement against libgitmind API
-- Add modern CLI features (colors, progress bars)
-
-#### 🎯 Milestone 3: “Beyond CLI” (0% done)
-
-__Status__: ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜  
-__Target__: March 2025
-
-🚀 __New Applications__
-
-- MCP server for AI integration
-- Web UI daemon
-- Git hooks as separate binaries
-- Language bindings (Python, Rust)
-
-### Current Components (Being Migrated)
-
-```
-src/
-├── core/           # ✅ Low-level utilities (50% migrated)
-├── edge/           # 🚧 Graph operations (edges, relationships)
-├── attribution/    # 🚧 Authorship tracking
-├── journal/        # 📋 Git object storage (read/write edges)
-├── cache/          # 📋 Query optimization layer
-├── cli/            # 📋 Command-line interface
-└── hooks/          # 📋 Git hooks (post-commit, etc.)
-```
+## License
+This project is licensed under LicenseRef‑MIND‑UCAL‑1.0. See the SPDX header and [LICENSE](LICENSE).
 
 ### Target Architecture
 
@@ -247,15 +184,15 @@ git-mind/
 └── bindings/       # Language bindings (Python, Rust, etc.)
 ```
 
-## 🚀 Beyond Migration: Coming Soon
+## 🚀 Beyond Migration: Future Ideas
 
-### 🧠 Semantic Intelligence (Q2 2025)
+### 🧠 Semantic Intelligence
 
 - __AI-Powered Discovery__: Automatically detect and suggest relationships between code artifacts
-- __Natural Language Queries__: “Show me all code that implements authentication”
+- __Natural Language Queries__: "Show me all code that implements authentication"
 - __Intelligent Refactoring__: Track concept migrations across architectural changes
 
-### 🌐 Distributed Knowledge (Q3 2025)
+### 🌐 Distributed Knowledge
 
 - __Cross-Repository Links__: Connect knowledge across project boundaries
 - __Federated Graphs__: Share and merge knowledge graphs between teams
@@ -273,4 +210,4 @@ git-mind/
 
 Licensed under `LicenseRef-MIND-UCAL-1.0`. See [LICENSE](./LICENSE) file for details.
 
-© 2025 – J. Kirby Ross • <https://github.com/flyingrobots>
+© J. Kirby Ross • <https://github.com/flyingrobots>

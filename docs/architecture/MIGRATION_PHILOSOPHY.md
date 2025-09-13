@@ -3,6 +3,10 @@
 
 # Migration Philosophy: From Chaos to Excellence
 
+Table of Contents
+- [The Two-Phase Approach](#the-two-phase-approach)
+- [The Rationale](#the-rationale)
+
 ## The Two-Phase Approach
 
 ### 🔥 Phase 1: PEDANTIC PURGE (During Migration)

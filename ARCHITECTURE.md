@@ -7,61 +7,58 @@ This document serves as the master index for all architectural documentation and
 
 ## 🏗️ Current Architecture Status
 
-**Status**: Transitioning from monolithic CLI to modular library-first architecture  
-**Progress**: 75/11,951 code quality issues fixed  
-**Target**: Single-header C library with multiple frontends
+**Status**: Library‑first architecture in progress; CLI and tooling evolving  
+**Focus**: Journal (edges‑as‑commits), cache (Roaring Bitmaps), CLI (link/list/cache‑rebuild)  
+**Target**: Single‑header C library with optional frontends (CLI, MCP, hooks)
 
 ## 📚 Architecture Documents
 
 ### Core Design
-- [Modular Restructure Plan](docs/architecture/MODULAR_RESTRUCTURE_PLAN.md) - The master plan for transforming git-mind into a modular system
-- Memory Architecture (TODO) - Custom allocators and memory pooling design
-- Single Header Design (TODO) - How the amalgamated `gitmind.h` works
+- [Modular Restructure Plan](docs/architecture/MODULAR_RESTRUCTURE_PLAN.md) — plan for modular system and single‑header direction
+- Memory Architecture (TODO) — custom allocators and memory pooling design
+- Single Header Design (TODO) — how the amalgamated `gitmind.h` works
 
 ### API Design
-- Core Library API (TODO) - Public API for `gitmind.h`
-- MCP Protocol Design (TODO) - Model Context Protocol integration
-- Web API Design (TODO) - REST/GraphQL endpoints
+- Core Library API (TODO) — Public API for `gitmind.h`
+- MCP Service (Optional, TODO) — Local‑only tools integration for co‑thought
 
 ### Implementation Details
-- CBOR Encoding Format (TODO) - Edge serialization specification
-- Git Storage Model (TODO) - How edges are stored in Git
-- Cache Architecture (TODO) - Bitmap cache and query optimization
+- CBOR Encoding Format — see [PRD](docs/PRDs/PRD-git-mind-semantics-time-travel-prototype.md)
+- Git Storage Model — see [Journal Architecture Pivot](docs/architecture/journal-architecture-pivot.md)
+- Cache Architecture — see [Bitmap Cache](docs/architecture/bitmap-cache-design.md)
 
 ## 🎯 Target Architecture
 
 ```
 git-mind/
-├── core/              # Single-header library (gitmind.h)
+├── core/               # Library (toward single-header gitmind.h)
 ├── apps/
-│   ├── cli/          # Command-line interface
-│   ├── mcp/          # MCP protocol server
-│   ├── web/          # Web UI daemon
-│   └── hooks/        # Git hooks
-└── quality/          # Code quality configs
+│   ├── cli/            # Command-line interface
+│   ├── mcp/ (opt)      # Local MPC/co‑thought service
+│   └── hooks/          # Git hooks
+└── quality/            # Code quality configs
 ```
 
 ## 🔧 Key Design Decisions
 
-1. **Single-header library** - Core functionality in one `#include`
-2. **Zero dependencies** - Only libgit2 required
-3. **Custom allocators** - Pool allocation for performance
-4. **CBOR encoding** - Compact binary format for edges
-5. **Git as database** - No external storage needed
+1. **Single‑header library (direction)** — core functionality under one include
+2. **Lean dependencies** — libgit2 + CRoaring for cache (vendor or pin in CI)
+3. **Custom allocators** — pool allocation for performance (planned)
+4. **CBOR encoding** — compact binary format for edges
+5. **Git as database** — serverless; no external storage needed
 
 ## 🚀 Migration Status
 
-| Component | Status | Quality |
-|-----------|--------|---------|
-| Core Library | 🟡 In Progress | - |
-| Edge Module | ✅ **DONE** | 0 warnings (was 12) |
-| CBOR Module | ✅ **DONE** | 0 warnings (was 63) |
-| Attribution | 🔴 Not Started | ~50 warnings |
-| CLI App | 🔴 Not Started | TBD warnings |
+| Component    | Status        | Notes |
+|--------------|---------------|-------|
+| Core Library | In progress   | Journal/cache/CLI prioritized |
+| Edge Module  | Migrated      | Continues to evolve with semantics changes |
+| CBOR Module  | Migrated      | Extended with `type_name`/`lane_name` |
+| Attribution  | Integrated    | Filters and lanes to be expanded |
+| CLI App      | In progress   | link/list/cache‑rebuild stabilized first |
 
 ### Migration Philosophy
-**During Migration**: PEDANTIC MODE - Every warning must die!  
-**After Migration**: "Linus ain't mad" - Focus on real issues only
+See [MIGRATION_PHILOSOPHY](docs/architecture/MIGRATION_PHILOSOPHY.md). During migration, we prioritize correctness and clarity; post‑migration we focus effort on real issues and developer velocity.
 
 ## 📋 Quick Links
 
