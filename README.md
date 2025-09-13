@@ -7,8 +7,6 @@
   <img src="assets/logo.jpg" alt="git-mind logo" width="200" />
 </p>
 
-This is the vision...
-
 ## `git‑mind` turns Git repositories into serverless, distributed graph databases where relationships are first‑class and move through time with your history.
 
 - Version your thoughts
@@ -16,7 +14,7 @@ This is the vision...
 - Branch your mind
 - Fork someone else's
 - Merge your thoughts
-- AI/human/human co-cognition platform
+- AI/human co‑cognition platform
 
 ---
 
@@ -103,11 +101,16 @@ git mind cache-rebuild
 # Link notes and research
 git mind link notes/idea.md notes/followup.md --type refines --lane journal
 git mind link notes/notes-on-paper.md data/paper.pdf --type cites
+
+# Query note graph (stub)
+git mind list --from notes/idea.md
+> notes/followup.md  (type: refines, lane: journal)
 ```
 
 What to expect
 - Links are stored under `refs/gitmind/edges/<branch>` and show up in history.
 - Queries use the cache when available; otherwise scan the journal.
+- Everything is just Git — no external servers, no hidden DBs.
 
 ## Human + AI Co‑Thought
 git‑mind is designed to be a shared, versioned memory for humans and AI — a place where both parties can write edges, discover connections, and converge by merging branches.
@@ -137,7 +140,7 @@ git mind list --lane suggested --source ai
 See: [Attribution System](docs/architecture/attribution-system.md) and [ADR 0001](docs/adr/0001-first-class-semantics.md).
 
 ## Status & Roadmap
-Project status: early‑stage and evolving. The vision is a shared, serverless, forkable thought‑graph for humans and AI. Today we are focused on the core that makes that vision real over time:
+Project status: early‑stage, with core primitives usable today. The vision is a shared, serverless, forkable thought‑graph for humans and AI. Today we are focused on the core that makes that vision real over time:
 
 - Shipping now/next: journal (edges‑as‑commits), cache (fast queries), CLI (link/list/cache‑rebuild), names‑as‑truth semantics, AUGMENTS for evolution.
 - Optional (behind flags, later): advice application (symmetry/implies), co‑thought workflows (AI “suggested” lanes, attribution filters), MCP service for tools to read/write edges locally.
@@ -165,9 +168,6 @@ Principles
 - Names‑as‑truth for semantics; caches are derived and rebuildable.
 - Small, pause‑safe increments; document decisions (ADRs) as you go.
 
-## License
-This project is licensed under LicenseRef‑MIND‑UCAL‑1.0. See the SPDX header and [LICENSE](LICENSE).
-
 ### Target Architecture
 
 ```
@@ -184,7 +184,9 @@ git-mind/
 └── bindings/       # Language bindings (Python, Rust, etc.)
 ```
 
-## 🚀 Beyond Migration: Future Ideas
+## 🚀 Future Directions (Exploratory)
+
+Note: Aspirational concepts — not implemented yet.
 
 ### 🧠 Semantic Intelligence
 

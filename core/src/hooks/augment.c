@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#include "augment.h"
+#include "gitmind/hooks/augment.h"
 
 #include <string.h>
 #include <time.h>
 
-#include "../../include/gitmind/constants_internal.h"
+/* TODO: replace any private header usage with public equivalents. */
 
 /* Array management constants */
 #define INITIAL_EDGE_ARRAY_SIZE 10
