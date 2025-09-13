@@ -19,6 +19,31 @@ RUN apt-get update && apt-get install -y \
     curl \
     meson
 
+# Provide test runner in base so all targets inherit it
+RUN echo '#!/bin/bash' > /test-compiler.sh && \
+    echo 'set -e' >> /test-compiler.sh && \
+    echo 'echo "🔫 Testing $CC..."' >> /test-compiler.sh && \
+    echo 'echo "Compiler: $CC"' >> /test-compiler.sh && \
+    echo 'echo "C++ Compiler: $CXX"' >> /test-compiler.sh && \
+    echo '' >> /test-compiler.sh && \
+    echo '# Clean previous build' >> /test-compiler.sh && \
+    echo 'rm -rf build' >> /test-compiler.sh && \
+    echo '' >> /test-compiler.sh && \
+    echo '# Setup build with current compiler' >> /test-compiler.sh && \
+    echo 'if meson setup build --warnlevel=3; then' >> /test-compiler.sh && \
+    echo '    echo "✅ Meson setup successful"' >> /test-compiler.sh && \
+    echo '    if ninja -C build; then' >> /test-compiler.sh && \
+    echo '        echo "✅ Build successful"' >> /test-compiler.sh && \
+    echo '        if ninja -C build test; then' >> /test-compiler.sh && \
+    echo '            echo "✅ Tests passed"' >> /test-compiler.sh && \
+    echo '            echo "PASS"' >> /test-compiler.sh && \
+    echo '        else echo "❌ Tests failed"; echo "FAIL_TEST"; fi' >> /test-compiler.sh && \
+    echo '    else echo "❌ Build failed"; echo "FAIL_BUILD"; fi' >> /test-compiler.sh && \
+    echo 'else echo "❌ Meson setup failed"; echo "FAIL_SETUP"; fi' >> /test-compiler.sh && \
+    chmod +x /test-compiler.sh
+WORKDIR /workspace
+CMD ["/test-compiler.sh"]
+
 # GCC 12 (THE DEVIL) - Pre-C23 image
 FROM base as gcc-12
 RUN apt-get update && apt-get install -y \
@@ -79,44 +104,40 @@ RUN apt-get update && apt-get install -y \
 ENV CC=clang-20
 ENV CXX=clang++-20
 
-# Default to clang-20 for standalone usage
-FROM clang-20
-
-# Simple test script that works with any compiler
+# Ubuntu 24.04 base (for gcc-14)
+FROM ubuntu:24.04 as base-noble
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    ninja-build \
+    python3 \
+    python3-pip \
+    pkg-config \
+    libsodium-dev \
+    libgit2-dev \
+    libroaring-dev \
+    git \
+    curl \
+    meson
+# Provide test runner in base-noble too
 RUN echo '#!/bin/bash' > /test-compiler.sh && \
     echo 'set -e' >> /test-compiler.sh && \
     echo 'echo "🔫 Testing $CC..."' >> /test-compiler.sh && \
     echo 'echo "Compiler: $CC"' >> /test-compiler.sh && \
     echo 'echo "C++ Compiler: $CXX"' >> /test-compiler.sh && \
-    echo '' >> /test-compiler.sh && \
-    echo '# Clean previous build' >> /test-compiler.sh && \
     echo 'rm -rf build' >> /test-compiler.sh && \
-    echo '' >> /test-compiler.sh && \
-    echo '# Setup build with current compiler' >> /test-compiler.sh && \
     echo 'if meson setup build --warnlevel=3; then' >> /test-compiler.sh && \
-    echo '    echo "✅ Meson setup successful"' >> /test-compiler.sh && \
-    echo '    ' >> /test-compiler.sh && \
-    echo '    # Build' >> /test-compiler.sh && \
-    echo '    if ninja -C build; then' >> /test-compiler.sh && \
-    echo '        echo "✅ Build successful"' >> /test-compiler.sh && \
-    echo '        ' >> /test-compiler.sh && \
-    echo '        # Run tests' >> /test-compiler.sh && \
-    echo '        if ninja -C build test; then' >> /test-compiler.sh && \
-    echo '            echo "✅ Tests passed"' >> /test-compiler.sh && \
-    echo '            echo "PASS"' >> /test-compiler.sh && \
-    echo '        else' >> /test-compiler.sh && \
-    echo '            echo "❌ Tests failed"' >> /test-compiler.sh && \
-    echo '            echo "FAIL_TEST"' >> /test-compiler.sh && \
-    echo '        fi' >> /test-compiler.sh && \
-    echo '    else' >> /test-compiler.sh && \
-    echo '        echo "❌ Build failed"' >> /test-compiler.sh && \
-    echo '        echo "FAIL_BUILD"' >> /test-compiler.sh && \
-    echo '    fi' >> /test-compiler.sh && \
-    echo 'else' >> /test-compiler.sh && \
-    echo '    echo "❌ Meson setup failed"' >> /test-compiler.sh && \
-    echo '    echo "FAIL_SETUP"' >> /test-compiler.sh && \
-    echo 'fi' >> /test-compiler.sh && \
+    echo '  if ninja -C build; then' >> /test-compiler.sh && \
+    echo '    if ninja -C build test; then echo "PASS"; else echo "FAIL_TEST"; fi' >> /test-compiler.sh && \
+    echo '  else echo "FAIL_BUILD"; fi' >> /test-compiler.sh && \
+    echo 'else echo "FAIL_SETUP"; fi' >> /test-compiler.sh && \
     chmod +x /test-compiler.sh
-
 WORKDIR /workspace
 CMD ["/test-compiler.sh"]
+
+# GCC 14 target (gating)
+FROM base-noble as gcc-14
+RUN apt-get update && apt-get install -y gcc-14 g++-14
+ENV CC=gcc-14
+ENV CXX=g++-14
