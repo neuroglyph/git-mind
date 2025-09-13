@@ -8,6 +8,28 @@ source "$(dirname "$0")/test_framework.sh"
 
 echo "=== FREAKY EDGE CASES ==="
 
+# Test 0: Helpful errors for invalid paths
+test_invalid_path_errors() {
+    echo -e "\n${YELLOW}Test 0: Helpful Errors for Invalid Paths${NC}"
+
+    init_test_repo "invalid-paths"
+
+    # No files yet; linking should fail with clear message for source
+    assert_failure "gm link missing.md other.md"
+    assert_contains "gm link missing.md other.md" "Error: Path not found: missing.md"
+
+    # Create source, leave target missing
+    create_file "exists.md" "content"
+    commit "Add exists.md"
+    assert_failure "gm link exists.md other.md"
+    assert_contains "gm link exists.md other.md" "Error: Path not found: other.md"
+
+    # Directory instead of regular file should fail
+    mkdir -p dir
+    assert_failure "gm link exists.md dir"
+    assert_contains "gm link exists.md dir" "Error: Not a regular file: dir"
+}
+
 # Test 1: Same Content, Different Paths
 test_same_content_different_paths() {
     echo -e "\n${YELLOW}Test 1: Same Content, Different Paths${NC}"
@@ -354,6 +376,7 @@ test_journal_merge() {
 }
 
 # Run all edge case tests
+test_invalid_path_errors
 test_same_content_different_paths
 test_same_path_different_content
 test_rebase_scenarios
