@@ -1,7 +1,14 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#include "gitmind.h"
+#include "gitmind/output.h"
+#include "gitmind/context.h"
+#include "gitmind/edge.h"
+#include "gitmind/edge_attributed.h"
+#include "gitmind/journal.h"
+#include "gitmind/error.h"
+#include "../../include/gitmind/constants.h"
+#include "cli_runtime.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +17,6 @@
 /* List context for callback */
 typedef struct {
     const char *filter_path;
-    gm_filter_t *filter;
     int count;
     int show_all;
     int show_augments;
@@ -25,7 +31,7 @@ static int list_edge_callback(const gm_edge_t *edge, void *userdata) {
     if (lctx->filter_path) {
         if (strcmp(edge->src_path, lctx->filter_path) != 0 &&
             strcmp(edge->tgt_path, lctx->filter_path) != 0) {
-            return GM_CALLBACK_CONTINUE; /* Skip this edge */
+            return 0; /* Continue */
         }
     }
 
@@ -40,7 +46,7 @@ static int list_edge_callback(const gm_edge_t *edge, void *userdata) {
     printf("%s\n", formatted);
 
     lctx->count++;
-    return GM_CALLBACK_CONTINUE; /* Continue iteration */
+    return 0; /* Continue */
 }
 
 /* Attributed edge callback for listing */
@@ -48,16 +54,11 @@ static int list_attributed_edge_callback(const gm_edge_attributed_t *edge,
                                          void *userdata) {
     list_ctx_t *lctx = (list_ctx_t *)userdata;
 
-    /* Apply attribution filter if specified */
-    if (lctx->filter && !gm_filter_match(lctx->filter, edge)) {
-        return 0; /* Skip this edge */
-    }
-
     /* Apply path filter if specified */
     if (lctx->filter_path) {
         if (strcmp(edge->src_path, lctx->filter_path) != 0 &&
             strcmp(edge->tgt_path, lctx->filter_path) != 0) {
-            return GM_CALLBACK_CONTINUE; /* Skip this edge */
+            return 0; /* Continue */
         }
     }
 
@@ -78,7 +79,7 @@ static int list_attributed_edge_callback(const gm_edge_attributed_t *edge,
     printf("%s\n", formatted);
 
     lctx->count++;
-    return GM_CALLBACK_CONTINUE; /* Continue iteration */
+    return 0; /* Continue */
 }
 
 /* Parse list command arguments */
@@ -111,30 +112,10 @@ static void parse_list_arguments(int argc, char **argv, list_ctx_t *lctx,
 }
 
 /* Set up filter based on arguments */
-static void setup_list_filter(gm_filter_t *filter, const char *source_filter,
-                              const char *min_conf_str) {
-    gm_filter_init_default(filter);
-
-    /* Apply source filter */
-    if (source_filter) {
-        if (strcmp(source_filter, GM_ENV_VAL_HUMAN) == 0) {
-            gm_filter_init_human_only(filter);
-        } else if (strcmp(source_filter, GM_FILTER_VAL_AI) == 0) {
-            float min_conf = GM_CONFIDENCE_MIN;
-            if (min_conf_str) {
-                min_conf = strtof(min_conf_str, NULL);
-            }
-            gm_filter_init_ai_insights(filter, min_conf);
-        } else if (strcmp(source_filter, GM_FILTER_VAL_ALL) == 0) {
-            gm_filter_init_default(filter);
-        }
-    }
-
-    /* Apply confidence filter */
-    if (min_conf_str && !source_filter) {
-        float min_conf = strtof(min_conf_str, NULL);
-        filter->min_confidence = min_conf;
-    }
+/* Filters are currently disabled in minimal CLI; placeholders retained */
+static void setup_list_filter(const char *source_filter, const char *min_conf_str) {
+    (void)source_filter;
+    (void)min_conf_str;
 }
 
 /* Execute the list query */
@@ -144,7 +125,7 @@ static int execute_list_query(gm_context_t *ctx, const char *branch,
     int result = gm_journal_read_attributed(
         ctx, branch, list_attributed_edge_callback, lctx);
 
-    if (result == GM_NOT_FOUND && !use_filter) {
+    if (result == GM_ERR_NOT_FOUND && !use_filter) {
         /* Fall back to legacy journal reader if no attribution filters */
         result = gm_journal_read(ctx, branch, list_edge_callback, lctx);
     }
@@ -181,12 +162,15 @@ static void format_list_output(const list_ctx_t *lctx,
 }
 
 /* List command implementation with attribution support */
-int gm_cmd_list(gm_context_t *ctx, int argc, char **argv) {
+/* Forward declaration to satisfy -Wmissing-prototypes */
+int gm_cmd_list(gm_context_t *ctx, gm_cli_ctx_t *cli, int argc, char **argv);
+
+int gm_cmd_list(gm_context_t *ctx, gm_cli_ctx_t *cli, int argc, char **argv) {
+    (void)cli; /* Not used; list outputs directly for now */
     list_ctx_t lctx = {0};
     const char *branch = NULL;
     const char *source_filter = NULL;
     const char *min_conf_str = NULL;
-    gm_filter_t filter;
     int use_filter = 0;
     int result;
 
@@ -196,14 +180,13 @@ int gm_cmd_list(gm_context_t *ctx, int argc, char **argv) {
 
     /* Set up attribution filter if needed */
     if (use_filter) {
-        setup_list_filter(&filter, source_filter, min_conf_str);
-        lctx.filter = &filter;
+        setup_list_filter(source_filter, min_conf_str);
     }
 
     /* Execute the query */
     result = execute_list_query(ctx, branch, &lctx, use_filter);
 
-    if (result == GM_NOT_FOUND) {
+    if (result == GM_ERR_NOT_FOUND) {
         /* Don't print here, let the summary handle it */
     } else if (result != GM_OK) {
         fprintf(stderr, GM_ERR_READ_LINKS "\n");

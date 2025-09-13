@@ -95,6 +95,8 @@ src = files(
 
 # Include directories
 inc = include_directories('core/include', 'include')
+# For CLI, use core headers first; CLI can include umbrella headers explicitly via relative path
+inc_cli = include_directories('core/include', 'include')
 
 # Mark roaring headers as system includes to suppress third-party warnings
 roaring_inc_args = []
@@ -214,6 +216,12 @@ test_edge = executable('test_edge',
   link_with : libgitmind,
   dependencies : [libsodium_dep, thread_dep])
 
+# URL safety test
+test_safety = executable('test_safety',
+  'core/tests/unit/test_safety.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, thread_dep])
 # Register tests
 test('error', test_error)
 test('id', test_id)
@@ -229,3 +237,22 @@ test('io', test_io)
 test('time', test_time)
 test('cbor', test_cbor)
 test('edge', test_edge)
+test('safety', test_safety)
+
+# CLI executable (apps/cli)
+cli_src = files(
+  'apps/cli/main.c',
+  'apps/cli/output.c',
+  'apps/cli/link.c',
+  'apps/cli/list.c',
+  'apps/cli/cache_rebuild.c',
+  'apps/cli/install_hooks.c',
+)
+
+git_mind_cli = executable(
+  'git-mind',
+  cli_src,
+  include_directories : inc_cli,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep, roaring_dep]
+)
