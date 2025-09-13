@@ -1,5 +1,5 @@
 # Base image with common dependencies
-FROM ubuntu:22.04 as base
+FROM ubuntu:22.04 AS base
 LABEL com.gitmind.project="git-mind" \
       org.opencontainers.image.title="git-mind-gauntlet"
 
@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
 # Install base dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ninja-build \
     python3 \
@@ -15,9 +15,11 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     libsodium-dev \
     libgit2-dev \
+    libroaring-dev \
     git \
     curl \
-    meson
+    meson && rm -rf /var/lib/apt/lists/*
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD sh -lc "$CC --version >/dev/null 2>&1 || exit 1"
 
 # Provide test runner in base so all targets inherit it
 RUN echo '#!/bin/bash' > /test-compiler.sh && \
@@ -45,70 +47,75 @@ WORKDIR /workspace
 CMD ["/test-compiler.sh"]
 
 # GCC 12 (THE DEVIL) - Pre-C23 image
-FROM base as gcc-12
-RUN apt-get update && apt-get install -y \
+FROM base AS gcc-12
+RUN apt-get update && apt-get install -y --no-install-recommends \
     software-properties-common \
     wget \
     gnupg && \
     add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
     apt-get update && \
-    apt-get install -y gcc-12 g++-12
+    apt-get install -y --no-install-recommends gcc-12 g++-12 && \
+    rm -rf /var/lib/apt/lists/*
 ENV CC=gcc-12
 ENV CXX=g++-12
 
 # GCC 13 - C23 support image
-FROM base as gcc-13
-RUN apt-get update && apt-get install -y \
+FROM base AS gcc-13
+RUN apt-get update && apt-get install -y --no-install-recommends \
     software-properties-common \
     wget \
     gnupg && \
     add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
     apt-get update && \
-    apt-get install -y gcc-13 g++-13
+    apt-get install -y --no-install-recommends gcc-13 g++-13 && \
+    rm -rf /var/lib/apt/lists/*
 ENV CC=gcc-13
 ENV CXX=g++-13
 
 # Clang 18 - C23 support image
-FROM base as clang-18
-RUN apt-get update && apt-get install -y \
+FROM base AS clang-18
+RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     gnupg \
     lsb-release \
     software-properties-common && \
     wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 18 all && \
-    apt-get install -y clang-18 clang++-18 clang-tidy-18
+    apt-get install -y --no-install-recommends clang-18 clang++-18 clang-tidy-18 && \
+    rm -rf /var/lib/apt/lists/*
 ENV CC=clang-18
 ENV CXX=clang++-18
 
 # Clang 19 - C23 support image
-FROM base as clang-19
-RUN apt-get update && apt-get install -y \
+FROM base AS clang-19
+RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     gnupg \
     lsb-release \
     software-properties-common && \
     wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 19 all && \
-    apt-get install -y clang-19 clang++-19 clang-tidy-19
+    apt-get install -y --no-install-recommends clang-19 clang++-19 clang-tidy-19 && \
+    rm -rf /var/lib/apt/lists/*
 ENV CC=clang-19
 ENV CXX=clang++-19
 
 # Clang 20 - Latest C23 support image
-FROM base as clang-20
-RUN apt-get update && apt-get install -y \
+FROM base AS clang-20
+RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     gnupg \
     lsb-release \
     software-properties-common && \
     wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 20 all && \
-    apt-get install -y clang-20 clang++-20 clang-tidy-20
+    apt-get install -y --no-install-recommends clang-20 clang++-20 clang-tidy-20 && \
+    rm -rf /var/lib/apt/lists/*
 ENV CC=clang-20
 ENV CXX=clang++-20
 
 # Ubuntu 24.04 base (for gcc-14)
-FROM ubuntu:24.04 as base-noble
+FROM ubuntu:24.04 AS base-noble
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ninja-build \
     python3 \
@@ -119,7 +126,8 @@ RUN apt-get update && apt-get install -y \
     libroaring-dev \
     git \
     curl \
-    meson
+    meson && rm -rf /var/lib/apt/lists/*
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD sh -lc "$CC --version >/dev/null 2>&1 || exit 1"
 # Provide test runner in base-noble too
 RUN echo '#!/bin/bash' > /test-compiler.sh && \
     echo 'set -e' >> /test-compiler.sh && \
@@ -137,7 +145,7 @@ WORKDIR /workspace
 CMD ["/test-compiler.sh"]
 
 # GCC 14 target (gating)
-FROM base-noble as gcc-14
-RUN apt-get update && apt-get install -y gcc-14 g++-14
+FROM base-noble AS gcc-14
+RUN apt-get update && apt-get install -y --no-install-recommends gcc-14 g++-14 && rm -rf /var/lib/apt/lists/*
 ENV CC=gcc-14
 ENV CXX=g++-14
