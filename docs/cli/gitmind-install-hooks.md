@@ -5,6 +5,13 @@
 
 > *"The past can hurt. But the way I see it, you can either run from it or learn from it."* - Rafiki
 
+Table of Contents
+- [Name](#name)
+- [Synopsis](#synopsis)
+- [Description](#description)
+- [The Circle of Change](#the-circle-of-change)
+- [Options](#options)
+
 ## NAME
 
 `git-mind install-hooks` - Install Git hooks that automatically track file evolution

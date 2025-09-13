@@ -1,5 +1,9 @@
 # Visual Guide: How Tombstones Work
 
+Table of Contents
+- [The Problem: Traditional Deletion](#the-problem-traditional-deletion)
+- [The Solution: Tombstones](#the-solution-tombstones)
+
 ## The Problem: Traditional Deletion
 
 ```mermaid

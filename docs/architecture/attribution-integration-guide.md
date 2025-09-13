@@ -3,6 +3,11 @@
 
 # Attribution System Integration Guide
 
+Table of Contents
+- [Quick Start](#quick-start)
+- [For CLI Commands](#for-cli-commands)
+- [For Filtering](#for-filtering)
+
 This guide explains how to integrate the attribution system into existing git-mind components.
 
 ## Quick Start

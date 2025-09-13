@@ -1,6 +1,18 @@
 
 # ADR 0001: First‑Class, Time‑Travel‑Safe Semantics (Names as Truth)
 
+Table of Contents
+- [Status](#status)
+- [Date](#date)
+- [Related](#related)
+- [Context](#context)
+- [Decision](#decision)
+- [Rationale](#rationale)
+- [Consequences](#consequences)
+- [Alternatives Considered](#alternatives-considered)
+- [Implementation Notes](#implementation-notes)
+- [Rollout](#rollout)
+
 - Status: Proposed
 - Date: 2025‑09‑12
 - Related: docs/PRDs/PRD-git-mind-semantics-time-travel-prototype.md

@@ -284,7 +284,7 @@ GM_RESULT(gm_node_t) gm_process_node(gm_string_t data) {
 - [Gameplans](./gameplans/) - Detailed capability designs
 - [ARCHITECTURE.md](../../ARCHITECTURE.md) - Overall architecture
 - [MIGRATION_PHILOSOPHY.md](../architecture/MIGRATION_PHILOSOPHY.md) - Why we’re doing this
-- [CLAUDE_vs_THE_ENFORCER.md](../../CLAUDE_vs_THE_ENFORCER.md) - The battle context
+- [CLAUDE.md](../../CLAUDE.md) - The battle context
 
 ---
 

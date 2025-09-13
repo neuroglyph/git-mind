@@ -15,7 +15,9 @@
 - Make shims: `make`, `make test`, `make clean`
 - Lint (CI parity): `./tools/docker-clang-tidy.sh` → produces `clang-tidy-report.txt`
 - Strict multi-compiler build: `./tools/gauntlet/run-gauntlet.sh` (recommended before PRs)
-- Enable hooks: `pre-commit install` (clang-format + detect-secrets)
+- Enable hooks: `pre-commit install` (clang-format + detect-secrets + docs link/TOC checks)
+- Docs linter (all docs): `python3 tools/docs/check_docs.py --mode link` and `--mode toc`
+- Pre-commit (changed files): `pre-commit run --all-files docs-link-check` and `docs-toc-check`
 
 ## Coding Style & Naming Conventions
 - Language: C23 with warnings-as-errors; no VLAs or shadowing; explicit prototypes.
@@ -45,44 +47,17 @@
 - Semantics as names: Store `type_name` and `lane_name` as UTF-8 strings on edges; do not collapse into a generic/custom type. Derive 64-bit IDs from names (NFC + stable hash) only for cache/filters.
 - Time-travel correctness: All semantics (and optional advice) are in-history; queries evaluate against the chosen commit and branch.
 - Merge/conflict model: Append-only journal; edge ULIDs form an OR-Set; “Semantics Advice” (optional) merges with hybrid CRDT (LWW scalars, OR-Set collections).
-- Link vs code authors: Edge attribution `author` is the link creator (from `git config` unless provided); code authorship at the chosen commit is recorded separately (per-file last commit author/time) when using Neo4j upsert tooling.
+- Link vs code authors: Edge attribution `author` is the link creator (from `git config` unless provided); code authorship at the chosen commit is recorded separately (per-file last commit author/time) when captured by external tooling.
 - Docker hygiene: Images are namespaced/labeled (`gitmind/ci:clang-20`, `gitmind/gauntlet:<compiler>`; label `com.gitmind.project=git-mind`). Use `make docker-clean` to reclaim space safely.
 - CI/Tidy nuance: Local builds and tests pass. Clang-tidy in Docker depends on CRoaring headers in the CI image; add a source build step for deterministic results on aarch64 if CI flags it.
 
 
-## Neo4j Codex Log (Memory Graph)
-- Purpose: record tasks, touched files, and relationships to enable impact/risk queries for this repo.
-- Project tagging: all nodes carry label `:GM` and `repo:'git-mind'`.
-- Setup env:
-  - `export NEO4J_HTTP_URL=http://localhost:7474`
-  - `export NEO4J_USER=neo4j`
-  - `export NEO4J_PASSWORD=password123` (use real local creds; don’t commit)
-- One‑time constraints (HTTP):
-  - Use `scripts/neo4j-constraints.json` which creates GM-scoped constraints (Task:GM.id unique, File:GM.path unique, repo existence).
-- Helper script: `scripts/neo4j-curl.sh`
-  - Pipe JSON or use `-f payload.json`. Posts to `NEO4J_HTTP_URL/db/neo4j/tx/commit` with basic auth.
-- Quick start examples:
-  - Start task: `echo '{"statements":[{"statement":"MERGE (t:Task:GM {id:$id}) ON CREATE SET t.title=$title, t.status=\"in_progress\", t.started_at:datetime(), t.repo=\"git-mind\" ON MATCH SET t.status=\"in_progress\", t.repo=\"git-mind\"","parameters":{"id":"gm-docker-namespacing","title":"Docker image names + cleanup"}}]}' | bash scripts/neo4j-curl.sh`
-  - Link touched file: `echo '{"statements":[{"statement":"MERGE (t:Task:GM {id:$id}) MERGE (f:File:GM {path:$p}) ON CREATE SET f.repo=\"git-mind\" ON MATCH SET f.repo=\"git-mind\" MERGE (t)-[:TOUCHES]->(f)","parameters":{"id":"gm-docker-namespacing","p":"tools/docker-clean.sh"}}]}' | bash scripts/neo4j-curl.sh`
-  - Record dependency: `echo '{"statements":[{"statement":"MERGE (a:File:GM {path:$a}) ON CREATE SET a.repo=\"git-mind\" ON MATCH SET a.repo=\"git-mind\" MERGE (b:File:GM {path:$b}) ON CREATE SET b.repo=\"git-mind\" ON MATCH SET b.repo=\"git-mind\" MERGE (a)-[:DEPENDS_ON]->(b)","parameters":{"a":"tools/docker-clang-tidy.sh","b":".ci/Dockerfile"}}]}' | bash scripts/neo4j-curl.sh`
+## Vision Snapshot
+- Version your thoughts: graph of code/docs/notes tracked in Git.
+- Serverless distributed graph DB: repos are the database; clone/branch/merge.
+- Human + AI co‑thought: shared memory with attribution and review lanes.
+- Names‑as‑truth semantics; edges‑as‑commits; optional advice merging via CRDT.
+- MCP service (optional, local‑only) for tools to read/write edges.
 
-### Ready-to-run payloads in this repo
-- Initialize constraints (once): `bash scripts/neo4j-curl.sh -f scripts/neo4j-constraints.json`
-- Log this task (files touched): `bash scripts/neo4j-curl.sh -f scripts/neo4j-task-gm-docker-neo4j-2025-09-12.json`
-- Verify touched files for a task: `scripts/neo4j-show-task.sh gm-docker-namespacing-neo4j-2025-09-12`
-
-## Neo4j Proto Edge Schema (git-mind semantics)
-- Relationship: `(a:File:GM {repo:'git-mind'})-[:EDGE {ulid, type, lane, confidence, ts, commit, src_path, tgt_path, src_sha, tgt_sha, author, source_type, session_id, repo:'git-mind'}]->(b:File:GM {repo:'git-mind'})`
-- Properties map 1:1 to libgitmind edge fields (ulid, attribution, lane, SHAs, etc.).
-- Upsert example (script):
-  - `scripts/gm-neo4j-upsert-edge.sh --commit HEAD --src core/src/io/io.c --tgt core/include/gitmind/io/io.h --type IMPLEMENTS --lane verified --author user@local --source human --confidence 90`
-- Export edges to JSON/NDJSON:
-  - `scripts/neo4j-export-edges.sh` (uses jq if available)
-
-### Importer plan (proto → journal)
-- Extract edges: `scripts/neo4j-export-edges.sh > edges.json`
-- For each edge row:
-  - Resolve paths to blob OIDs at `edge.commit` (already present as `src_sha`/`tgt_sha`)
-  - Write journal entry under `refs/gitmind/edges/<lane>` with full properties (ulid, attribution, type)
-  - Rebuild cache: `gm_cache_rebuild()` (Meson test harness covers core APIs)
-- Validate parity: compare fanout/fanin against Neo4j MATCH results on the same commit.
+## External Tracking (Local Experiments)
+If you maintain a separate experimental tracking system locally (e.g., a personal graph database or notes), keep it entirely outside this repository and CI. Do not include configuration or scripts here.

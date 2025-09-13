@@ -1,5 +1,22 @@
 # PRD: First‑Class, Time‑Travel‑Safe Semantics for git‑mind
 
+Table of Contents
+- [Summary](#summary)
+- [Goals](#goals)
+- [Non‑Goals](#non-goals)
+- [Background (Current Architecture)](#background-current-architecture)
+- [Proposed Design](#proposed-design)
+- [Flows](#flows)
+- [API Surfaces (C, minimal)](#api-surfaces-c-minimal)
+- [CBOR Notes (edge)](#cbor-notes-edge)
+- [Performance & Memory](#performance--memory)
+- [Security](#security)
+- [Migration & Compatibility](#migration--compatibility)
+- [Risks & Mitigations](#risks--mitigations)
+- [Acceptance Criteria](#acceptance-criteria)
+- [Open Questions](#open-questions)
+- [Rollout Plan](#rollout-plan)
+
 ## Summary
 This PRD proposes making user‑defined relationship semantics (type, lane) first‑class in git‑mind while preserving branch/time‑travel correctness and conflict‑free merging. Edges store names (strings) as ground truth; stable numeric IDs are derived from names at runtime for cache/index performance. Optional “Semantics Advice” records (committed like edges) allow richer behavior (e.g., symmetry, transitivity) without hard‑coding policies in core. Plugins can propose/normalize semantics via safe hooks.
 
@@ -106,7 +123,7 @@ Resolution note: In the C core, identity is via `src_sha`/`tgt_sha` (blob nodes)
 - `edge.post_append`: derive edges (e.g., tests ⇒ references) by emitting additional journal entries.
 - `cache.plan`: suggest index combinations (by derived IDs).
 - `query.rewrite`: expand filters per advice (e.g., type groupings).
-- `import/export`: Neo4j/CSV mappers using names as canonical.
+- `import/export`: CSV/JSON mappers using names as canonical.
 
 ## Flows
 

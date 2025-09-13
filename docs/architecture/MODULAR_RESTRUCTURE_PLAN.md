@@ -3,6 +3,12 @@
 
 # Modular Architecture Restructure Plan
 
+Table of Contents
+- [Executive Summary](#executive-summary)
+- [Goals](#goals)
+- [Plan](#plan)
+- [Milestones](#milestones)
+- [Compatibility](#compatibility)
 ## Executive Summary
 
 Transform git-mind from a monolithic CLI application into a modular, library-first architecture with a true single-header core library and clean separation of concerns.

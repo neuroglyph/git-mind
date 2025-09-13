@@ -3,6 +3,12 @@
 
 # git-mind Architecture Documentation
 
+Table of Contents
+- [Core Systems](#core-systems)
+- [Design Decisions](#design-decisions)
+- [Diagrams](#diagrams)
+- [Integration Points](#integration-points)
+
 This directory contains the technical architecture documentation for git-mind.
 
 ## Core Systems

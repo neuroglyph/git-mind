@@ -5,6 +5,13 @@
 
 > *"Look at the stars. The great kings of the past look down on us from those stars... So whenever you feel alone, just remember that those kings will always be there to guide you, and so will I."* - Mufasa
 
+Table of Contents
+- [Name](#name)
+- [Synopsis](#synopsis)
+- [Description](#description)
+- [How It Works](#how-it-works)
+- [Options](#options)
+
 ## NAME
 
 `git-mind cache-rebuild` - Rebuild the Roaring Bitmap cache for lightning-fast queries

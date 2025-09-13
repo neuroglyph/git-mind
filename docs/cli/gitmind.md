@@ -5,6 +5,13 @@
 
 > *"Remember who you are."* - Mufasa
 
+Table of Contents
+- [Name](#name)
+- [Synopsis](#synopsis)
+- [Description](#description)
+- [The Vision](#the-vision)
+- [Commands](#commands)
+
 ## NAME
 
 `git-mind` - Semantic version control for the relationships between your files
