@@ -29,6 +29,7 @@
 #include "gitmind/error.h"
 #include "gitmind/journal.h"
 #include "gitmind/types.h"
+#include "gitmind/security/string.h"
 
 /* Local constants */
 #define CACHE_TEMP_DIR "/tmp/gitmind-cache-\x58\x58\x58\x58\x58\x58"
