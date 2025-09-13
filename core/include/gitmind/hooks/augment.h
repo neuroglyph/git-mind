@@ -11,8 +11,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <git2/types.h>
+#include <git2/oid.h>
 #include <git2/repository.h>
-
 /* Constants */
 #define MAX_CHANGED_FILES 50 /* Skip if more files changed */
 #define LOOKBACK_LIMIT 200   /* Max edges to scan */
