@@ -11,25 +11,21 @@
 #include <stddef.h>
 
 /* Public output API */
-#include "gitmind/output.h"
+#include <gitmind/output.h>
 
 /* Core public headers */
-#include "gitmind/constants.h"
-#include "gitmind/error.h"
-#include "gitmind/result.h"
-#include "gitmind/types.h"
-#include "gitmind/context.h"
-#include "gitmind/attribution.h"
-#include "gitmind/edge.h"
-#include "gitmind/edge_attributed.h"
-#include "gitmind/journal.h"
-#include "gitmind/cache.h"
+#include <gitmind/constants.h>
+#include <gitmind/error.h>
+#include <gitmind/result.h>
+#include <gitmind/types.h>
+#include <gitmind/context.h>
+#include <gitmind/attribution.h>
+#include <gitmind/edge.h>
+#include <gitmind/edge_attributed.h>
+#include <gitmind/journal.h>
+#include <gitmind/cache.h>
 
 /* Optional utility/public headers */
-#include "gitmind/io/io.h"
-#include "gitmind/time/time.h"
-#include "gitmind/util/memory.h"
-#include "gitmind/utf8/validate.h"
+/* Optional utilities can be included directly by consumers as needed */
 
 #endif /* GITMIND_H */
-
