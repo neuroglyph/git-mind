@@ -26,10 +26,18 @@
 #include "gitmind/cache.h"
 
 /* Optional utility/public headers */
+#if defined(GITMIND_ENABLE_IO)
 #include "gitmind/io/io.h"
+#endif
+#if defined(GITMIND_ENABLE_TIME)
 #include "gitmind/time/time.h"
+#endif
+#if defined(GITMIND_ENABLE_UTIL)
 #include "gitmind/util/memory.h"
+#endif
+#if defined(GITMIND_ENABLE_UTF8)
 #include "gitmind/utf8/validate.h"
+#endif
 
 #endif /* GITMIND_H */
 
