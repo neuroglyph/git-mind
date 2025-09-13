@@ -32,17 +32,29 @@ Install pre-commit hooks to ensure code quality:
 pre-commit install
 ```
 
-## Docker Development
+## Docker Development (CI parity)
 
-For consistent development environment:
+Always work via the CI container for builds/tests:
 ```bash
-make dev  # Opens a shell in the Docker container
+# Open CI dev shell (Meson/Ninja, LLVM 20, libsodium, libgit2, CRoaring)
+make dev
+
+# Build and test inside Docker
+make build-docker
+make test-docker
+
+# Clang‑tidy parity
+./tools/docker-clang-tidy.sh
+# Or only changed core files vs main
+./tools/tidy-diff-docker.sh origin/main
+
+# Optional: strict multi‑compiler gauntlet
+./tools/gauntlet/run-gauntlet.sh
 ```
 
-## Building
-
-Always build in Docker to match CI:
+Tip: install local Git hooks for a quick pre‑push gate that runs the fast Docker checks:
 ```bash
-make test-core  # Run core tests
-make check      # Run quality checks
+make install-hooks
 ```
+
+For details, see: docs/quality/local-ci-parity.md
