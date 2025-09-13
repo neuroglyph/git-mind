@@ -45,6 +45,7 @@ This index organizes documentation with stable links so the project can be pause
   - [ADR 0001: First-Class Semantics](adr/0001-first-class-semantics.md)
 - Ops and quality
   - [Developer Setup](DEV_SETUP.md)
+  - [Environment Variables](operations/Environment_Variables.md)
   - [Static Analysis Guide](quality/static-analysis-guide.md)
   - [Tidy Crusade](quality/TIDY_CLANG_CRUSADE.md)
   - [Tools vs Custom Checks](quality/tools-vs-custom-checks.md)

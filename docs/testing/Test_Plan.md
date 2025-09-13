@@ -43,3 +43,6 @@ Testing emphasizes determinism, backward compatibility, and performance. Targets
 - Safe wrappers for `memcpy/snprintf/vsnprintf`; negative tests for bounds
 - Fuzz minimal decoders (CBOR) with small AFL or libFuzzer corpus (time-boxed)
 - Dependency audit: Verify libgit2 and CRoaring versions; license checks
+- Runtime safety: CLI refuses to run in the git‑mind development repo (detected via libgit2 remote URLs). Tests that intentionally run in repos with similar names should either:
+  - Use a fresh test repo with no upstream pointing to `neuroglyph/git-mind`, or
+  - Explicitly bypass with `GITMIND_SAFETY=off` when appropriate.
