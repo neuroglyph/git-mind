@@ -37,6 +37,7 @@ jobs:
       - name: Run E2E tests inside CI Docker image
         run: |
           IMAGE=${GITMIND_CI_IMAGE:-gitmind/ci:clang-20}
+          docker pull "$IMAGE" >/dev/null
           docker run --rm --label com.gitmind.project=git-mind \
             -v "$PWD":/workspace -w /workspace -e GITMIND_DOCKER=1 "$IMAGE" bash -lc '
               set -euo pipefail
