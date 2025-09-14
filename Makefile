@@ -19,9 +19,9 @@ docker-clean:
 	./tools/docker-clean.sh
 
 md-lint:
-	@npx --yes -p markdownlint-cli2 markdownlint-cli2 "**/*.md" "#.git" "#build"
+	@npx --yes -p markdownlint-cli2 markdownlint-cli2 "**/*.md" "#.git" "#build" "#.legacy" "#.trash"
 
 md-fix:
-	@npx --yes -p markdownlint-cli2 markdownlint-cli2 --fix "**/*.md" "#.git" "#build"
+	@npx --yes -p markdownlint-cli2 markdownlint-cli2 --fix "**/*.md" "#.git" "#build" "#.legacy" "#.trash"
 
 .PHONY: all test clean docker-clean md-lint md-fix

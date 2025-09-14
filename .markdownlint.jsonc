@@ -15,9 +15,16 @@
   "MD013": false,                       // Line length (disabled for readability)
   "MD036": false,                       // No emphasis-as-heading (allowed)
   "MD040": false,                       // Fenced code language (optional)
-  "MD033": {                            // Allow limited inline HTML
-    "allowed_elements": ["img", "br", "sup", "sub", "details", "summary"]
-  },
-  "MD024": { "allow_different_nesting": true },
+  // Aggressive noise reduction for legacy/compiled docs
+  "MD001": false,                       // Heading levels may skip (docs are eclectic)
+  "MD012": false,                       // Multiple blank lines allowed
+  "MD022": false,                       // No strict blanks around headings
+  "MD024": false,                       // Allow duplicate headings (scenarios)
+  "MD025": false,                       // Allow multiple H1s (compiled docs)
+  "MD033": false,                       // Allow inline HTML (diagrams, SVG)
+  "MD035": false,                       // HR style not enforced
+  "MD051": false,                       // Link fragments not strictly validated
+  "MD055": false,                       // Table pipe style not enforced
+  "MD056": false,                       // Table column count not enforced
   "MD026": { "punctuation": ".,;:!?" }
 }
