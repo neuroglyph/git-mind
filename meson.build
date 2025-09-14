@@ -229,3 +229,34 @@ test('io', test_io)
 test('time', test_time)
 test('cbor', test_cbor)
 test('edge', test_edge)
+
+# Standalone header compilation checks (public headers)
+header_check_src = 'tools/header_compile.c'
+public_headers = [
+  'include/gitmind/output.h',
+  'include/gitmind/constants.h',
+  'include/gitmind/error.h',
+  'include/gitmind/safety.h',
+  'core/include/gitmind/result.h',
+  'core/include/gitmind/types.h',
+  'core/include/gitmind/context.h',
+  'core/include/gitmind/attribution.h',
+  'core/include/gitmind/edge.h',
+  'core/include/gitmind/edge_attributed.h',
+  'core/include/gitmind/journal.h',
+  'core/include/gitmind/cache.h',
+  'core/include/gitmind/io/io.h',
+  'core/include/gitmind/time/time.h',
+  'core/include/gitmind/util/memory.h',
+  'core/include/gitmind/utf8/validate.h',
+]
+
+foreach hdr : public_headers
+  exe_name = 'hdr_' + hdr.split('/')[-1].replace('.', '_')
+  executable(exe_name,
+    header_check_src,
+    include_directories : inc,
+    dependencies : [libsodium_dep, libgit2_dep, thread_dep, roaring_dep],
+    c_args : ['-include', hdr],
+  )
+endforeach
