@@ -260,3 +260,7 @@ foreach hdr : public_headers
     c_args : ['-include', hdr],
   )
 endforeach
+
+# Lint: header guard prefix check
+run_target('lint_header_guards',
+  command : ['python3', 'tools/quality/check_header_guards.py'])

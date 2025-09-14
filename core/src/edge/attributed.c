@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <git2/oid.h>
 
 /* Result types are defined in edge_attributed.h */
 
@@ -137,17 +138,19 @@ gm_result_edge_attributed_t gm_edge_attributed_create(
     /* Initialize edge */
     gm_edge_attributed_t edge = {0};
     
-    /* Resolve source SHA */
+    /* Resolve source SHA and OID */
     gm_result_void_t src_result = resolve_sha(ctx, src_path, edge.src_sha);
     if (!src_result.ok) {
         return (gm_result_edge_attributed_t){.ok = false, .u.err = src_result.u.err};
     }
+    git_oid_fromraw(&edge.src_oid, edge.src_sha);
     
-    /* Resolve target SHA */
+    /* Resolve target SHA and OID */
     gm_result_void_t tgt_result = resolve_sha(ctx, tgt_path, edge.tgt_sha);
     if (!tgt_result.ok) {
         return (gm_result_edge_attributed_t){.ok = false, .u.err = tgt_result.u.err};
     }
+    git_oid_fromraw(&edge.tgt_oid, edge.tgt_sha);
     
     /* Set basic fields */
     edge.rel_type = (uint16_t)relationship_type;
