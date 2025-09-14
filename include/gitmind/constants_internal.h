@@ -92,7 +92,7 @@
 /* Cache Build Constants */
 #define CACHE_BUILD_BATCH_SIZE 1000    /* Edges per batch */
 #define EDGE_MAP_BUCKETS 1024          /* Hash map bucket count */
-#define KB_SIZE 1024                   /* Bytes per KB for display */
+#define KB_SIZE 1024                   /* Bytes per KiB (binary); use 1000 for KB (decimal) */
 #ifndef CACHE_SIZE_ESTIMATE_PER_EDGE
 #define CACHE_SIZE_ESTIMATE_PER_EDGE 4 /* Estimated bytes per edge in cache */
 #endif
