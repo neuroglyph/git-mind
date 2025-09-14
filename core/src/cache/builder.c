@@ -39,7 +39,7 @@
 
 /* In-memory edge ID map entry */
 typedef struct edge_map_entry {
-    uint8_t sha[GM_SHA1_SIZE];
+    gm_oid_t oid;
     roaring_bitmap_t *bitmap;
     struct edge_map_entry *next;
 } edge_map_entry_t;
@@ -67,22 +67,23 @@ static edge_map_t *edge_map_create(size_t size) {
 }
 
 /* Hash function for SHA */
-static size_t sha_hash(const uint8_t *sha, size_t size) {
+static size_t oid_hash(const gm_oid_t *oid, size_t size) {
     size_t hash = 0;
-    for (int i = 0; i < GM_SHA1_SIZE; i++) {
-        hash = (hash * SHA_HASH_MULTIPLIER) + sha[i];
+    const uint8_t *raw = git_oid_raw(oid);
+    for (int i = 0; i < GM_OID_RAWSZ; i++) {
+        hash = (hash * SHA_HASH_MULTIPLIER) + raw[i];
     }
     return hash % size;
 }
 
 /* Add edge ID to map */
-static int edge_map_add(edge_map_t *map, const uint8_t *sha, uint32_t edge_id) {
-    size_t idx = sha_hash(sha, map->size);
+static int edge_map_add(edge_map_t *map, const gm_oid_t *oid, uint32_t edge_id) {
+    size_t idx = oid_hash(oid, map->size);
     edge_map_entry_t *entry = map->buckets[idx];
 
     /* Find existing entry */
     while (entry) {
-        if (memcmp(entry->sha, sha, GM_SHA1_SIZE) == 0) {
+        if (git_oid_cmp(&entry->oid, oid) == 0) {
             gm_bitmap_add(entry->bitmap, edge_id);
             return GM_OK;
         }
@@ -94,7 +95,7 @@ static int edge_map_add(edge_map_t *map, const uint8_t *sha, uint32_t edge_id) {
     if (!entry)
         return GM_NO_MEMORY;
 
-    memcpy(entry->sha, sha, GM_SHA1_SIZE);
+    entry->oid = *oid;
     entry->bitmap = gm_bitmap_create();
     if (!entry->bitmap) {
         free(entry);
@@ -128,28 +129,21 @@ static void edge_map_free(edge_map_t *map) {
 }
 
 /* Get SHA prefix for sharding */
-static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
+static void get_oid_prefix(const gm_oid_t *oid, char *prefix, int bits) {
     size_t bytes = (size_t)((bits + 7) / 8);
     size_t offset = 0;
+    const uint8_t *raw = git_oid_raw(oid);
     for (size_t i = 0; i < bytes; i++) {
         (void)gm_snprintf(prefix + offset, (size_t)MAX_SHARD_PATH - offset,
-                          "%02x", sha[i]);
+                          "%02x", raw[i]);
         offset += HEX_CHARS_PER_BYTE;
     }
     prefix[offset] = '\0';
 }
 
-static int sha_to_hex(const uint8_t *sha, char *out, size_t out_size) {
-    const size_t need = (size_t)GM_SHA1_SIZE * HEX_CHARS_PER_BYTE + 1;
-    if (out_size < need) {
-        return GM_INVALID_ARG;
-    }
-    size_t offset = 0;
-    for (size_t i = 0; i < (size_t)GM_SHA1_SIZE; i++) {
-        (void)gm_snprintf(out + offset, out_size - offset, "%02x", sha[i]);
-        offset += HEX_CHARS_PER_BYTE;
-    }
-    out[offset] = '\0';
+static int oid_to_hex(const gm_oid_t *oid, char *out, size_t out_size) {
+    if (out_size < SHA_HEX_SIZE) return GM_INVALID_ARG;
+    (void)git_oid_tostr(out, out_size, oid);
     return GM_OK;
 }
 
@@ -161,12 +155,12 @@ static int write_map_to_temp(edge_map_t *map, const char *temp_dir,
         edge_map_entry_t *entry = map->buckets[i];
         while (entry) {
             char prefix[MAX_SHARD_PATH];
-            get_sha_prefix(entry->sha, prefix, shard_bits);
+            get_oid_prefix(&entry->oid, prefix, shard_bits);
             (void)gm_snprintf(path, sizeof(path), "%s/%s", temp_dir, prefix);
             (void)mkdir(path, DIR_PERMS_NORMAL);
 
             char sha_hex[SHA_HEX_SIZE];
-            int hexrc = sha_to_hex(entry->sha, sha_hex, sizeof(sha_hex));
+            int hexrc = oid_to_hex(&entry->oid, sha_hex, sizeof(sha_hex));
             if (hexrc != GM_OK) {
                 return hexrc;
             }
@@ -227,12 +221,12 @@ static int collect_edge_callback(const gm_edge_t *edge, void *userdata) {
     int rc;
 
     /* Add to forward index */
-    rc = edge_map_add(collector->forward, edge->src_sha, collector->edge_id);
+    rc = edge_map_add(collector->forward, &edge->src_oid, collector->edge_id);
     if (rc != GM_OK)
         return rc;
 
     /* Add to reverse index */
-    rc = edge_map_add(collector->reverse, edge->tgt_sha, collector->edge_id);
+    rc = edge_map_add(collector->reverse, &edge->tgt_oid, collector->edge_id);
     if (rc != GM_OK)
         return rc;
 
