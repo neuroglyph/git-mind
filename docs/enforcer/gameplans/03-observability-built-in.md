@@ -1,6 +1,6 @@
 # 🔍 Observability Built-In: Gameplan
 
-> *"Make the invisible visible."*
+> _"Make the invisible visible."_
 
 ## Executive Summary
 
@@ -367,24 +367,28 @@ flowchart LR
 ## 🛠️ Implementation Plan
 
 ### Phase 1: Logging Foundation (First Module)
+
 1. Implement structured logging core
 2. Add log levels and filtering
 3. Create module loggers
 4. Convert edge module to structured logs
 
 ### Phase 2: Basic Metrics (Next 2 Modules)
+
 1. Implement metric types (counter, gauge)
 2. Add common metrics (memory, operations)
 3. Create metric registry
 4. Add timer helpers
 
 ### Phase 3: Tracing Infrastructure (Module 4-5)
+
 1. Implement span creation/management
 2. Add context propagation
 3. Create trace sampling
 4. Integrate with operations
 
 ### Phase 4: Export & Visualization (Ongoing)
+
 1. Add console/file exporters
 2. Implement Prometheus endpoint
 3. Add OTLP support
@@ -461,6 +465,7 @@ void init_edge_metrics(void) {
 ## 🧪 Testing Approach
 
 ### 1. Log Output Verification
+
 ```c
 void test_structured_logging(void) {
     // Capture log output
@@ -483,6 +488,7 @@ void test_structured_logging(void) {
 ```
 
 ### 2. Metric Collection Tests
+
 ```c
 void test_metrics_collection(void) {
     gm_metric_t *test_counter = gm_metric_counter("test_ops", "Test operations");
@@ -516,6 +522,7 @@ void test_metrics_collection(void) {
 ```
 
 ### 3. Trace Context Tests
+
 ```c
 void test_trace_propagation(void) {
     // Start root span
@@ -538,6 +545,7 @@ void test_trace_propagation(void) {
 ```
 
 ### 4. Performance Overhead Tests
+
 ```c
 void test_observability_overhead(void) {
     const int iterations = 100000;
@@ -569,22 +577,24 @@ void test_observability_overhead(void) {
 
 ## 📈 Success Metrics
 
-1. **Log Coverage**: 100% of operations have structured logs
-2. **Metric Coverage**: All key operations measured
-3. **Trace Adoption**: Critical paths traced
-4. **Performance**: < 5% overhead in production
-5. **Debug Time**: 50% reduction in issue diagnosis
+1. __Log Coverage__: 100% of operations have structured logs
+2. __Metric Coverage__: All key operations measured
+3. __Trace Adoption__: Critical paths traced
+4. __Performance__: < 5% overhead in production
+5. __Debug Time__: 50% reduction in issue diagnosis
 
 ## 🎓 Best Practices
 
-### DO:
+### DO
+
 - ✅ Use structured logging everywhere
 - ✅ Add context to all operations
 - ✅ Measure what matters
 - ✅ Sample traces intelligently
 - ✅ Export metrics for monitoring
 
-### DON'T:
+### DON'T
+
 - ❌ Log sensitive data (passwords, keys)
 - ❌ Create high-cardinality metrics
 - ❌ Trace every single operation
@@ -594,16 +604,19 @@ void test_observability_overhead(void) {
 ## 🔗 Integration Points
 
 ### With Error Handling
+
 - Errors automatically logged with context
 - Error metrics tracked
 - Errors recorded in trace spans
 
 ### With Memory Architecture
+
 - Memory metrics exported
 - Allocation tracking in traces
 - Memory pressure alerts
 
 ### With Testing
+
 - Mock telemetry for tests
 - Verify observability in tests
 - Performance benchmarks
@@ -617,4 +630,4 @@ void test_observability_overhead(void) {
 
 ---
 
-*"If you can't see it, you can't fix it. If you can't measure it, you can't improve it."*
+_"If you can't see it, you can't fix it. If you can't measure it, you can't improve it."_

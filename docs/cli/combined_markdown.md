@@ -4,9 +4,10 @@
 
 # git-mind Command Reference
 
-> *"The great kings of the past look down on us from those stars... So whenever you feel alone, just remember that those kings will always be there to guide you, and so will I."* - Mufasa
+> _"The great kings of the past look down on us from those stars... So whenever you feel alone, just remember that those kings will always be there to guide you, and so will I."_ - Mufasa
 
 Table of Contents
+
 - [Overview](#overview)
 - [Core Commands](#core-commands)
 - [Performance Commands](#performance-commands)
@@ -20,41 +21,50 @@ Welcome to the git-mind command reference. These guides will teach you not just 
 ## Core Commands
 
 ### [git-mind](gitmind.md)
+
 The main command and your entry into semantic version control. Start here to understand the vision.
 
 ### [git-mind link](gitmind-link.md)  
+
 Create meaningful connections between files. This is the heart of git-mind - where understanding becomes permanent.
 
 ### [git-mind list](gitmind-list.md)
+
 Query and explore your semantic web. Your window into the relationships that bind your code.
 
 ## Performance Commands
 
 ### [git-mind cache-rebuild](gitmind-cache-rebuild.md)
+
 Harness the power of Roaring Bitmaps for lightning-fast queries. When your semantic web grows large, this command keeps it fast.
 
 ## Evolution Commands
 
 ### [git-mind install-hooks](gitmind-install-hooks.md)
+
 Install automatic evolution tracking. Let git-mind follow your files as they change and grow.
 
 ## Coming Soon
 
 ### git-mind traverse
+
 Follow connection paths through your codebase. Like `git log` but for relationships.
 
 ### git-mind unlink  
+
 Remove connections gracefully with tombstone edges.
 
 ### git-mind status
+
 See statistics about your semantic graph.
 
 ### git-mind gc
+
 Compress old journal entries for long-lived repositories.
 
 ## The Philosophy
 
-*"Look beyond what you see."* - Rafiki
+_"Look beyond what you see."_ - Rafiki
 
 These aren't just commands. They're tools for encoding understanding. Every link you create, every query you run, adds to the collective wisdom of your codebase.
 
@@ -69,14 +79,13 @@ Traditional documentation tells you what the code does. Semantic version control
 
 ## Remember
 
-*"The past can hurt. But the way I see it, you can either run from it or learn from it."*
+_"The past can hurt. But the way I see it, you can either run from it or learn from it."_
 
 Every command in git-mind helps you learn from your code's past and build a better future.
 
 ---
 
-*Welcome to the Pride Lands of semantic version control.*
-
+_Welcome to the Pride Lands of semantic version control._
 
 # gitmind-cache-rebuild.md
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
@@ -84,9 +93,10 @@ Every command in git-mind helps you learn from your code's past and build a bett
 
 # git-mind cache-rebuild
 
-> *"Look at the stars. The great kings of the past look down on us from those stars... So whenever you feel alone, just remember that those kings will always be there to guide you, and so will I."* - Mufasa
+> _"Look at the stars. The great kings of the past look down on us from those stars... So whenever you feel alone, just remember that those kings will always be there to guide you, and so will I."_ - Mufasa
 
 Table of Contents
+
 - [Name](#name)
 - [Synopsis](#synopsis)
 - [Description](#description)
@@ -112,16 +122,20 @@ This command rebuilds the performance cache for the current (or specified) branc
 ## HOW IT WORKS
 
 ### The Journal: Source of Truth
+
 Your semantic links live as CBOR-encoded Git commits in `refs/gitmind/edges/<branch>`. This is the permanent record - like the stars themselves.
 
 ### The Cache: Speed of Light
+
 The cache creates two Roaring Bitmap indices:
-- **Forward index**: source SHA → edge IDs (who depends on this?)
-- **Reverse index**: target SHA → edge IDs (what does this depend on?)
+
+- __Forward index__: source SHA → edge IDs (who depends on this?)
+- __Reverse index__: target SHA → edge IDs (what does this depend on?)
 
 These are stored as Git tree objects under `refs/gitmind/cache/<branch>`, sharded into 256 buckets using the first byte of each SHA.
 
 ### The Magic: Roaring Bitmaps
+
 Roaring Bitmaps compress sequences of integers with supernatural efficiency. A million edges might compress to just kilobytes. It's the same technology that powers modern databases and search engines.
 
 ## OPTIONS
@@ -138,6 +152,7 @@ Roaring Bitmaps compress sequences of integers with supernatural efficiency. A m
 ## EXAMPLES
 
 ### Basic rebuild for current branch
+
 ```bash
 $ git mind cache-rebuild
 Rebuilding cache for branch 'main'...
@@ -147,6 +162,7 @@ Cache rebuilt successfully!
 ```
 
 ### Rebuild after heavy development
+
 ```bash
 $ git mind link src/parser.c docs/parsing.md --type implements
 $ git mind link src/lexer.c src/parser.c --type feeds
@@ -157,6 +173,7 @@ Cache updated incrementally!
 ```
 
 ### Force rebuild when things seem wrong
+
 ```bash
 $ git mind cache-rebuild --force --verbose
 Force rebuilding cache for branch 'main'...
@@ -173,29 +190,32 @@ Cache rebuilt: refs/gitmind/cache/main -> 3a7f9b2
 ## PERFORMANCE
 
 Without cache (journal scan):
+
 - 1,000 edges: ~50ms
 - 10,000 edges: ~500ms  
 - 100,000 edges: ~5000ms
 
 With cache (bitmap query):
+
 - 1,000 edges: ~2ms
 - 10,000 edges: ~5ms
 - 100,000 edges: ~10ms
 
-*"It's the Circle of Life, and it moves us all!"* The cache makes git-mind scale to repositories with millions of semantic connections.
+_"It's the Circle of Life, and it moves us all!"_ The cache makes git-mind scale to repositories with millions of semantic connections.
 
 ## WHEN TO REBUILD
 
 The cache automatically detects when it's stale by comparing the journal tip with the cached tip. However, you should manually rebuild when:
 
-1. **After bulk operations** - Added many links at once
-2. **After merging branches** - Cache is branch-specific
-3. **Performance degrades** - Queries feel slow
-4. **Something seems wrong** - Use `--force` to ensure consistency
+1. __After bulk operations__ - Added many links at once
+2. __After merging branches__ - Cache is branch-specific
+3. __Performance degrades__ - Queries feel slow
+4. __Something seems wrong__ - Use `--force` to ensure consistency
 
 ## TECHNICAL DETAILS
 
 ### Storage Format
+
 ```
 refs/gitmind/cache/main
 └── tree
@@ -211,12 +231,15 @@ refs/gitmind/cache/main
 ```
 
 ### Bitmap Serialization
+
 Each bitmap file contains:
+
 1. 16-byte header with magic number and version
 2. Compressed Roaring Bitmap data
 3. CRC32 checksum
 
 ### Incremental Updates
+
 The cache tracks the last processed journal commit. On rebuild, it only processes new commits, making updates extremely fast.
 
 ## DIAGNOSTICS
@@ -224,9 +247,10 @@ The cache tracks the last processed journal commit. On rebuild, it only processe
 The cache-rebuild command returns 0 on success, non-zero on failure.
 
 Common issues:
-- **"Permission denied"**: Ensure you have write access to `.git/`
-- **"No journal found"**: Create some links first with `git mind link`
-- **"Invalid journal format"**: Corrupted journal - seek help
+
+- __"Permission denied"__: Ensure you have write access to `.git/`
+- __"No journal found"__: Create some links first with `git mind link`
+- __"Invalid journal format"__: Corrupted journal - seek help
 
 ## SEE ALSO
 
@@ -236,7 +260,7 @@ Common issues:
 
 ## PHILOSOPHY
 
-*"Remember who you are."*
+_"Remember who you are."_
 
 The cache is not the truth - it's a performance optimization. The journal commits are the permanent record. If the cache is ever lost or corrupted, it can always be rebuilt from the journal.
 
@@ -244,8 +268,7 @@ This design ensures that git-mind scales from personal note-taking to massive co
 
 ---
 
-*In the great Circle of Life, every query begins with a search, and every search begins with hope. The cache ensures that hope is never disappointed.*
-
+_In the great Circle of Life, every query begins with a search, and every search begins with hope. The cache ensures that hope is never disappointed._
 
 # gitmind-install-hooks.md
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
@@ -253,9 +276,10 @@ This design ensures that git-mind scales from personal note-taking to massive co
 
 # git-mind install-hooks
 
-> *"The past can hurt. But the way I see it, you can either run from it or learn from it."* - Rafiki
+> _"The past can hurt. But the way I see it, you can either run from it or learn from it."_ - Rafiki
 
 Table of Contents
+
 - [Name](#name)
 - [Synopsis](#synopsis)
 - [Description](#description)
@@ -304,6 +328,7 @@ Now when you query connections to main.c, git-mind knows to follow the AUGMENTS 
 ## EXAMPLES
 
 ### First time installation
+
 ```bash
 $ git mind install-hooks
 Installing git-mind hooks...
@@ -314,6 +339,7 @@ Your commits will now track file evolution automatically.
 ```
 
 ### With existing hooks
+
 ```bash
 $ git mind install-hooks
 Found existing post-commit hook
@@ -325,6 +351,7 @@ Both your existing hook and git-mind will run after commits.
 ```
 
 ### Force installation
+
 ```bash
 $ git mind install-hooks --force --no-backup
 Installing git-mind hooks...
@@ -335,6 +362,7 @@ Installing git-mind hooks...
 ## HOW IT WORKS
 
 ### The Hook Script
+
 The installed hook is a simple shell script that calls the git-mind-hook binary:
 
 ```bash
@@ -352,7 +380,9 @@ fi
 ```
 
 ### The Magic Moment
+
 After every commit, the hook:
+
 1. Gets the list of modified files
 2. For each file, finds its old blob SHA (before commit)
 3. Searches recent edges (last 200) for links to that blob
@@ -360,7 +390,9 @@ After every commit, the hook:
 5. Updates the semantic graph silently in the background
 
 ### Performance
+
 The hook is blazing fast:
+
 - Typical commit: <10ms overhead
 - Large commit (50+ files): <50ms overhead
 - Massive refactor (500+ files): <200ms overhead
@@ -370,11 +402,13 @@ It runs asynchronously and never blocks your workflow.
 ## WHEN AUGMENTS HAPPEN
 
 AUGMENTS edges are created when:
+
 - You modify a file that has incoming semantic links
 - You rename a file (old path AUGMENTS to new path)
 - You split a file (original AUGMENTS to both pieces)
 
 AUGMENTS edges are NOT created for:
+
 - New files (no history to track)
 - Deleted files (use tombstone edges instead)
 - Merge commits (too complex for v1)
@@ -410,7 +444,7 @@ Your semantic links remain intact - only automatic tracking stops.
 
 ## PHILOSOPHY
 
-*"Oh yes, the past can hurt. But you can either run from it or learn from it."*
+_"Oh yes, the past can hurt. But you can either run from it or learn from it."_
 
 Code evolution is natural. Files grow, split, merge, and transform. The AUGMENTS system doesn't fight this change - it embraces it. Every commit becomes a checkpoint in your code's journey.
 
@@ -419,7 +453,9 @@ Traditional version control tracks what changed. Semantic version control tracks
 ## TECHNICAL DETAILS
 
 ### Edge Format
+
 AUGMENTS edges have a special format:
+
 ```
 {
   src_sha: "abc123...",  // Old blob SHA
@@ -432,10 +468,13 @@ AUGMENTS edges have a special format:
 ```
 
 ### Search Window
+
 The hook searches the last 200 edges for performance. This covers several days of typical development. Older links won't auto-update but can be manually linked.
 
 ### Conflict Resolution
+
 AUGMENTS edges never conflict because they:
+
 - Use ULID-based edge IDs (time-ordered, unique)
 - Are append-only (no modifications)
 - Are branch-specific (isolated evolution)
@@ -449,7 +488,7 @@ AUGMENTS edges never conflict because they:
 
 ## THE LESSON
 
-*"Change is good."* - Rafiki
+_"Change is good."_ - Rafiki
 
 But change without memory is chaos. The AUGMENTS system ensures that every transformation is recorded, every evolution is traceable, and every connection persists through change.
 
@@ -457,8 +496,7 @@ Install the hooks. Let your code's journey document itself.
 
 ---
 
-*Asante sana, squash banana! Your semantic links now travel through time!* 🐒
-
+_Asante sana, squash banana! Your semantic links now travel through time!_ 🐒
 
 # gitmind-link.md
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
@@ -466,9 +504,10 @@ Install the hooks. Let your code's journey document itself.
 
 # git-mind link
 
-> *"Everything the light touches is our kingdom... But a king's time as ruler rises and falls like the sun."* - Mufasa
+> _"Everything the light touches is our kingdom... But a king's time as ruler rises and falls like the sun."_ - Mufasa
 
 Table of Contents
+
 - [Name](#name)
 - [Synopsis](#synopsis)
 - [Description](#description)
@@ -506,22 +545,24 @@ From this moment forward, anyone who checks out your code can discover this rela
 ## OPTIONS
 
 `--type <relationship>`
-: **Required.** The type of semantic relationship. Common types:
-  - `implements` - Source implements design/spec in target
-  - `references` - Source references or mentions target
-  - `depends_on` - Source requires target to function
-  - `tests` - Source tests the functionality in target
-  - `documents` - Source documents how target works
-  - `inspires` - Source inspired the creation of target
-  - `refactors` - Source is refactored version of target
-  - *...or any relationship that captures your understanding*
+: __Required.__ The type of semantic relationship. Common types:
+
+- `implements` - Source implements design/spec in target
+- `references` - Source references or mentions target
+- `depends_on` - Source requires target to function
+- `tests` - Source tests the functionality in target
+- `documents` - Source documents how target works
+- `inspires` - Source inspired the creation of target
+- `refactors` - Source is refactored version of target
+- _...or any relationship that captures your understanding_
 
 `--confidence <float>`
 : Confidence level from 0.0 to 1.0 (default: 1.0)
-  - `1.0` - Certain (default)
-  - `0.8` - Highly confident
-  - `0.5` - Somewhat confident
-  - `0.2` - Speculative
+
+- `1.0` - Certain (default)
+- `0.8` - Highly confident
+- `0.5` - Somewhat confident
+- `0.2` - Speculative
 
 `--note <message>`
 : Add a note explaining the connection (stored in commit message)
@@ -535,6 +576,7 @@ From this moment forward, anyone who checks out your code can discover this rela
 ## EXAMPLES
 
 ### Basic usage - The daily workflow
+
 ```bash
 # Implementation tracks design
 $ git mind link src/auth.c docs/auth-design.md --type implements
@@ -547,6 +589,7 @@ $ git mind link src/auth.c config/auth.yaml --type depends_on
 ```
 
 ### With confidence - Encoding uncertainty
+
 ```bash
 # Human creating a confident link (confidence defaults to 1.0)
 $ git mind link src/parser.c rfc/grammar.txt --type implements
@@ -562,6 +605,7 @@ $ git mind link src/algorithm.c papers/dijkstra62.pdf --type references --confid
 ```
 
 ### Bidirectional links - Symmetric relationships
+
 ```bash
 # These files are peers that reference each other
 $ git mind link src/client.c src/server.c --type references --bidirectional
@@ -570,6 +614,7 @@ Created edge: src/server.c ──references──> src/client.c
 ```
 
 ### Human-AI Collaboration - Attribution System
+
 ```bash
 # Human creates edge (default behavior)
 $ git mind link README.md src/main.c --type documents
@@ -590,14 +635,18 @@ $ git mind link old_file.c new_file.c --type augments
 ## HOW IT WORKS
 
 ### Git-Native Storage
+
 Each link is stored as a Git commit in `refs/gitmind/edges/<branch>`. The commit contains:
+
 - CBOR-encoded edge data in the commit message
 - Empty tree (git's null tree: 4b825dc...)
 - Author/committer from your Git config
 - Timestamp of creation
 
 ### Content Addressing
+
 Links connect specific versions of files using their blob SHAs:
+
 ```
 source_sha: 8a9f3b2c...  # SHA of design.md's content
 target_sha: 7c4d5e6f...  # SHA of parser.c's content
@@ -606,13 +655,15 @@ target_sha: 7c4d5e6f...  # SHA of parser.c's content
 This means links point to exact versions. When files change, the AUGMENTS system (see `git-mind-install-hooks(1)`) tracks their evolution.
 
 ### Branch Isolation
-Links are branch-specific. Create different connections on different branches:
-```bash
-$ git checkout -b feature/auth
-$ git mind link src/auth.c new-auth-api.md --type implements
 
-$ git checkout main  
-$ git mind list  # Won't show the feature branch link
+Links are branch-specific. Create different connections on different branches:
+
+```bash
+git checkout -b feature/auth
+git mind link src/auth.c new-auth-api.md --type implements
+
+git checkout main  
+git mind list  # Won't show the feature branch link
 ```
 
 ## RELATIONSHIP TYPES
@@ -620,24 +671,28 @@ $ git mind list  # Won't show the feature branch link
 While you can use any string as a relationship type, these conventions help maintain consistency:
 
 ### Structural Relations
+
 - `implements` - Code implements a design/specification
 - `depends_on` - Requires target to function correctly
 - `extends` - Builds upon target's functionality
 - `replaces` - Newer version replacing target
 
 ### Documentation Relations
+
 - `documents` - Explains how target works
 - `references` - Mentions or links to target
 - `examples` - Shows usage of target
 - `tutorials` - Teaches concepts in target
 
 ### Development Relations
+
 - `tests` - Validates target's behavior
 - `benchmarks` - Measures target's performance
 - `fixes` - Resolves issues in target
 - `refactors` - Restructured version of target
 
 ### Inspiration Relations
+
 - `inspires` - Target inspired this implementation
 - `adapts` - Modified version of target's approach
 - `conflicts` - Incompatible with target
@@ -646,6 +701,7 @@ While you can use any string as a relationship type, these conventions help main
 ## BEST PRACTICES
 
 ### Be Specific
+
 ```bash
 # Too vague
 $ git mind link src/parser.c docs/ --type references  # Which doc?
@@ -655,18 +711,22 @@ $ git mind link src/parser.c docs/parser-design.md --type implements
 ```
 
 ### Use Conventional Types
+
 Stick to common relationship types when possible. This makes queries more powerful:
+
 ```bash
 # Find all tests easily
 $ git mind list --type tests
 ```
 
 ### Link at the Right Granularity
+
 - Link files, not directories (unless the directory is the unit)
 - Link to specific documents, not entire folders
 - Link the most specific relevant files
 
 ### Document Non-Obvious Links
+
 ```bash
 # Why does the parser depend on the logger config?
 $ git mind link src/parser.c config/logger.yaml --type depends_on \
@@ -675,9 +735,10 @@ $ git mind link src/parser.c config/logger.yaml --type depends_on \
 
 ## PERMANENCE & EVOLUTION
 
-*"Remember who you are."*
+_"Remember who you are."_
 
 Every link you create becomes part of your repository's permanent history. Future developers can:
+
 - See what you connected and why
 - Travel back to see historical connections
 - Understand the evolution of architectural decisions
@@ -688,16 +749,19 @@ This is why git-mind exists: to encode not just what your code is, but what it m
 
 Common errors and solutions:
 
-**"File not found"**
+__"File not found"__
+
 - Ensure both source and target exist in the repository
 - Use paths relative to repository root
 - Check for typos in filenames
 
-**"Not in a git repository"**
+__"Not in a git repository"__
+
 - Run from within a Git repository
 - Initialize with `git init` if needed
 
-**"Invalid confidence value"**
+__"Invalid confidence value"__
+
 - Use a float between 0.0 and 1.0
 - Default is 1.0 if not specified
 
@@ -710,7 +774,7 @@ Common errors and solutions:
 
 ## THE PHILOSOPHY
 
-*"There's more to being a king than getting your way."*
+_"There's more to being a king than getting your way."_
 
 Creating links is an act of documentation, but more than that - it's an act of teaching. Every link you create teaches future readers (including future you) about the relationships that matter.
 
@@ -718,8 +782,7 @@ The power isn't in the tool. It's in the understanding you encode with it.
 
 ---
 
-*"You are more than what you have become. Remember."* - Your semantic links remember for you.
-
+_"You are more than what you have become. Remember."_ - Your semantic links remember for you.
 
 # gitmind-list.md
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
@@ -727,9 +790,10 @@ The power isn't in the tool. It's in the understanding you encode with it.
 
 # git-mind list
 
-> *"Look beyond what you see."* - Rafiki
+> _"Look beyond what you see."_ - Rafiki
 
 Table of Contents
+
 - [Name](#name)
 - [Synopsis](#synopsis)
 - [Description](#description)
@@ -754,6 +818,7 @@ This is your window into understanding. Use it to discover dependencies, trace i
 ## THE POWER OF SEEING
 
 Without git-mind:
+
 ```bash
 # Where is this implemented?
 $ grep -r "auth flow" docs/
@@ -764,6 +829,7 @@ $ # ...good luck
 ```
 
 With git-mind:
+
 ```bash
 # All connections at a glance
 $ git mind list --from src/parser.c
@@ -795,10 +861,11 @@ $ git mind list
 
 `--format <format>`
 : Output format (default: human)
-  - `human` - Readable format with arrows
-  - `json` - Machine-parseable JSON
-  - `tsv` - Tab-separated values
-  - `dot` - Graphviz DOT format
+
+- `human` - Readable format with arrows
+- `json` - Machine-parseable JSON
+- `tsv` - Tab-separated values
+- `dot` - Graphviz DOT format
 
 `--show-sha`
 : Display blob SHAs (default: hide)
@@ -830,6 +897,7 @@ $ git mind list
 ### Basic Queries
 
 Show all connections:
+
 ```bash
 $ git mind list
 README.md ──references──> docs/quickstart.md
@@ -842,6 +910,7 @@ src/parser.c ──depends_on──> config/grammar.yaml
 ### Focused Queries
 
 What does this file connect to?
+
 ```bash
 $ git mind list --from src/auth.c
 src/auth.c ──implements──> docs/auth-design.md
@@ -850,6 +919,7 @@ src/auth.c ──references──> lib/crypto.c
 ```
 
 What connects to this file?
+
 ```bash
 $ git mind list --to src/parser.c
 tests/test_parser.c ──tests──> src/parser.c
@@ -861,6 +931,7 @@ src/compiler.c ──depends_on──> src/parser.c
 ### Filtered Queries
 
 Find all test files:
+
 ```bash
 $ git mind list --type tests
 tests/test_auth.c ──tests──> src/auth.c
@@ -869,6 +940,7 @@ tests/integration/test_flow.c ──tests──> src/flow.c
 ```
 
 Find uncertain connections:
+
 ```bash
 $ git mind list --min-confidence 0.8
 src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.85]
@@ -878,6 +950,7 @@ src/parser.c ──implements──> specs/grammar.md [gpt: gpt4@openai, conf: 0
 ### Attribution Filtering
 
 Show only human-created edges:
+
 ```bash
 $ git mind list --source human
 README.md ──documents──> src/main.c
@@ -886,6 +959,7 @@ tests/test_auth.c ──tests──> src/auth.c
 ```
 
 Show only AI-suggested edges:
+
 ```bash
 $ git mind list --source ai
 src/parser.c ──depends_on──> lib/lexer.h [claude: claude@anthropic, conf: 0.78]
@@ -893,6 +967,7 @@ src/crypto.c ──references──> papers/aes.pdf [gpt: gpt4@openai, conf: 0.9
 ```
 
 Show attribution for all edges:
+
 ```bash
 $ git mind list --show-attribution
 README.md ──documents──> src/main.c [human: user@example.com]
@@ -901,6 +976,7 @@ src/test.c ──tests──> src/main.c [human: developer@team.com]
 ```
 
 High-confidence AI insights only:
+
 ```bash
 $ git mind list --source ai --min-confidence 0.9
 src/crypto.c ──references──> papers/aes.pdf [gpt: gpt4@openai, conf: 0.91]
@@ -910,6 +986,7 @@ src/algorithm.c ──implements──> papers/dijkstra.pdf [claude: claude@anth
 ### Time Travel Queries
 
 See historical connections:
+
 ```bash
 # What did we understand 50 commits ago?
 $ git mind list --at HEAD~50
@@ -924,6 +1001,7 @@ $ git mind list --branch feature/new-auth
 ### Evolution Tracking
 
 See how files evolved:
+
 ```bash
 $ git mind list --show-augments
 src/auth.c:8a9f3b ──AUGMENTS──> src/auth.c:7c4d5e
@@ -934,6 +1012,7 @@ docs/api.md:3f2a1b ──AUGMENTS──> docs/api.md:current
 ### Machine-Readable Output
 
 JSON for tooling:
+
 ```bash
 $ git mind list --format json
 {
@@ -950,19 +1029,22 @@ $ git mind list --format json
 ```
 
 DOT for visualization:
+
 ```bash
-$ git mind list --format dot > graph.dot
-$ dot -Tpng graph.dot -o graph.png
+git mind list --format dot > graph.dot
+dot -Tpng graph.dot -o graph.png
 ```
 
 ## UNDERSTANDING THE OUTPUT
 
 ### Human Format (default)
+
 ```
 <source> ──<type>──> <target> [metadata]
 ```
 
 Metadata may include:
+
 - `(confidence: 0.8)` - Less than certain connections
 - `(SHA: abc123)` - When --show-sha is used
 - `(AUGMENTED)` - When file has evolved
@@ -983,14 +1065,15 @@ Use `--no-follow-augments` to see historical links.
 
 The list command uses the Roaring Bitmap cache for O(log N) queries:
 
-- **With cache**: <10ms for 100K edges
-- **Without cache**: ~5 seconds for 100K edges
-- **Cache miss**: Automatically falls back to journal scan
-- **Stale cache**: Detects and warns (run `git mind cache-rebuild`)
+- __With cache__: <10ms for 100K edges
+- __Without cache__: ~5 seconds for 100K edges
+- __Cache miss__: Automatically falls back to journal scan
+- __Stale cache__: Detects and warns (run `git mind cache-rebuild`)
 
 ## ADVANCED PATTERNS
 
 ### Dependency Analysis
+
 ```bash
 # What does my module depend on?
 $ git mind list --from "src/mymodule/**" --type depends_on
@@ -1000,6 +1083,7 @@ $ git mind list --to config/database.yaml --type depends_on
 ```
 
 ### Test Coverage Discovery
+
 ```bash
 # What files lack tests?
 $ comm -23 \
@@ -1008,6 +1092,7 @@ $ comm -23 \
 ```
 
 ### Architecture Visualization
+
 ```bash
 # Generate architecture diagram
 $ git mind list --format dot --type implements > arch.dot
@@ -1015,6 +1100,7 @@ $ dot -Tsvg arch.dot -o architecture.svg
 ```
 
 ### Change Impact Analysis
+
 ```bash
 # What might break if I change this?
 $ git mind list --to src/core-api.h --type depends_on
@@ -1022,7 +1108,7 @@ $ git mind list --to src/core-api.h --type depends_on
 
 ## PHILOSOPHY
 
-*"The question is: Who are you?"* - Rafiki
+_"The question is: Who are you?"_ - Rafiki
 
 Your code is more than files and functions. It's a living system of relationships, dependencies, and meanings. The `list` command doesn't just show you connections - it reveals the hidden structure of your understanding.
 
@@ -1033,6 +1119,7 @@ Every query is a question about your code's nature. Every result is an answer th
 Returns 0 on success, non-zero on failure.
 
 Common warnings:
+
 - `Cache stale, using journal scan` - Run `git mind cache-rebuild`
 - `No edges found` - No links match your query
 - `Following AUGMENTS chain` - File has evolved (use --no-follow-augments for original)
@@ -1046,14 +1133,13 @@ Common warnings:
 
 ## THE LESSON
 
-*"Oh, the past can hurt. But the way I see it, you can either run from it or learn from it."*
+_"Oh, the past can hurt. But the way I see it, you can either run from it or learn from it."_
 
 Every list query teaches you something about your codebase. The more you look, the more you see. The more you see, the more you understand.
 
 ---
 
-*"It is time."* - Time to see what connects your kingdom.
-
+_"It is time."_ - Time to see what connects your kingdom.
 
 # gitmind.md
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
@@ -1061,9 +1147,10 @@ Every list query teaches you something about your codebase. The more you look, t
 
 # git-mind
 
-> *"Remember who you are."* - Mufasa
+> _"Remember who you are."_ - Mufasa
 
 Table of Contents
+
 - [Name](#name)
 - [Synopsis](#synopsis)
 - [Description](#description)
@@ -1086,16 +1173,18 @@ In the great Circle of Development, code is written, connections form, understan
 
 git-mind adds a semantic layer to Git, allowing you to create, query, and explore meaningful relationships between files. These connections travel through time with your code, creating a permanent record of your understanding.
 
-*"Everything the light touches has been connected by git-mind."*
+_"Everything the light touches has been connected by git-mind."_
 
 ## THE VISION
 
 You're deep in a codebase. Instead of asking:
+
 - "Where is this implemented?" (grep)
 - "What depends on this?" (hope)
 - "Where are the tests?" (find)
 
 You ask:
+
 - "Show me all implementations of this design"
 - "What breaks if I change this?"  
 - "How has our understanding evolved?"
@@ -1113,10 +1202,10 @@ And git-mind answers, instantly, accurately, with the wisdom of everyone who cam
 : Query and explore connections
 
 `traverse <file> [--depth N]`
-: Follow connection paths from starting point *(coming soon)*
+: Follow connection paths from starting point _(coming soon)_
 
 `unlink <source> <target>`
-: Remove connection (adds tombstone) *(coming soon)*
+: Remove connection (adds tombstone) _(coming soon)_
 
 ### Management Commands
 
@@ -1127,10 +1216,10 @@ And git-mind answers, instantly, accurately, with the wisdom of everyone who cam
 : Install Git hooks for automatic evolution tracking
 
 `status`
-: Show semantic graph statistics *(coming soon)*
+: Show semantic graph statistics _(coming soon)_
 
 `gc [--aggressive]`
-: Compress old journal entries *(coming soon)*
+: Compress old journal entries _(coming soon)_
 
 ### Utility Commands
 
@@ -1143,21 +1232,27 @@ And git-mind answers, instantly, accurately, with the wisdom of everyone who cam
 ## HOW IT WORKS
 
 ### The Journal Layer (Truth)
+
 Every semantic link is stored as a Git commit in refs/gitmind/edges/<branch>. These commits:
+
 - Contain CBOR-encoded edge data
 - Are branch-specific
 - Push/pull with your code
 - Survive forever in Git history
 
 ### The Cache Layer (Speed)
+
 For repositories with thousands of connections, git-mind builds Roaring Bitmap indices:
+
 - O(log N) query performance
 - Sharded by SHA prefix
 - Stored in refs/gitmind/cache/<branch>
 - Rebuilt on demand
 
 ### The Evolution System (AUGMENTS)
+
 When files change, their blob SHAs change. The AUGMENTS system:
+
 - Tracks file evolution automatically
 - Preserves connections through changes
 - Installed via post-commit hook
@@ -1249,22 +1344,23 @@ Rebuilding cache for branch 'main'...
 
 ## PHILOSOPHY
 
-### Why Journal Commits?
+### Why Journal Commits
 
-*"It's the Circle of Life, and it moves us all"*
+_"It's the Circle of Life, and it moves us all"_
 
 Traditional metadata systems fight Git's nature. They store data outside the history, create merge conflicts, and lose synchronization. git-mind embraces Git's design:
 
-- **Commits are immutable** - Your connections can't be lost
-- **Branches isolate changes** - Different understanding on different branches
-- **History is permanent** - Travel through time to see past understanding
-- **Merging is managed** - Git handles conflicts naturally
+- __Commits are immutable__ - Your connections can't be lost
+- __Branches isolate changes__ - Different understanding on different branches
+- __History is permanent__ - Travel through time to see past understanding
+- __Merging is managed__ - Git handles conflicts naturally
 
-### Why Semantic Connections?
+### Why Semantic Connections
 
-*"There's more to being king than getting your way"*
+_"There's more to being king than getting your way"_
 
 Code without context is just syntax. Understanding comes from relationships:
+
 - Why was this built?
 - What does it implement?
 - What depends on it?
@@ -1272,11 +1368,12 @@ Code without context is just syntax. Understanding comes from relationships:
 
 git-mind makes these relationships first-class citizens of your repository.
 
-### Why Performance Matters?
+### Why Performance Matters
 
-*"Life's not fair, is it?"*
+_"Life's not fair, is it?"_
 
 A tool unused is worthless. git-mind stays fast through:
+
 - Pure C implementation
 - Roaring Bitmap indices  
 - O(log N) query complexity
@@ -1298,7 +1395,8 @@ git config --add remote.origin.fetch '+refs/gitmind/*:refs/gitmind/*'
 
 ### Editor Integration
 
-*(Coming soon)* Plugins for:
+_(Coming soon)_ Plugins for:
+
 - VS Code - See connections in sidebar
 - Vim - Query connections with :GitMindList
 - Emacs - Semantic navigation with git-mind-mode
@@ -1316,25 +1414,31 @@ git config --add remote.origin.fetch '+refs/gitmind/*:refs/gitmind/*'
 ## THE DEEPER MAGIC
 
 ### For Individuals
-*"Look inside yourself. You are more than what you have become."*
+
+*"Look inside yourself. You are more than what you have become."_
 
 Your understanding is valuable. git-mind preserves it, letting you:
+
 - Remember why you made decisions
 - Navigate by meaning, not just files
 - Build on your past insights
 
 ### For Teams
-*"We are one."*
+
+*"We are one."_
 
 Shared understanding is your competitive advantage:
+
 - Onboard faster with visible relationships
 - Preserve knowledge through transitions
 - Build collective intelligence
 
 ### For the Future
-*"It is time."*
+
+*"It is time."_
 
 What starts as a CLI becomes:
+
 - Infrastructure for AI agents
 - Foundation for semantic IDEs
 - Bridge between human and machine understanding
@@ -1378,12 +1482,14 @@ What starts as a CLI becomes:
 ## SEE ALSO
 
 Individual command documentation:
+
 - `git-mind-link(1)` - Create connections
 - `git-mind-list(1)` - Query connections
 - `git-mind-cache-rebuild(1)` - Rebuild performance cache
 - `git-mind-install-hooks(1)` - Setup evolution tracking
 
 Git documentation:
+
 - `git(1)` - The stupid content tracker
 - `gitglossary(7)` - Git glossary
 
@@ -1392,6 +1498,7 @@ Git documentation:
 git-mind emerged from a simple observation: we spend enormous effort understanding code, then throw that understanding away. What if we could capture it?
 
 The journey from idea to implementation taught us:
+
 - Simple is powerful (just Git commits)
 - Performance enables adoption (Roaring Bitmaps)
 - Evolution is inevitable (AUGMENTS system)
@@ -1401,11 +1508,11 @@ The journey from idea to implementation taught us:
 
 Created by J. Kirby Ross and the Neuroglyph Collective.
 
-*"Hakuna Matata"* - No worries, your semantic connections are safe.
+_"Hakuna Matata"_ - No worries, your semantic connections are safe.
 
 ## THE PROMISE
 
-*"Remember who you are."*
+_"Remember who you are."_
 
 Your code tells a story. git-mind helps you remember it, share it, and build upon it. In the great Circle of Development, no understanding is lost, no connection forgotten, no wisdom wasted.
 
@@ -1413,8 +1520,6 @@ Welcome to semantic version control. Welcome to git-mind.
 
 ---
 
-*"Oh yes, the past can hurt. But the way I see it, you can either run from it or learn from it."*
+_"Oh yes, the past can hurt. But the way I see it, you can either run from it or learn from it."_
 
-**Choose to learn. Choose git-mind.**
-
-
+__Choose to learn. Choose git-mind.__

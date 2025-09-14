@@ -1,11 +1,13 @@
 # git-mind End-to-End Test Suite
 
 ## Overview
+
 This test suite verifies git-mind behavior from a user's perspective. Tests focus on WHAT the system does, not HOW it does it.
 
 ## Test Categories
 
 ### 1. Core Functionality (`01_core_functionality.sh`)
+
 - Basic link creation
 - Multiple edge types  
 - Branch isolation
@@ -16,6 +18,7 @@ This test suite verifies git-mind behavior from a user's perspective. Tests focu
 - Multi-hop traversal
 
 ### 2. Edge Cases (`02_edge_cases.sh`)
+
 - Same content, different paths
 - Same path, different content
 - Rebase scenarios
@@ -28,6 +31,7 @@ This test suite verifies git-mind behavior from a user's perspective. Tests focu
 - Journal merge conflicts
 
 ### 3. Performance Benchmarks (`03_performance_benchmarks.sh`)
+
 - Single edge creation: <5ms
 - 10k fanout query: <50ms
 - 50-version chain: <10ms
@@ -40,12 +44,14 @@ This test suite verifies git-mind behavior from a user's perspective. Tests focu
 ## Running Tests
 
 ### Run All Tests
+
 ```bash
 cd tests/e2e
 ./run_all_tests.sh
 ```
 
 ### Run Individual Suite
+
 ```bash
 ./01_core_functionality.sh
 ./02_edge_cases.sh
@@ -53,6 +59,7 @@ cd tests/e2e
 ```
 
 ### Run Specific Test
+
 ```bash
 # Source framework and run single test
 source test_framework.sh
@@ -63,6 +70,7 @@ init_test_repo "mytest"
 ## Test Framework
 
 The `test_framework.sh` provides:
+
 - Test repo creation
 - Assertion helpers
 - Benchmark utilities
@@ -70,6 +78,7 @@ The `test_framework.sh` provides:
 - Pretty output with colors
 
 ### Key Functions
+
 - `init_test_repo` - Create isolated test repository
 - `create_file` - Create and stage file
 - `assert_success` - Verify command succeeds
@@ -81,22 +90,22 @@ The `test_framework.sh` provides:
 
 ## Design Principles
 
-1. **Test Behavior, Not Implementation**
+1. __Test Behavior, Not Implementation__
    - Don't test stdout format details
    - Don't rely on internal structures
    - Focus on user-visible effects
 
-2. **Isolated Tests**
+2. __Isolated Tests__
    - Each test runs in fresh repo
    - No dependency between tests
    - Automatic cleanup
 
-3. **Fast Execution**
+3. __Fast Execution__
    - Entire suite runs in <30 seconds
    - Individual tests <1 second
    - Benchmarks have time targets
 
-4. **Clear Failures**
+4. __Clear Failures__
    - Show what failed and why
    - Expected vs actual output
    - Exit codes indicate success
@@ -104,6 +113,7 @@ The `test_framework.sh` provides:
 ## Adding New Tests
 
 1. Create test function:
+
 ```bash
 test_my_feature() {
     echo -e "\n${YELLOW}Test: My Feature${NC}"

@@ -1,15 +1,18 @@
 # Project Charter
 
 Table of Contents
+
 - [Executive Summary](#executive-summary)
 - [Goals and Objectives](#goals-and-objectives)
 - [Stakeholders and RACI](#stakeholders-and-raci)
 - [Success Metrics](#success-metrics)
 
 ## Executive Summary
+
 Build a Git-native semantic graph tool that is deterministic, fast, and friendly to a solo maintainer workflow. Favor small, pauseable increments and auditable decisions. Related: [Product Roadmap](../planning/Product_Roadmap.md).
 
 ## Goals and Objectives
+
 - G1: First-class semantics (names-as-truth) with deterministic IDs for cache keys
 - G2: Fast local queries using Roaring Bitmaps; rebuildable, branch-scoped caches
 - G3: Optional advice system with deterministic merges; minimal application
@@ -25,6 +28,7 @@ Build a Git-native semantic graph tool that is deterministic, fast, and friendly
 Notes: One-person operation. “Consulted” and “Informed” reflect future-self/change logs and commit messages.
 
 ## Success Metrics
+
 - S1: Query median < 10ms on 100k-edge sample; P95 < 50ms
 - S2: clang-tidy zero warnings in cache/journal/cbor modules
 - S3: Deterministic hash vectors green across platforms

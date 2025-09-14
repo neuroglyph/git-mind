@@ -31,9 +31,10 @@ tests/
 
 ## Running Tests
 
-**IMPORTANT**: All tests MUST be run inside Docker for safety and consistency.
+__IMPORTANT__: All tests MUST be run inside Docker for safety and consistency.
 
-### Run all tests:
+### Run all tests
+
 ```bash
 # From repository root
 make test
@@ -42,7 +43,8 @@ make test
 make test
 ```
 
-### Run specific test suites:
+### Run specific test suites
+
 ```bash
 # Run only integration tests
 docker compose run --rm test ./tests/integration/test.sh
@@ -51,7 +53,8 @@ docker compose run --rm test ./tests/integration/test.sh
 docker compose run --rm test ./tests/integration/test-path-validation.sh
 ```
 
-### Run tests in random order:
+### Run tests in random order
+
 ```bash
 make test-random
 ```
@@ -65,6 +68,7 @@ All test scripts include `docker-guard.sh` which prevents accidental execution o
 3. Running tests on your working repo could be destructive
 
 If you see this error:
+
 ```
 ❌ FATAL ERROR: This script must be run inside Docker!
 ```
@@ -77,10 +81,12 @@ Use `make test` instead of running scripts directly.
 
 1. Create a new script in `tests/integration/`
 2. Start with the Docker guard:
+
    ```bash
    #!/bin/bash
    source "$SCRIPT_DIR/../scripts/docker-guard.sh"
    ```
+
 3. Use the test helpers and patterns from existing tests
 4. Add your test to `run-all-tests.sh`
 
@@ -92,17 +98,18 @@ Unit tests in C are planned for the future using a framework like cmocka or Unit
 
 Current test coverage includes:
 
-- **Core Commands**: init, link, list, unlink, status
-- **Graph Traversal**: BFS traversal with cycle detection
-- **Path Security**: Path traversal and injection protection
-- **Output Formats**: Porcelain and human-readable modes
-- **Memory Safety**: Valgrind leak detection
-- **Error Handling**: Proper error codes and messages
-- **Regression Suite**: Tests for all security fixes
+- __Core Commands__: init, link, list, unlink, status
+- __Graph Traversal__: BFS traversal with cycle detection
+- __Path Security__: Path traversal and injection protection
+- __Output Formats__: Porcelain and human-readable modes
+- __Memory Safety__: Valgrind leak detection
+- __Error Handling__: Proper error codes and messages
+- __Regression Suite__: Tests for all security fixes
 
 ## Continuous Integration
 
 Tests are run automatically on:
+
 - Every push via GitHub Actions
 - Pull request checks
 - Pre-push Git hooks (if enabled)
@@ -110,6 +117,7 @@ Tests are run automatically on:
 ## Performance
 
 The test suite is designed to be fast:
+
 - Most tests complete in < 1 second
 - Full suite runs in < 30 seconds
 - Parallel execution planned for future

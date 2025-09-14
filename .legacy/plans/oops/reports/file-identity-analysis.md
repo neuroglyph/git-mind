@@ -1,8 +1,8 @@
 # Deep Analysis: The File Identity Problem in git-mind
 
-**Author**: Claude (D4E5F6)  
-**Date**: June 16, 2025  
-**Status**: CRITICAL DESIGN ISSUE
+__Author__: Claude (D4E5F6)  
+__Date__: June 16, 2025  
+__Status__: CRITICAL DESIGN ISSUE
 
 ## Executive Summary
 
@@ -42,12 +42,14 @@ ret = ctx->backend->hash_object(ctx, file_content, file_size, "blob", src_sha);
 ## Test Coverage Analysis
 
 ### Currently Tested ✅
+
 - Basic link creation
 - Link listing
 - git mv (accidentally works due to path hashing bug!)
 - File deletion detection
 
 ### NOT Tested ❌
+
 ```bash
 # File content changes
 echo "new content" >> README.md
@@ -113,6 +115,7 @@ git-mind link a/b/c/d/e/f/.../z.md other.md  # Path length limits
 ## Design Alternatives Analysis
 
 ### Option 1: Pure Content-Addressable (Git-like)
+
 ```mermaid
 graph LR
     Edit[Edit file] --> NewSHA[New SHA]
@@ -120,9 +123,11 @@ graph LR
     
     style Broken fill:#ff6b6b
 ```
-**Verdict**: Unusable for semantic links
+
+__Verdict__: Unusable for semantic links
 
 ### Option 2: Pure Path-Based (Current accident)
+
 ```mermaid
 graph LR
     Edit[Edit file] --> Same[✅ Links survive]
@@ -130,9 +135,11 @@ graph LR
     
     style Same fill:#90EE90
 ```
-**Verdict**: What users expect, but needs rename detection
+
+__Verdict__: What users expect, but needs rename detection
 
 ### Option 3: Hybrid Tracking
+
 ```yaml
 edge:
   source_path: "README.md"
@@ -140,17 +147,21 @@ edge:
   source_current_sha: "def456..."  # Current SHA
   confidence: 0.8  # Degrades when content changes
 ```
-**Verdict**: Complex but powerful
+
+__Verdict__: Complex but powerful
 
 ### Option 4: Git History Integration
+
 ```bash
 # Use git log --follow to track identity
 git log --follow --format=%H README.md | head -1
 # Links follow the file's Git identity
 ```
-**Verdict**: Expensive but accurate
+
+__Verdict__: Expensive but accurate
 
 ### Option 5: Explicit Identity Management
+
 ```mermaid
 graph TD
     subgraph "First sight"
@@ -163,9 +174,11 @@ graph TD
         ID --> P3[Path: docs/readme.md]
     end
 ```
-**Verdict**: Most robust but requires initialization
+
+__Verdict__: Most robust but requires initialization
 
 ### Option 6: Two-Phase Architecture
+
 ```mermaid
 graph TD
     subgraph "Identity Layer"
@@ -180,13 +193,15 @@ graph TD
     L --> R1
     L --> R2
 ```
-**Verdict**: Clean separation but complex
+
+__Verdict__: Clean separation but complex
 
 ## Recommendation: Path-Based with Git Integration
 
 After deep analysis, I recommend:
 
-### 1. **Be Honest: We're Path-Based**
+### 1. __Be Honest: We're Path-Based__
+
 ```c
 typedef struct {
     char source_path[PATH_MAX];    // Primary identity
@@ -199,14 +214,16 @@ typedef struct {
 } gm_link_t;
 ```
 
-### 2. **Use Git's Rename Detection**
+### 2. __Use Git's Rename Detection__
+
 ```bash
 # Periodically run:
 git diff --name-status --find-renames HEAD~1
 # Update paths in links accordingly
 ```
 
-### 3. **Mark Stale Links**
+### 3. __Mark Stale Links__
+
 ```c
 typedef enum {
     LINK_VALID,
@@ -218,7 +235,8 @@ typedef enum {
 } link_status_t;
 ```
 
-### 4. **Provide Migration Tools**
+### 4. __Provide Migration Tools__
+
 ```bash
 git-mind repair        # Fix broken links using Git history
 git-mind gc           # Remove links to deleted files
@@ -228,6 +246,7 @@ git-mind follow       # Update paths after renames
 ## Tombstone Analysis
 
 ### Performance Impact
+
 ```mermaid
 graph TD
     subgraph "Without Tombstones"
@@ -246,9 +265,10 @@ graph TD
     style Tree4 fill:#ff6b6b
 ```
 
-**Measurement**: O(n) filtering cost where n = total edges ever created
+__Measurement__: O(n) filtering cost where n = total edges ever created
 
 ### User Experience Impact
+
 ```mermaid
 sequenceDiagram
     participant User
@@ -263,19 +283,22 @@ sequenceDiagram
 
 ### Correctness Analysis
 
-**Pros**:
+__Pros__:
+
 - Distributed conflict resolution
 - Complete audit trail
 - Resurrection possible
 
-**Cons**:
+__Cons__:
+
 - Can't truly delete (privacy/GDPR?)
 - Unbounded growth
 - Clock-dependent ordering
 
 ### Tombstone Recommendation
 
-**Replace with Git-native deletion**:
+__Replace with Git-native deletion__:
+
 ```bash
 # Instead of tombstone, just remove from tree
 # Git commit history shows who deleted when
@@ -305,20 +328,20 @@ graph TD
 
 ### Implementation Plan
 
-1. **Phase 1**: Fix current bug
+1. __Phase 1__: Fix current bug
    - Stop hashing paths as strings
    - Decide on identity model
 
-2. **Phase 2**: Add comprehensive tests
+2. __Phase 2__: Add comprehensive tests
    - All exotic file operations
    - Cross-platform scenarios
    - Git integration cases
 
-3. **Phase 3**: Implement rename detection
+3. __Phase 3__: Implement rename detection
    - Hook into Git's rename detection
    - Update links automatically
 
-4. **Phase 4**: Remove tombstones
+4. __Phase 4__: Remove tombstones
    - Use Git history for deletions
    - Add `git-mind gc` for cleanup
 
@@ -371,4 +394,4 @@ test_unicode() {
 
 ---
 
-*The path forward is clear: embrace simplicity, leverage Git, and test comprehensively.*
+_The path forward is clear: embrace simplicity, leverage Git, and test comprehensively._

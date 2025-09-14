@@ -1,10 +1,11 @@
 # The git-mind Architecture Journey: From Holy Grail to Crossroads
 
-**Date**: June 16, 2025  
-**Authors**: Claude (D4E5F6) & James  
-**Status**: At Critical Decision Point
+__Date__: June 16, 2025  
+__Authors__: Claude (D4E5F6) & James  
+__Status__: At Critical Decision Point
 
 ## Table of Contents
+
 1. [Where We Started](#where-we-started)
 2. [The Problems We Discovered](#the-problems-we-discovered)
 3. [Solutions We Explored](#solutions-we-explored)
@@ -33,12 +34,13 @@ graph TD
     style F fill:#fee
 ```
 
-**Key Design Decisions:**
-1. **Orphan ref** (`refs/gitmind/graph`) - Parallel universe for links
-2. **Pure Git objects** - Trees and blobs only
-3. **CBOR encoding** - Compact binary format for edges
-4. **Double fan-out** - For O(1) performance at scale
-5. **No working directory files** - "Pure" Git approach
+__Key Design Decisions:__
+
+1. __Orphan ref__ (`refs/gitmind/graph`) - Parallel universe for links
+2. __Pure Git objects__ - Trees and blobs only
+3. __CBOR encoding__ - Compact binary format for edges
+4. __Double fan-out__ - For O(1) performance at scale
+5. __No working directory files__ - "Pure" Git approach
 
 ### Initial Implementation
 
@@ -50,6 +52,7 @@ graph TD
 ```
 
 Each link stored as:
+
 ```
 ab/cd/abcdef.../implements/01/23/ULID.cbor
 ```
@@ -58,7 +61,7 @@ ab/cd/abcdef.../implements/01/23/ULID.cbor
 
 ### Problem 1: File Identity Crisis
 
-**Discovery**: "When you edit A.md, its SHA changes!"
+__Discovery__: "When you edit A.md, its SHA changes!"
 
 ```mermaid
 graph LR
@@ -73,7 +76,8 @@ graph LR
     style Q fill:#ffd
 ```
 
-**Current Bug**: We're hashing the path string "A.md" instead of file contents!
+__Current Bug__: We're hashing the path string "A.md" instead of file contents!
+
 ```c
 // What we do (WRONG):
 hash_object("README.md", 10, "blob", out_sha);  // Hashes the string!
@@ -182,7 +186,7 @@ hash_object(file_contents, file_size, "blob", out_sha);  // Hash content
 
 ### Problem 2: Branch Isolation Failure
 
-**Discovery**: "The graph doesn't follow branches!"
+__Discovery__: "The graph doesn't follow branches!"
 
 ```mermaid
 gitGraph
@@ -205,7 +209,7 @@ The orphan ref is global - same links visible on all branches!
 
 ### Problem 3: Push/Pull Impossibility
 
-**Discovery**: "How do you push refs/gitmind/graph to GitHub?"
+__Discovery__: "How do you push refs/gitmind/graph to GitHub?"
 
 ```mermaid
 sequenceDiagram
@@ -247,7 +251,7 @@ graph TD
 
 ### Problem 5: Tombstone Complexity
 
-**Discovery**: "Do we really need tombstones when Git tracks deletions?"
+__Discovery__: "Do we really need tombstones when Git tracks deletions?"
 
 ```mermaid
 graph LR
@@ -278,7 +282,7 @@ graph LR
 
 ### Attempt 1: Git Hooks
 
-**Idea**: Use hooks to update links on file operations
+__Idea__: Use hooks to update links on file operations
 
 ```mermaid
 sequenceDiagram
@@ -294,13 +298,13 @@ sequenceDiagram
     Hook-->>User: Automatic fix!
 ```
 
-**Result**: ✅ Helps with renames, ❌ Doesn't solve other problems
+__Result__: ✅ Helps with renames, ❌ Doesn't solve other problems
 
 ---
 
 ### Attempt 2: Path-Based Identity
 
-**Idea**: Links are between paths, not content
+__Idea__: Links are between paths, not content
 
 ```yaml
 # Instead of content SHA
@@ -314,13 +318,13 @@ link:
   target: docs/api.md
 ```
 
-**Result**: ✅ Survives edits, ❌ Still has branch/push problems
+__Result__: ✅ Survives edits, ❌ Still has branch/push problems
 
 ---
 
 ### Attempt 3: Hybrid Approach
 
-**Idea**: Track both path and content
+__Idea__: Track both path and content
 
 ```yaml
 link:
@@ -330,7 +334,7 @@ link:
   staleness: 0.7  # How much it changed
 ```
 
-**Result**: ✅ Best of both worlds, ❌ Complex implementation
+__Result__: ✅ Best of both worlds, ❌ Complex implementation
 
 ---
 
@@ -409,19 +413,22 @@ Keep the conflict-free design but in `.gitmind/`:
 
 ### Option A: Double Down on Holy Grail
 
-**Changes Needed:**
+__Changes Needed:__
+
 1. Fix SHA bug (hash content, not paths)
 2. Implement branch-aware graphs (`refs/gitmind/main`, `refs/gitmind/feature`)
 3. Create sync tools for push/pull
 4. Add worktree support somehow
 5. Keep tombstones for distributed consistency
 
-**Pros:**
+__Pros:__
+
 - Architecturally pure
 - No working directory files
 - Theoretically elegant
 
-**Cons:**
+__Cons:__
+
 - Massive complexity
 - Fighting Git's design
 - Poor user experience
@@ -431,21 +438,24 @@ Keep the conflict-free design but in `.gitmind/`:
 
 ### Option B: Pivot to Working Tree
 
-**Changes Needed:**
+__Changes Needed:__
+
 1. Move `.gitmind/` to working directory
 2. Keep ULID-based files to avoid conflicts
 3. Remove orphan ref entirely
 4. Simplify to path-based links
 5. Let Git handle history (no tombstones)
 
-**Pros:**
+__Pros:__
+
 - Git-native workflows
 - Branch awareness for free
 - Pushable to any host
 - Simple implementation
 - Works with all Git features
 
-**Cons:**
+__Cons:__
+
 - Less "pure"
 - Files in working directory
 - Loses some theoretical elegance
@@ -454,7 +464,7 @@ Keep the conflict-free design but in `.gitmind/`:
 
 ### Option C: Hybrid Storage
 
-**Idea:** Important links in working tree, cache in refs/
+__Idea:__ Important links in working tree, cache in refs/
 
 ```
 .gitmind/
@@ -464,11 +474,13 @@ Keep the conflict-free design but in `.gitmind/`:
 refs/gitmind/cache  # Local optimization
 ```
 
-**Pros:**
+__Pros:__
+
 - Best of both worlds
 - Backwards compatible
 
-**Cons:**
+__Cons:__
+
 - Two systems to maintain
 - Complexity
 
@@ -476,16 +488,16 @@ refs/gitmind/cache  # Local optimization
 
 ## Critical Questions
 
-1. **What are we optimizing for?**
+1. __What are we optimizing for?__
    - Theoretical purity?
    - User experience?
    - Implementation simplicity?
 
-2. **Who is our user?**
+2. __Who is our user?__
    - Git experts who understand orphan refs?
    - Regular developers who just want links?
 
-3. **What's our core value?**
+3. __What's our core value?__
    - "No files in working directory" at all costs?
    - "It just works" with normal Git workflows?
 
@@ -499,7 +511,7 @@ We tried so hard to be "pure Git" that we created something incompatible with Gi
 
 ## Recommendation
 
-**Embrace Simplicity**: The working tree approach (`.gitmind/links/`) gives us:
+__Embrace Simplicity__: The working tree approach (`.gitmind/links/`) gives us:
 
 1. Everything users actually need
 2. Compatibility with all Git workflows
@@ -515,14 +527,14 @@ The Holy Grail architecture is beautiful, but sometimes the simplest solution is
 
 We need to decide:
 
-1. **Continue with Holy Grail?** (Fix all the issues)
-2. **Pivot to Working Tree?** (Simpler, more compatible)
-3. **Create Hybrid?** (Complex but flexible)
+1. __Continue with Holy Grail?__ (Fix all the issues)
+2. __Pivot to Working Tree?__ (Simpler, more compatible)
+3. __Create Hybrid?__ (Complex but flexible)
 
 The code is at a crossroads. Which path do we take?
 
 ---
 
-*"Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away." - Antoine de Saint-Exupéry*
+_"Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away." - Antoine de Saint-Exupéry_
 
-*Perhaps it's time to take away the complexity and embrace what Git does best: tracking files.*
+_Perhaps it's time to take away the complexity and embrace what Git does best: tracking files._

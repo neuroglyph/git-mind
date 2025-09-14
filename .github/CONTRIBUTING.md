@@ -16,6 +16,7 @@ Thank you for your interest in contributing to Neuroglyph! We're building a prot
 ### Development Setup
 
 1. Fork and clone the repository:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/neuroglyph.git
    cd neuroglyph
@@ -26,17 +27,20 @@ Thank you for your interest in contributing to Neuroglyph! We're building a prot
    - Ensure Docker is running
 
 3. Install git hooks:
+
    ```bash
    make install-hooks
    ```
 
 4. Build the project:
+
    ```bash
    cd c
    make
    ```
 
    Or use Docker:
+
    ```bash
    make docker-test
    ```
@@ -59,7 +63,7 @@ make test     # Run tests
 make clean    # Clean build artifacts
 ```
 
-**Important:** The pre-push hook will automatically run `make test` before allowing pushes.
+__Important:__ The pre-push hook will automatically run `make test` before allowing pushes.
 
 ## 📝 Code Style Guidelines
 
@@ -76,6 +80,7 @@ make clean    # Clean build artifacts
 ### Commit Messages
 
 Follow the conventional commits format:
+
 ```
 type(scope): subject
 
@@ -85,6 +90,7 @@ footer (optional)
 ```
 
 Types:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -94,6 +100,7 @@ Types:
 - `chore`: Build process or auxiliary tool changes
 
 Example:
+
 ```
 feat(cli): add gitmind init command
 
@@ -105,20 +112,23 @@ Closes #42
 
 ## 🔄 Pull Request Process
 
-1. **Create an issue first** - Discuss the change you wish to make
-2. **Fork and create a branch** - Use a descriptive branch name
-3. **Make your changes** - Follow the code style guidelines
-4. **Add tests** - Ensure your changes are tested
-5. **Update documentation** - If you changed behavior, update docs
-6. **Run checks locally**:
+1. __Create an issue first__ - Discuss the change you wish to make
+2. __Fork and create a branch__ - Use a descriptive branch name
+3. __Make your changes__ - Follow the code style guidelines
+4. __Add tests__ - Ensure your changes are tested
+5. __Update documentation__ - If you changed behavior, update docs
+6. __Run checks locally__:
+
    ```bash
    make test  # This runs all checks in Docker
    ```
-7. **Submit PR** - Reference the issue and provide clear description
+
+7. __Submit PR__ - Reference the issue and provide clear description
 
 ### PR Template
 
 Your PR description should include:
+
 - What problem does this solve?
 - How does it solve it?
 - What are the key changes?
@@ -129,14 +139,14 @@ Your PR description should include:
 
 ### 🐳 Why All Tests Run in Docker
 
-**Every test MUST run in Docker.** This is not optional. Here's why:
+__Every test MUST run in Docker.__ This is not optional. Here's why:
 
-1. **Consistency Across Environments**
+1. __Consistency Across Environments__
    - No "works on my machine" issues
    - Same compiler, same libraries, same behavior
    - CI uses Docker, so local tests match exactly
 
-2. **Real Git Operations = Real Danger**
+2. __Real Git Operations = Real Danger__
    - Our tests create actual Git repositories
    - They make real commits, branches, and merges
    - Running these on your working directory would be catastrophic:
@@ -146,25 +156,29 @@ Your PR description should include:
      - Would definitely ruin your day
 
 Docker provides isolated, disposable environments where tests can:
+
 - Create and destroy Git repos safely
 - Run dangerous edge cases without risk
 - Execute Git operations in parallel
 - Fail spectacularly without consequences
 
-**Never run tests outside Docker. Your repository will thank you.**
+__Never run tests outside Docker. Your repository will thank you.__
 
 ### Unit Tests
+
 - Test individual functions in isolation
 - Use temporary directories for file operations
 - Never touch the actual working repository
 
 ### Integration Tests
+
 - Test CLI commands end-to-end
 - Create temporary Git repositories in Docker
 - Test error cases and edge conditions
 - Verify Git operations work correctly
 
 ### Example Test (C)
+
 ```c
 void test_link_creation() {
     // Create isolated temp directory
@@ -186,20 +200,22 @@ void test_link_creation() {
 ## 🎯 What to Work On
 
 ### Good First Issues
+
 Look for issues labeled `good first issue` - these are ideal for newcomers.
 
 ### Priority Areas
-1. **CLI Commands** - Implementing core functionality
-2. **Performance** - Optimizing for large repositories
-3. **Documentation** - Improving guides and examples
-4. **Testing** - Increasing test coverage
-5. **Cross-platform** - Ensuring Windows/macOS/Linux compatibility
+
+1. __CLI Commands__ - Implementing core functionality
+2. __Performance__ - Optimizing for large repositories
+3. __Documentation__ - Improving guides and examples
+4. __Testing__ - Increasing test coverage
+5. __Cross-platform__ - Ensuring Windows/macOS/Linux compatibility
 
 ## 💬 Communication
 
-- **GitHub Issues** - For bug reports and feature requests
-- **GitHub Discussions** - For questions and ideas
-- **Pull Request Comments** - For code review discussions
+- __GitHub Issues__ - For bug reports and feature requests
+- __GitHub Discussions__ - For questions and ideas
+- __Pull Request Comments__ - For code review discussions
 
 ## 🤝 Code of Conduct
 
@@ -212,6 +228,7 @@ By contributing to Neuroglyph, you agree that your contributions will be license
 ## 🙏 Recognition
 
 Contributors will be recognized in:
+
 - The project README
 - Release notes
 - Special thanks in documentation

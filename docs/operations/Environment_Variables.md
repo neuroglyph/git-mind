@@ -3,6 +3,7 @@
 This page lists environment variables that influence git‑mind builds, tests, and runtime behavior.
 
 ## Build and CI
+
 - `GITMIND_DOCKER`
   - Purpose: Allows host builds when set to `1` inside the CI Docker image or dev shell.
   - Used by: `meson.build` (host build e‑brake).
@@ -19,6 +20,7 @@ This page lists environment variables that influence git‑mind builds, tests, a
   - Values: `1` to allow; otherwise refused.
 
 ## Runtime (CLI)
+
 - `GITMIND_SAFETY`
   - Purpose: Bypass the CLI safety guard that prevents running inside the git‑mind development repo.
   - Used by: `apps/cli/main.c`.
@@ -50,12 +52,13 @@ This page lists environment variables that influence git‑mind builds, tests, a
   - Status: Reserved; not required today.
 
 ## Test Harness / E2E
+
 - `GIT_MIND`
   - Purpose: Path to the built `git-mind` binary used by E2E tests.
   - Used by: `tests/e2e/run_all_tests.sh` and related scripts.
   - Example: `export GIT_MIND=$(pwd)/build/git-mind`
 
 ## Notes
+
 - Prefer running builds and tests in Docker using the provided scripts. Host builds are intentionally gated to reduce accidental repository corruption.
 - If you must run locally, set `GITMIND_ALLOW_HOST_BUILD=1` and understand the risks.
-

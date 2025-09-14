@@ -5,11 +5,13 @@ The attribution system tracks who (human or AI) created each semantic edge, enab
 ## Overview
 
 Every edge in git-mind can now be attributed to its creator:
+
 - Human users creating connections manually
 - AI systems suggesting relationships
 - System-generated edges (like AUGMENTS)
 
 This enables:
+
 - Filtering views by source
 - Tracking AI suggestions vs human intent
 - Building consensus when both agree
@@ -34,6 +36,7 @@ typedef enum {
 ### Attribution Metadata
 
 Each edge carries attribution information:
+
 - `source_type`: Who created it
 - `author`: Email or identifier
 - `session_id`: For grouping related edges
@@ -42,6 +45,7 @@ Each edge carries attribution information:
 ### Lanes
 
 Edges can be organized into lanes for different purposes:
+
 - `GM_LANE_ARCHITECTURE`: Architecture documentation
 - `GM_LANE_TESTING`: Test coverage analysis
 - `GM_LANE_ANALYSIS`: AI analysis results
@@ -78,6 +82,7 @@ if (gm_filter_match(&filter, edge)) {
 ## Storage Format
 
 Attribution data is encoded in CBOR along with edge data:
+
 ```
 [
   source_sha, tgt_sha, rel_type, confidence, timestamp,
@@ -95,6 +100,7 @@ Attribution data is encoded in CBOR along with edge data:
 ## Integration with MCP
 
 When Claude creates edges via MCP:
+
 ```bash
 export GIT_MIND_SOURCE=claude
 export GIT_MIND_AUTHOR=claude@anthropic

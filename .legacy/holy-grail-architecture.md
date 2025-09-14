@@ -64,7 +64,7 @@ graph TD
     style E2 fill:#f9f
 ```
 
-## Why Double Fan-out?
+## Why Double Fan-out
 
 ```mermaid
 graph LR
@@ -254,6 +254,6 @@ This isn't a graph database built ON Git. This IS Git, seen correctly.
 
 ---
 
-*"Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away."*
+_"Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away."_
 
 The graph breathes. The edges live. Understanding accumulates. Welcome to Tuxville. 🐧

@@ -97,13 +97,13 @@ graph LR
 ### __Signing Tools:__
 
 - `gm plugin sign` — Signs plugin binaries using dev’s private key.
-    
+
 - `gm plugin verify` — Verifies signature and prints trust level.
 
 ### __Signature Metadata:__
 
 - Attached to `gm_plugin.toml` or separate `.sig` file.
-    
+
 - Public keys stored in `~/.gm_trust` or defined via `--trust-key`.
 
 ---

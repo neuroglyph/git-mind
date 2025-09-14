@@ -3,9 +3,10 @@
 
 # git-mind list
 
-> *"Look beyond what you see."* - Rafiki
+> _"Look beyond what you see."_ - Rafiki
 
 Table of Contents
+
 - [Name](#name)
 - [Synopsis](#synopsis)
 - [Description](#description)
@@ -30,6 +31,7 @@ This is your window into understanding. Use it to discover dependencies, trace i
 ## THE POWER OF SEEING
 
 Without git-mind:
+
 ```bash
 # Where is this implemented?
 $ grep -r "auth flow" docs/
@@ -40,6 +42,7 @@ $ # ...good luck
 ```
 
 With git-mind:
+
 ```bash
 # All connections at a glance
 $ git mind list --from src/parser.c
@@ -71,10 +74,11 @@ $ git mind list
 
 `--format <format>`
 : Output format (default: human)
-  - `human` - Readable format with arrows
-  - `json` - Machine-parseable JSON
-  - `tsv` - Tab-separated values
-  - `dot` - Graphviz DOT format
+
+- `human` - Readable format with arrows
+- `json` - Machine-parseable JSON
+- `tsv` - Tab-separated values
+- `dot` - Graphviz DOT format
 
 `--show-sha`
 : Display blob SHAs (default: hide)
@@ -106,6 +110,7 @@ $ git mind list
 ### Basic Queries
 
 Show all connections:
+
 ```bash
 $ git mind list
 README.md ──references──> docs/quickstart.md
@@ -118,6 +123,7 @@ src/parser.c ──depends_on──> config/grammar.yaml
 ### Focused Queries
 
 What does this file connect to?
+
 ```bash
 $ git mind list --from src/auth.c
 src/auth.c ──implements──> docs/auth-design.md
@@ -126,6 +132,7 @@ src/auth.c ──references──> lib/crypto.c
 ```
 
 What connects to this file?
+
 ```bash
 $ git mind list --to src/parser.c
 tests/test_parser.c ──tests──> src/parser.c
@@ -137,6 +144,7 @@ src/compiler.c ──depends_on──> src/parser.c
 ### Filtered Queries
 
 Find all test files:
+
 ```bash
 $ git mind list --type tests
 tests/test_auth.c ──tests──> src/auth.c
@@ -145,6 +153,7 @@ tests/integration/test_flow.c ──tests──> src/flow.c
 ```
 
 Find uncertain connections:
+
 ```bash
 $ git mind list --min-confidence 0.8
 src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.85]
@@ -154,6 +163,7 @@ src/parser.c ──implements──> specs/grammar.md [gpt: gpt4@openai, conf: 0
 ### Attribution Filtering
 
 Show only human-created edges:
+
 ```bash
 $ git mind list --source human
 README.md ──documents──> src/main.c
@@ -162,6 +172,7 @@ tests/test_auth.c ──tests──> src/auth.c
 ```
 
 Show only AI-suggested edges:
+
 ```bash
 $ git mind list --source ai
 src/parser.c ──depends_on──> lib/lexer.h [claude: claude@anthropic, conf: 0.78]
@@ -169,6 +180,7 @@ src/crypto.c ──references──> papers/aes.pdf [gpt: gpt4@openai, conf: 0.9
 ```
 
 Show attribution for all edges:
+
 ```bash
 $ git mind list --show-attribution
 README.md ──documents──> src/main.c [human: user@example.com]
@@ -177,6 +189,7 @@ src/test.c ──tests──> src/main.c [human: developer@team.com]
 ```
 
 High-confidence AI insights only:
+
 ```bash
 $ git mind list --source ai --min-confidence 0.9
 src/crypto.c ──references──> papers/aes.pdf [gpt: gpt4@openai, conf: 0.91]
@@ -186,6 +199,7 @@ src/algorithm.c ──implements──> papers/dijkstra.pdf [claude: claude@anth
 ### Time Travel Queries
 
 See historical connections:
+
 ```bash
 # What did we understand 50 commits ago?
 $ git mind list --at HEAD~50
@@ -200,6 +214,7 @@ $ git mind list --branch feature/new-auth
 ### Evolution Tracking
 
 See how files evolved:
+
 ```bash
 $ git mind list --show-augments
 src/auth.c:8a9f3b ──AUGMENTS──> src/auth.c:7c4d5e
@@ -210,6 +225,7 @@ docs/api.md:3f2a1b ──AUGMENTS──> docs/api.md:current
 ### Machine-Readable Output
 
 JSON for tooling:
+
 ```bash
 $ git mind list --format json
 {
@@ -226,19 +242,22 @@ $ git mind list --format json
 ```
 
 DOT for visualization:
+
 ```bash
-$ git mind list --format dot > graph.dot
-$ dot -Tpng graph.dot -o graph.png
+git mind list --format dot > graph.dot
+dot -Tpng graph.dot -o graph.png
 ```
 
 ## UNDERSTANDING THE OUTPUT
 
 ### Human Format (default)
+
 ```
 <source> ──<type>──> <target> [metadata]
 ```
 
 Metadata may include:
+
 - `(confidence: 0.8)` - Less than certain connections
 - `(SHA: abc123)` - When --show-sha is used
 - `(AUGMENTED)` - When file has evolved
@@ -259,14 +278,15 @@ Use `--no-follow-augments` to see historical links.
 
 The list command uses the Roaring Bitmap cache for O(log N) queries:
 
-- **With cache**: <10ms for 100K edges
-- **Without cache**: ~5 seconds for 100K edges
-- **Cache miss**: Automatically falls back to journal scan
-- **Stale cache**: Detects and warns (run `git mind cache-rebuild`)
+- __With cache__: <10ms for 100K edges
+- __Without cache__: ~5 seconds for 100K edges
+- __Cache miss__: Automatically falls back to journal scan
+- __Stale cache__: Detects and warns (run `git mind cache-rebuild`)
 
 ## ADVANCED PATTERNS
 
 ### Dependency Analysis
+
 ```bash
 # What does my module depend on?
 $ git mind list --from "src/mymodule/**" --type depends_on
@@ -276,6 +296,7 @@ $ git mind list --to config/database.yaml --type depends_on
 ```
 
 ### Test Coverage Discovery
+
 ```bash
 # What files lack tests?
 $ comm -23 \
@@ -284,6 +305,7 @@ $ comm -23 \
 ```
 
 ### Architecture Visualization
+
 ```bash
 # Generate architecture diagram
 $ git mind list --format dot --type implements > arch.dot
@@ -291,6 +313,7 @@ $ dot -Tsvg arch.dot -o architecture.svg
 ```
 
 ### Change Impact Analysis
+
 ```bash
 # What might break if I change this?
 $ git mind list --to src/core-api.h --type depends_on
@@ -298,7 +321,7 @@ $ git mind list --to src/core-api.h --type depends_on
 
 ## PHILOSOPHY
 
-*"The question is: Who are you?"* - Rafiki
+_"The question is: Who are you?"_ - Rafiki
 
 Your code is more than files and functions. It's a living system of relationships, dependencies, and meanings. The `list` command doesn't just show you connections - it reveals the hidden structure of your understanding.
 
@@ -309,6 +332,7 @@ Every query is a question about your code's nature. Every result is an answer th
 Returns 0 on success, non-zero on failure.
 
 Common warnings:
+
 - `Cache stale, using journal scan` - Run `git mind cache-rebuild`
 - `No edges found` - No links match your query
 - `Following AUGMENTS chain` - File has evolved (use --no-follow-augments for original)
@@ -322,10 +346,10 @@ Common warnings:
 
 ## THE LESSON
 
-*"Oh, the past can hurt. But the way I see it, you can either run from it or learn from it."*
+_"Oh, the past can hurt. But the way I see it, you can either run from it or learn from it."_
 
 Every list query teaches you something about your codebase. The more you look, the more you see. The more you see, the more you understand.
 
 ---
 
-*"It is time."* - Time to see what connects your kingdom.
+_"It is time."_ - Time to see what connects your kingdom.

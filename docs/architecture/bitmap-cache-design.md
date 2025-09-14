@@ -1,15 +1,17 @@
 # Bitmap Cache Design 🦁⚡
+
 ## High-Performance Query Layer for git-mind
 
 Table of Contents
+
 - [Overview](#overview)
 - [Storage Design](#storage-design)
 - [Cache Structure](#cache-structure)
 - [Query Path](#overview)
 
-**Date**: June 2025  
-**Status**: IN PROGRESS  
-**Goal**: O(log N) queries on millions of edges
+__Date__: June 2025  
+__Status__: IN PROGRESS  
+__Goal__: O(log N) queries on millions of edges
 
 ---
 
@@ -40,15 +42,18 @@ graph TD
 ## Storage Design
 
 ### Cache Structure
+
 ```
 refs/gitmind/cache/<branch>/<version>
 ```
 
 Each cache commit contains:
-- **Tree**: Organized by SHA prefix for sharding
-- **Message**: Cache metadata (CBOR encoded)
+
+- __Tree__: Organized by SHA prefix for sharding
+- __Message__: Cache metadata (CBOR encoded)
 
 ### Tree Layout
+
 ```
 /00/
   /00a1b2c3.forward    # Edges where src starts with 00a1b2c3
@@ -65,6 +70,7 @@ Each cache commit contains:
 ### Bitmap Format
 
 Each `.forward` and `.reverse` file contains:
+
 ```
 [Header (16 bytes)]
   - Magic: "GMCACHE\0" (8 bytes)
@@ -78,6 +84,7 @@ Each `.forward` and `.reverse` file contains:
 ## Edge ID Assignment
 
 Edge IDs are assigned sequentially as we walk the journal:
+
 1. Start at 0 for the oldest edge
 2. Increment for each edge encountered
 3. Store mapping in memory during cache build
@@ -86,6 +93,7 @@ Edge IDs are assigned sequentially as we walk the journal:
 ## Cache Metadata
 
 Stored in commit message (CBOR):
+
 ```c
 typedef struct {
     uint64_t journal_tip;      // Last processed journal commit
@@ -99,6 +107,7 @@ typedef struct {
 ## Query Algorithm
 
 ### Forward Query (fanout from source)
+
 ```c
 edges = gm_query_fanout(src_sha) {
     // 1. Check cache
@@ -122,6 +131,7 @@ edges = gm_query_fanout(src_sha) {
 ## Build Algorithm
 
 ### Incremental Build
+
 ```c
 gm_cache_rebuild() {
     // 1. Load existing cache metadata
@@ -163,22 +173,26 @@ gm_cache_rebuild() {
 ## Performance Characteristics
 
 ### Space Complexity
+
 - Roaring bitmaps: ~2-4 bytes per edge (compressed)
 - Sharding: 256 directories × 2 files each
 - Total: ~200-400MB for 100M edges
 
 ### Time Complexity
+
 - Query: O(log N) bitmap operations
 - Build: O(E) where E = new edges since last cache
 - Rebuild: O(E_total) for full rebuild
 
 ### Memory Usage
+
 - Build: O(unique_shas) for hashmaps
 - Query: O(1) - only load needed bitmaps
 
 ## Cache Invalidation
 
 Cache becomes stale when:
+
 1. New edges added to journal
 2. Branch pointer moves
 3. Journal rewritten (rebase/amend)
@@ -187,19 +201,22 @@ Solution: Compare journal tip with cache metadata
 
 ## Implementation Notes
 
-### Why Roaring Bitmaps?
+### Why Roaring Bitmaps
+
 - Excellent compression (2-4 bytes/edge)
 - Fast operations (unions, intersections)
 - Proven in production (Lucene, Druid, ClickHouse)
 - Single header C library
 
-### Why SHA Prefix Sharding?
+### Why SHA Prefix Sharding
+
 - Limits directory size (4096 files max)
 - Enables parallel builds
 - Natural load distribution
 - Easy to increase shard depth later
 
-### Why Not Use Git's Pack Format?
+### Why Not Use Git's Pack Format
+
 - Pack format optimized for object storage
 - We need set operations, not object retrieval
 - Roaring gives us bitmap-specific optimizations
@@ -207,11 +224,11 @@ Solution: Compare journal tip with cache metadata
 
 ## Future Optimizations
 
-1. **Bloom Filters**: Quick negative lookups
-2. **Hot/Cold Split**: Recent edges in separate cache
-3. **Compression**: Zstd on bitmap files
-4. **Parallel Build**: Shard processing in threads
-5. **Distributed Cache**: Share via CI artifacts
+1. __Bloom Filters__: Quick negative lookups
+2. __Hot/Cold Split__: Recent edges in separate cache
+3. __Compression__: Zstd on bitmap files
+4. __Parallel Build__: Shard processing in threads
+5. __Distributed Cache__: Share via CI artifacts
 
 ---
 
@@ -224,4 +241,4 @@ Solution: Compare journal tip with cache metadata
 
 ---
 
-*"Make it work, make it right, make it ROAR!"* 🦁
+_"Make it work, make it right, make it ROAR!"_ 🦁

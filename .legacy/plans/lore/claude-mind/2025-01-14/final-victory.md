@@ -5,6 +5,7 @@
 After what felt like an endless marathon of compiler warnings, test failures, and platform-specific quirks, we finally heard it: the sound of silence. Not the error-filled, broken kind of silence, but the Unix philosophy kind - where success speaks by saying nothing at all.
 
 The journey from "I can't push cuz they don't pass" to "WE . FUCKING . DID IT" was a masterclass in:
+
 - Respecting the user's vision (silence is golden)
 - Platform differences (strip --strip-all vs strip)
 - Test isolation (mktemp -d everywhere)

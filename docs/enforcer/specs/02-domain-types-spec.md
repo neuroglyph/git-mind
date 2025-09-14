@@ -1,6 +1,6 @@
 # Specification: Domain Types and Strong Typedefs
 
-> *"A type system is a tractable syntactic method for proving the absence of certain program behaviors by classifying phrases according to the kinds of values they compute."* - Benjamin Pierce
+> _"A type system is a tractable syntactic method for proving the absence of certain program behaviors by classifying phrases according to the kinds of values they compute."_ - Benjamin Pierce
 
 ## Overview
 
@@ -337,17 +337,20 @@ void process_graph(void) {
 ## 8. Design Principles
 
 ### 8.1 Zero-Cost Abstractions
+
 - Types compile to same assembly as raw primitives
 - No runtime overhead for type safety
 - Inline functions for common operations
 
 ### 8.2 Make Invalid States Unrepresentable
+
 - Can't create invalid IDs
 - Can't mix different ID types  
 - Paths are always validated
 - Strings track their length
 
 ### 8.3 Explicit Over Implicit
+
 - Ownership is explicit (owned flag)
 - Validation state tracked
 - No hidden allocations
@@ -355,13 +358,13 @@ void process_graph(void) {
 
 ## 9. Memory Management Rules
 
-1. **Creators own**: Functions that create types own the memory
-2. **Explicit transfer**: Ownership transfer must be documented
-3. **Views don't own**: `gm_string_view_t` never frees memory
-4. **Lists own items**: Collections own their contents
-5. **Paths own strings**: Composite types own their parts
-6. **No ambiguity**: Separate owned vs view types prevents confusion
+1. __Creators own__: Functions that create types own the memory
+2. __Explicit transfer__: Ownership transfer must be documented
+3. __Views don't own__: `gm_string_view_t` never frees memory
+4. __Lists own items__: Collections own their contents
+5. __Paths own strings__: Composite types own their parts
+6. __No ambiguity__: Separate owned vs view types prevents confusion
 
 ---
 
-*"Strong types are like seat belts - slightly annoying until they save your life."*
+_"Strong types are like seat belts - slightly annoying until they save your life."_

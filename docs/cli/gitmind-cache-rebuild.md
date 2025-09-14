@@ -3,9 +3,10 @@
 
 # git-mind cache-rebuild
 
-> *"Look at the stars. The great kings of the past look down on us from those stars... So whenever you feel alone, just remember that those kings will always be there to guide you, and so will I."* - Mufasa
+> _"Look at the stars. The great kings of the past look down on us from those stars... So whenever you feel alone, just remember that those kings will always be there to guide you, and so will I."_ - Mufasa
 
 Table of Contents
+
 - [Name](#name)
 - [Synopsis](#synopsis)
 - [Description](#description)
@@ -31,16 +32,20 @@ This command rebuilds the performance cache for the current (or specified) branc
 ## HOW IT WORKS
 
 ### The Journal: Source of Truth
+
 Your semantic links live as CBOR-encoded Git commits in `refs/gitmind/edges/<branch>`. This is the permanent record - like the stars themselves.
 
 ### The Cache: Speed of Light
+
 The cache creates two Roaring Bitmap indices:
-- **Forward index**: source SHA → edge IDs (who depends on this?)
-- **Reverse index**: target SHA → edge IDs (what does this depend on?)
+
+- __Forward index__: source SHA → edge IDs (who depends on this?)
+- __Reverse index__: target SHA → edge IDs (what does this depend on?)
 
 These are stored as Git tree objects under `refs/gitmind/cache/<branch>`, sharded into 256 buckets using the first byte of each SHA.
 
 ### The Magic: Roaring Bitmaps
+
 Roaring Bitmaps compress sequences of integers with supernatural efficiency. A million edges might compress to just kilobytes. It's the same technology that powers modern databases and search engines.
 
 ## OPTIONS
@@ -57,6 +62,7 @@ Roaring Bitmaps compress sequences of integers with supernatural efficiency. A m
 ## EXAMPLES
 
 ### Basic rebuild for current branch
+
 ```bash
 $ git mind cache-rebuild
 Rebuilding cache for branch 'main'...
@@ -66,6 +72,7 @@ Cache rebuilt successfully!
 ```
 
 ### Rebuild after heavy development
+
 ```bash
 $ git mind link src/parser.c docs/parsing.md --type implements
 $ git mind link src/lexer.c src/parser.c --type feeds
@@ -76,6 +83,7 @@ Cache updated incrementally!
 ```
 
 ### Force rebuild when things seem wrong
+
 ```bash
 $ git mind cache-rebuild --force --verbose
 Force rebuilding cache for branch 'main'...
@@ -92,29 +100,32 @@ Cache rebuilt: refs/gitmind/cache/main -> 3a7f9b2
 ## PERFORMANCE
 
 Without cache (journal scan):
+
 - 1,000 edges: ~50ms
 - 10,000 edges: ~500ms  
 - 100,000 edges: ~5000ms
 
 With cache (bitmap query):
+
 - 1,000 edges: ~2ms
 - 10,000 edges: ~5ms
 - 100,000 edges: ~10ms
 
-*"It's the Circle of Life, and it moves us all!"* The cache makes git-mind scale to repositories with millions of semantic connections.
+_"It's the Circle of Life, and it moves us all!"_ The cache makes git-mind scale to repositories with millions of semantic connections.
 
 ## WHEN TO REBUILD
 
 The cache automatically detects when it's stale by comparing the journal tip with the cached tip. However, you should manually rebuild when:
 
-1. **After bulk operations** - Added many links at once
-2. **After merging branches** - Cache is branch-specific
-3. **Performance degrades** - Queries feel slow
-4. **Something seems wrong** - Use `--force` to ensure consistency
+1. __After bulk operations__ - Added many links at once
+2. __After merging branches__ - Cache is branch-specific
+3. __Performance degrades__ - Queries feel slow
+4. __Something seems wrong__ - Use `--force` to ensure consistency
 
 ## TECHNICAL DETAILS
 
 ### Storage Format
+
 ```
 refs/gitmind/cache/main
 └── tree
@@ -130,12 +141,15 @@ refs/gitmind/cache/main
 ```
 
 ### Bitmap Serialization
+
 Each bitmap file contains:
+
 1. 16-byte header with magic number and version
 2. Compressed Roaring Bitmap data
 3. CRC32 checksum
 
 ### Incremental Updates
+
 The cache tracks the last processed journal commit. On rebuild, it only processes new commits, making updates extremely fast.
 
 ## DIAGNOSTICS
@@ -143,9 +157,10 @@ The cache tracks the last processed journal commit. On rebuild, it only processe
 The cache-rebuild command returns 0 on success, non-zero on failure.
 
 Common issues:
-- **"Permission denied"**: Ensure you have write access to `.git/`
-- **"No journal found"**: Create some links first with `git mind link`
-- **"Invalid journal format"**: Corrupted journal - seek help
+
+- __"Permission denied"__: Ensure you have write access to `.git/`
+- __"No journal found"__: Create some links first with `git mind link`
+- __"Invalid journal format"__: Corrupted journal - seek help
 
 ## SEE ALSO
 
@@ -155,7 +170,7 @@ Common issues:
 
 ## PHILOSOPHY
 
-*"Remember who you are."*
+_"Remember who you are."_
 
 The cache is not the truth - it's a performance optimization. The journal commits are the permanent record. If the cache is ever lost or corrupted, it can always be rebuilt from the journal.
 
@@ -163,4 +178,4 @@ This design ensures that git-mind scales from personal note-taking to massive co
 
 ---
 
-*In the great Circle of Life, every query begins with a search, and every search begins with hope. The cache ensures that hope is never disappointed.*
+_In the great Circle of Life, every query begins with a search, and every search begins with hope. The cache ensures that hope is never disappointed._

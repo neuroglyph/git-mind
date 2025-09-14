@@ -4,9 +4,9 @@
 
 We started migrating some modules from `src/` to `core/` but realized we need solid foundations first. Now we're going to:
 
-1. **Move everything back to `src/`** - Start with a completely empty `core/`
-2. **Build foundations first** - Implement our specs with zero technical debt
-3. **Then migrate properly** - Using the new foundations
+1. __Move everything back to `src/`__ - Start with a completely empty `core/`
+2. __Build foundations first__ - Implement our specs with zero technical debt
+3. __Then migrate properly__ - Using the new foundations
 
 ## The Plan
 
@@ -49,8 +49,9 @@ tests/
     └── e2e/       # End-to-end tests
 ```
 
-**Key Points:**
-- Legacy tests may fail after moving code back - **that's fine**
+__Key Points:__
+
+- Legacy tests may fail after moving code back - __that's fine__
 - We only care about `core/` tests passing
 - CI should only run `core/` tests
 - Once a module is reimplemented, delete its legacy version
@@ -79,34 +80,34 @@ git push  # Normal push
 
 When migrating a module from `src/` to `core/`:
 
-1. **DO NOT** copy-paste and fix
-2. **DO** reimplement using new foundations
-3. **DO** write new tests first (TDD)
-4. **DO** ensure zero warnings before committing
-5. **DO** delete the old version once new one works
+1. __DO NOT__ copy-paste and fix
+2. __DO__ reimplement using new foundations
+3. __DO__ write new tests first (TDD)
+4. __DO__ ensure zero warnings before committing
+5. __DO__ delete the old version once new one works
 
 ### 6. Why This Works
 
-- **No broken CI**: New code has zero warnings
-- **Clear progress**: Binary state - migrated or not
-- **No technical debt**: Can't accidentally carry over bad patterns
-- **Enforcer helps**: Prevents "quick fixes" to old code
-- **Clean foundations**: Everything built on solid base
+- __No broken CI__: New code has zero warnings
+- __Clear progress__: Binary state - migrated or not
+- __No technical debt__: Can't accidentally carry over bad patterns
+- __Enforcer helps__: Prevents "quick fixes" to old code
+- __Clean foundations__: Everything built on solid base
 
 ### 7. Implementation Order
 
 Following our ROADMAP:
 
-1. **Week 1**: Foundations in `core/`
+1. __Week 1__: Foundations in `core/`
    - Error handling (`GM_RESULT_DEF`)
    - Basic types (strong typedefs)
    - Security primitives (validation)
 
-2. **Week 2**: Infrastructure
+2. __Week 2__: Infrastructure
    - Observability
    - Testing framework
 
-3. **Week 3**: Memory architecture
+3. __Week 3__: Memory architecture
    - Arena allocators
    - Object pools
 
@@ -115,16 +116,17 @@ Then begin migrating modules from `src/` to `core/`.
 ## The Payoff
 
 In 9 weeks, we'll have:
+
 - Zero warnings (down from 11,000+)
 - Clean architecture throughout
 - Solid foundations
 - Maintainable codebase
 - No technical debt
 
-## Ready?
+## Ready
 
 Let's start by moving everything back and creating our first foundation module!
 
 ---
 
-*"Sometimes you have to take a step back to leap forward."*
+_"Sometimes you have to take a step back to leap forward."_

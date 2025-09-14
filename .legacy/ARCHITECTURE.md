@@ -2,19 +2,19 @@
 
 ## 🕹️ git-mind in "Programming-God Mode"
 
-A **zero-compromise, Git-native knowledge engine** that would make even kernel custodians mumble "well... damn."
+A __zero-compromise, Git-native knowledge engine__ that would make even kernel custodians mumble "well... damn."
 
 ---
 
 ### 0. Core Goals (engraved in titanium)
 
-|**#**|**Canon**|**Why it matters**|
+|__#__|__Canon__|__Why it matters__|
 |---|---|---|
-|1|**Pure Git objects**—no external DB, no custom object type|Clone anywhere, survive 2040, no forks to maintain|
-|2|**Append-only writes, offline GC**|Deterministic; packfiles delta beautifully|
-|3|**O(1) outgoing and near-O(1) incoming lookups** at 10M edges|AI agents stay snappy|
-|4|**No working-tree pollution**|Humans don't hate you|
-|5|**Single-script migratable**|Future you can change its mind without history rot|
+|1|__Pure Git objects__—no external DB, no custom object type|Clone anywhere, survive 2040, no forks to maintain|
+|2|__Append-only writes, offline GC__|Deterministic; packfiles delta beautifully|
+|3|__O(1) outgoing and near-O(1) incoming lookups__ at 10M edges|AI agents stay snappy|
+|4|__No working-tree pollution__|Humans don't hate you|
+|5|__Single-script migratable__|Future you can change its mind without history rot|
 
 ---
 
@@ -37,6 +37,7 @@ A **zero-compromise, Git-native knowledge engine** that would make even kernel c
 ```
 
 Edge blob CBOR tags:
+
 ```
 0x00  target_sha      (20 bytes)  – required
 0x01  confidence      (half-float)
@@ -52,44 +53,46 @@ _Why fan-out twice?_ Keeps every tree ≤ 256 entries → git ls-tree stays O(1)
 refs/notes/gitmind/inbound/00/<target-sha>  (binary roaring bitmap)
 ```
 
-Bitmap contains **edge-ulid** integers, sorted ascending.
+Bitmap contains __edge-ulid__ integers, sorted ascending.
 
 ---
 
 ### 2. Operations
 
-|**Verb**|**Plumbing sequence (pseudo-shell)**|
+|__Verb__|__Plumbing sequence (pseudo-shell)__|
 |---|---|
-|**link**|1) edge_id=$(ulid)<br>2) `meta=$(echo … | cbor-encode)`<br>3) `git hash-object -w --stdin`<br>4) Update tree at fanout path|
-|**unlink**|`echo edge_id >> .gittombs/$today` (tombstone file → later GC)|
-|**lookup-out**|`git cat-file -p $tree | grep -E "^[0-9]+ blob"`|
-|**lookup-in**|`git notes --ref refs/notes/gitmind/inbound show $target_sha | roaring-read | batch-cat`|
-|**decay** (cron)|scan traversal counts → append tombstone note OR move edge under /graveyard/ tree|
-|**gc**|`git gc --aggressive --prune=now && git notes prune`|
+|__link__|1) edge_id=$(ulid)<br>2) `meta=$(echo … | cbor-encode)`<br>3)`git hash-object -w --stdin`<br>4) Update tree at fanout path|
+|__unlink__|`echo edge_id >> .gittombs/$today` (tombstone file → later GC)|
+|__lookup-out__|`git cat-file -p $tree | grep -E "^[0-9]+ blob"`|
+|__lookup-in__|`git notes --ref refs/notes/gitmind/inbound show $target_sha | roaring-read | batch-cat`|
+|__decay__ (cron)|scan traversal counts → append tombstone note OR move edge under /graveyard/ tree|
+|__gc__|`git gc --aggressive --prune=now && git notes prune`|
 
 ---
 
 ### 3. Performance Tricks (mandatory)
 
-1. **commit-graph + bloom**
+1. __commit-graph + bloom__
+
    ```bash
    git commit-graph write --reachable --changed-paths
    ```
 
-2. **multi-pack-index + bitmaps**
+2. __multi-pack-index + bitmaps__
+
    ```bash
    git multi-pack-index write --bitmap
    ```
 
-3. **Roaring SIMD** (croaring): incoming bitmap AND/OR in microseconds
-4. **--filter=tree:0 clone** for graph-only agents
-5. **Edge-ID high bits = hour timestamp** → hot bitmaps stay dense, compress 5–10×
+3. __Roaring SIMD__ (croaring): incoming bitmap AND/OR in microseconds
+4. __--filter=tree:0 clone__ for graph-only agents
+5. __Edge-ID high bits = hour timestamp__ → hot bitmaps stay dense, compress 5–10×
 
 ---
 
 ### 4. Query Benchmarks (expected, Ryzen 5950X + NVMe)
 
-|**Operation (10M edges)**|**p50**|**p99**|
+|__Operation (10M edges)__|__p50__|__p99__|
 |---|---|---|
 |Outgoing fan-out|2 ms|4 ms|
 |Incoming bitmap scan|9 ms|18 ms|
@@ -118,19 +121,20 @@ Code history (main) untouched; only orphan ref rewritten.
 
 ### 6. Security & Integrity
 
-- Edge blobs + tombstones **signed** (git config user.signingkey) → CI verifies git verify-commit
+- Edge blobs + tombstones __signed__ (git config user.signingkey) → CI verifies git verify-commit
 - Optional Merkle proof note listing last N edge blob hashes so tampering triggers diff storm
-- Privacy: traversal counters stored in **per-dev** notes ref; only aggregate pushed upstream
+- Privacy: traversal counters stored in __per-dev__ notes ref; only aggregate pushed upstream
 
 ---
 
 ### 7. What makes Linus smirk
 
-- **No new object kinds**: "It's just trees and blobs, kid. Good."
-- **Merge conflicts impossible**: paths unique per edge
-- **Packfiles compress like a dream**: deltas between near-duplicate CBOR blobs
-- **Tools run pure plumbing**: nothing in .gitignore, no IDE lag
-- **One-liner partial clone**:
+- __No new object kinds__: "It's just trees and blobs, kid. Good."
+- __Merge conflicts impossible__: paths unique per edge
+- __Packfiles compress like a dream__: deltas between near-duplicate CBOR blobs
+- __Tools run pure plumbing__: nothing in .gitignore, no IDE lag
+- __One-liner partial clone__:
+
   ```bash
   git clone $URL --filter=blob:none --single-branch -b refs/gitmind/graph
   ```
@@ -139,7 +143,7 @@ Code history (main) untouched; only orphan ref rewritten.
 
 ### 8. Minimum Viable "Holy" Implementation (2-week garage sprint)
 
-|**Day**|**Deliverable**|
+|__Day__|__Deliverable__|
 |---|---|
 |1-2|link + fan-out write + unit tests|
 |3-4|list-out plumbing reader|
@@ -150,7 +154,7 @@ Code history (main) untouched; only orphan ref rewritten.
 |11-12|Traversal counter note + decay cron stub|
 |13-14|CI: commit-graph, multi-pack-index, verify signatures|
 
-At day 14 you publish a benchmark blog post titled **"I Fit 10 Million Semantic Links in a Bare Git Repo and It's Still Snappier than Your Monorepo."**
+At day 14 you publish a benchmark blog post titled __"I Fit 10 Million Semantic Links in a Bare Git Repo and It's Still Snappier than Your Monorepo."__
 
 ---
 
@@ -170,28 +174,33 @@ If the beer branch merges into main, Linus will raise an eyebrow—perhaps even 
 
 ## Implementation Notes
 
-### Why CBOR?
+### Why CBOR
+
 - Compact binary format (smaller than JSON)
 - Self-describing (no schema needed)
 - Standardized (RFC 7049)
 - Every language has a library
 - Delta-compresses beautifully in Git
 
-### Why ULIDs?
+### Why ULIDs
+
 - Lexicographically sortable
 - Time-prefixed (aids in decay/GC)
 - No central coordination needed
 - 128-bit entropy
 - URL-safe encoding
 
-### Why Roaring Bitmaps?
+### Why Roaring Bitmaps
+
 - 10-100x smaller than raw bitmaps
 - SIMD-optimized operations
 - Standardized format
 - Perfect for sparse sets (edge IDs)
 
 ### The Fan-out Magic
+
 Double fan-out (source SHA + relationship type) ensures:
+
 - No tree gets > 256 entries
 - `git ls-tree` stays fast
 - Natural sharding

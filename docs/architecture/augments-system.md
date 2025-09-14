@@ -1,6 +1,7 @@
 # AUGMENTS System Architecture
 
 Table of Contents
+
 - [Overview](#overview)
 - [Core Concepts](#core-concepts)
 - [How It Works](#how-it-works)
@@ -12,13 +13,14 @@ The AUGMENTS system automatically tracks file evolution by creating edges betwee
 
 ## Core Concepts
 
-### What is an AUGMENTS Edge?
+### What is an AUGMENTS Edge
 
 An AUGMENTS edge represents the evolution of content:
-- **Source**: The old blob SHA (previous version)
-- **Target**: The new blob SHA (current version)
-- **Semantics**: "old content AUGMENTS INTO new content"
-- **Automatic**: Created by post-commit hook, never manually
+
+- __Source__: The old blob SHA (previous version)
+- __Target__: The new blob SHA (current version)
+- __Semantics__: "old content AUGMENTS INTO new content"
+- __Automatic__: Created by post-commit hook, never manually
 
 ```mermaid
 graph LR
@@ -180,10 +182,10 @@ int post_commit_hook(int argc, char **argv);
 
 ### Performance Considerations
 
-1. **Lookback Window**: Only scan last 100-200 edges
-2. **Skip Large Commits**: If >50 files changed, skip
-3. **Timeout**: Abort if taking >500ms
-4. **Async Option**: Queue for background processing
+1. __Lookback Window__: Only scan last 100-200 edges
+2. __Skip Large Commits__: If >50 files changed, skip
+3. __Timeout__: Abort if taking >500ms
+4. __Async Option__: Queue for background processing
 
 ### Edge Cases
 
@@ -247,16 +249,19 @@ IMPLEMENTS: README.md@v1 -> API.md  # Before augmentation
 ## Testing Strategy
 
 ### Unit Tests
+
 - Blob SHA extraction from commits
 - Edge search algorithms
 - AUGMENTS edge creation
 
 ### Integration Tests
+
 - Post-commit hook triggering
 - Multi-file commits
 - Edge case handling
 
 ### E2E Tests
+
 ```bash
 # Test full workflow
 1. Create initial edge
@@ -268,10 +273,10 @@ IMPLEMENTS: README.md@v1 -> API.md  # Before augmentation
 
 ## Future Enhancements
 
-1. **Rename Detection**: Use git's rename detection to track moved files
-2. **Bulk Import**: Create AUGMENTS for existing git history
-3. **Visualization**: Show evolution graph in web UI
-4. **Metrics**: Track how often files change together
+1. __Rename Detection__: Use git's rename detection to track moved files
+2. __Bulk Import__: Create AUGMENTS for existing git history
+3. __Visualization__: Show evolution graph in web UI
+4. __Metrics__: Track how often files change together
 
 ## Summary
 

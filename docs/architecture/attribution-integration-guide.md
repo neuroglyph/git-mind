@@ -4,6 +4,7 @@
 # Attribution System Integration Guide
 
 Table of Contents
+
 - [Quick Start](#quick-start)
 - [For CLI Commands](#for-cli-commands)
 - [For Filtering](#for-filtering)
@@ -47,7 +48,7 @@ if (gm_filter_match(&filter, &edge)) {
 
 ### 1. Update `git mind link` Command
 
-**File**: `src/cli/link.c`
+__File__: `src/cli/link.c`
 
 ```c
 // Add to link_cmd():
@@ -69,9 +70,10 @@ gm_edge_attributed_encode_cbor(&edge, buffer, &len);
 
 ### 2. Update `git mind list` Command
 
-**File**: `src/cli/list.c`
+__File__: `src/cli/list.c`
 
 Add new options:
+
 ```c
 --source <human|ai|all>     Filter by source
 --min-confidence <float>    Minimum confidence
@@ -81,6 +83,7 @@ Add new options:
 ```
 
 Example implementation:
+
 ```c
 // Parse filter options
 gm_filter_t filter;
@@ -103,7 +106,7 @@ while (read_next_edge(&edge)) {
 
 ### 3. Update Journal Reader
 
-**File**: `src/journal/reader.c`
+__File__: `src/journal/reader.c`
 
 ```c
 // Update edge callback to handle attributed edges
@@ -128,7 +131,7 @@ int process_edge(const uint8_t *cbor_data, size_t len, void *userdata) {
 
 ### 4. Update Journal Writer
 
-**File**: `src/journal/writer.c`
+__File__: `src/journal/writer.c`
 
 ```c
 // Use attributed edges
@@ -147,7 +150,7 @@ int gm_journal_append_attributed(gm_context_t *ctx,
 
 ### 5. Add Review Command (New)
 
-**File**: `src/cli/review.c`
+__File__: `src/cli/review.c`
 
 ```c
 int review_cmd(int argc, char **argv) {
@@ -164,12 +167,14 @@ int review_cmd(int argc, char **argv) {
 ## Environment Variables
 
 ### For Humans (Default)
+
 ```bash
 # Nothing needed - defaults to human
 git mind link src/main.c docs/api.md --type implements
 ```
 
 ### For AI Systems
+
 ```bash
 # Claude via MCP
 export GIT_MIND_SOURCE=claude
@@ -182,6 +187,7 @@ export GIT_MIND_AUTHOR=gpt4@openai
 ```
 
 ### For System/Hooks
+
 ```bash
 # AUGMENTS hook
 export GIT_MIND_SOURCE=system
@@ -191,11 +197,13 @@ export GIT_MIND_AUTHOR=augments@git-mind
 ## Display Formatting
 
 ### Basic Display
+
 ```
 src/main.c ──implements──> docs/design.md
 ```
 
 ### With Attribution
+
 ```
 src/main.c ──implements──> docs/design.md [human: user@example.com]
 src/parser.c ──depends_on──> lib/ast.c [ai: claude@anthropic, conf: 0.85]
@@ -203,6 +211,7 @@ src/test.c ──tests──> src/main.c [consensus: human+ai]
 ```
 
 ### Pending Review Display
+
 ```
 PENDING: src/auth.c ──likely_depends_on──> config/oauth.json
          Source: claude@anthropic
@@ -214,6 +223,7 @@ PENDING: src/auth.c ──likely_depends_on──> config/oauth.json
 ## Testing
 
 ### Unit Tests
+
 ```c
 void test_attribution_filtering() {
     gm_edge_attributed_t human_edge = {0};
@@ -232,6 +242,7 @@ void test_attribution_filtering() {
 ```
 
 ### Integration Tests
+
 ```bash
 # Test human edges
 git mind link src/a.c src/b.c --type depends_on
@@ -248,16 +259,19 @@ git mind list --source ai --min-confidence 0.6
 ## Migration Path
 
 ### Phase 1: Soft Launch
+
 - Attribution system available but optional
 - Legacy edges get default attribution
 - New edges use attribution if environment set
 
 ### Phase 2: Default On
+
 - All new edges get attribution
 - Add migration command for old edges
 - Web UI shows attribution
 
 ### Phase 3: Full Integration
+
 - MCP tools create attributed edges
 - Review workflow enabled
 - Analytics on human vs AI contributions
@@ -265,6 +279,7 @@ git mind list --source ai --min-confidence 0.6
 ## Common Patterns
 
 ### AI Batch Analysis
+
 ```python
 # Claude analyzing codebase
 for file_pair in analyze_coupling():
@@ -283,6 +298,7 @@ for file_pair in analyze_coupling():
 ```
 
 ### Human Review Session
+
 ```bash
 # Review all pending
 git mind review --pending
@@ -295,6 +311,7 @@ git mind review --pending --type coupled_with --reject-all
 ```
 
 ### Consensus Building
+
 ```sql
 -- Find where human and AI agree
 SELECT * FROM edges e1
@@ -306,24 +323,30 @@ WHERE e1.source_type = 'human'
 
 ## Troubleshooting
 
-### Edge Not Showing Up?
+### Edge Not Showing Up
+
 Check filters:
+
 ```bash
 git mind list --source all --no-filter
 ```
 
-### Attribution Not Set?
+### Attribution Not Set
+
 Check environment:
+
 ```bash
 env | grep GIT_MIND
 ```
 
-### Legacy Edges?
+### Legacy Edges
+
 Migrate them:
+
 ```bash
 git mind migrate --add-attribution
 ```
 
 ---
 
-*With attribution integrated, git-mind becomes a platform for human-AI collaboration, not just a tool for storing connections.*
+_With attribution integrated, git-mind becomes a platform for human-AI collaboration, not just a tool for storing connections._

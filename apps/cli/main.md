@@ -1,22 +1,26 @@
 # Main CLI Entry Point
 
 ## Purpose
+
 Parse commands, initialize Git context, dispatch to subcommands, and handle errors gracefully.
 
 ## Design Rationale
 
 ### Simple Command Structure
+
 ```bash
 git-mind <command> [args...]
 ```
 
 Not using getopt or argparse because:
-1. **Minimal dependencies**: C23
-2. **Clear flow**: Easy to trace execution
-3. **Subcommand pattern**: Like Git itself
-4. **Future-proof**: Can add complex parsing later
+
+1. __Minimal dependencies__: C23
+2. __Clear flow__: Easy to trace execution
+3. __Subcommand pattern__: Like Git itself
+4. __Future-proof__: Can add complex parsing later
 
 ### Context Initialization
+
 ```c
 typedef struct {
     void *git_repo;
@@ -26,6 +30,7 @@ typedef struct {
 ```
 
 Dependency injection from the start:
+
 - Testable (mock Git operations)
 - Flexible (different storage backends)
 - Clean (no globals)
@@ -56,6 +61,7 @@ flowchart TD
 ## Error Handling Philosophy
 
 ### User-Friendly Messages
+
 ```c
 if (error < 0) {
     fprintf(stderr, "Error: Not in a git repository\n");
@@ -66,15 +72,18 @@ if (error < 0) {
 ```
 
 Two-level errors:
+
 1. Simple message for users
 2. Technical details if available
 
 ### Exit Codes
+
 ```c
 return (result == GM_OK) ? 0 : 1;
 ```
 
 Simple binary:
+
 - 0 = Success
 - 1 = Any error
 
@@ -83,6 +92,7 @@ Future: Specific codes for different failures.
 ## Context Management
 
 ### Initialization
+
 ```c
 git_libgit2_init();  // Global init
 git_repository_open(&repo, ".");  // Find .git
@@ -91,18 +101,21 @@ ctx.log_fn = gm_log_default;
 ```
 
 Clean sequence:
+
 1. Initialize libgit2 once
 2. Open repository in current dir
 3. Set up function pointers
 4. Pass context everywhere
 
 ### Cleanup
+
 ```c
 git_repository_free(repo);
 git_libgit2_shutdown();
 ```
 
 RAII-style cleanup:
+
 - Always free repository
 - Shutdown libgit2 last
 - No resource leaks
@@ -110,6 +123,7 @@ RAII-style cleanup:
 ## Command Dispatch
 
 ### Current Design
+
 ```c
 if (strcmp(cmd, "link") == 0) {
     result = gm_cmd_link(&ctx, argc - 2, argv + 2);
@@ -119,11 +133,13 @@ if (strcmp(cmd, "link") == 0) {
 ```
 
 Simple string comparison:
+
 - No hash table needed (few commands)
 - Clear control flow
 - Easy to add commands
 
 ### Future: Command Table
+
 ```c
 typedef struct {
     const char *name;
@@ -143,6 +159,7 @@ When we have 10+ commands.
 ## Usage Display
 
 ### Current Format
+
 ```
 Usage: git-mind <command> [args...]
 
@@ -158,12 +175,14 @@ Relationship types:
 ```
 
 Design principles:
+
 - Examples in command list
 - Common options documented
 - Relationship types explained
 - Compact but complete
 
 ### Future: Man Page Generation
+
 ```c
 if (strcmp(argv[1], "--generate-man") == 0) {
     generate_man_page();
@@ -176,17 +195,20 @@ Auto-generate from help text.
 ## Platform Considerations
 
 ### Repository Discovery
+
 ```c
 git_repository_open(&repo, ".");
 ```
 
 libgit2 handles:
+
 - Walking up to find .git
 - Worktree detection
 - Submodule boundaries
 - Case-insensitive filesystems
 
 ### Path Separators
+
 - libgit2 normalizes to forward slashes
 - We inherit this behavior
 - No platform-specific code needed
@@ -194,6 +216,7 @@ libgit2 handles:
 ## Security Hardening
 
 ### No Command Injection
+
 ```c
 // We never do this:
 system(user_input);  // ❌
@@ -203,14 +226,17 @@ gm_cmd_link(&ctx, argc, argv);  // ✅
 ```
 
 ### Argument Validation
+
 - Commands validate their own args
 - Main only routes to commands
 - No preprocessing of user input
 
 ### Signal Handling
+
 Currently: None (default behavior)
 
 Future considerations:
+
 ```c
 signal(SIGINT, cleanup_handler);
 signal(SIGTERM, cleanup_handler);
@@ -221,12 +247,15 @@ For long-running operations.
 ## Testing Approach
 
 ### Unit Testing Challenges
+
 Main is hard to unit test. Instead:
+
 - Keep main thin
 - Test command functions directly
 - Integration tests for full flow
 
 ### Integration Tests
+
 ```bash
 #!/bin/bash
 # Test not in git repo
@@ -241,6 +270,7 @@ git-mind bogus 2>&1 | grep -q "Unknown command"
 ```
 
 ### Memory Testing
+
 ```bash
 valgrind --leak-check=full git-mind list
 # Should show: All heap blocks were freed
@@ -249,6 +279,7 @@ valgrind --leak-check=full git-mind list
 ## Performance Notes
 
 ### Startup Cost
+
 ```
 git_libgit2_init(): ~1ms
 git_repository_open(): ~5ms
@@ -259,6 +290,7 @@ Total overhead: ~6ms
 Acceptable for CLI tool.
 
 ### Memory Usage
+
 ```
 libgit2 init: ~2MB
 Repository open: ~500KB
@@ -271,6 +303,7 @@ Reasonable for modern systems.
 ## Future Enhancements
 
 ### Plugin Architecture
+
 ```c
 if (is_plugin_command(cmd)) {
     exec_plugin(cmd, args);
@@ -280,6 +313,7 @@ if (is_plugin_command(cmd)) {
 Allow git-mind-* executables.
 
 ### Configuration
+
 ```c
 git_config_get_string(&value, config, "gitmind.editor");
 ```
@@ -287,6 +321,7 @@ git_config_get_string(&value, config, "gitmind.editor");
 Read from .git/config.
 
 ### Daemon Mode
+
 ```bash
 git-mind daemon --port 8080
 ```
@@ -294,6 +329,7 @@ git-mind daemon --port 8080
 For web UI or API server.
 
 ### Shell Completion
+
 ```bash
 # Bash completion
 _git_mind() {
@@ -304,10 +340,10 @@ complete -F _git_mind git-mind
 
 ## Why This Design Wins
 
-1. **Simple**: Main does minimal work
-2. **Extensible**: Easy to add commands
-3. **Testable**: Dependency injection
-4. **Robust**: Proper cleanup always
-5. **Fast**: Minimal startup overhead
+1. __Simple__: Main does minimal work
+2. __Extensible__: Easy to add commands
+3. __Testable__: Dependency injection
+4. __Robust__: Proper cleanup always
+5. __Fast__: Minimal startup overhead
 
 As Linus would say: "The main() function should be so simple that it's obviously correct."

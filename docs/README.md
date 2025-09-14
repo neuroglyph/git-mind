@@ -1,11 +1,13 @@
 # docs/ (Index and Structure)
 
 Table of Contents
+
 - [Overview](#overview)
 - [Planned Structure](#planned-structure)
 - [Quick Map of Existing Docs](#quick-map-of-existing-docs)
 
 ## Overview
+
 This index organizes documentation with stable links so the project can be paused and resumed without confusion.
 
 - Start here if you’re new: [Journal Architecture Pivot](architecture/journal-architecture-pivot.md)

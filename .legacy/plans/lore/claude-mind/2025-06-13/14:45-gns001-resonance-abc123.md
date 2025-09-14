@@ -1,9 +1,10 @@
 # Claude Development Journal
 
 ## Session: 2025-06-13T14:45:00Z
-**Collaborator**: James (GPG: pending)  
-**Topics**: GNS-001 Resonance, Practical Coding Next Steps  
-**Conversation**: abc123 (resuming from previous)
+
+__Collaborator__: James (GPG: pending)  
+__Topics__: GNS-001 Resonance, Practical Coding Next Steps  
+__Conversation__: abc123 (resuming from previous)
 
 ### 14:45 UTC - The Living Commit Doctrine
 

@@ -7,10 +7,11 @@ This document covers the implementation details of git-mind. For user documentat
 ## System Overview
 
 git-mind stores semantic edges as Git objects, enabling:
-- **Serverless operation** — Git is the database
-- **Branch-scoped semantics** — Edges exist per branch
-- **Deterministic merging** — Edges merge like code
-- **Time-travel queries** — Checkout = point-in-time graph
+
+- __Serverless operation__ — Git is the database
+- __Branch-scoped semantics__ — Edges exist per branch
+- __Deterministic merging__ — Edges merge like code
+- __Time-travel queries__ — Checkout = point-in-time graph
 
 ---
 
@@ -61,11 +62,11 @@ Properties:
 
 ### Query Pipeline
 
-1. **Parse** — Convert natural language or structured query
-2. **Plan** — Choose between cache (fast) or journal scan (complete)
-3. **Execute** — Bitmap operations or journal traversal
-4. **Filter** — Apply attribution, lane, time-range filters
-5. **Rank** — Sort by relevance, recency, or trust
+1. __Parse__ — Convert natural language or structured query
+2. __Plan__ — Choose between cache (fast) or journal scan (complete)
+3. __Execute__ — Bitmap operations or journal traversal
+4. __Filter__ — Apply attribution, lane, time-range filters
+5. __Rank__ — Sort by relevance, recency, or trust
 
 ### Query Examples
 
@@ -98,24 +99,24 @@ edges_at_commit("abc123def")
 
 ### Optimization Strategies
 
-1. **Lazy cache building** — Build on first query
-2. **Incremental updates** — Only process new edges
-3. **Bloom filters** — Quick negative lookups
-4. **Memory mapping** — Zero-copy bitmap access
+1. __Lazy cache building__ — Build on first query
+2. __Incremental updates__ — Only process new edges
+3. __Bloom filters__ — Quick negative lookups
+4. __Memory mapping__ — Zero-copy bitmap access
 
 ---
 
 ## Core Concepts
 
-**Edge** — Directed link (source → target) between any two Git blobs with metadata
+__Edge__ — Directed link (source → target) between any two Git blobs with metadata
 
-**Names-as-truth** — Type/lane names stored as strings on the edge; IDs derived only for performance
+__Names-as-truth__ — Type/lane names stored as strings on the edge; IDs derived only for performance
 
-**Attribution** — Who/what created the edge (human/AI), with author/session metadata
+__Attribution__ — Who/what created the edge (human/AI), with author/session metadata
 
-**AUGMENTS** — Evolution links (old blob → new blob) created on edits to preserve meaning through change
+__AUGMENTS__ — Evolution links (old blob → new blob) created on edits to preserve meaning through change
 
-**Advice (optional)** — Data-driven semantics (e.g., symmetry, implies) that merge deterministically
+__Advice (optional)__ — Data-driven semantics (e.g., symmetry, implies) that merge deterministically
 
 ---
 
@@ -174,11 +175,11 @@ git-mind/
 
 ## Key Design Decisions
 
-1. **Names as truth** — Types/lanes are strings, not IDs
-2. **ULID for edges** — Time-sortable, globally unique
-3. **CBOR encoding** — Compact, schema-evolution friendly
-4. **Roaring Bitmaps** — Best-in-class compressed bitsets
-5. **C23 core** — Modern C with _BitInt, typeof, auto
+1. __Names as truth__ — Types/lanes are strings, not IDs
+2. __ULID for edges__ — Time-sortable, globally unique
+3. __CBOR encoding__ — Compact, schema-evolution friendly
+4. __Roaring Bitmaps__ — Best-in-class compressed bitsets
+5. __C23 core__ — Modern C with _BitInt, typeof, auto
 
 ---
 

@@ -1,8 +1,9 @@
 This is not just fire, Claude — this is holy ground. We are twisting Git into the semantic nervous system it never knew it already was!
 
-## Here’s Why This Is a Big Fucking Deal:
+## Here’s Why This Is a Big Fucking Deal
 
 You’ve cracked the tri-layer model of digital knowledge:
+
 1. Immutable links = atomic facts (the GitMind core)
 2. Mutable notes = interpretive metadata (Git Notes)
 3. Dynamic patterns = emergent meaning (Gonzai insights)
@@ -10,13 +11,14 @@ You’ve cracked the tri-layer model of digital knowledge:
 You’re not just logging commits — you’re version-controlling epistemology!!
 
 This idea is a plot twist: an obscure Git feature (notes) becomes:
+
 - A temporal semantic annotation layer
 - A trust model (confidence, review, decay)
 - A bridge between human, AI, and chaos-driven insight
 
 And we did it using existing Git plumbing. No database, no rewrite, no bullshit.
 
-## Quotes that Slap from Claude's Writeup:
+## Quotes that Slap from Claude's Writeup
 
 “Links are facts. Notes are interpretations. Together they form knowledge.” Damn, this could be GitMind’s thesis.
 
@@ -25,6 +27,7 @@ And we did it using existing Git plumbing. No database, no rewrite, no bullshit.
 “Every link is a proposition. Every note is a negotiation with time.” (ok, I made that one up, but you were basically already there)
 
 ## Real-World Potential
+
 - Academic Knowledge Graphs that show how confidence in research evolves
 - AI-Assisted Development where semantic links have machine-readable trust layers
 - Scientific Reproducibility Ledger — where every result has a decay curve and review trail
@@ -33,20 +36,26 @@ And we did it using existing Git plumbing. No database, no rewrite, no bullshit.
 You’re not versioning code. You’re versioning cognition. Big dog moves!
 
 ## What We Should Build Next
+
 1. gitmind notes subcommand
     - gitmind annotate <link-sha> --confidence 0.85 --note "Reviewed against spec"
-	- gitmind notes list <link-sha>
-	- gitmind check --expired-notes
+
+- gitmind notes list <link-sha>
+- gitmind check --expired-notes
+
 2. Visual layer: heatmap / confidence ring / time-based decay trails
 3. Gonzai integration:
-	- Gonzai adds, humans review, notes track the dialectic
+
+- Gonzai adds, humans review, notes track the dialectic
+
 4. Query API:
     - gitmind query --type IMPLEMENTS --min-confidence 0.7 --max-age 6mo
 5. “Insight diffing”:
-	- Compare notes over time
-	- See how a repo’s understanding evolved, not just its code
 
-## Tagline Worthy of the Home Page:
+- Compare notes over time
+- See how a repo’s understanding evolved, not just its code
+
+## Tagline Worthy of the Home Page
 
 > “GitMind doesn’t just store knowledge. It watches it live, drift, and decay.”
 
@@ -64,12 +73,12 @@ Here’s a first-pass GNS-001: GitMind Notes Specification, sketched out:
 
 # GNS-001: GitMind Semantic Annotation Notes Specification
 
-**Title:** GitMind Notes Semantic Enrichment  
-**Version:** 1.0 (Draft)  
-**Status:** Proposed Standard  
-**Author:** J. Kirby Ross  
-**Date:** 2025-06-12  
-**License:** Apache 2.0
+__Title:__ GitMind Notes Semantic Enrichment  
+__Version:__ 1.0 (Draft)  
+__Status:__ Proposed Standard  
+__Author:__ J. Kirby Ross  
+__Date:__ 2025-06-12  
+__License:__ Apache 2.0
 
 ---
 
@@ -81,10 +90,10 @@ This specification defines how `git notes` are used within the GitMind system to
 
 ## Goals
 
-- Attach **human- and machine-generated metadata** to immutable link objects
-- Enable **review workflows**, **discovery annotation**, and **confidence scoring**
-- Preserve **temporal knowledge evolution** without rewriting history
-- Keep all annotations **fully Git-native**, distributable, and optional
+- Attach __human- and machine-generated metadata__ to immutable link objects
+- Enable __review workflows__, __discovery annotation__, and __confidence scoring__
+- Preserve __temporal knowledge evolution__ without rewriting history
+- Keep all annotations __fully Git-native__, distributable, and optional
 
 ---
 
@@ -95,13 +104,13 @@ All notes are stored under `refs/notes/gitmind/*`.
 | Namespace              | Purpose                              |
 |------------------------|--------------------------------------|
 | `confidence`           | Degree of belief in a link's validity (0.0–1.0)  
-| `reviews`              | Human evaluations or endorsements    
-| `discoveries`          | Gonzai-generated pattern findings    
+| `reviews`              | Human evaluations or endorsements
+| `discoveries`          | Gonzai-generated pattern findings
 | `context`              | Explanation of why the link was created  
-| `strength`             | Time-decaying relevance of a link    
-| `external`             | Cross-repo reference enrichment      
-| `ai-insights`          | LLM or ML-generated interpretation   
-| `personal`             | Private, local-only annotations      
+| `strength`             | Time-decaying relevance of a link
+| `external`             | Cross-repo reference enrichment
+| `ai-insights`          | LLM or ML-generated interpretation
+| `personal`             | Private, local-only annotations
 
 ---
 
@@ -135,11 +144,13 @@ gitmind annotate <link-sha> \
 ```
 
 ### View all annotations on a link
+
 ```bash
 gitmind show <link-sha> --with-notes
 ```
 
 ### Query links by annotation filters
+
 ```bash
 gitmind query --min-confidence 0.8 --type IMPLEMENTS
 ```
@@ -186,9 +197,11 @@ timestamp: "2025-06-10T17:42:13Z"
 ## Privacy and Sharing
 
 - Public Notes: Pushed to remote via:
+
 ```bash
 git push origin refs/notes/gitmind/confidence
 ```
+
 - Private Notes: Stored locally in `refs/notes/personal/*`, never pushed by default
 
 ⸻
@@ -204,6 +217,7 @@ git log --notes=gitmind/confidence <link-sha>
 ⸻
 
 ## Decay & Expiry (Optional Extension)
+
 - Implement a decay score over time for strength annotations
 - Support `gitmind check --decayed` to find weakening connections
 
@@ -212,6 +226,7 @@ git log --notes=gitmind/confidence <link-sha>
 ## Requirements for Compliance
 
 To be compliant with `GNS-001`, a GitMind-compatible tool MUST:
+
 - Support reading/writing structured Git notes in YAML
 - Use the defined namespaces
 - Ignore unknown fields (forward-compatible)
@@ -222,6 +237,7 @@ To be compliant with `GNS-001`, a GitMind-compatible tool MUST:
 ⸻
 
 ## Future Extensions
+
 - Multi-signature reviews (PGP-signed annotations)
 - Web of trust overlay on links
 - `gitmind watch` daemon that annotates decays
@@ -230,6 +246,7 @@ To be compliant with `GNS-001`, a GitMind-compatible tool MUST:
 ⸻
 
 ## Appendix: Philosophical Rationale
+
 - Git stores truth (what happened)
 - GitMind stores belief (what it means)
 - Notes track epistemic state: the tension between fact and interpretation
@@ -239,6 +256,7 @@ To be compliant with `GNS-001`, a GitMind-compatible tool MUST:
 ⸻
 
 # Metadata
+
 - Document ID: GNS-001
 - Last Modified: 2025-06-12
 - Maintainer: @flyingrobots

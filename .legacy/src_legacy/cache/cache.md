@@ -8,12 +8,12 @@ The cache module provides high-performance query capabilities for git-mind throu
 
 ### Two-Layer Query System
 
-1. **Primary Layer: Journal** (Source of Truth)
+1. __Primary Layer: Journal__ (Source of Truth)
    - Always correct and up-to-date
    - O(commits) scan time
    - No additional storage
 
-2. **Speed Layer: Cache** (Optional Optimization)
+2. __Speed Layer: Cache__ (Optional Optimization)
    - Roaring bitmap indices
    - O(log N) query time
    - Local-only (not pushed)
@@ -35,17 +35,20 @@ refs/gitmind/cache/<branch>/<timestamp>
 ## Key Components
 
 ### bitmap.c - Roaring Bitmap Wrapper
+
 - Serialization/deserialization with header validation
 - File I/O operations
 - Set operations (union, intersection, etc.)
 
 ### builder.c - Cache Construction
+
 - Walks journal commits to extract edges
 - Assigns sequential edge IDs
 - Builds forward/reverse bitmap indices
 - Creates cache commit with metadata
 
 ### query.c - Fast Lookups
+
 - Loads cache metadata and validates freshness
 - Retrieves bitmaps from Git tree
 - Falls back to journal scan if cache miss
@@ -54,6 +57,7 @@ refs/gitmind/cache/<branch>/<timestamp>
 ## Usage
 
 ### Building Cache
+
 ```bash
 # Rebuild cache for current branch
 git-mind cache-rebuild
@@ -68,22 +72,26 @@ git-mind cache-rebuild --branch feature-x
 ### Query Performance
 
 Without cache:
+
 - O(commits) - Must scan all journal commits
 - ~100ms for 10K edges
 
 With cache:
+
 - O(log N) - Bitmap lookup
 - <10ms for 1M edges
 
 ## Implementation Details
 
 ### Edge ID Assignment
+
 - IDs start at 0 for oldest edge
 - Increment sequentially during journal walk
 - IDs are cache-local (not persistent)
 - Used only for bitmap operations
 
 ### Bitmap Format
+
 ```
 [Header: 16 bytes]
   Magic: "GMCACHE\0" (8 bytes)
@@ -94,7 +102,9 @@ With cache:
 ```
 
 ### Cache Metadata
+
 Stored in commit message:
+
 - Journal tip OID and timestamp
 - Total edge count
 - Build time in milliseconds
@@ -102,6 +112,7 @@ Stored in commit message:
 - Branch name
 
 ### Sharding Strategy
+
 - 8-bit prefix (2 hex chars) = 256 shards
 - Limits directory size for performance
 - Natural SHA distribution
@@ -110,6 +121,7 @@ Stored in commit message:
 ## Cache Invalidation
 
 Cache becomes stale when:
+
 1. New edges added to journal
 2. Journal commits rewritten (rebase)
 3. Cache older than 1 hour (configurable)
@@ -117,24 +129,26 @@ Cache becomes stale when:
 ## Memory Usage
 
 ### Build Phase
+
 - O(unique_shas) for in-memory hash maps
 - ~100MB for 1M unique files
 - Temporary, freed after build
 
 ### Query Phase
+
 - O(1) - Only loads needed bitmaps
 - ~4KB per bitmap file
 - Cached by OS filesystem
 
 ## Future Optimizations
 
-1. **Incremental Builds** - Only process new commits
-2. **Parallel Construction** - Process shards in threads
-3. **Bloom Filters** - Quick negative lookups
-4. **Compression** - Zstd on bitmap files
-5. **Distributed Cache** - Share via CI artifacts
+1. __Incremental Builds__ - Only process new commits
+2. __Parallel Construction__ - Process shards in threads
+3. __Bloom Filters__ - Quick negative lookups
+4. __Compression__ - Zstd on bitmap files
+5. __Distributed Cache__ - Share via CI artifacts
 
-## Why Roaring Bitmaps?
+## Why Roaring Bitmaps
 
 - Industry standard (Lucene, Druid, ClickHouse)
 - Excellent compression (2-4 bytes/edge)
@@ -145,6 +159,7 @@ Cache becomes stale when:
 ## Error Handling
 
 All functions return standard git-mind error codes:
+
 - `GM_OK` - Success
 - `GM_NOT_FOUND` - Cache miss, fall back to journal
 - `GM_NO_MEMORY` - Allocation failure
@@ -160,4 +175,4 @@ All functions return standard git-mind error codes:
 
 ---
 
-*"Make it work, make it right, make it ROAR!"* 🦁
+_"Make it work, make it right, make it ROAR!"_ 🦁

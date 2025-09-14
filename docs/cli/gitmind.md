@@ -3,9 +3,10 @@
 
 # git-mind
 
-> *"Remember who you are."* - Mufasa
+> _"Remember who you are."_ - Mufasa
 
 Table of Contents
+
 - [Name](#name)
 - [Synopsis](#synopsis)
 - [Description](#description)
@@ -28,16 +29,18 @@ In the great Circle of Development, code is written, connections form, understan
 
 git-mind adds a semantic layer to Git, allowing you to create, query, and explore meaningful relationships between files. These connections travel through time with your code, creating a permanent record of your understanding.
 
-*"Everything the light touches has been connected by git-mind."*
+_"Everything the light touches has been connected by git-mind."_
 
 ## THE VISION
 
 You're deep in a codebase. Instead of asking:
+
 - "Where is this implemented?" (grep)
 - "What depends on this?" (hope)
 - "Where are the tests?" (find)
 
 You ask:
+
 - "Show me all implementations of this design"
 - "What breaks if I change this?"  
 - "How has our understanding evolved?"
@@ -55,10 +58,10 @@ And git-mind answers, instantly, accurately, with the wisdom of everyone who cam
 : Query and explore connections
 
 `traverse <file> [--depth N]`
-: Follow connection paths from starting point *(coming soon)*
+: Follow connection paths from starting point _(coming soon)_
 
 `unlink <source> <target>`
-: Remove connection (adds tombstone) *(coming soon)*
+: Remove connection (adds tombstone) _(coming soon)_
 
 ### Management Commands
 
@@ -69,10 +72,10 @@ And git-mind answers, instantly, accurately, with the wisdom of everyone who cam
 : Install Git hooks for automatic evolution tracking
 
 `status`
-: Show semantic graph statistics *(coming soon)*
+: Show semantic graph statistics _(coming soon)_
 
 `gc [--aggressive]`
-: Compress old journal entries *(coming soon)*
+: Compress old journal entries _(coming soon)_
 
 ### Utility Commands
 
@@ -85,21 +88,27 @@ And git-mind answers, instantly, accurately, with the wisdom of everyone who cam
 ## HOW IT WORKS
 
 ### The Journal Layer (Truth)
+
 Every semantic link is stored as a Git commit in refs/gitmind/edges/<branch>. These commits:
+
 - Contain CBOR-encoded edge data
 - Are branch-specific
 - Push/pull with your code
 - Survive forever in Git history
 
 ### The Cache Layer (Speed)
+
 For repositories with thousands of connections, git-mind builds Roaring Bitmap indices:
+
 - O(log N) query performance
 - Sharded by SHA prefix
 - Stored in refs/gitmind/cache/<branch>
 - Rebuilt on demand
 
 ### The Evolution System (AUGMENTS)
+
 When files change, their blob SHAs change. The AUGMENTS system:
+
 - Tracks file evolution automatically
 - Preserves connections through changes
 - Installed via post-commit hook
@@ -191,22 +200,23 @@ Rebuilding cache for branch 'main'...
 
 ## PHILOSOPHY
 
-### Why Journal Commits?
+### Why Journal Commits
 
-*"It's the Circle of Life, and it moves us all"*
+_"It's the Circle of Life, and it moves us all"_
 
 Traditional metadata systems fight Git's nature. They store data outside the history, create merge conflicts, and lose synchronization. git-mind embraces Git's design:
 
-- **Commits are immutable** - Your connections can't be lost
-- **Branches isolate changes** - Different understanding on different branches
-- **History is permanent** - Travel through time to see past understanding
-- **Merging is managed** - Git handles conflicts naturally
+- __Commits are immutable__ - Your connections can't be lost
+- __Branches isolate changes__ - Different understanding on different branches
+- __History is permanent__ - Travel through time to see past understanding
+- __Merging is managed__ - Git handles conflicts naturally
 
-### Why Semantic Connections?
+### Why Semantic Connections
 
-*"There's more to being king than getting your way"*
+_"There's more to being king than getting your way"_
 
 Code without context is just syntax. Understanding comes from relationships:
+
 - Why was this built?
 - What does it implement?
 - What depends on it?
@@ -214,11 +224,12 @@ Code without context is just syntax. Understanding comes from relationships:
 
 git-mind makes these relationships first-class citizens of your repository.
 
-### Why Performance Matters?
+### Why Performance Matters
 
-*"Life's not fair, is it?"*
+_"Life's not fair, is it?"_
 
 A tool unused is worthless. git-mind stays fast through:
+
 - Pure C implementation
 - Roaring Bitmap indices  
 - O(log N) query complexity
@@ -240,7 +251,8 @@ git config --add remote.origin.fetch '+refs/gitmind/*:refs/gitmind/*'
 
 ### Editor Integration
 
-*(Coming soon)* Plugins for:
+_(Coming soon)_ Plugins for:
+
 - VS Code - See connections in sidebar
 - Vim - Query connections with :GitMindList
 - Emacs - Semantic navigation with git-mind-mode
@@ -258,25 +270,31 @@ git config --add remote.origin.fetch '+refs/gitmind/*:refs/gitmind/*'
 ## THE DEEPER MAGIC
 
 ### For Individuals
-*"Look inside yourself. You are more than what you have become."*
+
+*"Look inside yourself. You are more than what you have become."_
 
 Your understanding is valuable. git-mind preserves it, letting you:
+
 - Remember why you made decisions
 - Navigate by meaning, not just files
 - Build on your past insights
 
 ### For Teams
-*"We are one."*
+
+*"We are one."_
 
 Shared understanding is your competitive advantage:
+
 - Onboard faster with visible relationships
 - Preserve knowledge through transitions
 - Build collective intelligence
 
 ### For the Future
-*"It is time."*
+
+*"It is time."_
 
 What starts as a CLI becomes:
+
 - Infrastructure for AI agents
 - Foundation for semantic IDEs
 - Bridge between human and machine understanding
@@ -320,12 +338,14 @@ What starts as a CLI becomes:
 ## SEE ALSO
 
 Individual command documentation:
+
 - `git-mind-link(1)` - Create connections
 - `git-mind-list(1)` - Query connections
 - `git-mind-cache-rebuild(1)` - Rebuild performance cache
 - `git-mind-install-hooks(1)` - Setup evolution tracking
 
 Git documentation:
+
 - `git(1)` - The stupid content tracker
 - `gitglossary(7)` - Git glossary
 
@@ -334,6 +354,7 @@ Git documentation:
 git-mind emerged from a simple observation: we spend enormous effort understanding code, then throw that understanding away. What if we could capture it?
 
 The journey from idea to implementation taught us:
+
 - Simple is powerful (just Git commits)
 - Performance enables adoption (Roaring Bitmaps)
 - Evolution is inevitable (AUGMENTS system)
@@ -343,11 +364,11 @@ The journey from idea to implementation taught us:
 
 Created by J. Kirby Ross and the Neuroglyph Collective.
 
-*"Hakuna Matata"* - No worries, your semantic connections are safe.
+_"Hakuna Matata"_ - No worries, your semantic connections are safe.
 
 ## THE PROMISE
 
-*"Remember who you are."*
+_"Remember who you are."_
 
 Your code tells a story. git-mind helps you remember it, share it, and build upon it. In the great Circle of Development, no understanding is lost, no connection forgotten, no wisdom wasted.
 
@@ -355,6 +376,6 @@ Welcome to semantic version control. Welcome to git-mind.
 
 ---
 
-*"Oh yes, the past can hurt. But the way I see it, you can either run from it or learn from it."*
+_"Oh yes, the past can hurt. But the way I see it, you can either run from it or learn from it."_
 
-**Choose to learn. Choose git-mind.**
+__Choose to learn. Choose git-mind.__

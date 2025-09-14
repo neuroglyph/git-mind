@@ -1,8 +1,8 @@
 # Git-Mind Vision 2025: Living Knowledge Infrastructure
 
-**Version**: 2.1  
-**Date**: June 14, 2025 (Updated with breakthrough insights)  
-**Authors**: Collective synthesis of Claude, ChatGPT, Gemini, and human insights
+__Version__: 2.1  
+__Date__: June 14, 2025 (Updated with breakthrough insights)  
+__Authors__: Collective synthesis of Claude, ChatGPT, Gemini, and human insights
 
 ---
 
@@ -10,7 +10,7 @@
 
 Knowledge doesn't conflict—it accumulates. Knowledge doesn't die—it evolves.
 
-Git-mind transforms version control from tracking *what* we built to understanding *why* we built it and *how* that understanding changes over time.
+Git-mind transforms version control from tracking _what_ we built to understanding _why_ we built it and _how_ that understanding changes over time.
 
 ---
 
@@ -47,7 +47,8 @@ graph TD
     style C fill:#f3e5f5
 ```
 
-**Key Innovation**: Multiple edges stored in a SINGLE file per node pair:
+__Key Innovation__: Multiple edges stored in a SINGLE file per node pair:
+
 ```yaml
 # .gitmind/links/abc123.link
 edges:
@@ -79,7 +80,7 @@ gitGraph
     commit id: "New insights emerge"
 ```
 
-**Understanding evolves like code—branching, merging, growing.**
+__Understanding evolves like code—branching, merging, growing.__
 
 ### 3. Traversal Intelligence (Configurable)
 
@@ -106,7 +107,7 @@ graph LR
     style C2 fill:#9f9,stroke:#393,stroke-width:3px
 ```
 
-**The system learns which paths help people understand.**
+__The system learns which paths help people understand.__
 
 ### 4. Natural Selection of Knowledge (User Configured)
 
@@ -125,7 +126,7 @@ decay:
       decay: false  # Immortal
 ```
 
-**Users decide what lives forever and what naturally fades.**
+__Users decide what lives forever and what naturally fades.__
 
 ---
 
@@ -156,7 +157,7 @@ graph TD
     L1 -.-> N2
 ```
 
-**Content-addressed files. Multi-edge links in single files. Optional mutable metadata.**
+__Content-addressed files. Multi-edge links in single files. Optional mutable metadata.__
 
 ### Git Integration Strategy
 
@@ -169,6 +170,7 @@ graph TD
 ```
 
 Using Git's filter drivers for:
+
 - Efficient packing of multi-edge files
 - Semantic diffs of edge changes
 - Custom merge strategies
@@ -193,7 +195,7 @@ graph LR
     B1 --> M1
 ```
 
-**Simple edge union within files. No conflicts. All perspectives preserved.**
+__Simple edge union within files. No conflicts. All perspectives preserved.__
 
 ---
 
@@ -226,13 +228,14 @@ ai_insights:
   min_reviewers: 2
 ```
 
-**Push complexity to users who care. Sensible defaults for everyone else.**
+__Push complexity to users who care. Sensible defaults for everyone else.__
 
 ---
 
 ## The User Experience Evolution
 
 ### Phase 1: Individual Intelligence (Alpha)
+
 ```bash
 # Create semantic links that survive refactoring
 git mind link README.md src/main.c --type implements
@@ -245,6 +248,7 @@ git mind evolution --since "3 months ago"
 ```
 
 ### Phase 2: Team Intelligence (Beta)
+
 ```bash
 # See what paths your team actually uses
 git mind analytics --hot-paths
@@ -259,6 +263,7 @@ git mind patterns --min-confidence 0.8
 ```
 
 ### Phase 3: Living Intelligence (v1.0)
+
 ```bash
 # Knowledge self-organizes based on YOUR rules
 git mind decay --apply --dry-run
@@ -276,13 +281,13 @@ git mind onboard --generate-optimal-path
 
 ### Core Principles (Updated)
 
-1. **Git-Native**: Use Git's strengths, don't fight them
-2. **Content-Addressed**: Identity through SHA, not paths
-3. **Multi-Edge Single File**: Reduce Git objects 10-100x
-4. **User-Configured**: Let users decide decay, traversal, everything
-5. **Natural Selection**: Reinforce the useful, decay the stale (per user rules)
-6. **Performance First**: Built in C, use Git's own libraries
-7. **Progressive Enhancement**: ASCII → 2D → WebGL
+1. __Git-Native__: Use Git's strengths, don't fight them
+2. __Content-Addressed__: Identity through SHA, not paths
+3. __Multi-Edge Single File__: Reduce Git objects 10-100x
+4. __User-Configured__: Let users decide decay, traversal, everything
+5. __Natural Selection__: Reinforce the useful, decay the stale (per user rules)
+6. __Performance First__: Built in C, use Git's own libraries
+7. __Progressive Enhancement__: ASCII → 2D → WebGL
 
 ### Technical Invariants
 
@@ -296,7 +301,7 @@ graph TD
     I6[Configurable<br/>Users control behavior]
 ```
 
-**Hard constraints that keep us honest.**
+__Hard constraints that keep us honest.__
 
 ---
 
@@ -304,7 +309,8 @@ graph TD
 
 ### Progressive Enhancement
 
-1. **ASCII (MVP)**
+1. __ASCII (MVP)__
+
    ```
    parser.c ===[3 edges]===> grammar.md
      implements (0.9)
@@ -312,17 +318,18 @@ graph TD
      inspired-by (0.5)
    ```
 
-2. **D3.js 2D (Beta)**
+2. __D3.js 2D (Beta)__
    - Force-directed graphs
    - Time sliders
    - Heatmaps
 
-3. **WebGL 3D (v1.0)**
+3. __WebGL 3D (v1.0)__
    - Particle effects for traversals
    - Immersive navigation
    - Real-time evolution
 
 Libraries identified:
+
 - Three.js for 3D
 - D3.js for 2D
 - Highcharts for temporal
@@ -343,23 +350,26 @@ graph LR
     M --> KG
 ```
 
-**Collective intelligence includes quality control.**
+__Collective intelligence includes quality control.__
 
 ---
 
 ## The Global Impact
 
 ### Near Term (2025)
+
 - Developers configure their own knowledge rules
 - Multi-edge files solve Git performance
 - Teams share mental models without conflicts
 
 ### Medium Term (2026-2027)
+
 - Codebases self-document based on usage patterns
 - Onboarding paths emerge from collective behavior
 - Knowledge evolution visible in WebGL
 
 ### Long Term (2028+)
+
 - Version control for consciousness itself
 - Human-AI hybrid intelligence at scale
 - Configurable knowledge infrastructure for civilization
@@ -385,13 +395,13 @@ graph TD
     style M4 fill:#f8d7da
 ```
 
-**From solving problems to changing minds.**
+__From solving problems to changing minds.__
 
 ---
 
 ## The Vision in One Page
 
-**Git-mind** is version control for understanding itself.
+__Git-mind__ is version control for understanding itself.
 
 Starting as a tool that creates unbreakable links between files, it evolves into a living map of how we actually think about code. Through multi-edge relationships (in single files!), configurable traversal analytics, and user-defined decay rules, it becomes infrastructure for collective intelligence.
 
@@ -401,8 +411,8 @@ We're not building a better documentation tool. We're building a nervous system 
 
 The graph breathes. The edges live. Understanding accumulates. Users decide.
 
-**Ship weekly. Think in decades. Configure everything.**
+__Ship weekly. Think in decades. Configure everything.__
 
 ---
 
-*"In the beginning was the Link, and the Link was with Git, and the Link was Good—and the User configured it as they saw fit."*
+_"In the beginning was the Link, and the Link was with Git, and the Link was Good—and the User configured it as they saw fit."_

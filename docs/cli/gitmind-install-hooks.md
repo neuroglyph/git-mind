@@ -3,9 +3,10 @@
 
 # git-mind install-hooks
 
-> *"The past can hurt. But the way I see it, you can either run from it or learn from it."* - Rafiki
+> _"The past can hurt. But the way I see it, you can either run from it or learn from it."_ - Rafiki
 
 Table of Contents
+
 - [Name](#name)
 - [Synopsis](#synopsis)
 - [Description](#description)
@@ -54,6 +55,7 @@ Now when you query connections to main.c, git-mind knows to follow the AUGMENTS 
 ## EXAMPLES
 
 ### First time installation
+
 ```bash
 $ git mind install-hooks
 Installing git-mind hooks...
@@ -64,6 +66,7 @@ Your commits will now track file evolution automatically.
 ```
 
 ### With existing hooks
+
 ```bash
 $ git mind install-hooks
 Found existing post-commit hook
@@ -75,6 +78,7 @@ Both your existing hook and git-mind will run after commits.
 ```
 
 ### Force installation
+
 ```bash
 $ git mind install-hooks --force --no-backup
 Installing git-mind hooks...
@@ -85,6 +89,7 @@ Installing git-mind hooks...
 ## HOW IT WORKS
 
 ### The Hook Script
+
 The installed hook is a simple shell script that calls the git-mind-hook binary:
 
 ```bash
@@ -102,7 +107,9 @@ fi
 ```
 
 ### The Magic Moment
+
 After every commit, the hook:
+
 1. Gets the list of modified files
 2. For each file, finds its old blob SHA (before commit)
 3. Searches recent edges (last 200) for links to that blob
@@ -110,7 +117,9 @@ After every commit, the hook:
 5. Updates the semantic graph silently in the background
 
 ### Performance
+
 The hook is blazing fast:
+
 - Typical commit: <10ms overhead
 - Large commit (50+ files): <50ms overhead
 - Massive refactor (500+ files): <200ms overhead
@@ -120,11 +129,13 @@ It runs asynchronously and never blocks your workflow.
 ## WHEN AUGMENTS HAPPEN
 
 AUGMENTS edges are created when:
+
 - You modify a file that has incoming semantic links
 - You rename a file (old path AUGMENTS to new path)
 - You split a file (original AUGMENTS to both pieces)
 
 AUGMENTS edges are NOT created for:
+
 - New files (no history to track)
 - Deleted files (use tombstone edges instead)
 - Merge commits (too complex for v1)
@@ -160,7 +171,7 @@ Your semantic links remain intact - only automatic tracking stops.
 
 ## PHILOSOPHY
 
-*"Oh yes, the past can hurt. But you can either run from it or learn from it."*
+_"Oh yes, the past can hurt. But you can either run from it or learn from it."_
 
 Code evolution is natural. Files grow, split, merge, and transform. The AUGMENTS system doesn't fight this change - it embraces it. Every commit becomes a checkpoint in your code's journey.
 
@@ -169,7 +180,9 @@ Traditional version control tracks what changed. Semantic version control tracks
 ## TECHNICAL DETAILS
 
 ### Edge Format
+
 AUGMENTS edges have a special format:
+
 ```
 {
   src_sha: "abc123...",  // Old blob SHA
@@ -182,10 +195,13 @@ AUGMENTS edges have a special format:
 ```
 
 ### Search Window
+
 The hook searches the last 200 edges for performance. This covers several days of typical development. Older links won't auto-update but can be manually linked.
 
 ### Conflict Resolution
+
 AUGMENTS edges never conflict because they:
+
 - Use ULID-based edge IDs (time-ordered, unique)
 - Are append-only (no modifications)
 - Are branch-specific (isolated evolution)
@@ -199,7 +215,7 @@ AUGMENTS edges never conflict because they:
 
 ## THE LESSON
 
-*"Change is good."* - Rafiki
+_"Change is good."_ - Rafiki
 
 But change without memory is chaos. The AUGMENTS system ensures that every transformation is recorded, every evolution is traceable, and every connection persists through change.
 
@@ -207,4 +223,4 @@ Install the hooks. Let your code's journey document itself.
 
 ---
 
-*Asante sana, squash banana! Your semantic links now travel through time!* 🐒
+_Asante sana, squash banana! Your semantic links now travel through time!_ 🐒

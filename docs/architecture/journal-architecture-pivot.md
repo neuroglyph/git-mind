@@ -1,7 +1,9 @@
 # Project: No Tux Given 🐧⚡
+
 ## The git-mind Final Architecture
 
 Table of Contents
+
 - [Executive Summary](#executive-summary)
 - [Core Design Principles](#core-design-principles)
 - [The Two-Layer Architecture](#the-two-layer-architecture)
@@ -14,15 +16,15 @@ Table of Contents
 - [The Payoff](#the-payoff)
 - [Next Steps](#next-steps)
 
-**Date**: June 16, 2025  
-**Status**: BLANK SLATE - LET'S GO HARD  
-**Motto**: "Keep code in files, truth in commits, speed in shards"
+__Date__: June 16, 2025  
+__Status__: BLANK SLATE - LET'S GO HARD  
+__Motto__: "Keep code in files, truth in commits, speed in shards"
 
 ---
 
 ## Executive Summary
 
-After 3 days of exploration, we're abandoning the Holy Grail orphan ref approach and pivoting to the **Ultimate Design**: edge-journal commits with branch-aware graphs that actually work with Git's model.
+After 3 days of exploration, we're abandoning the Holy Grail orphan ref approach and pivoting to the __Ultimate Design__: edge-journal commits with branch-aware graphs that actually work with Git's model.
 
 ```mermaid
 graph TD
@@ -45,32 +47,36 @@ graph TD
 
 ## Core Design Principles
 
-1. **Immutable content is the only true identity** - Every file version (blob SHA) is its own node
-2. **Branches are parallel universes** - Links live in the branch that created them
-3. **The graph is first-class history** - You can `git bisect` semantics like code
-4. **Push/pull must Just Work™** - No exotic refs, no special servers
-5. **Hot queries are O(log N)** - AI can answer in <10ms with 100M edges
+1. __Immutable content is the only true identity__ - Every file version (blob SHA) is its own node
+2. __Branches are parallel universes__ - Links live in the branch that created them
+3. __The graph is first-class history__ - You can `git bisect` semantics like code
+4. __Push/pull must Just Work™__ - No exotic refs, no special servers
+5. __Hot queries are O(log N)__ - AI can answer in <10ms with 100M edges
 
 ---
 
 ## The Two-Layer Architecture
 
 ### Layer 0: Edge Journal (Source of Truth)
+
 ```
 refs/gitmind/edges/main       # Commits with CBOR edge data
 refs/gitmind/edges/feature-x  # Per-branch isolation
 ```
 
 Each edge operation creates a commit:
-- **Empty tree** (storage efficient)
-- **CBOR message** containing edge data
-- **Parent chain** preserves order
-- **Standard ref** that GitHub accepts
+
+- __Empty tree__ (storage efficient)
+- __CBOR message__ containing edge data
+- __Parent chain__ preserves order
+- __Standard ref__ that GitHub accepts
 
 ### Layer 1: Speed Cache (Optional)
+
 ```
 refs/gitmind/cache/main/<fan>/<out>/bitmaps
 ```
+
 - Roaring bitmaps for O(log N) queries
 - Rebuilt from journal anytime
 - Never pushed (local optimization)
@@ -81,6 +87,7 @@ refs/gitmind/cache/main/<fan>/<out>/bitmaps
 ## Implementation Details
 
 ### Edge Structure
+
 ```c
 typedef struct {
     uint8_t  src_sha[20];     // Source blob SHA-1
@@ -94,6 +101,7 @@ typedef struct {
 ```
 
 ### CBOR Encoding
+
 ```
 [
   src_sha,      // 20 bytes
@@ -108,6 +116,7 @@ Total: ~100-300 bytes per edge
 ```
 
 ### Creating an Edge
+
 ```c
 int gm_link_create(repo, source_path, target_path, rel_type) {
     // 1. Resolve paths to blob SHAs
@@ -141,6 +150,7 @@ int gm_link_create(repo, source_path, target_path, rel_type) {
 ## Solving the Hard Problems
 
 ### 1. File Identity Crisis ✅
+
 ```yaml
 # Edge tracks both content AND path
 edge:
@@ -152,6 +162,7 @@ AUGMENTS: old_blob -> new_blob
 ```
 
 ### 2. Branch Awareness ✅
+
 ```bash
 # Each branch has its own journal
 git checkout main
@@ -165,6 +176,7 @@ git merge feature  # Journals merge too!
 ```
 
 ### 3. Push/Pull ✅
+
 ```bash
 # Just push both refs!
 git push origin main refs/gitmind/edges/main
@@ -177,6 +189,7 @@ git push  # Everything goes!
 ```
 
 ### 4. Performance ✅
+
 - Journal scan: O(new commits) not O(all edges)
 - Cache lookup: O(log N) via roaring bitmaps
 - Rebuild cache: O(edges) but async/incremental
@@ -186,18 +199,21 @@ git push  # Everything goes!
 ## Migration Plan (Fresh Start)
 
 ### Weekend 1: Core Journal
+
 - [ ] Edge CBOR encoder/decoder
 - [ ] Journal commit writer  
 - [ ] Journal reader/scanner
 - [ ] Basic CLI (link, list via scan)
 
 ### Weekend 2: Identity & Branches  
+
 - [ ] Blob SHA resolution from paths
 - [ ] Branch-aware ref naming
 - [ ] AUGMENTS edge for edits
 - [ ] Post-commit hook
 
 ### Weekend 3: Speed Layer
+
 - [ ] Roaring bitmap integration
 - [ ] Cache builder (incremental)
 - [ ] Fast queries via cache
@@ -206,6 +222,7 @@ git push  # Everything goes!
 ---
 
 ## Code Structure
+
 ```
 src/
 ├── core/
@@ -228,18 +245,21 @@ src/
 ## Why This Wins
 
 ### vs Holy Grail (Current)
+
 - ✅ Pushable to any Git host
 - ✅ Branch-aware by design
 - ✅ No orphan ref magic
 - ✅ Works with Git workflows
 
 ### vs Simple Files  
+
 - ✅ No merge conflicts
 - ✅ Immutable history
 - ✅ Content-addressable
 - ✅ O(log N) performance
 
 ### vs Everything Else
+
 - ✅ Pure Git (commits are native)
 - ✅ Simple implementation (~2K LOC)
 - ✅ Future-proof (can always rebuild)
@@ -262,6 +282,7 @@ src/
 ## The Payoff
 
 In 3 weekends, we'll have:
+
 - 🚀 Branch-aware semantic graphs
 - 📤 GitHub/GitLab/Bitbucket compatible  
 - ⚡ Millisecond queries on millions of edges
@@ -277,18 +298,18 @@ Just pure, elegant, Git-native knowledge graphs.
 
 ## Next Steps
 
-1. **Archive current code** as `holy-grail-attempt`
-2. **Start fresh** with journal-based design
-3. **Build MVP** in one weekend
-4. **Test push/pull** on GitHub
-5. **Celebrate** 🍺
+1. __Archive current code__ as `holy-grail-attempt`
+2. __Start fresh__ with journal-based design
+3. __Build MVP__ in one weekend
+4. __Test push/pull__ on GitHub
+5. __Celebrate__ 🍺
 
 ---
 
-*"Sometimes the best code is the code you throw away."*
+_"Sometimes the best code is the code you throw away."_
 
 Let's build something that actually works with Git, not against it.
 
-**Project: No Tux Given** - Because we're not asking permission, we're shipping excellence.
+__Project: No Tux Given__ - Because we're not asking permission, we're shipping excellence.
 
 🐧⚡ Let's. Fucking. Go.

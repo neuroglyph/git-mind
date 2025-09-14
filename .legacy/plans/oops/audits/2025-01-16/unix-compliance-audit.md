@@ -1,11 +1,13 @@
 # Unix Compliance Audit Report
-**Date**: January 16, 2025  
-**Auditor**: Claude  
-**Subject**: git-mind codebase compliance with Unix principles
+
+__Date__: January 16, 2025  
+__Auditor__: Claude  
+__Subject__: git-mind codebase compliance with Unix principles
 
 ## Executive Summary
 
 This audit identifies violations of Unix principles in the git-mind codebase, specifically:
+
 1. Violation of "Silence is Golden" rule - commands produce unnecessary output
 2. Missing verbose and porcelain modes
 3. Hardcoded string literals throughout the codebase
@@ -18,13 +20,16 @@ The Unix principle "Silence is Golden" states that programs should produce no ou
 ### Critical Violations
 
 #### `src/cli/link.c`
+
 ```c
 // Line 70-72 - ALWAYS prints on success
 printf("Created link: %s\n", formatted);
 ```
-**Impact**: Every successful link creation produces output, violating the principle.
+
+__Impact__: Every successful link creation produces output, violating the principle.
 
 #### `src/cli/list.c`
+
 ```c
 // Line 31 - ALWAYS prints each edge
 printf("%s\n", formatted);
@@ -32,15 +37,18 @@ printf("%s\n", formatted);
 // Lines 64-72 - ALWAYS prints summary
 printf("\nTotal: %d link%s\n", lctx.count, lctx.count == 1 ? "" : "s");
 ```
-**Impact**: List command cannot be used in scripts without parsing output.
+
+__Impact__: List command cannot be used in scripts without parsing output.
 
 ## 2. Missing Verbose and Porcelain Modes
 
 The codebase completely lacks support for:
+
 - `--verbose` / `-v` flag for human-readable detailed output
 - `--porcelain` flag for machine-readable output
 
-**Impact**: 
+__Impact__:
+
 - No way to control output verbosity
 - No machine-readable format for scripting
 - Tests cannot reliably parse output
@@ -48,6 +56,7 @@ The codebase completely lacks support for:
 ## 3. Hardcoded String Literals
 
 ### Command Strings
+
 ```c
 // src/cli/main.c - Lines 82-88
 "Usage: %s <command> [args...]\n"
@@ -62,6 +71,7 @@ The codebase completely lacks support for:
 ```
 
 ### Relationship Type Strings
+
 ```c
 // src/edge/edge.c - Lines 87-100
 case GM_REL_IMPLEMENTS:
@@ -72,7 +82,8 @@ case GM_REL_REFERENCES:
     break;
 ```
 
-**Recommendation**: Create `src/messages.h` with all user-facing strings:
+__Recommendation__: Create `src/messages.h` with all user-facing strings:
+
 ```c
 #define MSG_USAGE_HEADER "Usage: %s <command> [args...]\n"
 #define MSG_LINK_SUCCESS "Created link: %s\n"
@@ -83,6 +94,7 @@ case GM_REL_REFERENCES:
 ## 4. Magic Numbers
 
 ### Buffer Sizes
+
 ```c
 // Multiple files
 char cwd[1024];        // src/cli/main.c:21
@@ -91,7 +103,8 @@ char ref_name[256];    // src/journal/writer.c:20
 char branch[128];      // src/journal/writer.c:135
 ```
 
-**Recommendation**: Define in `gitmind.h`:
+__Recommendation__: Define in `gitmind.h`:
+
 ```c
 #define GM_CWD_BUFFER_SIZE 1024
 #define GM_FORMAT_BUFFER_SIZE 512
@@ -100,6 +113,7 @@ char branch[128];      // src/journal/writer.c:135
 ```
 
 ### Time Conversions
+
 ```c
 // src/edge/edge.c
 ts.tv_nsec / 1000000    // Line 18
@@ -109,13 +123,15 @@ get_timestamp() / 1000   // Line 55
 ts.tv_sec * 1000 + ts.tv_nsec / 1000000  // Line 23
 ```
 
-**Recommendation**: Define time constants:
+__Recommendation__: Define time constants:
+
 ```c
 #define NANOS_PER_MILLI 1000000
 #define MILLIS_PER_SECOND 1000
 ```
 
 ### Special Values
+
 ```c
 // src/cli/main.c
 exit(42);  // Line 54 - Safety violation exit code
@@ -127,7 +143,8 @@ edge->confidence = 100;  // Line 54 - Default confidence
 MAX_CBOR_SIZE - 512     // Line 172 - Buffer overflow check
 ```
 
-**Recommendation**: Define special values:
+__Recommendation__: Define special values:
+
 ```c
 #define EXIT_SAFETY_VIOLATION 42
 #define DEFAULT_CONFIDENCE_PERCENT 100
@@ -135,13 +152,15 @@ MAX_CBOR_SIZE - 512     // Line 172 - Buffer overflow check
 ```
 
 ### CBOR Constants
+
 ```c
 // src/edge/cbor.c - Repeated use of 24
 if (value < 24) {        // Multiple occurrences
 if (info < 24) {         // Multiple occurrences
 ```
 
-**Recommendation**: Define CBOR constants:
+__Recommendation__: Define CBOR constants:
+
 ```c
 #define CBOR_SMALL_INT_MAX 23  // Values 0-23 encoded directly
 ```
@@ -149,8 +168,10 @@ if (info < 24) {         // Multiple occurrences
 ## 5. Recommended Implementation Plan
 
 ### Phase 1: Add Output Control Infrastructure
+
 1. Add verbose and porcelain flags to `gm_context_t`
 2. Create output control functions:
+
    ```c
    void gm_output(gm_context_t *ctx, const char *fmt, ...);
    void gm_output_porcelain(gm_context_t *ctx, const char *fmt, ...);
@@ -158,33 +179,39 @@ if (info < 24) {         // Multiple occurrences
    ```
 
 ### Phase 2: Define All Constants
+
 1. Create `src/constants.h` for numeric constants
 2. Create `src/messages.h` for string constants
 3. Replace all magic numbers and strings
 
 ### Phase 3: Update Commands
+
 1. Parse `--verbose` and `--porcelain` flags
 2. Replace all `printf` calls with controlled output
 3. Ensure silent operation by default
 
 ### Phase 4: Update Tests
+
 1. Use `--porcelain` mode for reliable parsing
 2. Test both silent and verbose modes
 3. Verify machine-readable output format
 
 ## Impact Assessment
 
-**High Priority**:
+__High Priority__:
+
 - Link command success output (breaks Unix principle)
 - List command output control (needed for scripting)
 - Magic buffer sizes (potential overflows)
 
-**Medium Priority**:
+__Medium Priority__:
+
 - Error message consistency
 - Time conversion constants
 - CBOR magic numbers
 
-**Low Priority**:
+__Low Priority__:
+
 - Help text formatting
 - Internal debug messages
 
@@ -193,6 +220,7 @@ if (info < 24) {         // Multiple occurrences
 The current implementation significantly violates Unix principles, making it unsuitable for use in scripts or pipelines. The lack of output control and hardcoded values throughout the codebase creates maintenance and internationalization challenges.
 
 Implementing proper output control and constant definitions will:
+
 1. Enable proper Unix pipeline usage
 2. Improve testability
 3. Prepare for internationalization

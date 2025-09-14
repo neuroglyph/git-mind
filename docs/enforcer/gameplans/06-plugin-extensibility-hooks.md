@@ -1,6 +1,6 @@
 # 🔌 Plugin + Extensibility Hooks: Gameplan
 
-> *"Architect for extensibility from the start."*
+> _"Architect for extensibility from the start."_
 
 ## Executive Summary
 
@@ -374,24 +374,28 @@ static gm_result_t on_pre_edge_create(gm_hook_data_t *data) {
 ## 🛠️ Implementation Plan
 
 ### Phase 1: Hook Infrastructure (Immediate)
+
 1. Define hook types and data structures
 2. Implement hook registry
 3. Add hook points to edge/node operations
 4. Create no-op implementations
 
 ### Phase 2: Plugin API (During Migration)
+
 1. Define stable plugin interface
 2. Create versioned structures
 3. Implement capability model
 4. Document API contracts
 
 ### Phase 3: Basic Plugin Loading (Later)
+
 1. Native plugin loader (.so/.dll)
 2. Plugin discovery mechanism
 3. Capability enforcement
 4. Basic sandboxing
 
 ### Phase 4: Advanced Features (Future)
+
 1. WASM plugin support
 2. Script language bindings
 3. Hot reload support
@@ -451,6 +455,7 @@ gm_result_t create_edge(gm_context_t *ctx,
 ## 🧪 Testing Approach
 
 ### 1. Hook System Tests
+
 ```c
 void test_hook_registration_and_execution(void) {
     // Register test hook
@@ -479,6 +484,7 @@ void test_hook_registration_and_execution(void) {
 ```
 
 ### 2. Plugin API Tests
+
 ```c
 void test_plugin_capability_enforcement(void) {
     // Mock plugin with limited capabilities
@@ -494,6 +500,7 @@ void test_plugin_capability_enforcement(void) {
 ```
 
 ### 3. Extension Safety Tests
+
 ```c
 void test_forward_compatibility(void) {
     // Old plugin using v1 structure
@@ -517,22 +524,24 @@ void test_forward_compatibility(void) {
 
 ## 📈 Success Metrics
 
-1. **Hook Coverage**: All major operations have hooks
-2. **API Stability**: Zero breaking changes after v1.0
-3. **Plugin Ecosystem**: 5+ useful plugins within 6 months
-4. **Performance**: < 1% overhead when no plugins loaded
-5. **Safety**: Zero plugin-caused crashes
+1. __Hook Coverage__: All major operations have hooks
+2. __API Stability__: Zero breaking changes after v1.0
+3. __Plugin Ecosystem__: 5+ useful plugins within 6 months
+4. __Performance__: < 1% overhead when no plugins loaded
+5. __Safety__: Zero plugin-caused crashes
 
 ## 🎓 Best Practices
 
-### DO:
+### DO
+
 - ✅ Version all structures
 - ✅ Use capability model
 - ✅ Design for forward compatibility
 - ✅ Sandbox by default
 - ✅ Document hook semantics
 
-### DON'T:
+### DON'T
+
 - ❌ Expose internal structures
 - ❌ Allow unrestricted access
 - ❌ Break plugin API
@@ -542,16 +551,19 @@ void test_forward_compatibility(void) {
 ## 🔗 Integration Points
 
 ### With Error Handling
+
 - Plugins can return errors
 - Hook failures propagated
 - Plugin crashes isolated
 
 ### With Memory Architecture
+
 - Plugins use arena allocators
 - Memory limits enforced
 - No direct malloc access
 
 ### With Observability
+
 - Plugin operations logged
 - Hook execution traced
 - Performance monitored
@@ -565,4 +577,4 @@ void test_forward_compatibility(void) {
 
 ---
 
-*"The best plugin system is the one where core developers want to write plugins too."*
+_"The best plugin system is the one where core developers want to write plugins too."_

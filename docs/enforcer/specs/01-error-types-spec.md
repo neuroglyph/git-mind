@@ -1,6 +1,6 @@
 # Specification: Error Handling and Result Types
 
-> *"Make illegal states unrepresentable. Make success and failure explicit."*
+> _"Make illegal states unrepresentable. Make success and failure explicit."_
 
 ## Overview
 
@@ -294,17 +294,20 @@ void process_file(const char* path) {
 ## 4. Implementation Notes
 
 ### 4.1 Memory Management
+
 - Errors are always heap-allocated
 - Errors own their cause chain
 - Caller must free errors they receive
 - Success values follow normal ownership rules
 
 ### 4.2 Thread Safety
+
 - Error creation is thread-safe
 - Error objects are immutable after creation
 - Result types are value types (no sharing)
 
 ### 4.3 Performance Considerations
+
 - Success path has minimal overhead (just a bool check)
 - Error path allocates memory (acceptable for error cases)
 - Consider arena allocation for temporary errors
@@ -312,6 +315,7 @@ void process_file(const char* path) {
 ## 5. Future Extensions
 
 ### 5.1 Result Combinators (Future)
+
 ```c
 // Map over success value
 GM_RESULT(int) string_to_int(const char* str);
@@ -325,6 +329,7 @@ GM_RESULT(bool) result = gm_result_and_then(
 ```
 
 ### 5.2 Async Results (Future)
+
 ```c
 typedef struct {
     bool is_ready;
@@ -346,4 +351,4 @@ typedef struct {
 
 ---
 
-*"Make the right thing easy and the wrong thing obvious."*
+_"Make the right thing easy and the wrong thing obvious."_
