@@ -242,6 +242,12 @@ test_edge_cbor_oid = executable('test_edge_cbor_oid',
   link_with : libgitmind,
   dependencies : [libsodium_dep, thread_dep])
 
+test_edge_attributed_cbor = executable('test_edge_attributed_cbor',
+  'core/tests/unit/test_edge_attributed_cbor.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, thread_dep])
+
 test_journal_safety = executable('test_journal_safety',
   'core/tests/unit/test_journal_safety.c',
   include_directories : inc,
@@ -264,6 +270,7 @@ test('time', test_time)
 test('cbor', test_cbor)
 test('edge', test_edge)
 test('edge_cbor_oid', test_edge_cbor_oid)
+test('edge_attributed_cbor', test_edge_attributed_cbor)
 test('journal_safety', test_journal_safety)
 
 # Standalone header compilation checks (public headers)

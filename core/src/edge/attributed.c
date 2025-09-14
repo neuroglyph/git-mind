@@ -18,6 +18,8 @@
 #include <string.h>
 #include <time.h>
 #include <git2/oid.h>
+#include "gitmind/cbor/cbor.h"
+#include "gitmind/cbor/keys.h"
 
 /* Result types are defined in edge_attributed.h */
 
@@ -108,6 +110,197 @@ gm_result_uint16_t gm_confidence_parse(const char *str) {
     
     uint16_t confidence = gm_confidence_to_half_float(val);
     return (gm_result_uint16_t){.ok = true, .u.val = confidence};
+}
+
+/* === CBOR encode/decode === */
+
+gm_result_void_t gm_edge_attributed_encode_cbor(const gm_edge_attributed_t *e,
+                                                uint8_t *buffer, size_t *len) {
+    if (!e || !buffer || !len) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "Invalid arguments"));
+    }
+    size_t offset = 0;
+    size_t avail = *len;
+    if (avail < 1) return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "Buffer too small"));
+    buffer[offset++] = (uint8_t)(0xA0 | (GM_CBOR_ATTR_EDGE_FIELDS_TOTAL & 0x1F));
+
+    /* helper lambdas not allowed; use inline blocks */
+    gm_result_size_t r;
+    /* Legacy SHA fields */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_SRC_SHA, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_bytes(buffer + offset, avail - offset, e->src_sha, GM_SHA1_SIZE);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    r = gm_cbor_write_uint(GM_CBOR_KEY_TGT_SHA, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_bytes(buffer + offset, avail - offset, e->tgt_sha, GM_SHA1_SIZE);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    /* Numerics */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_REL_TYPE, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_uint(e->rel_type, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    r = gm_cbor_write_uint(GM_CBOR_KEY_CONFIDENCE, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_uint(e->confidence, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    r = gm_cbor_write_uint(GM_CBOR_KEY_TIMESTAMP, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_uint(e->timestamp, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    /* Text */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_SRC_PATH, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_text(buffer + offset, avail - offset, e->src_path);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    r = gm_cbor_write_uint(GM_CBOR_KEY_TGT_PATH, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_text(buffer + offset, avail - offset, e->tgt_path);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    r = gm_cbor_write_uint(GM_CBOR_KEY_ULID, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_text(buffer + offset, avail - offset, e->ulid);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    /* OIDs */
+    const uint8_t *src_raw = git_oid_raw(&e->src_oid);
+    const uint8_t *tgt_raw = git_oid_raw(&e->tgt_oid);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_SRC_OID, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_bytes(buffer + offset, avail - offset, src_raw ? src_raw : e->src_sha, GM_OID_RAWSZ);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    r = gm_cbor_write_uint(GM_CBOR_KEY_TGT_OID, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_bytes(buffer + offset, avail - offset, tgt_raw ? tgt_raw : e->tgt_sha, GM_OID_RAWSZ);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    /* Attribution */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_SOURCE_TYPE, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_uint((uint64_t)e->attribution.source_type, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    r = gm_cbor_write_uint(GM_CBOR_KEY_AUTHOR, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_text(buffer + offset, avail - offset, e->attribution.author);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    r = gm_cbor_write_uint(GM_CBOR_KEY_SESSION, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_text(buffer + offset, avail - offset, e->attribution.session_id);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    r = gm_cbor_write_uint(GM_CBOR_KEY_FLAGS, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_uint((uint64_t)e->attribution.flags, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    r = gm_cbor_write_uint(GM_CBOR_KEY_LANE, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+    r = gm_cbor_write_uint((uint64_t)e->lane, buffer + offset, avail - offset);
+    if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
+
+    *len = offset;
+    return gm_ok_void();
+}
+
+static int decode_attr_ex_impl(const uint8_t *buffer, size_t len,
+                               gm_edge_attributed_t *e, size_t *consumed) {
+    if (!buffer || !len || !e || !consumed) return GM_ERR_INVALID_ARGUMENT;
+    size_t offset = 0;
+    if (offset >= len) return GM_ERR_INVALID_FORMAT;
+    uint8_t initial = buffer[offset++];
+    if ((initial & 0xE0) != 0xA0) return GM_ERR_INVALID_FORMAT;
+    uint8_t addl = (uint8_t)(initial & 0x1F);
+    if (addl >= 24) return GM_ERR_INVALID_FORMAT;
+    uint32_t fields = addl;
+
+    gm_edge_attributed_t out = {0};
+    for (uint32_t i = 0; i < fields; i++) {
+        gm_result_uint64_t keyr = gm_cbor_read_uint(buffer, &offset, len);
+        if (!keyr.ok) return GM_ERR_INVALID_FORMAT;
+        uint64_t key = keyr.u.val;
+
+        switch (key) {
+        case GM_CBOR_KEY_SRC_SHA: {
+            gm_result_void_t rr = gm_cbor_read_bytes(buffer, &offset, len, out.src_sha, GM_SHA1_SIZE);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; break; }
+        case GM_CBOR_KEY_TGT_SHA: {
+            gm_result_void_t rr = gm_cbor_read_bytes(buffer, &offset, len, out.tgt_sha, GM_SHA1_SIZE);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; break; }
+        case GM_CBOR_KEY_REL_TYPE: {
+            gm_result_uint64_t rr = gm_cbor_read_uint(buffer, &offset, len);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; out.rel_type = (uint16_t)rr.u.val; break; }
+        case GM_CBOR_KEY_CONFIDENCE: {
+            gm_result_uint64_t rr = gm_cbor_read_uint(buffer, &offset, len);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; out.confidence = (uint16_t)rr.u.val; break; }
+        case GM_CBOR_KEY_TIMESTAMP: {
+            gm_result_uint64_t rr = gm_cbor_read_uint(buffer, &offset, len);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; out.timestamp = rr.u.val; break; }
+        case GM_CBOR_KEY_SRC_PATH: {
+            gm_result_void_t rr = gm_cbor_read_text(buffer, &offset, len, out.src_path, GM_PATH_MAX);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; break; }
+        case GM_CBOR_KEY_TGT_PATH: {
+            gm_result_void_t rr = gm_cbor_read_text(buffer, &offset, len, out.tgt_path, GM_PATH_MAX);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; break; }
+        case GM_CBOR_KEY_ULID: {
+            gm_result_void_t rr = gm_cbor_read_text(buffer, &offset, len, out.ulid, GM_ULID_SIZE + 1);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; break; }
+        case GM_CBOR_KEY_SRC_OID: {
+            uint8_t raw[GM_OID_RAWSZ]; gm_result_void_t rr = gm_cbor_read_bytes(buffer, &offset, len, raw, GM_OID_RAWSZ);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; git_oid_fromraw(&out.src_oid, raw); break; }
+        case GM_CBOR_KEY_TGT_OID: {
+            uint8_t raw[GM_OID_RAWSZ]; gm_result_void_t rr = gm_cbor_read_bytes(buffer, &offset, len, raw, GM_OID_RAWSZ);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; git_oid_fromraw(&out.tgt_oid, raw); break; }
+        case GM_CBOR_KEY_SOURCE_TYPE: {
+            gm_result_uint64_t rr = gm_cbor_read_uint(buffer, &offset, len);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; out.attribution.source_type = (gm_source_type_t)rr.u.val; break; }
+        case GM_CBOR_KEY_AUTHOR: {
+            gm_result_void_t rr = gm_cbor_read_text(buffer, &offset, len, out.attribution.author, sizeof out.attribution.author);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; break; }
+        case GM_CBOR_KEY_SESSION: {
+            gm_result_void_t rr = gm_cbor_read_text(buffer, &offset, len, out.attribution.session_id, sizeof out.attribution.session_id);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; break; }
+        case GM_CBOR_KEY_FLAGS: {
+            gm_result_uint64_t rr = gm_cbor_read_uint(buffer, &offset, len);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; out.attribution.flags = (uint32_t)rr.u.val; break; }
+        case GM_CBOR_KEY_LANE: {
+            gm_result_uint64_t rr = gm_cbor_read_uint(buffer, &offset, len);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT; out.lane = (gm_lane_type_t)rr.u.val; break; }
+        default:
+            return GM_ERR_INVALID_FORMAT;
+        }
+    }
+
+    if (git_oid_iszero(&out.src_oid)) git_oid_fromraw(&out.src_oid, out.src_sha);
+    if (git_oid_iszero(&out.tgt_oid)) git_oid_fromraw(&out.tgt_oid, out.tgt_sha);
+
+    *e = out; *consumed = offset; return GM_OK;
+}
+
+int gm_edge_attributed_decode_cbor_ex(const uint8_t *buffer, size_t len,
+                                      gm_edge_attributed_t *edge_out,
+                                      size_t *consumed) {
+    return decode_attr_ex_impl(buffer, len, edge_out, consumed);
+}
+
+gm_result_edge_attributed_t gm_edge_attributed_decode_cbor(const uint8_t *buffer,
+                                                           size_t len) {
+    gm_edge_attributed_t e;
+    size_t used = 0;
+    int rc = decode_attr_ex_impl(buffer, len, &e, &used);
+    if (rc != GM_OK) {
+        return (gm_result_edge_attributed_t){ .ok = false, .u.err = GM_ERROR(rc, "Decode failed") };
+    }
+    return (gm_result_edge_attributed_t){ .ok = true, .u.val = e };
 }
 
 /**
