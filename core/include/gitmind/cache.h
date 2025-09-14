@@ -71,7 +71,7 @@ int gm_cache_rebuild(gm_context_t *ctx, const char *branch, bool force_full);
  * @param result Output result structure
  * @return GM_OK on success, error code on failure
  */
-int gm_cache_query_fanout(gm_context_t *ctx, const char *branch, const uint8_t *src_sha, 
+int gm_cache_query_fanout(gm_context_t *ctx, const char *branch, const gm_oid_t *src_oid,
                           gm_cache_result_t *result);
 
 /**
@@ -82,7 +82,7 @@ int gm_cache_query_fanout(gm_context_t *ctx, const char *branch, const uint8_t *
  * @param result Output result structure
  * @return GM_OK on success, error code on failure
  */
-int gm_cache_query_fanin(gm_context_t *ctx, const char *branch, const uint8_t *tgt_sha,
+int gm_cache_query_fanin(gm_context_t *ctx, const char *branch, const gm_oid_t *tgt_oid,
                          gm_cache_result_t *result);
 
 /**

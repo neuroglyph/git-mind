@@ -140,12 +140,12 @@ static int load_bitmap_from_cache(git_repository *repo, git_tree *tree,
     get_sha_prefix(sha, prefix, GM_CACHE_SHARD_BITS);
 
     /* Convert SHA to hex */
-    for (int i = 0; i < GM_SHA1_SIZE; i++) {
+    for (int i = 0; i < GM_OID_RAWSZ; i++) {
         size_t off = (size_t)i * (size_t)HEX_CHARS_PER_BYTE;
         (void)snprintf(sha_hex + off, (size_t)HEX_CHARS_PER_BYTE + 1, "%02x",
                        sha[i]);
     }
-    sha_hex[(size_t)GM_SHA1_SIZE * (size_t)HEX_CHARS_PER_BYTE] = '\0';
+    sha_hex[(size_t)GM_OID_RAWSZ * (size_t)HEX_CHARS_PER_BYTE] = '\0';
 
     /* Build path: prefix/sha.suffix */
     (void)snprintf(path, sizeof(path), "%s/%s.%s", prefix, sha_hex, suffix);
@@ -183,11 +183,12 @@ typedef struct {
 static int journal_scan_callback_generic(const gm_edge_t *edge,
                                          void *userdata) {
     journal_scan_state_t *state = (journal_scan_state_t *)userdata;
-    const uint8_t *edge_sha =
-        state->check_source ? edge->src_sha : edge->tgt_sha;
+    const uint8_t *edge_sha = state->check_source
+        ? git_oid_raw(&edge->src_oid)
+        : git_oid_raw(&edge->tgt_oid);
 
     /* Check if this edge matches our query */
-    if (memcmp(edge_sha, state->target_sha, GM_SHA1_SIZE) == 0) {
+    if (memcmp(edge_sha, state->target_sha, GM_OID_RAWSZ) == 0) {
         /* Grow array if needed */
         if (state->count >= state->capacity) {
             size_t new_capacity = state->capacity * 2;
@@ -335,16 +336,16 @@ static int cache_query_generic(git_repository *repo, const char *branch,
 
 /* Query edges by source SHA (forward index) */
 int gm_cache_query_fanout(gm_context_t *ctx, const char *branch,
-                          const uint8_t *src_sha, gm_cache_result_t *result) {
+                          const gm_oid_t *src_oid, gm_cache_result_t *result) {
     git_repository *repo = (git_repository *)ctx->git_repo;
-    return cache_query_generic(repo, branch, src_sha, "forward", 1, result);
+    return cache_query_generic(repo, branch, git_oid_raw(src_oid), "forward", 1, result);
 }
 
 /* Query edges by target SHA (reverse index) */
 int gm_cache_query_fanin(gm_context_t *ctx, const char *branch,
-                         const uint8_t *tgt_sha, gm_cache_result_t *result) {
+                         const gm_oid_t *tgt_oid, gm_cache_result_t *result) {
     git_repository *repo = (git_repository *)ctx->git_repo;
-    return cache_query_generic(repo, branch, tgt_sha, "reverse", 0, result);
+    return cache_query_generic(repo, branch, git_oid_raw(tgt_oid), "reverse", 0, result);
 }
 
 /* Free cache result */

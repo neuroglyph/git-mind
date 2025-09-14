@@ -22,8 +22,8 @@ int gm_journal_read(gm_context_t *ctx, const char *branch,
 int gm_ulid_generate(char *ulid);
 
 /* Get blob SHA for a file at a specific commit */
-int get_blob_sha(git_repository *repo, const char *commit_ref,
-                 const char *file_path, uint8_t *sha_out) {
+int gm_hook_get_blob_sha(git_repository *repo, const char *commit_ref,
+                 const char *file_path, gm_oid_t *sha_out) {
     git_object *obj = NULL;
     git_commit *commit = NULL;
     git_tree *tree = NULL;
@@ -63,9 +63,9 @@ int get_blob_sha(git_repository *repo, const char *commit_ref,
         return GM_NOT_FOUND;
     }
 
-    /* Copy SHA */
+    /* Copy OID */
     const git_oid *oid = git_tree_entry_id(entry);
-    memcpy(sha_out, oid->id, GIT_OID_RAWSZ);
+    *sha_out = *oid;
 
     git_tree_entry_free(entry);
     return GM_OK;
@@ -73,7 +73,7 @@ int get_blob_sha(git_repository *repo, const char *commit_ref,
 
 /* Callback structure for edge search */
 struct edge_search_ctx {
-    const uint8_t *target_sha;
+    const gm_oid_t *target_oid;
     gm_edge_t *edges;
     size_t capacity;
     size_t count;
@@ -90,8 +90,8 @@ static int edge_search_callback(const gm_edge_t *edge, void *userdata) {
         return 1; /* Stop iteration */
     }
 
-    /* Check if source matches */
-    if (memcmp(edge->src_sha, ctx->target_sha, GM_SHA1_SIZE) == 0) {
+    /* Check if source matches (OID compare) */
+    if (git_oid_cmp(&edge->src_oid, ctx->target_oid) == 0) {
         /* Grow array if needed */
         if (ctx->count >= ctx->capacity) {
             size_t new_capacity = ctx->capacity * ARRAY_GROWTH_FACTOR;
@@ -112,10 +112,10 @@ static int edge_search_callback(const gm_edge_t *edge, void *userdata) {
 }
 
 /* Find recent edges with given source blob */
-int find_edges_by_source(gm_context_t *ctx, const uint8_t *src_sha,
+int gm_hook_find_edges_by_source(gm_context_t *ctx, const gm_oid_t *src_oid,
                          gm_edge_t **edges_out, size_t *count_out) {
     struct edge_search_ctx search_ctx = {
-        .target_sha = src_sha,
+        .target_oid = src_oid,
         .edges = malloc(INITIAL_EDGE_ARRAY_SIZE * sizeof(gm_edge_t)),
         .capacity = INITIAL_EDGE_ARRAY_SIZE,
         .count = 0,
@@ -139,13 +139,13 @@ int find_edges_by_source(gm_context_t *ctx, const uint8_t *src_sha,
 }
 
 /* Create AUGMENTS edge between two blob versions */
-int create_augments_edge(gm_context_t *ctx, const uint8_t *old_sha,
-                         const uint8_t *new_sha, const char *file_path) {
+int gm_hook_create_augments_edge(gm_context_t *ctx, const gm_oid_t *old_oid,
+                         const gm_oid_t *new_oid, const char *file_path) {
     gm_edge_t edge;
 
     /* Initialize edge */
-    memcpy(edge.src_sha, old_sha, GM_SHA1_SIZE);
-    memcpy(edge.tgt_sha, new_sha, GM_SHA1_SIZE);
+    edge.src_oid = *old_oid;
+    edge.tgt_oid = *new_oid;
     edge.rel_type = GM_REL_AUGMENTS;
     edge.confidence = AUGMENT_CONFIDENCE; /* Always 100% for augments */
     edge.timestamp = (uint64_t)time(NULL);
@@ -164,30 +164,30 @@ int create_augments_edge(gm_context_t *ctx, const uint8_t *old_sha,
 }
 
 /* Process a single changed file */
-int process_changed_file(gm_context_t *ctx, git_repository *repo,
+int gm_hook_process_changed_file(gm_context_t *ctx, git_repository *repo,
                          const char *file_path) {
-    uint8_t old_sha[GM_SHA1_SIZE];
-    uint8_t new_sha[GM_SHA1_SIZE];
+    gm_oid_t old_oid;
+    gm_oid_t new_oid;
     gm_edge_t *edges = NULL;
     size_t edge_count = 0;
     int error;
 
     /* Get old blob SHA */
-    error = get_blob_sha(repo, "HEAD~1", file_path, old_sha);
+    error = gm_hook_get_blob_sha(repo, "HEAD~1", file_path, &old_oid);
     if (error != GM_OK) {
         /* File might be new, skip */
         return GM_OK;
     }
 
     /* Get new blob SHA */
-    error = get_blob_sha(repo, "HEAD", file_path, new_sha);
+    error = gm_hook_get_blob_sha(repo, "HEAD", file_path, &new_oid);
     if (error != GM_OK) {
         /* File might be deleted, skip */
         return GM_OK;
     }
 
     /* Find edges with old blob as source */
-    error = find_edges_by_source(ctx, old_sha, &edges, &edge_count);
+    error = gm_hook_find_edges_by_source(ctx, &old_oid, &edges, &edge_count);
     if (error != GM_OK) {
         return error;
     }
@@ -199,14 +199,14 @@ int process_changed_file(gm_context_t *ctx, git_repository *repo,
     }
 
     /* Create AUGMENTS edge */
-    error = create_augments_edge(ctx, old_sha, new_sha, file_path);
+    error = gm_hook_create_augments_edge(ctx, &old_oid, &new_oid, file_path);
 
     free(edges);
     return error;
 }
 
 /* Check if this is a merge commit */
-int is_merge_commit(git_repository *repo, bool *is_merge) {
+int gm_hook_is_merge_commit(git_repository *repo, bool *is_merge) {
     git_reference *head_ref = NULL;
     git_commit *commit = NULL;
     int error;
