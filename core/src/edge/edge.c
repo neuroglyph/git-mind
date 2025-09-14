@@ -133,19 +133,26 @@ bool gm_edge_equal(const gm_edge_t *edge_a, const gm_edge_t *edge_b) {
     if (!edge_a || !edge_b) {
         return false;
     }
-    
-    /* Prefer OID compare when available; fallback to raw SHA */
-    if (git_oid_cmp(&edge_a->src_oid, &edge_b->src_oid) != 0 &&
-        memcmp(edge_a->src_sha, edge_b->src_sha, GM_SHA1_SIZE) != 0) {
+
+    /* Source: require OID equality when both OIDs are set; otherwise fallback to legacy SHA */
+    if (!git_oid_iszero(&edge_a->src_oid) && !git_oid_iszero(&edge_b->src_oid)) {
+        if (git_oid_cmp(&edge_a->src_oid, &edge_b->src_oid) != 0) {
+            return false;
+        }
+    } else if (memcmp(edge_a->src_sha, edge_b->src_sha, GM_SHA1_SIZE) != 0) {
         return false;
     }
 
-    if (git_oid_cmp(&edge_a->tgt_oid, &edge_b->tgt_oid) != 0 &&
-        memcmp(edge_a->tgt_sha, edge_b->tgt_sha, GM_SHA1_SIZE) != 0) {
+    /* Target: same rule as Source */
+    if (!git_oid_iszero(&edge_a->tgt_oid) && !git_oid_iszero(&edge_b->tgt_oid)) {
+        if (git_oid_cmp(&edge_a->tgt_oid, &edge_b->tgt_oid) != 0) {
+            return false;
+        }
+    } else if (memcmp(edge_a->tgt_sha, edge_b->tgt_sha, GM_SHA1_SIZE) != 0) {
         return false;
     }
-    
-    /* Compare relationship type */
+
+    /* Relationship type must match */
     return edge_a->rel_type == edge_b->rel_type;
 }
 

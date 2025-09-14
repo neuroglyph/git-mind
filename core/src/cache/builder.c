@@ -35,7 +35,7 @@
 #define CACHE_TEMP_DIR "/tmp/gitmind-cache-\x58\x58\x58\x58\x58\x58"
 #define MAX_SHARD_PATH 32
 #define CLOCKS_PER_MS (CLOCKS_PER_SEC / (clock_t)MILLIS_PER_SECOND)
-#define SHA_HASH_MULTIPLIER 31
+#define OID_HASH_MULTIPLIER 31
 
 /* In-memory edge ID map entry */
 typedef struct edge_map_entry {
@@ -71,7 +71,7 @@ static size_t oid_hash(const gm_oid_t *oid, size_t size) {
     size_t hash = 0;
     const uint8_t *raw = git_oid_raw(oid);
     for (int i = 0; i < GM_OID_RAWSZ; i++) {
-        hash = (hash * SHA_HASH_MULTIPLIER) + raw[i];
+        hash = (hash * OID_HASH_MULTIPLIER) + raw[i];
     }
     return hash % size;
 }

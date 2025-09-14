@@ -42,6 +42,45 @@ static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
 }
 
 /* Load cache metadata from commit message */
+/* Helper to find legacy timestamped cache refs: refs/gitmind/cache/<branch>/<ts> */
+static int find_legacy_cache_ref(git_repository *repo, const char *branch, git_oid *out_oid, uint64_t *out_time) {
+    char pattern[REF_NAME_BUFFER_SIZE + 8];
+    (void)snprintf(pattern, sizeof(pattern), "%s%s/*", GM_CACHE_REF_PREFIX, branch);
+    git_reference *best_ref = NULL;
+    git_reference *ref = NULL;
+    git_reference_iterator *iter = NULL;
+    int rc = git_reference_iterator_glob_new(&iter, repo, pattern);
+    if (rc < 0) return GM_NOT_FOUND;
+
+    uint64_t best_time = 0;
+    while (git_reference_next(&ref, iter) == 0) {
+        const char *name = git_reference_name(ref);
+        git_oid oid;
+        if (git_reference_name_to_id(&oid, repo, name) == 0) {
+            git_commit *c = NULL;
+            if (git_commit_lookup(&c, repo, &oid) == 0) {
+                git_time_t t = git_commit_time(c);
+                if ((uint64_t)t > best_time) {
+                    best_time = (uint64_t)t;
+                    if (best_ref) git_reference_free(best_ref);
+                    best_ref = ref; /* take ownership */
+                    ref = NULL;     /* prevent double free */
+                    *out_oid = oid;
+                }
+                git_commit_free(c);
+            }
+        }
+        if (ref) git_reference_free(ref);
+        ref = NULL;
+    }
+    git_reference_iterator_free(iter);
+    if (ref) git_reference_free(ref);
+    if (!best_ref) return GM_NOT_FOUND;
+    if (out_time) *out_time = best_time;
+    git_reference_free(best_ref);
+    return GM_OK;
+}
+
 int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *meta) {
     if (!ctx || !ctx->git_repo || !branch || !meta) return GM_INVALID_ARG;
     git_repository *repo = (git_repository *)ctx->git_repo;
@@ -53,15 +92,16 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
     /* Build cache ref name and resolve */
     (void)snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
     rc = git_reference_lookup(&ref, repo, ref_name);
-    if (rc < 0) {
-        return GM_NOT_FOUND;
-    }
-
     git_oid oid;
-    rc = git_reference_name_to_id(&oid, repo, ref_name);
-    git_reference_free(ref);
-    if (rc < 0) {
-        return GM_NOT_FOUND;
+    if (rc == 0) {
+        rc = git_reference_name_to_id(&oid, repo, ref_name);
+        git_reference_free(ref);
+        if (rc < 0) return GM_NOT_FOUND;
+    } else {
+        /* Fallback: look for legacy timestamped refs */
+        uint64_t ts = 0;
+        rc = find_legacy_cache_ref(repo, branch, &oid, &ts);
+        if (rc != GM_OK) return GM_NOT_FOUND;
     }
 
     rc = git_commit_lookup(&commit, repo, &oid);
