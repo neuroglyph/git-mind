@@ -7,14 +7,14 @@
 #include <string.h>
 #include <time.h>
 
+#include <stdbool.h>
 #include "gitmind/output.h"
 #include "gitmind/context.h"
 #include "gitmind/cache.h"
 #include "gitmind/error.h"
-#include "../../include/gitmind/constants.h"
+#include "gitmind/constants.h"
 #include "gitmind/constants_internal.h"
 #include "cli_runtime.h"
-
 /* Parse command line arguments */
 static int parse_cache_rebuild_args(gm_cli_ctx_t *cli, int argc, char **argv, const char **branch,
                                     bool *force) {
