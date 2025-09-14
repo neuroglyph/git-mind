@@ -1,5 +1,16 @@
 name: C-Core Gate
-on: [pull_request]
+on:
+  pull_request:
+    paths:
+      - 'core/**'
+      - 'apps/**'
+      - 'include/**'
+      - 'meson.build'
+      - 'tests/**'
+      - 'tools/**'
+      - 'quality/**'
+      - 'Makefile'
+      - '.github/workflows/**'
 permissions:
   contents: read
 jobs:

@@ -3,8 +3,28 @@ name: Core Quality Checks
 on:
   push:
     branches: [ main, dev, enforced ]
+    paths:
+      - 'core/**'
+      - 'apps/**'
+      - 'include/**'
+      - 'meson.build'
+      - 'tests/**'
+      - 'tools/**'
+      - 'quality/**'
+      - 'Makefile'
+      - '.github/workflows/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'core/**'
+      - 'apps/**'
+      - 'include/**'
+      - 'meson.build'
+      - 'tests/**'
+      - 'tools/**'
+      - 'quality/**'
+      - 'Makefile'
+      - '.github/workflows/**'
 
 permissions:
   contents: read
