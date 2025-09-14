@@ -113,10 +113,11 @@ What to expect
 - Everything is just Git — no external servers, no hidden DBs.
 
 ### Safety Guard
+
 - git‑mind refuses to run inside its own source repository to prevent accidental journal writes.
 - Detection uses Git remotes (via libgit2) and strict matching of the official repo path (`neuroglyph/git-mind[.git]`).
 - To explicitly bypass (e.g., certain CI/E2E scenarios), set `GITMIND_SAFETY=off`.
- - See also: docs/operations/Environment_Variables.md for all supported env vars.
+- See also: docs/operations/Environment_Variables.md for all supported env vars.
 
 ## Human + AI Co‑Thought
 git‑mind is designed to be a shared, versioned memory for humans and AI — a place where both parties can write edges, discover connections, and converge by merging branches.
