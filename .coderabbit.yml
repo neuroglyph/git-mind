@@ -1,29 +1,34 @@
 # CodeRabbit configuration
-# Goal: reduce noisy line comments on docs and legacy content; prefer summaries
+# Goal: reduce noisy line comments on docs/legacy; prefer summaries
 version: 1
 reviews:
-  # Cap the number of line comments to keep PRs readable
-  max_comments: 50
-  # Prefer a single structured summary with actionable sections
-  summary: true
-  # Do not post inline comments for these paths; include only in overall summary
-  no_inline_comment_paths:
-    - "docs/**"
-    - ".legacy/**"
-    - "**/*.md"
-  # Only block on code; never block on docs
-  non_blocking_paths:
-    - "docs/**"
-    - ".legacy/**"
-    - "**/*.md"
-  # Ignore vendored or generated directories (if present)
-  ignore_paths:
-    - "build/**"
-    - "dist/**"
-    - "node_modules/**"
-  # Keep suggestions concise
-  suggestion_limit: 5
-  # Avoid repeating the same comment across files
-  deduplicate_comments: true
-  # Increase processing timeout for large PRs
-  timeout_ms: 300000
+  profile: chill
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  changed_files_summary: true
+  # Ignore common generated/vendor paths from review
+  path_filters:
+    - "!build/**"
+    - "!dist/**"
+    - "!node_modules/**"
+  # Instruct summarization-only for docs/legacy/markdown
+  path_instructions:
+    - path: "docs/**"
+      instructions: "Do not post inline comments in these files. Summarize feedback in the high-level review only; treat as non-blocking."
+    - path: ".legacy/**"
+      instructions: "Do not post inline comments in these files. Summarize feedback in the high-level review only; treat as non-blocking."
+    - path: "**/*.md"
+      instructions: "Do not post inline comments in these files. Summarize feedback in the high-level review only; treat as non-blocking."
+  # Keep pre-merge checks non-blocking
+  pre_merge_checks:
+    docstrings:
+      mode: off
+    title:
+      mode: warning
+    description:
+      mode: warning
+    issue_assessment:
+      mode: warning
+tools:
+  github-checks:
+    timeout_ms: 300000
