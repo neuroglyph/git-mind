@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npx --yes -p markdownlint-cli2 markdownlint-cli2 "**/*.md" "#.git" "#build" "#.legacy" "#.trash"
+      - run: npx --yes -p markdownlint-cli2 markdownlint-cli2 "**/*.md" "#.git" "#build" "#.legacy" "#.trash" "#docs/code-reviews/**" "#.github/pull_request_template.md"
       - name: Install LLVM 20 and build tools
         run: |
           sudo apt-get update

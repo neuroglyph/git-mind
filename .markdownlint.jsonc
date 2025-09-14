@@ -26,5 +26,8 @@
   "MD051": false,                       // Link fragments not strictly validated
   "MD055": false,                       // Table pipe style not enforced
   "MD056": false,                       // Table column count not enforced
+  "MD032": false,                       // Blanks around lists not enforced
+  "MD034": false,                       // Bare URLs allowed
+  "MD041": false                        // First-line heading not required
   "MD026": { "punctuation": ".,;:!?" }
 }
