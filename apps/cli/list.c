@@ -7,7 +7,7 @@
 #include "gitmind/edge_attributed.h"
 #include "gitmind/journal.h"
 #include "gitmind/error.h"
-#include "../../include/gitmind/constants.h"
+#include "gitmind/constants.h"
 #include "cli_runtime.h"
 
 #include <stdio.h>
@@ -21,6 +21,7 @@ typedef struct {
     int show_all;
     int show_augments;
     int show_attribution;
+    gm_output_t *output;
 } list_ctx_t;
 
 /* Legacy edge callback for listing */
@@ -43,7 +44,7 @@ static int list_edge_callback(const gm_edge_t *edge, void *userdata) {
     /* Format and print edge */
     char formatted[GM_FORMAT_BUFFER_SIZE];
     gm_edge_format(edge, formatted, sizeof(formatted));
-    printf("%s\n", formatted);
+    gm_output_print(lctx->output, "%s\n", formatted);
 
     lctx->count++;
     return 0; /* Continue */
@@ -76,7 +77,7 @@ static int list_attributed_edge_callback(const gm_edge_attributed_t *edge,
     } else {
         gm_edge_attributed_format(edge, formatted, sizeof(formatted));
     }
-    printf("%s\n", formatted);
+    gm_output_print(lctx->output, "%s\n", formatted);
 
     lctx->count++;
     return 0; /* Continue */
@@ -113,9 +114,11 @@ static void parse_list_arguments(int argc, char **argv, list_ctx_t *lctx,
 
 /* Set up filter based on arguments */
 /* Filters are currently disabled in minimal CLI; placeholders retained */
-static void setup_list_filter(const char *source_filter, const char *min_conf_str) {
+static void setup_list_filter(gm_output_t *out, const char *source_filter, const char *min_conf_str) {
     (void)source_filter;
     (void)min_conf_str;
+    /* TODO: implement filters; avoid silent no-ops */
+    gm_output_verbose(out, "Note: filters are parsed but not yet applied.\n");
 }
 
 /* Execute the list query */
@@ -139,11 +142,11 @@ static void format_list_output(const list_ctx_t *lctx,
                                const char *min_conf_str, int use_filter) {
     if (lctx->count == 0) {
         if (lctx->filter_path) {
-            printf(GM_MSG_NO_LINKS_PATH "\n", lctx->filter_path);
+            gm_output_print(lctx->output, GM_MSG_NO_LINKS_PATH "\n", lctx->filter_path);
         } else if (use_filter) {
-            printf(GM_MSG_NO_LINKS_FILTER "\n");
+            gm_output_print(lctx->output, GM_MSG_NO_LINKS_FILTER "\n");
         } else {
-            printf(GM_MSG_NO_LINKS "\n");
+            gm_output_print(lctx->output, GM_MSG_NO_LINKS "\n");
         }
     } else {
         const char *filter_desc = "";
@@ -154,9 +157,9 @@ static void format_list_output(const list_ctx_t *lctx,
         }
 
         if (use_filter && strlen(filter_desc) > 0) {
-            printf(GM_SUCCESS_FILTERED "\n", (size_t)lctx->count, filter_desc);
+            gm_output_print(lctx->output, GM_SUCCESS_FILTERED "\n", (size_t)lctx->count, filter_desc);
         } else {
-            printf(GM_SUCCESS_TOTAL "\n", (size_t)lctx->count);
+            gm_output_print(lctx->output, GM_SUCCESS_TOTAL "\n", (size_t)lctx->count);
         }
     }
 }
@@ -166,8 +169,8 @@ static void format_list_output(const list_ctx_t *lctx,
 int gm_cmd_list(gm_context_t *ctx, gm_cli_ctx_t *cli, int argc, char **argv);
 
 int gm_cmd_list(gm_context_t *ctx, gm_cli_ctx_t *cli, int argc, char **argv) {
-    (void)cli; /* Not used; list outputs directly for now */
     list_ctx_t lctx = {0};
+    lctx.output = cli->out;
     const char *branch = NULL;
     const char *source_filter = NULL;
     const char *min_conf_str = NULL;
@@ -180,7 +183,7 @@ int gm_cmd_list(gm_context_t *ctx, gm_cli_ctx_t *cli, int argc, char **argv) {
 
     /* Set up attribution filter if needed */
     if (use_filter) {
-        setup_list_filter(source_filter, min_conf_str);
+        setup_list_filter(cli->out, source_filter, min_conf_str);
     }
 
     /* Execute the query */
@@ -189,7 +192,7 @@ int gm_cmd_list(gm_context_t *ctx, gm_cli_ctx_t *cli, int argc, char **argv) {
     if (result == GM_ERR_NOT_FOUND) {
         /* Don't print here, let the summary handle it */
     } else if (result != GM_OK) {
-        fprintf(stderr, GM_ERR_READ_LINKS "\n");
+        gm_output_error(cli->out, GM_ERR_READ_LINKS "\n");
         return result;
     }
 

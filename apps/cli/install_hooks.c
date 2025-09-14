@@ -7,7 +7,7 @@
 #include "cli_runtime.h"
 
 #include "gitmind/constants_internal.h"
-#include "../../include/gitmind/constants.h"
+#include "gitmind/constants.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -161,7 +161,7 @@ int gm_cmd_install_hooks(gm_context_t *ctx, gm_cli_ctx_t *cli, int argc, char **
     rc = check_existing_hook(GM_HOOK_PATH, &is_ours);
     if (rc == GM_OK) {
         if (is_ours) {
-if (gm_output_is_porcelain(cli->out)) {
+            if (gm_output_is_porcelain(cli->out)) {
                 gm_output_porcelain(cli->out, PORCELAIN_KEY_STATUS,
                                     PORCELAIN_STATUS_ALREADY_INSTALLED);
             } else {

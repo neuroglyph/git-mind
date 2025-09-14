@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "gitmind/output.h"
 #include "gitmind/context.h"
 #include "gitmind/cache.h"
@@ -16,8 +17,8 @@
 #include "gitmind/constants_internal.h"
 #include "cli_runtime.h"
 /* Parse command line arguments */
-static int parse_cache_rebuild_args(gm_cli_ctx_t *cli, int argc, char **argv, const char **branch,
-                                    bool *force) {
+static int gm_parse_cache_rebuild_args(gm_cli_ctx_t *cli, int argc, char **argv, const char **branch,
+                                       bool *force) {
     for (int i = 0; i < argc; i++) {
         if (strcmp(argv[i], GM_FLAG_BRANCH) == 0 && i + 1 < argc) {
             *branch = argv[++i];
@@ -32,8 +33,8 @@ static int parse_cache_rebuild_args(gm_cli_ctx_t *cli, int argc, char **argv, co
 }
 
 /* Get current branch name */
-static int get_current_branch(git_repository *repo, const char **branch,
-                              gm_output_t *output) {
+static int gm_get_current_branch(git_repository *repo, const char **branch,
+                                 gm_output_t *output) {
     git_reference *head = NULL;
     int rc = git_repository_head(&head, repo);
     if (rc < 0) {
@@ -47,7 +48,7 @@ static int get_current_branch(git_repository *repo, const char **branch,
 }
 
 /* Report cache is up to date */
-static void report_cache_current(gm_output_t *output, const char *branch) {
+static void gm_report_cache_current(gm_output_t *output, const char *branch) {
     if (gm_output_is_porcelain(output)) {
         gm_output_porcelain(output, PORCELAIN_KEY_STATUS,
                             PORCELAIN_STATUS_UP_TO_DATE);
@@ -58,9 +59,9 @@ static void report_cache_current(gm_output_t *output, const char *branch) {
 }
 
 /* Report rebuild success */
-static void report_rebuild_success(gm_output_t *output, const char *branch,
-                                   uint64_t edge_count, uint64_t cache_size,
-                                   double elapsed) {
+static void gm_report_rebuild_success(gm_output_t *output, const char *branch,
+                                      uint64_t edge_count, uint64_t cache_size,
+                                      double elapsed) {
     if (gm_output_is_porcelain(output)) {
         gm_output_porcelain(output, PORCELAIN_KEY_STATUS,
                             PORCELAIN_STATUS_SUCCESS);
@@ -81,8 +82,8 @@ static void report_rebuild_success(gm_output_t *output, const char *branch,
 }
 
 /* Execute cache rebuild */
-static int execute_cache_rebuild(gm_context_t *ctx, gm_cli_ctx_t *cli, const char *branch,
-                                 bool force) {
+static int gm_execute_cache_rebuild(gm_context_t *ctx, gm_cli_ctx_t *cli, const char *branch,
+                                    bool force) {
     gm_output_verbose(cli->out, GM_MSG_CACHE_REBUILD "\n", branch);
     clock_t start = clock();
 
@@ -101,7 +102,7 @@ static int execute_cache_rebuild(gm_context_t *ctx, gm_cli_ctx_t *cli, const cha
     uint64_t cache_size = 0;
     gm_cache_stats(ctx, branch, &edge_count, &cache_size);
 
-    report_rebuild_success(cli->out, branch, edge_count, cache_size, elapsed);
+    gm_report_rebuild_success(cli->out, branch, edge_count, cache_size, elapsed);
     return GM_OK;
 }
 
@@ -115,25 +116,25 @@ int gm_cmd_cache_rebuild(gm_context_t *ctx, gm_cli_ctx_t *cli, int argc, char **
     int rc;
 
     /* Parse arguments */
-    rc = parse_cache_rebuild_args(cli, argc, argv, &branch, &force);
+    rc = gm_parse_cache_rebuild_args(cli, argc, argv, &branch, &force);
     if (rc != GM_OK) {
         return rc;
     }
 
     /* Get current branch if not specified */
     if (!branch) {
-        rc = get_current_branch(ctx->git_repo, &branch, cli->out);
+        rc = gm_get_current_branch(ctx->git_repo, &branch, cli->out);
         if (rc != GM_OK) {
             return rc;
         }
     }
 
     /* Check if cache needs rebuild */
-    if (!force && !gm_cache_is_stale(ctx->git_repo, branch)) {
-        report_cache_current(cli->out, branch);
+    if (!force && !gm_cache_is_stale(ctx, branch)) {
+        gm_report_cache_current(cli->out, branch);
         return GM_OK;
     }
 
     /* Execute rebuild */
-    return execute_cache_rebuild(ctx, cli, branch, force);
+    return gm_execute_cache_rebuild(ctx, cli, branch, force);
 }

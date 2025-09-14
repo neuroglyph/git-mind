@@ -8,7 +8,7 @@
 #include "gitmind/edge_attributed.h"
 #include "gitmind/journal.h"
 #include "gitmind/error.h"
-#include "../../include/gitmind/constants.h"
+#include "gitmind/constants.h"
 #include "cli_runtime.h"
 
 #include "gitmind/constants_internal.h"
@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 /* Forward declaration for command symbol to satisfy -Wmissing-prototypes */
 int gm_cmd_link(gm_context_t *ctx, gm_cli_ctx_t *cli, int argc, char **argv);
@@ -151,10 +152,20 @@ static void print_link_success(gm_context_t *ctx, gm_cli_ctx_t *cli,
         gm_output_porcelain(cli->out, PORCELAIN_KEY_ULID, "%s", edge->ulid);
     } else {
         if (attribution->source_type == GM_SOURCE_HUMAN) {
-            gm_edge_attributed_format(edge, formatted, sizeof(formatted));
+            gm_result_void_t fr = gm_edge_attributed_format(edge, formatted, sizeof(formatted));
+            if (!fr.ok) {
+                gm_output_error(cli->out, GM_ERR_FORMAT "\n", "format failed");
+                gm_output_print(cli->out, GM_SUCCESS_CREATED "\n", "edge created");
+                return;
+            }
         } else {
-            gm_edge_attributed_format_with_attribution(edge, formatted,
+            gm_result_void_t fr = gm_edge_attributed_format_with_attribution(edge, formatted,
                                                        sizeof(formatted));
+            if (!fr.ok) {
+                gm_output_error(cli->out, GM_ERR_FORMAT "\n", "format failed");
+                gm_output_print(cli->out, GM_SUCCESS_CREATED "\n", "edge created");
+                return;
+            }
         }
         gm_output_print(cli->out, GM_SUCCESS_CREATED "\n", formatted);
     }

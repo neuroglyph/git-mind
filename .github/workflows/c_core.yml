@@ -31,17 +31,20 @@ jobs:
           grep -E "^/.*core/|^core/" clang-tidy-report-full.txt > clang-tidy-report.txt || true
       - name: Enforce no new warnings
         run: python3 tools/count_warnings.py check clang-tidy-report.txt tools/baseline_count.txt
-      - name: Build CI Docker image for E2E (parity)
+      - name: Warm dev-shell container (best-effort)
         run: |
           bash ./tools/dev-shell.sh -c true >/dev/null 2>&1 || true
       - name: Run E2E tests inside CI Docker image
         run: |
           IMAGE=${GITMIND_CI_IMAGE:-gitmind/ci:clang-20}
-          docker pull "$IMAGE" >/dev/null
+          # Pull with lightweight retry to reduce transient flakes
+          for i in 1 2 3; do
+            docker pull "$IMAGE" && break || { echo "docker pull failed, retrying in 5s..."; sleep 5; };
+          done
           docker run --rm --label com.gitmind.project=git-mind \
+            -u "$(id -u):$(id -g)" \
             -v "$PWD":/workspace -w /workspace -e GITMIND_DOCKER=1 "$IMAGE" bash -lc '
               set -euo pipefail
-              git config --global --add safe.directory /workspace
               BUILD_DIR=/workspace/build-e2e
               if [ -d "$BUILD_DIR" ]; then
                 CC=clang meson setup --reconfigure "$BUILD_DIR"

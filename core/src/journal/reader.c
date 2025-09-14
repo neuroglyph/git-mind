@@ -57,7 +57,7 @@ int gm_edge_attributed_decode_cbor_ex(const uint8_t *buffer, size_t len,
     if (consumed) {
         *consumed = 0; /* Signal no bytes consumed to trigger legacy fallback */
     }
-    return -1; /* Indicate decode failure to use legacy path */
+    return GM_ERR_INVALID_FORMAT; /* Indicate decode failure to use legacy path */
 }
 
 /* Generic reader context */

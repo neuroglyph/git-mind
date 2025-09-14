@@ -31,19 +31,19 @@
 
 /* Time Conversion Constants */
 #ifndef MILLIS_PER_SECOND
-#define MILLIS_PER_SECOND 1000
+#define MILLIS_PER_SECOND 1000ULL
 #endif
 #ifndef MICROS_PER_SECOND
-#define MICROS_PER_SECOND 1000000
+#define MICROS_PER_SECOND 1000000ULL
 #endif
 #ifndef NANOS_PER_SECOND
-#define NANOS_PER_SECOND 1000000000
+#define NANOS_PER_SECOND 1000000000ULL
 #endif
 #ifndef NANOS_PER_MILLI
-#define NANOS_PER_MILLI 1000000
+#define NANOS_PER_MILLI 1000000ULL
 #endif
 #ifndef NANOS_PER_MICRO
-#define NANOS_PER_MICRO 1000
+#define NANOS_PER_MICRO 1000ULL
 #endif
 
 /* Git Constants */
@@ -92,7 +92,7 @@
 /* Cache Build Constants */
 #define CACHE_BUILD_BATCH_SIZE 1000    /* Edges per batch */
 #define EDGE_MAP_BUCKETS 1024          /* Hash map bucket count */
-#define KB_SIZE 1024                   /* Bytes per KiB (binary); use 1000 for KB (decimal) */
+#define KB_SIZE 1024                   /* Bytes per KiB (binary). Use 1000 for KB (decimal). */
 #ifndef CACHE_SIZE_ESTIMATE_PER_EDGE
 #define CACHE_SIZE_ESTIMATE_PER_EDGE 4 /* Estimated bytes per edge in cache */
 #endif

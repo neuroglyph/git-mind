@@ -91,7 +91,7 @@ static void safety_check(void) {
                     const char *url = git_remote_url(remote);
                     if (gm_url_is_official_repo(url)) {
                         git_remote_free(remote);
-                        git_strarray_dispose(&list);
+                        git_strarray_free(&list);
                         git_repository_free(repo);
                         git_libgit2_shutdown();
                         fprintf(stderr, "\n");
@@ -103,7 +103,7 @@ static void safety_check(void) {
                     git_remote_free(remote);
                 }
             }
-            git_strarray_dispose(&list);
+            git_strarray_free(&list);
         }
         git_repository_free(repo);
     }
