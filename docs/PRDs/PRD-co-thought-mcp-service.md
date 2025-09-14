@@ -79,7 +79,7 @@ Resource: Edge
 
 Health
 
-- GET `/v1/health` → `{ "status": "ok", "repo": "...", "head": "..." }`
+- GET `/v1/health` → `{ "status": "ok", "repo": "...", "head": "...", "gitmind_version": "x.y.z", "libgitmind": "a.b.c" }`
 
 Errors
 
