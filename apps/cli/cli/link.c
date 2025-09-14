@@ -10,8 +10,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 /* Parse relationship type from string using constants */
 static gm_rel_type_t parse_rel_type(const char *str) {
@@ -104,30 +104,26 @@ static int create_edge_from_args(gm_context_t *ctx, const char *src_path,
     return result;
 }
 
-/* Validate that paths exist and are regular files */
+/* Validate that a path exists and is a regular file */
+static int validate_path_is_regular_file(gm_context_t *ctx, const char *path) {
+    struct stat st;
+    if (stat(path, &st) != 0) {
+        gm_output_error(ctx->output, GM_ERR_PATH_NOT_FOUND "\n", path);
+        return GM_INVALID_ARG;
+    }
+    if (!S_ISREG(st.st_mode)) {
+        gm_output_error(ctx->output, GM_ERR_NOT_REGULAR_FILE "\n", path);
+        return GM_INVALID_ARG;
+    }
+    return GM_OK;
+}
+
+/* Validate that both paths exist and are regular files */
 static int validate_paths_exist(gm_context_t *ctx, const char *src_path,
                                 const char *tgt_path) {
-    struct stat st;
-
-    if (stat(src_path, &st) != 0) {
-        gm_output_error(ctx->output, GM_ERR_PATH_NOT_FOUND "\n", src_path);
-        return GM_INVALID_ARG;
-    }
-    if (!S_ISREG(st.st_mode)) {
-        gm_output_error(ctx->output, GM_ERR_NOT_REGULAR_FILE "\n", src_path);
-        return GM_INVALID_ARG;
-    }
-
-    if (stat(tgt_path, &st) != 0) {
-        gm_output_error(ctx->output, GM_ERR_PATH_NOT_FOUND "\n", tgt_path);
-        return GM_INVALID_ARG;
-    }
-    if (!S_ISREG(st.st_mode)) {
-        gm_output_error(ctx->output, GM_ERR_NOT_REGULAR_FILE "\n", tgt_path);
-        return GM_INVALID_ARG;
-    }
-
-    return GM_OK;
+    int r = validate_path_is_regular_file(ctx, src_path);
+    if (r != GM_OK) return r;
+    return validate_path_is_regular_file(ctx, tgt_path);
 }
 
 /* Save edge to journal */
