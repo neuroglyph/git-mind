@@ -7,6 +7,7 @@ Today's refactoring from `gitmind` to `git-mind` isn't just a naming change - it
 ## How Git Extensions Work
 
 Git has a beautifully simple extension mechanism:
+
 1. Name your executable `git-{command}`
 2. Put it in your PATH
 3. Run `git {command}`
@@ -15,7 +16,8 @@ That's it. Git will find and execute `git-{command}`, passing along all argument
 
 ## Benefits of Being a Git Extension
 
-### 1. **Namespace Integration**
+### 1. __Namespace Integration__
+
 ```bash
 # Before: Standalone tool
 gitmind init
@@ -26,27 +28,33 @@ git mind init
 git mind link file1.txt file2.txt
 ```
 
-### 2. **Muscle Memory**
+### 2. __Muscle Memory__
+
 Developers already type `git` thousands of times. Adding commands to that namespace feels natural:
+
 - `git commit` - track code changes
 - `git mind link` - track knowledge connections
 
-### 3. **Discovery**
+### 3. __Discovery__
+
 ```bash
 git help mind           # Works automatically
 git mind --help         # Also works
 man git-mind            # If we add a manpage
 ```
 
-### 4. **Shell Completion**
+### 4. __Shell Completion__
+
 Git's tab completion can be extended to include our commands. Users get autocomplete for free.
 
-### 5. **Ecosystem Integration**
+### 5. __Ecosystem Integration__
+
 Tools that wrap Git (GUIs, IDEs, scripts) can discover and integrate with our extension naturally.
 
 ## Implementation Details
 
 The change required updating:
+
 - Makefile target name
 - All test scripts
 - Documentation and READMEs
@@ -59,19 +67,22 @@ But critically, we kept `.gitmind/` as the data directory - only the executable 
 
 Being a Git extension opens doors:
 
-1. **Git Hooks Integration**
+1. __Git Hooks Integration__
+
    ```bash
    # .git/hooks/post-commit
    git mind auto-link --from-diff
    ```
 
-2. **Alias Potential**
+2. __Alias Potential__
+
    ```bash
    git config --global alias.m mind
    git m link README.md DESIGN.md
    ```
 
-3. **Porcelain Commands**
+3. __Porcelain Commands__
+
    ```bash
    git mind log --graph    # Visualize knowledge graph
    git mind blame FILE     # Who linked what when
@@ -80,6 +91,7 @@ Being a Git extension opens doors:
 ## The Unix Way
 
 This change embodies Unix philosophy:
+
 - Do one thing well (knowledge linking)
 - Compose with other tools (Git)
 - Text streams as universal interface
@@ -89,12 +101,12 @@ By becoming a Git extension, we're not just following conventions - we're embrac
 
 ## Lessons Learned
 
-1. **Names Matter**: The difference between `gitmind` and `git-mind` is architectural, not cosmetic.
+1. __Names Matter__: The difference between `gitmind` and `git-mind` is architectural, not cosmetic.
 
-2. **Leverage Ecosystems**: Why build our own CLI framework when Git provides one?
+2. __Leverage Ecosystems__: Why build our own CLI framework when Git provides one?
 
-3. **Convention Over Configuration**: Git's extension mechanism requires zero configuration.
+3. __Convention Over Configuration__: Git's extension mechanism requires zero configuration.
 
-4. **Backwards Compatibility**: Keep data formats stable even when interfaces change.
+4. __Backwards Compatibility__: Keep data formats stable even when interfaces change.
 
 The hyphen isn't just punctuation - it's a bridge between our tool and the entire Git ecosystem. Sometimes the smallest changes have the biggest impact.

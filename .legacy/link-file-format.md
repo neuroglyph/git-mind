@@ -13,6 +13,7 @@ SHA256(sort(source_blob_sha, target_blob_sha)).gml
 ```
 
 This ensures:
+
 - One file per unique node pair (regardless of direction)
 - Consistent naming across repositories
 - Content-addressed storage
@@ -31,36 +32,39 @@ abc123def456|789012345678|src/parser.c|docs/grammar.md
 
 ### Format Structure
 
-1. **Line 1**: Magic header `GMv1` (format version)
-2. **Line 2**: Node info: `out_sha|in_sha|out_path|in_path`
-3. **Lines 3+**: Edges, one per line
+1. __Line 1__: Magic header `GMv1` (format version)
+2. __Line 2__: Node info: `out_sha|in_sha|out_path|in_path`
+3. __Lines 3+__: Edges, one per line
    - `+` prefix = active edge
    - `-` prefix = tombstoned edge
    - Fields separated by `|`
 
 ### Edge Format
 
-**Active edge**: `+type|author|timestamp|confidence`
-**Tombstone**: `-type|author|timestamp|0.0|reason`
+__Active edge__: `+type|author|timestamp|confidence`
+__Tombstone__: `-type|author|timestamp|0.0|reason`
 
 ## Field Definitions
 
 ### Line 1: Format Version
+
 - `GMv1`: Magic string identifying format version
 
 ### Line 2: Node Information  
+
 - `out_sha`: Git blob SHA of source/outgoing node
 - `in_sha`: Git blob SHA of target/incoming node
 - `out_path`: Path of source (for human reference)
 - `in_path`: Path of target (for human reference)
 
 ### Lines 3+: Edges
-- **Prefix**: `+` for active, `-` for tombstone
-- **Field 1**: Edge type (implements, references, etc.)
-- **Field 2**: Author (from git config)
-- **Field 3**: Unix timestamp
-- **Field 4**: Confidence (0.0-1.0)
-- **Field 5**: (tombstones only) Deletion reason
+
+- __Prefix__: `+` for active, `-` for tombstone
+- __Field 1__: Edge type (implements, references, etc.)
+- __Field 2__: Author (from git config)
+- __Field 3__: Unix timestamp
+- __Field 4__: Confidence (0.0-1.0)
+- __Field 5__: (tombstones only) Deletion reason
 
 ## Semantics
 
@@ -79,6 +83,7 @@ abc123def456|789012345678|src/parser.c|docs/grammar.md
 ### Merge Strategy
 
 When merging `.gml` files:
+
 1. Union all edges from both versions
 2. Remove exact duplicates (same type, author, timestamp)
 3. Sort edges by timestamp for consistent ordering
@@ -89,11 +94,13 @@ When merging `.gml` files:
 ### Filter Drivers
 
 Add to `.gitattributes`:
+
 ```
 *.gml filter=gitmind diff=gitmind merge=gitmind
 ```
 
 This enables:
+
 - Custom packing for efficient storage
 - Semantic diffs showing edge changes
 - Conflict-free merging
@@ -106,18 +113,19 @@ This enables:
 
 ## Example Usage
 
-### Creating a link between parser.c and grammar.md:
+### Creating a link between parser.c and grammar.md
 
 ```bash
 git mind link parser.c grammar.md --type implements
 ```
 
 This creates or updates a `.gml` file containing:
+
 - Blob SHAs for both files
 - An edge with type "implements"
 - Current author and timestamp
 
-### Viewing relationships:
+### Viewing relationships
 
 ```bash
 git mind list parser.c

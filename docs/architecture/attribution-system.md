@@ -4,6 +4,7 @@
 # Attribution System Architecture
 
 Table of Contents
+
 - [Overview](#overview)
 - [Quickstart: Lanes & Filters](#quickstart-lanes--filters)
 - [Core Concepts](#core-concepts)
@@ -13,6 +14,7 @@ Table of Contents
 - [Filter System](#filter-system)
 - [Usage Patterns](#usage-patterns)
 - [Collaboration Workflows](#collaboration-workflows)
+
 ## Overview
 
 The attribution system is the foundation for human-AI collaboration in git-mind. It tracks who created each semantic edge (human or AI), enabling filtered views, collaborative workflows, and consensus building.
@@ -30,6 +32,7 @@ Use lanes and attribution to separate AI suggestions from human‑curated edges,
   - `--source human` limits to human‑created edges
 
 - CLI filters (examples)
+
 ```bash
 # Review AI suggestions
 git mind list --lane suggested --source ai
@@ -42,10 +45,12 @@ git mind list --lane suggested --source ai --type implements --from notes/idea.m
 ```
 
 Promotion workflow (concept)
+
 - Write suggestions to `suggested` (source=ai), review them, then promote selected edges to `verified`.
 - Promotion can be implemented via a CLI helper or the MCP service (see PRD: Co‑Thought MCP) to re‑append the edge in the new lane while preserving attribution.
 
 Privacy note
+
 - Co‑thought remains local by default. Keep tools and MCP local‑only and avoid sending repo content off‑machine unless you explicitly export it.
 
 ## Core Concepts
@@ -194,6 +199,7 @@ Array(13) [
 ### Backward Compatibility
 
 The decoder can handle legacy 8-element arrays by setting defaults:
+
 - `source_type` = GM_SOURCE_HUMAN
 - `author` = "legacy@unknown"
 - `session_id` = ""
@@ -287,14 +293,17 @@ graph LR
 ## Implementation Files
 
 ### Headers
+
 - `include/gitmind/attribution.h` - Main attribution types and functions
 
 ### Source
+
 - `src/attribution/attribution.c` - Core attribution functions
 - `src/attribution/cbor.c` - CBOR encoding/decoding for attributed edges
 - `src/attribution/attribution.md` - Implementation notes
 
 ### Integration Points
+
 - `src/cli/link.c` - Set attribution when creating edges
 - `src/cli/list.c` - Filter edges by attribution
 - `src/journal/writer.c` - Store attributed edges
@@ -336,37 +345,41 @@ int gm_edge_attributed_decode_cbor(const uint8_t *buffer, size_t len,
 
 ## Future Enhancements
 
-1. **Bulk Review Interface** - Review multiple AI suggestions at once
-2. **Attribution Analytics** - Show contribution breakdown by source
-3. **Trust Scores** - Track AI accuracy over time
-4. **Team Attribution** - Multiple humans with individual attribution
-5. **Audit Trail** - Full history of edge modifications
+1. __Bulk Review Interface__ - Review multiple AI suggestions at once
+2. __Attribution Analytics__ - Show contribution breakdown by source
+3. __Trust Scores__ - Track AI accuracy over time
+4. __Team Attribution__ - Multiple humans with individual attribution
+5. __Audit Trail__ - Full history of edge modifications
 
 ## Design Rationale
 
-### Why Source Attribution?
+### Why Source Attribution
 
 Human and AI contributors think differently:
-- **Humans**: High intent, sporadic, certain
-- **AIs**: Pattern-based, systematic, probabilistic
+
+- __Humans__: High intent, sporadic, certain
+- __AIs__: Pattern-based, systematic, probabilistic
 
 By tracking source, we can:
+
 - Show appropriate views for different users
 - Build trust in AI suggestions gradually
 - Maintain human intent while benefiting from AI insights
 
-### Why Lanes?
+### Why Lanes
 
 Different workflows need different edge sets:
+
 - Architecture documentation vs implementation details
 - Test coverage analysis vs refactoring plans
 - AI exploration vs human curation
 
 Lanes let these coexist without interference.
 
-### Why Review Flags?
+### Why Review Flags
 
 AI suggestions need human oversight:
+
 - Not all patterns are meaningful
 - Context matters more than correlation
 - Human judgment validates AI insights
@@ -375,4 +388,4 @@ The review system creates a feedback loop that improves both human understanding
 
 ---
 
-*The attribution system transforms git-mind from a single-user tool into a collaborative platform where humans and AI build understanding together.*
+_The attribution system transforms git-mind from a single-user tool into a collaborative platform where humans and AI build understanding together._

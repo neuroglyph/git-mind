@@ -19,7 +19,7 @@ Git itself doesn’t track renames directly in the index—it infers them later 
 ## Workarounds
 
 To react to file renames, you can:
-	
+
 1. Use pre-commit or post-commit hooks, then detect renames using:
 
 ```bash
@@ -33,7 +33,6 @@ The `-M` flag tells Git to detect renames (based on content similarity). Look fo
 ```bash
 git log --diff-filter=R --summary
 ```
-
 
 3. Track file paths via custom mapping
 

@@ -1,6 +1,6 @@
 # 🔒 Security Hygiene as Code: Gameplan
 
-> *"Security isn't a feature, it's a foundation."*
+> _"Security isn't a feature, it's a foundation."_
 
 ## Executive Summary
 
@@ -477,24 +477,28 @@ gm_result_t gm_anomaly_check(const char *operation,
 ## 🛠️ Implementation Plan
 
 ### Phase 1: Memory Safety (Immediate)
+
 1. Create safe string/array APIs
 2. Ban unsafe C functions via macros
 3. Add bounds checking everywhere
 4. Implement safe casting helpers
 
 ### Phase 2: Input Validation (During Migration)
+
 1. Build validation framework
 2. Create validators for all input types
 3. Add path traversal protection
 4. Implement sanitization functions
 
 ### Phase 3: Secure I/O (Per Module)
+
 1. Wrap all file operations
 2. Add atomic write support
 3. Implement temp file handling
 4. Add resource limits
 
 ### Phase 4: Sandboxing (Later)
+
 1. Design capability model
 2. Implement basic sandboxing
 3. Add resource limits
@@ -600,6 +604,7 @@ gm_result_t create_edge_secure(gm_context_t *ctx,
 ## 🧪 Testing Approach
 
 ### 1. Fuzzing Tests
+
 ```c
 void test_input_validation_fuzzing(void) {
     // AFL-compatible fuzzing harness
@@ -622,6 +627,7 @@ void test_input_validation_fuzzing(void) {
 ```
 
 ### 2. Boundary Tests
+
 ```c
 void test_buffer_boundaries(void) {
     // Test exact boundary
@@ -644,6 +650,7 @@ void test_buffer_boundaries(void) {
 ```
 
 ### 3. Injection Tests
+
 ```c
 void test_injection_prevention(void) {
     // Path traversal attempts
@@ -686,6 +693,7 @@ void test_injection_prevention(void) {
 ```
 
 ### 4. Capability Tests
+
 ```c
 void test_sandbox_capabilities(void) {
     // Setup restricted sandbox
@@ -714,22 +722,24 @@ void test_sandbox_capabilities(void) {
 
 ## 📈 Success Metrics
 
-1. **Zero Security Vulnerabilities**: No CVEs in production
-2. **100% Input Validation**: All external input validated
-3. **Memory Safety**: Clean Valgrind/ASAN runs
-4. **Fuzzing Coverage**: 10M iterations without crash
-5. **Sandbox Escapes**: Zero successful escapes
+1. __Zero Security Vulnerabilities__: No CVEs in production
+2. __100% Input Validation__: All external input validated
+3. __Memory Safety__: Clean Valgrind/ASAN runs
+4. __Fuzzing Coverage__: 10M iterations without crash
+5. __Sandbox Escapes__: Zero successful escapes
 
 ## 🎓 Best Practices
 
-### DO:
+### DO
+
 - ✅ Validate all input at boundaries
 - ✅ Use safe APIs exclusively
 - ✅ Fail securely (deny by default)
 - ✅ Log security events
 - ✅ Test with fuzzing
 
-### DON'T:
+### DON'T
+
 - ❌ Trust any external input
 - ❌ Use unsafe C functions
 - ❌ Implement crypto yourself
@@ -739,16 +749,19 @@ void test_sandbox_capabilities(void) {
 ## 🔗 Integration Points
 
 ### With Error Handling
+
 - Security errors are structured
 - Error messages don't leak info
 - Failed operations logged
 
 ### With Memory Architecture
+
 - Arena allocators prevent leaks
 - Bounds tracked automatically
 - Memory limits enforced
 
 ### With Observability
+
 - Security events traced
 - Anomalies detected
 - Metrics exported
@@ -763,4 +776,4 @@ void test_sandbox_capabilities(void) {
 
 ---
 
-*"Security is not a product, but a process. Build it into every line of code."*
+_"Security is not a product, but a process. Build it into every line of code."_

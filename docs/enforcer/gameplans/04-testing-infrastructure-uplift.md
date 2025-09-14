@@ -1,6 +1,6 @@
 # 🧪 Testing Infrastructure Uplift: Gameplan
 
-> *"Every module is a fortress of unit and integration tests."*
+> _"Every module is a fortress of unit and integration tests."_
 
 ## Executive Summary
 
@@ -347,24 +347,28 @@ flowchart LR
 ## 🛠️ Implementation Plan
 
 ### Phase 1: Framework Foundation (Immediate)
+
 1. Create test framework core
 2. Implement assertion library
 3. Add test discovery/runner
 4. Create basic test report
 
 ### Phase 2: Test Doubles (During Migration)
+
 1. Build mock/stub system
 2. Add dependency injection
 3. Create spy framework
 4. Generate common mocks
 
 ### Phase 3: Fixtures & Helpers (Per Module)
+
 1. Create Git repo fixtures
 2. Add data fixtures
 3. Build test utilities
 4. Add isolation helpers
 
 ### Phase 4: Advanced Testing (Later)
+
 1. Property-based tests
 2. Fuzz testing
 3. Chaos engineering
@@ -450,6 +454,7 @@ GM_TEST(edge, persistence_in_git) {
 ## 🧪 Testing Patterns
 
 ### 1. Arrange-Act-Assert Pattern
+
 ```c
 GM_TEST(module, test_name) {
     // Arrange: Set up test state
@@ -468,6 +473,7 @@ GM_TEST(module, test_name) {
 ```
 
 ### 2. Table-Driven Tests
+
 ```c
 GM_TEST(parser, various_inputs) {
     struct {
@@ -560,22 +566,24 @@ GM_TEST(parser, various_inputs) {
 
 ## 📈 Success Metrics
 
-1. **Test Coverage**: > 80% line coverage, > 70% branch
-2. **Test Speed**: Unit tests < 1ms each
-3. **Test Reliability**: Zero flaky tests
-4. **Test Clarity**: Tests document behavior
-5. **Bug Prevention**: 90% of bugs caught by tests
+1. __Test Coverage__: > 80% line coverage, > 70% branch
+2. __Test Speed__: Unit tests < 1ms each
+3. __Test Reliability__: Zero flaky tests
+4. __Test Clarity__: Tests document behavior
+5. __Bug Prevention__: 90% of bugs caught by tests
 
 ## 🎓 Best Practices
 
-### DO:
+### DO
+
 - ✅ Write tests first (TDD)
 - ✅ Keep tests focused and small
 - ✅ Use descriptive test names
 - ✅ Test edge cases and errors
 - ✅ Isolate tests from each other
 
-### DON'T:
+### DON'T
+
 - ❌ Test implementation details
 - ❌ Share state between tests
 - ❌ Ignore failing tests
@@ -585,16 +593,19 @@ GM_TEST(parser, various_inputs) {
 ## 🔗 Integration Points
 
 ### With Error Handling
+
 - Test error propagation
 - Verify error messages
 - Test recovery paths
 
 ### With Memory Architecture
+
 - Test memory leaks
 - Verify arena cleanup
 - Test allocation failures
 
 ### With Observability
+
 - Capture logs in tests
 - Verify metrics
 - Test trace generation
@@ -608,4 +619,4 @@ GM_TEST(parser, various_inputs) {
 
 ---
 
-*"Tests are the first users of your code. Make them happy, and your users will be too."*
+_"Tests are the first users of your code. Make them happy, and your users will be too."_

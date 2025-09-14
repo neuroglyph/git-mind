@@ -3,11 +3,14 @@
 ## Changes Made (2025-06-14)
 
 ### 1. Updated docker-compose.yml
+
 - Changed test service command from `./tests/integration/test.sh` to `./tests/integration/run-all-tests.sh`
 - This ensures all test suites run when using `docker compose run test`
 
 ### 2. Added Docker Guards
+
 Added Docker guard checks to all test scripts (except Docker runners):
+
 - test-all.sh
 - test-depth-error.sh
 - test-minimal.sh
@@ -19,20 +22,25 @@ Added Docker guard checks to all test scripts (except Docker runners):
 - test-traverse.sh
 
 Docker runners that don't need guards (they create containers):
+
 - docker-test.sh
 - fuzz-test.sh
 - valgrind-test.sh
 
 ### 3. Updated test-all.sh
+
 - Now delegates to run-all-tests.sh instead of running individual tests
 - Provides a consistent entry point that matches run-all-tests.sh
 
 ### 4. Fixed File Permissions
+
 Made the following scripts executable:
+
 - test-minimal.sh
 - test-traverse-debug.sh
 
 ### 5. Added Documentation
+
 - Created tests/README.md with comprehensive test infrastructure documentation
 - Documents test structure, Docker guards, running tests, and principles
 
@@ -52,7 +60,7 @@ make test (from root)
 
 ## Key Improvements
 
-1. **Consistency**: All tests now run through a single entry point
-2. **Safety**: Docker guards prevent accidental execution on working repo
-3. **Clarity**: Clear documentation of test structure and purpose
-4. **Completeness**: docker compose now runs ALL tests, not just basic ones
+1. __Consistency__: All tests now run through a single entry point
+2. __Safety__: Docker guards prevent accidental execution on working repo
+3. __Clarity__: Clear documentation of test structure and purpose
+4. __Completeness__: docker compose now runs ALL tests, not just basic ones

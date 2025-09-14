@@ -38,7 +38,7 @@ docker build -t "$IMAGE" --label com.gitmind.project=git-mind .ci >/dev/null
 
 # Run clang-tidy exactly like CI does
 echo "Running clang-tidy in Docker (matching CI environment)..."
-docker run --rm --label com.gitmind.project=git-mind -v "$PWD":/workspace -w /workspace "$IMAGE" bash -c '
+docker run --rm --label com.gitmind.project=git-mind -v "$PWD":/workspace -w /workspace -e GITMIND_DOCKER=1 "$IMAGE" bash -c '
     # Build to get compile_commands.json
     rm -rf build
     CC=clang meson setup build

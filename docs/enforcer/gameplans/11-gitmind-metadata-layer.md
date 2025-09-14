@@ -1,6 +1,6 @@
 # 🎁 GitMind-Native Metadata Layer: Gameplan
 
-> *"Turn git-mind into a living epistemology engine, not just a tool."*
+> _"Turn git-mind into a living epistemology engine, not just a tool."_
 
 ## Executive Summary
 
@@ -571,24 +571,28 @@ gm_result_t gm_stats_knowledge_evolution(gm_evolution_stats_t *stats);
 ## 🛠️ Implementation Plan
 
 ### Phase 1: Core Metadata Types (Immediate)
+
 1. Define provenance structures
 2. Create attribution system
 3. Build confidence scoring
 4. Add basic event bus
 
 ### Phase 2: Event System (During Migration)
+
 1. Instrument all operations
 2. Create event store
 3. Add temporal queries
 4. Build lineage tracking
 
 ### Phase 3: Quality Metrics (Per Module)
+
 1. Define quality criteria
 2. Implement assessments
 3. Add improvement suggestions
 4. Create quality reports
 
 ### Phase 4: Advanced Features (Future)
+
 1. Decision tracking system
 2. Knowledge state machine
 3. Metadata query language
@@ -731,6 +735,7 @@ void record_architecture_decision(void) {
 ## 🧪 Testing Approach
 
 ### 1. Metadata Integrity Tests
+
 ```c
 void test_metadata_persistence(void) {
     // Create entity with metadata
@@ -756,6 +761,7 @@ void test_metadata_persistence(void) {
 ```
 
 ### 2. Event Bus Tests
+
 ```c
 void test_event_causality_chain(void) {
     // Subscribe to events
@@ -775,6 +781,7 @@ void test_event_causality_chain(void) {
 ```
 
 ### 3. Quality Assessment Tests
+
 ```c
 void test_quality_metrics(void) {
     // Create node with varying quality
@@ -798,22 +805,24 @@ void test_quality_metrics(void) {
 
 ## 📈 Success Metrics
 
-1. **100% Attribution**: Every entity has provenance
-2. **Event Coverage**: All operations emit events  
-3. **Confidence Tracking**: All edges have confidence
-4. **Quality Visibility**: Dashboard shows quality
-5. **Decision Audit**: All major decisions recorded
+1. __100% Attribution__: Every entity has provenance
+2. __Event Coverage__: All operations emit events  
+3. __Confidence Tracking__: All edges have confidence
+4. __Quality Visibility__: Dashboard shows quality
+5. __Decision Audit__: All major decisions recorded
 
 ## 🎓 Best Practices
 
-### DO:
+### DO
+
 - ✅ Always capture attribution
 - ✅ Record decision rationale
 - ✅ Track confidence scores
 - ✅ Monitor quality metrics
 - ✅ Preserve full history
 
-### DON'T:
+### DON'T
+
 - ❌ Skip metadata for performance
 - ❌ Lose provenance in migrations
 - ❌ Ignore low confidence data
@@ -823,18 +832,21 @@ void test_quality_metrics(void) {
 ## 🔗 Integration Points
 
 ### With All Systems
+
 - Every operation records metadata
 - All queries can filter by metadata
 - Every entity has quality metrics
 - All changes emit events
 
 ### With AI/Plugins
+
 - AI confidence tracked
 - Plugin attribution recorded
 - Decision rationale captured
 - Quality improvements suggested
 
 ### With Version Control
+
 - Metadata stored in Git
 - History preserved in commits
 - Decisions tracked in repo
@@ -849,4 +861,4 @@ void test_quality_metrics(void) {
 
 ---
 
-*"In the end, it's not just about what we know, but how we came to know it, why we trust it, and how it evolves."*
+_"In the end, it's not just about what we know, but how we came to know it, why we trust it, and how it evolves."_

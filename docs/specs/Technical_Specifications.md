@@ -1,6 +1,7 @@
 # Technical Specifications
 
 Table of Contents
+
 - [Executive Summary](#executive-summary)
 - [Implementation Approach](#implementation-approach)
 - [API Contracts](#api-contracts)
@@ -8,9 +9,11 @@ Table of Contents
 - [Key Algorithms and Business Logic](#key-algorithms-and-business-logic)
 
 ## Executive Summary
+
 Specification for first-class semantics, cache integration, and optional advice. Focused on determinism, safety, and Git-native flows. Related: [PRD: First-Class Semantics](../PRDs/PRD-git-mind-semantics-time-travel-prototype.md), [System Architecture](../architecture/System_Architecture.md).
 
 ## Implementation Approach
+
 - Deterministic IDs
   - `fnv1a64("gm_type:" + nfc(type))`, `fnv1a64("gm_lane:" + nfc(lane))`
   - NFC normalization via small utility (ICU not required; stick to composed forms used in CLI)
@@ -27,6 +30,7 @@ Specification for first-class semantics, cache integration, and optional advice.
 ## API Contracts
 
 Library (C):
+
 ```c
 // Normalize UTF-8 to NFC; returns length written (0 on error)
 size_t gm_utf8_nfc(char* dst, size_t dst_size, const char* src);
@@ -43,6 +47,7 @@ int gm_list(const gm_list_filter_t* filter, gm_edge_iter_t* out_iter);
 ```
 
 CLI:
+
 ```bash
 git mind link <src> <tgt> --type <str> [--lane <str>] [--confidence <0..1>]
 git mind list [--type <str>] [--lane <str>] [--from <path>] [--to <path>]
@@ -52,6 +57,7 @@ git mind cohesion-report [--since <rev>] [--until <rev>] [--branch <name>]
 ## Schemas and Relationships
 
 Edge (CBOR array):
+
 ```
 [ src_sha(20), tgt_sha(20), confidence(u16-half), timestamp(u64),
   src_path(tstr), tgt_path(tstr), ulid(tstr),
@@ -59,11 +65,13 @@ Edge (CBOR array):
 ```
 
 Advice (CBOR map):
+
 ```
 { kind: tstr, subject: tstr, props: map, ulid: tstr, ts: u64, actor: tstr }
 ```
 
 ## Key Algorithms and Business Logic
+
 - FNV-1a-64 over NFC UTF-8 for semantic IDs; constant seed; documented vectors
 - Cohesion report: diff advice and edges across two refs
   - Scalars: last by (clock||ts, actor, ulid)

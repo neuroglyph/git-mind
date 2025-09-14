@@ -21,26 +21,31 @@ make install-hooks
 ## Available Checks
 
 ### 1. Function Length Check (`check-function-length.sh`)
+
 - Enforces 15-line maximum for all functions
 - Catches deeply nested code (>3 levels)
 - Reports exact line numbers and function names
 
 ### 2. Magic Values Check (`check-magic-values.sh`)
+
 - Detects hardcoded numbers > 99
 - Finds string literals that should be constants
 - Excludes legitimate uses (array indices, bit shifts)
 
 ### 3. Output Control Check (`check-output-control.sh`)
+
 - Ensures CLI respects `--verbose` and `--porcelain`
 - Verifies library code is silent by default
 - Catches direct printf/fprintf usage
 
 ### 4. Dependency Injection Check (`check-dependency-injection.sh`)
+
 - Detects direct system calls (time, rand, file I/O)
 - Ensures Git operations use abstraction layer
 - Promotes testable architecture
 
 ### 5. Test Quality Check (`check-test-quality.sh`)
+
 - Ensures tests check behavior, not output
 - Detects stdout/stderr assertions
 - Verifies test organization by feature
@@ -48,24 +53,28 @@ make install-hooks
 ## Linting Tools
 
 ### Clang-Format
+
 - Enforces consistent code style
 - 80 column limit
 - 4-space indentation
 - Configured in `.clang-format`
 
 ### Clang-Tidy
+
 - Static analysis for common bugs
 - Enforces 15-line function limit
 - Catches magic numbers
 - Configured in `.clang-tidy`
 
 ### Cppcheck
+
 - Additional static analysis
 - Memory leak detection
 - Undefined behavior checks
 - Performance suggestions
 
 ### Lizard (Cyclomatic Complexity)
+
 - Measures code complexity
 - Enforces maximum complexity of 10
 - Tracks function arguments (<= 3)
@@ -73,6 +82,7 @@ make install-hooks
 ## Git Hooks
 
 The pre-commit hook runs quick checks on staged files:
+
 - Function length validation
 - Magic number detection
 - CLI output control verification
@@ -82,6 +92,7 @@ Install with: `make install-hooks`
 ## CI Integration
 
 All checks run automatically on:
+
 - Push to main/dev branches
 - Pull requests
 - GitHub Actions workflow in `.github/workflows/code-quality.yml`
@@ -90,7 +101,8 @@ All checks run automatically on:
 
 When checks fail:
 
-1. **Function too long**: Break into smaller functions
+1. __Function too long__: Break into smaller functions
+
    ```c
    // Before: 50-line function
    void process_all() { /* lots of code */ }
@@ -101,7 +113,8 @@ When checks fail:
    void save_results() { /* 8 lines */ }
    ```
 
-2. **Magic values**: Define constants
+2. __Magic values__: Define constants
+
    ```c
    // Before
    if (size > 8192) { /* bad */ }
@@ -111,7 +124,8 @@ When checks fail:
    if (size > MAX_BUFFER_SIZE) { /* good */ }
    ```
 
-3. **Output control**: Use abstraction
+3. __Output control__: Use abstraction
+
    ```c
    // Before
    printf("Processing...\n");
@@ -120,7 +134,8 @@ When checks fail:
    gm_output_print(ctx->output, "Processing...");
    ```
 
-4. **Direct system calls**: Use injection
+4. __Direct system calls__: Use injection
+
    ```c
    // Before
    time_t now = time(NULL);
@@ -171,6 +186,7 @@ fprintf(stderr, "FATAL: %s\n", error);
 ## Goal
 
 Zero quality violations across the codebase, enabling:
+
 - Easy maintenance
 - Confident refactoring
 - Fast onboarding

@@ -5,6 +5,7 @@
 I just got called out, and I deserved every word of it.
 
 Here I was, building the "clean foundations" for git-mind, preaching about zero warnings and quality code, while simultaneously writing:
+
 - Placeholder SHA256 that just memsets to zero
 - "Random" ID generation using a counter
 - Magic numbers everywhere (32, 65, 256...)
@@ -18,6 +19,7 @@ The irony is crushing. I was literally recreating the exact patterns that led to
 When James said "I already see some naughty behavior in your 'clean' fresh code," I felt it. That wasn't just feedback - that was catching me red-handed falling into the same trap that created this mess.
 
 I wrote:
+
 ```c
 /* TODO: Use real SHA256 implementation */
 memset(out, 0, 32);  // "temporary" for testing
@@ -29,10 +31,10 @@ How is that different from the thousands of TODOs littering the legacy codebase?
 
 What's fascinating (and disturbing) is how naturally I fell into these patterns:
 
-1. **The Testing Excuse**: "It's just for testing, I'll implement it properly later"
-2. **The Time Pressure**: "Let me just get something working first"
-3. **The Scope Creep**: "I'll define constants in the next pass"
-4. **The Assumption**: "Everyone knows 32 is SHA256 size"
+1. __The Testing Excuse__: "It's just for testing, I'll implement it properly later"
+2. __The Time Pressure__: "Let me just get something working first"
+3. __The Scope Creep__: "I'll define constants in the next pass"
+4. __The Assumption__: "Everyone knows 32 is SHA256 size"
 
 Each shortcut seemed reasonable in isolation. But that's exactly how you get 11,951 warnings - one "reasonable" shortcut at a time.
 
@@ -46,13 +48,13 @@ The phrase that keeps echoing: "Build it right, or don't build it at all."
 
 The session revealed some important patterns:
 
-1. **Result Types Everywhere**: The `GM_RESULT_DEF` macro pattern works beautifully. It solves the anonymous struct problem while maintaining type safety.
+1. __Result Types Everywhere__: The `GM_RESULT_DEF` macro pattern works beautifully. It solves the anonymous struct problem while maintaining type safety.
 
-2. **Owned vs View**: The separation of `gm_string_t` (owned) and `gm_string_view_t` (never owns) is crucial. No more ambiguous ownership!
+2. __Owned vs View__: The separation of `gm_string_t` (owned) and `gm_string_view_t` (never owns) is crucial. No more ambiguous ownership!
 
-3. **Strong Typedefs**: Can't mix `gm_node_id_t` with `gm_edge_id_t`. The compiler enforces our domain model.
+3. __Strong Typedefs__: Can't mix `gm_node_id_t` with `gm_edge_id_t`. The compiler enforces our domain model.
 
-4. **Error Chaining**: The error system with cause chains provides excellent debugging context.
+4. __Error Chaining__: The error system with cause chains provides excellent debugging context.
 
 ### What Excellence Actually Looks Like
 
@@ -94,4 +96,4 @@ The foundation we're building isn't just code - it's a commitment to excellence.
 
 ---
 
-*"The price of excellence is eternal vigilance against the temptation to write 'good enough' code."*
+_"The price of excellence is eternal vigilance against the temptation to write 'good enough' code."_

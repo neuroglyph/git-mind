@@ -1,6 +1,7 @@
 # PRD: Co‑Thought MCP Service (Local Tools Integration)
 
 Table of Contents
+
 - Summary
 - Goals
 - Non‑Goals
@@ -14,20 +15,24 @@ Table of Contents
 - Rollout Plan
 
 ## Summary
+
 Define a small, local‑only service that tools/agents can use to read/write git‑mind edges and query the journal/cache via a stable interface. This enables human + AI co‑thought: AI suggests edges into a `suggested` lane; humans review and promote to `verified`.
 
 ## Goals
+
 - Provide a stable, local interface for edge CRUD and queries (no network dependence).
 - Respect branch/time semantics: all operations target an explicit repo + ref.
 - Enforce lane/attribution conventions for co‑thought workflows.
 - Remain an optional module that does not gate core releases.
 
 ## Non‑Goals
+
 - Remote/cloud service, authentication with external identity providers.
 - Cross‑repo federation or long‑lived daemon management.
 - Plugin runtime inside the service; keep core policies minimal.
 
 ## Scope and Assumptions
+
 - Local‑only transport (Unix domain socket on POSIX; Named Pipe on Windows). Optional loopback HTTP for dev mode.
 - Runs in the same workspace as the Git repo; reads/writes via libgitmind.
 - No external network calls; all data remains local.
@@ -36,13 +41,16 @@ Define a small, local‑only service that tools/agents can use to read/write git
 ## Interface Design
 
 Transport
+
 - Default: Unix domain socket at `.gitmind/mcp.sock` (repo‑relative) or `\\.\pipe\gitmind-mcp` on Windows.
 - Dev mode: `localhost:8765` (opt‑in), for easy testing.
 
 Resource: Edge
+
 - POST `/v1/edges`
   - Creates an edge (journal append) with names‑as‑truth fields.
   - Body (JSON):
+
     ```json
     {
       "repo": "/path/to/repo",
@@ -55,6 +63,7 @@ Resource: Edge
       "confidence": 0.85
     }
     ```
+
   - Response: `{ "ulid": "01H...", "commit": "<oid>" }`
 
 - GET `/v1/edges`
@@ -69,18 +78,22 @@ Resource: Edge
   - Tombstone/remove by ULID (append a negative confidence or dedicated tombstone record per policy).
 
 Health
-- GET `/v1/health` → `{ "status": "ok", "repo": "...", "head": "..." }`
+
+- GET `/v1/health` → `{ "status": "ok", "repo": "...", "head": "...", "gitmind_version": "x.y.z", "libgitmind": "a.b.c" }`
 
 Errors
+
 - JSON problem details: `{ "error": "invalid_argument", "message": "...", "field": "..." }`
 
 ## Data Model
+
 - Edge record aligns with libgitmind’s attributed edge (names‑as‑truth + attribution + lane + paths + SHAs + ULID + timestamp + confidence).
 - Derived IDs (`type_id`, `lane_id`) are never persisted across repos; computed on the fly for cache access.
 
 ## Flows
 
 Suggest Edge (AI)
+
 ```mermaid
 sequenceDiagram
   participant Tool
@@ -93,6 +106,7 @@ sequenceDiagram
 ```
 
 Review and Promote (Human)
+
 ```mermaid
 sequenceDiagram
   participant Human
@@ -107,15 +121,18 @@ sequenceDiagram
 ```
 
 ## Security and Privacy
+
 - Local‑only by default (UDS/Named Pipe); loopback HTTP is for dev/testing only.
 - No remote endpoints; no data leaves the machine unless the user explicitly exports.
 - Rate limiting and simple allowlist of repos to avoid accidental cross‑workspace access.
 
 ## Performance Targets
+
 - Edge append: < 5ms per request (excluding disk flush) in typical local repos.
 - Query: median < 10ms for common filters with cache on 100k edges; graceful fallback to journal scan if cache absent.
 
 ## Acceptance Criteria
+
 - Service starts/stops locally and serves `/v1/health`.
 - Can append edges with names‑as‑truth, attribution, and lanes to the journal.
 - Can query edges with filters for `--source` and `--lane` parity with CLI.
@@ -124,6 +141,7 @@ sequenceDiagram
 - Tests cover happy paths and error handling; docs include examples.
 
 ## Rollout Plan
+
 1) Stub service with UDS/Named Pipe transport and `/v1/health`.
 2) Implement POST `/v1/edges` (append), GET `/v1/edges` (query minimal).
 3) Add promotion and tombstone endpoints; harden filters.

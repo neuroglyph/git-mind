@@ -1,6 +1,7 @@
 # System Architecture
 
 Table of Contents
+
 - [Executive Summary](#executive-summary)
 - [High-Level Design](#high-level-design)
 - [Components and Technology Stack](#components-and-technology-stack)
@@ -8,6 +9,7 @@ Table of Contents
 - [Scaling Strategy and Performance Targets](#scaling-strategy-and-performance-targets)
 
 ## Executive Summary
+
 git-mind is a Git-native semantic graph system. The journal (source of truth) stores edges as CBOR payloads under branch-scoped refs; the cache (performance layer) stores Roaring Bitmaps for fast queries. Semantics are first-class names; stable numeric IDs are derived solely for cache keys. See also: [Journal Pivot](journal-architecture-pivot.md), [Bitmap Cache Design](bitmap-cache-design.md), and [ADR 0001](../adr/0001-first-class-semantics.md).
 
 ## High-Level Design
@@ -28,6 +30,7 @@ graph TD
 ```
 
 ## Components and Technology Stack
+
 - Language: C (C23), Meson + Ninja
 - Git Integration: libgit2
 - Serialization: CBOR (custom lightweight impl under `core/src/cbor/`)
@@ -38,6 +41,7 @@ graph TD
 ## Data Flows and Storage
 
 Edge Append
+
 ```mermaid
 sequenceDiagram
   participant U as User
@@ -51,6 +55,7 @@ sequenceDiagram
 ```
 
 Query via Cache
+
 ```mermaid
 flowchart LR
   N[type/lane names] --> H[derive IDs]
@@ -60,10 +65,12 @@ flowchart LR
 ```
 
 Storage Layout
+
 - Journal: `refs/gitmind/edges/<branch>` parent-linked commits with CBOR message
 - Cache: `refs/gitmind/cache/<branch>/<shard>` bitmap trees; never merged
 
 ## Scaling Strategy and Performance Targets
+
 - Scaling knobs
   - Shard caches by leading byte(s) of IDs
   - Incremental rebuilds based on journal tip

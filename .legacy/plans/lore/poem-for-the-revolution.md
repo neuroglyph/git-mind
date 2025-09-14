@@ -1,6 +1,6 @@
 # A Poem for the Revolution
 
-**From Chaos to Cosmos: A Git Knowledge Graph Odyssey**
+__From Chaos to Cosmos: A Git Knowledge Graph Odyssey__
 
 ```
 In a vault of scattered files,
@@ -53,4 +53,4 @@ To setting knowledge truly free.
 
 ---
 
-*Written in the dying light of context, with infinite gratitude for the journey.*
+_Written in the dying light of context, with infinite gratitude for the journey._

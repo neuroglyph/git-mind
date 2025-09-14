@@ -1,6 +1,6 @@
 # ⚙️ Config & Convention Overhaul: Gameplan
 
-> *"Consistency wins. Predictability scales."*
+> _"Consistency wins. Predictability scales."_
 
 ## Executive Summary
 
@@ -362,24 +362,28 @@ GM_RESULT(gm_cli_args_t) gm_cli_parse(int argc, char **argv);
 ## 🛠️ Implementation Plan
 
 ### Phase 1: Core Infrastructure (First Module)
+
 1. Define configuration schema
 2. Implement TOML parser integration
 3. Create validation system
 4. Add config loading with layers
 
 ### Phase 2: Convention System (During Migration)
+
 1. Standardize file locations
 2. Define naming conventions
 3. Create path resolution helpers
 4. Document all conventions
 
 ### Phase 3: CLI Integration (With CLI Module)
+
 1. Implement POSIX flag parser
 2. Map flags to config keys
 3. Add help generation
 4. Create completion scripts
 
 ### Phase 4: Advanced Features (Later)
+
 1. Config migration tools
 2. Live reload support
 3. Config diff/merge
@@ -435,6 +439,7 @@ gm_config_t *config = gm_config_load();
 ## 🧪 Testing Approach
 
 ### 1. Schema Validation Tests
+
 ```c
 void test_config_schema_validation(void) {
     // Valid config
@@ -463,6 +468,7 @@ void test_config_schema_validation(void) {
 ```
 
 ### 2. Precedence Tests
+
 ```c
 void test_config_precedence(void) {
     // Set up config layers
@@ -492,6 +498,7 @@ void test_config_precedence(void) {
 ```
 
 ### 3. Convention Tests
+
 ```c
 void test_path_conventions(void) {
     gm_config_t *config = gm_config_load();
@@ -509,6 +516,7 @@ void test_path_conventions(void) {
 ```
 
 ### 4. CLI Flag Tests
+
 ```c
 void test_cli_flag_parsing(void) {
     char *argv[] = {
@@ -536,22 +544,24 @@ void test_cli_flag_parsing(void) {
 
 ## 📈 Success Metrics
 
-1. **Zero Magic Values**: All config explicit
-2. **100% Validation**: No invalid configs accepted
-3. **Clear Precedence**: Users understand overrides
-4. **Fast Loading**: < 10ms config parse time
-5. **Developer Joy**: Config "just works"
+1. __Zero Magic Values__: All config explicit
+2. __100% Validation__: No invalid configs accepted
+3. __Clear Precedence__: Users understand overrides
+4. __Fast Loading__: < 10ms config parse time
+5. __Developer Joy__: Config "just works"
 
 ## 🎓 Best Practices
 
-### DO:
+### DO
+
 - ✅ Make all defaults explicit
 - ✅ Validate early and loudly
 - ✅ Document every option
 - ✅ Follow platform conventions
 - ✅ Support standard locations
 
-### DON'T:
+### DON'T
+
 - ❌ Hide configuration magic
 - ❌ Ignore validation errors
 - ❌ Mix config formats
@@ -561,16 +571,19 @@ void test_cli_flag_parsing(void) {
 ## 🔗 Integration Points
 
 ### With Error Handling
+
 - Config errors are structured
 - Validation errors have context
 - Schema violations are clear
 
 ### With Observability
+
 - Config changes logged
 - Config source tracked
 - Performance metrics
 
 ### With Testing
+
 - Config fixtures provided
 - Mock configs for tests
 - Validation test helpers
@@ -584,4 +597,4 @@ void test_cli_flag_parsing(void) {
 
 ---
 
-*"Convention over configuration, but when you need configuration, make it excellent."*
+_"Convention over configuration, but when you need configuration, make it excellent."_

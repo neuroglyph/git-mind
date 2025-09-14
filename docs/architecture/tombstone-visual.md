@@ -1,6 +1,7 @@
 # Visual Guide: How Tombstones Work
 
 Table of Contents
+
 - [The Problem: Traditional Deletion](#the-problem-traditional-deletion)
 - [The Solution: Tombstones](#the-solution-tombstones)
 
@@ -185,11 +186,12 @@ sequenceDiagram
 
 ## Summary
 
-Tombstones are edges with **negative confidence** that:
+Tombstones are edges with __negative confidence__ that:
+
 - 📜 Preserve complete history
 - 👻 Make links "disappear" from user view
 - 🔄 Allow clean distributed merges
 - ♻️ Enable future resurrection
 - 🔍 Provide audit trails
 
-The user sees the **behavior** (link gone) without knowing the **implementation** (tombstone edge)!
+The user sees the __behavior__ (link gone) without knowing the __implementation__ (tombstone edge)!

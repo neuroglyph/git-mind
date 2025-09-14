@@ -4,11 +4,12 @@
 
 > "Long live the king!" - Scar, moments before disaster
 
-### What is this?
+### What is this
 
 Just as Disney invented AI flocking algorithms for The Lion King's wildebeest stampede scene, we use Roaring Bitmaps to handle massive edge queries in git-mind.
 
 This benchmark simulates Mufasa's worst day:
+
 - Thousands of wildebeest (edges) stampeding
 - Half running TO Mufasa, half running FROM
 - Can our cache help him survive? (Spoiler: Yes!)
@@ -49,4 +50,4 @@ No TODOs were harmed in the making of this benchmark.
 
 ---
 
-*"Remember who you are..." - A developer with a working cache!* 🦁
+_"Remember who you are..." - A developer with a working cache!_ 🦁

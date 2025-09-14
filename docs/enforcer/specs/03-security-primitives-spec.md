@@ -1,6 +1,6 @@
 # Specification: Security Primitives
 
-> *"Security isn't something you add later. It's something you build in from the start."*
+> _"Security isn't something you add later. It's something you build in from the start."_
 
 ## Overview
 
@@ -447,4 +447,4 @@ When implementing any function that handles external input:
 
 ---
 
-*"The best security bug is the one that can't exist in the first place."*
+_"The best security bug is the one that can't exist in the first place."_

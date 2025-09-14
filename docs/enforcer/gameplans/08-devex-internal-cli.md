@@ -1,6 +1,6 @@
 # 🛠️ DevEx: Internal CLI for Developer Tools - Gameplan
 
-> *"Developer experience is user experience."*
+> _"Developer experience is user experience."_
 
 ## Executive Summary
 
@@ -571,24 +571,28 @@ const char *test_template =
 ## 🛠️ Implementation Plan
 
 ### Phase 1: Core Framework (Immediate)
+
 1. Create dev command infrastructure
 2. Implement basic inspection tools
 3. Add output format support
 4. Create help system
 
 ### Phase 2: Debug Tools (During Migration)
+
 1. Add tracing infrastructure
 2. Implement watch/breakpoint system
 3. Create interactive debugger
 4. Add debug macros
 
 ### Phase 3: Simulation & Testing (Per Module)
+
 1. Build fixture generators
 2. Add chaos mode
 3. Create replay system
 4. Implement fuzz helpers
 
 ### Phase 4: Profiling & Generation (Later)
+
 1. Add profiling infrastructure
 2. Create analysis tools
 3. Build code generators
@@ -644,6 +648,7 @@ Found 23 matching edges:
 ## 🧪 Testing Approach
 
 ### 1. Command Testing
+
 ```c
 void test_dev_command_parsing(void) {
     char *argv[] = {"gm", "dev", "trace", "--calls", "--filter=test"};
@@ -657,6 +662,7 @@ void test_dev_command_parsing(void) {
 ```
 
 ### 2. Tool Integration Tests
+
 ```c
 void test_graph_dump_formats(void) {
     // Create test graph
@@ -675,22 +681,24 @@ void test_graph_dump_formats(void) {
 
 ## 📈 Success Metrics
 
-1. **Developer Efficiency**: 50% faster debugging
-2. **Tool Coverage**: Every major task has a tool
-3. **Discovery**: < 5 seconds to find right command
-4. **Performance**: Tools add < 1% overhead
-5. **Adoption**: 90% of devs use daily
+1. __Developer Efficiency__: 50% faster debugging
+2. __Tool Coverage__: Every major task has a tool
+3. __Discovery__: < 5 seconds to find right command
+4. __Performance__: Tools add < 1% overhead
+5. __Adoption__: 90% of devs use daily
 
 ## 🎓 Best Practices
 
-### DO:
+### DO
+
 - ✅ Make tools discoverable
 - ✅ Provide helpful examples
 - ✅ Support common workflows
 - ✅ Output in standard formats
 - ✅ Design for scripting
 
-### DON'T:
+### DON'T
+
 - ❌ Require complex setup
 - ❌ Hide useful features
 - ❌ Break existing workflows
@@ -700,16 +708,19 @@ void test_graph_dump_formats(void) {
 ## 🔗 Integration Points
 
 ### With Observability
+
 - Dev tools use same infrastructure
 - Profiling data exported to metrics
 - Trace output follows log format
 
 ### With Testing
+
 - Fixture generation for tests
 - Mock creation automated
 - Replay for regression tests
 
 ### With Error Handling
+
 - Debug tools show error chains
 - Trace includes error context
 - Profiling tracks error paths
@@ -723,4 +734,4 @@ void test_graph_dump_formats(void) {
 
 ---
 
-*"The best developers build the best tools. The best tools build the best developers."*
+_"The best developers build the best tools. The best tools build the best developers."_

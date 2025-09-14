@@ -47,12 +47,12 @@ For workflows that apply to ALL contributors (human and AI):
 
 When you’re given a job to do, here’s how to do it:
 
-> [!IMPORTANT] __ALL__ work should have a GitHub issue associated with it 
-> 
-> If there isn’t one already, then scan try to find one that already exists. If you can’t find one, make a new one. 
-> 
-> __EVERY COMMIT MESSAGE MUST INCLUDE A REFERENCE TO A GITHUB ISSUE__. 
-> 
+> [!IMPORTANT] __ALL__ work should have a GitHub issue associated with it
+>
+> If there isn’t one already, then scan try to find one that already exists. If you can’t find one, make a new one.
+>
+> __EVERY COMMIT MESSAGE MUST INCLUDE A REFERENCE TO A GITHUB ISSUE__.
+>
 > _This will be enforced via git hooks in the near future._
 
 ### 2.1. PLAN THE JOB
@@ -66,7 +66,7 @@ When you’re given a job to do, here’s how to do it:
 1. __GREEN__ the builds, green the tests
 2. __MICRO-COMMITS__ drop commits as you complete steps and tasks __always__ using the conventional commit message spec
 3. __DROP A SITREP__ if you hit a snag, need input from the user
-4. __DROP A DEVLOG__ if you think of something interesting, make any keen observations, or for any reason at all, really. __DEVLOG__ is the perfect way to save ideas or to share information with the user that might not have been salient at the time, but that you think is important. 
+4. __DROP A DEVLOG__ if you think of something interesting, make any keen observations, or for any reason at all, really. __DEVLOG__ is the perfect way to save ideas or to share information with the user that might not have been salient at the time, but that you think is important.
 5. Your memory banks are there for you to use, so please use them as you wish.
 
 > [!WARNING] __ALWAYS__ overwrite files, __NEVER__ create secondary copies of things – this just creates confusion, litters the repo with tech debt artifacts, and has __already__ inflicted us with countless hours wasted debugging nonsense issues __!!!__

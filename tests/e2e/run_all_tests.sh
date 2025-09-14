@@ -28,14 +28,18 @@ echo "====================================${NC}"
 echo ""
 
 # Check if git-mind is built
-if [ ! -x "../../git-mind" ]; then
+# Determine binary location
+if [ -n "${GIT_MIND:-}" ] && [ -x "$GIT_MIND" ]; then
+    : # use provided GIT_MIND
+elif [ -x "../../git-mind" ]; then
+    export GIT_MIND="$(cd ../.. && pwd)/git-mind"
+elif [ -x "../../build/git-mind" ]; then
+    export GIT_MIND="$(cd ../.. && pwd)/build/git-mind"
+else
     echo -e "${RED}ERROR: git-mind not built!${NC}"
-    echo "Run 'make build' first"
+    echo "Set GIT_MIND to the built binary or run 'ninja -C build git-mind' first"
     exit 1
 fi
-
-# Export binary location
-export GIT_MIND="$(cd ../.. && pwd)/git-mind"
 
 # Run test suites
 FAILED=0

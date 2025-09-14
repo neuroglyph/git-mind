@@ -16,19 +16,35 @@
 
 /* Path and String Sizes */
 #define PATH_BUFFER_SIZE 4096 /* Maximum path length */
+#ifndef REF_NAME_BUFFER_SIZE
 #define REF_NAME_BUFFER_SIZE                                                   \
     512 /* Git reference name buffer (must fit prefix + branch) */
+#endif
+#ifndef SHA_HEX_SIZE
 #define SHA_HEX_SIZE 41   /* SHA1 hex string size (40 + null) */
+#endif
 #define SHA_BYTES_SIZE 20 /* SHA1 size in bytes */
 #define ZERO_SHA_STRING "0000000000000000000000000000000000000000"
+#ifndef RM_COMMAND_EXTRA_SIZE
 #define RM_COMMAND_EXTRA_SIZE 32 /* Extra space for rm -rf command */
+#endif
 
 /* Time Conversion Constants */
-#define MILLIS_PER_SECOND 1000
-#define MICROS_PER_SECOND 1000000
-#define NANOS_PER_SECOND 1000000000
-#define NANOS_PER_MILLI 1000000
-#define NANOS_PER_MICRO 1000
+#ifndef MILLIS_PER_SECOND
+#define MILLIS_PER_SECOND 1000ULL
+#endif
+#ifndef MICROS_PER_SECOND
+#define MICROS_PER_SECOND 1000000ULL
+#endif
+#ifndef NANOS_PER_SECOND
+#define NANOS_PER_SECOND 1000000000ULL
+#endif
+#ifndef NANOS_PER_MILLI
+#define NANOS_PER_MILLI 1000000ULL
+#endif
+#ifndef NANOS_PER_MICRO
+#define NANOS_PER_MICRO 1000ULL
+#endif
 
 /* Git Constants */
 #define EMPTY_TREE_SHA "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
@@ -76,8 +92,10 @@
 /* Cache Build Constants */
 #define CACHE_BUILD_BATCH_SIZE 1000    /* Edges per batch */
 #define EDGE_MAP_BUCKETS 1024          /* Hash map bucket count */
-#define KB_SIZE 1024                   /* Bytes per KB for display */
+#define KB_SIZE 1024                   /* Bytes per KiB (binary). Use 1000 for KB (decimal). */
+#ifndef CACHE_SIZE_ESTIMATE_PER_EDGE
 #define CACHE_SIZE_ESTIMATE_PER_EDGE 4 /* Estimated bytes per edge in cache */
+#endif
 
 /* Display Constants */
 #define PROGRESS_UPDATE_INTERVAL 100 /* Update progress every N items */

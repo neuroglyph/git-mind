@@ -1,6 +1,6 @@
 # 📖 Domain Language Purity: Gameplan
 
-> *"Speak the language of your domain."*
+> _"Speak the language of your domain."_
 
 ## Executive Summary
 
@@ -507,24 +507,28 @@ gm_result_t gm_edge_list_add(gm_edge_list_t *list, gm_edge_t *edge);
 ## 🛠️ Implementation Plan
 
 ### Phase 1: Core Types (Immediate)
+
 1. Define base domain types
 2. Create type constructors
 3. Add validation functions
 4. Document type semantics
 
 ### Phase 2: Constant Migration (During Refactor)
+
 1. Replace magic numbers with enums
 2. Define string constants
 3. Create lookup tables
 4. Add conversion functions
 
 ### Phase 3: API Semantics (Per Module)
+
 1. Rename generic functions
 2. Add type-specific APIs
 3. Create domain helpers
 4. Update documentation
 
 ### Phase 4: Type Safety (Ongoing)
+
 1. Add compile-time checks
 2. Create type-safe collections
 3. Implement validators
@@ -660,6 +664,7 @@ on_process
 ## 🧪 Testing Approach
 
 ### 1. Type Safety Tests
+
 ```c
 void test_type_safety(void) {
     // These should not compile (checked in build)
@@ -681,6 +686,7 @@ void test_type_safety(void) {
 ```
 
 ### 2. Domain Rule Tests
+
 ```c
 void test_domain_rules(void) {
     gm_edge_t edge = {
@@ -698,6 +704,7 @@ void test_domain_rules(void) {
 ```
 
 ### 3. API Semantics Tests
+
 ```c
 void test_semantic_api(void) {
     // Clear, intention-revealing test
@@ -726,22 +733,24 @@ void test_semantic_api(void) {
 
 ## 📈 Success Metrics
 
-1. **Zero Raw Types**: No char*/int/void* in public APIs
-2. **100% Semantic Names**: Every identifier tells a story
-3. **Type Safety**: Compiler catches type mismatches
-4. **Domain Coverage**: All concepts have types
-5. **API Clarity**: New developers understand immediately
+1. __Zero Raw Types__: No char*/int/void* in public APIs
+2. __100% Semantic Names__: Every identifier tells a story
+3. __Type Safety__: Compiler catches type mismatches
+4. __Domain Coverage__: All concepts have types
+5. __API Clarity__: New developers understand immediately
 
 ## 🎓 Best Practices
 
-### DO:
+### DO
+
 - ✅ Create types for domain concepts
 - ✅ Use semantic function names
 - ✅ Validate at type boundaries
 - ✅ Document type invariants
 - ✅ Prefer composition over primitives
 
-### DON'T:
+### DON'T
+
 - ❌ Use generic names (manager, handler)
 - ❌ Expose raw primitives
 - ❌ Mix abstraction levels
@@ -751,16 +760,19 @@ void test_semantic_api(void) {
 ## 🔗 Integration Points
 
 ### With Error Handling
+
 - Domain-specific error types
 - Validation errors are semantic
 - Error messages use domain terms
 
 ### With Configuration
+
 - Config uses domain types
 - Validation rules configurable
 - Type mappings defined
 
 ### With Testing
+
 - Type generators for properties
 - Domain-specific assertions
 - Semantic test builders
@@ -774,4 +786,4 @@ void test_semantic_api(void) {
 
 ---
 
-*"Make illegal states unrepresentable. Make the right thing easy and the wrong thing impossible."*
+_"Make illegal states unrepresentable. Make the right thing easy and the wrong thing impossible."_

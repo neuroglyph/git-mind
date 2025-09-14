@@ -1,6 +1,7 @@
 # Static Analysis Tools for Git-Mind
 
 Table of Contents
+
 - [Overview of Static Analysis Tools](#overview-of-static-analysis-tools)
 - [Currently Configured Tools](#currently-configured-tools-)
 - [Additional Tools Available](#additional-tools-available)
@@ -15,28 +16,32 @@ Static analysis examines code without executing it, finding bugs that testing mi
 
 ## Currently Configured Tools ✅
 
-### 1. **Clang-Tidy** (CONFIGURED)
-- **What it catches**: Style violations, common bugs, performance issues
-- **Strengths**: Highly configurable, integrates with build system
-- **Our config**: Enforces 15-line functions, catches magic numbers
-- **Run**: `make lint`
+### 1. __Clang-Tidy__ (CONFIGURED)
 
-### 2. **Cppcheck** (CONFIGURED)
-- **What it catches**: Memory leaks, buffer overruns, null derefs
-- **Strengths**: Zero false positives philosophy, very reliable
-- **Our config**: All checks enabled except system headers
-- **Run**: `make lint`
+- __What it catches__: Style violations, common bugs, performance issues
+- __Strengths__: Highly configurable, integrates with build system
+- __Our config__: Enforces 15-line functions, catches magic numbers
+- __Run__: `make lint`
 
-### 3. **Custom Checkers** (CONFIGURED)
+### 2. __Cppcheck__ (CONFIGURED)
+
+- __What it catches__: Memory leaks, buffer overruns, null derefs
+- __Strengths__: Zero false positives philosophy, very reliable
+- __Our config__: All checks enabled except system headers
+- __Run__: `make lint`
+
+### 3. __Custom Checkers__ (CONFIGURED)
+
 - Function length enforcement
 - Magic value detection
 - Output control verification
 - Dependency injection checking
-- **Run**: `make check-quality`
+- __Run__: `make check-quality`
 
 ## Additional Tools Available
 
-### 4. **Clang Static Analyzer** (scan-build)
+### 4. __Clang Static Analyzer__ (scan-build)
+
 ```bash
 # Install
 apt install clang-tools
@@ -47,16 +52,20 @@ scan-build -enable-checker alpha.security make -C src
 # View results
 scan-view /tmp/scan-build-*
 ```
-**Catches**: Deep path-sensitive bugs, security vulnerabilities
 
-### 5. **GCC Static Analyzer** (-fanalyzer)
+__Catches__: Deep path-sensitive bugs, security vulnerabilities
+
+### 5. __GCC Static Analyzer__ (-fanalyzer)
+
 ```bash
 # Requires GCC 10+
 make -C src CFLAGS="-fanalyzer -Wanalyzer-too-complex"
 ```
-**Catches**: Buffer overflows, use-after-free, taint analysis
 
-### 6. **PVS-Studio** (Commercial, Free for OSS)
+__Catches__: Buffer overflows, use-after-free, taint analysis
+
+### 6. __PVS-Studio__ (Commercial, Free for OSS)
+
 ```bash
 # Register for free OSS license
 # https://pvs-studio.com/en/order/open-source-license/
@@ -65,10 +74,12 @@ make -C src CFLAGS="-fanalyzer -Wanalyzer-too-complex"
 pvs-studio-analyzer analyze -o pvs.log
 plog-converter -a GA:1,2 -t errorfile pvs.log -o report.txt
 ```
-**Catches**: Advanced bugs, typos, security issues
-**Strengths**: Very low false positive rate
 
-### 7. **Coverity** (Free for OSS)
+__Catches__: Advanced bugs, typos, security issues
+__Strengths__: Very low false positive rate
+
+### 7. __Coverity__ (Free for OSS)
+
 ```bash
 # Register at https://scan.coverity.com/
 # Download Coverity Build Tool
@@ -77,10 +88,12 @@ cov-build --dir cov-int make -C src
 tar czf git-mind.tgz cov-int
 # Upload to Coverity Scan
 ```
-**Catches**: Complex interprocedural bugs, security vulnerabilities
-**Used by**: Linux kernel, Firefox, Python
 
-### 8. **CodeQL** (GitHub)
+__Catches__: Complex interprocedural bugs, security vulnerabilities
+__Used by__: Linux kernel, Firefox, Python
+
+### 8. __CodeQL__ (GitHub)
+
 ```yaml
 # .github/workflows/codeql.yml
 name: "CodeQL"
@@ -96,10 +109,12 @@ jobs:
     - run: make -C src
     - uses: github/codeql-action/analyze@v2
 ```
-**Catches**: Security vulnerabilities, code patterns
-**Strengths**: Semantic code analysis, custom queries
 
-### 9. **Infer** (Facebook)
+__Catches__: Security vulnerabilities, code patterns
+__Strengths__: Semantic code analysis, custom queries
+
+### 9. __Infer__ (Facebook)
+
 ```bash
 # Install
 brew install infer  # macOS
@@ -108,10 +123,12 @@ apt install infer   # Linux
 # Run
 infer run -- make -C src
 ```
-**Catches**: Null derefs, memory leaks, race conditions
-**Strengths**: Interprocedural, incremental analysis
 
-### 10. **Flawfinder** (Security-focused)
+__Catches__: Null derefs, memory leaks, race conditions
+__Strengths__: Interprocedural, incremental analysis
+
+### 10. __Flawfinder__ (Security-focused)
+
 ```bash
 # Install
 pip install flawfinder
@@ -119,7 +136,8 @@ pip install flawfinder
 # Run
 flawfinder --html --context src/ > security-report.html
 ```
-**Catches**: Security vulnerabilities, unsafe functions
+
+__Catches__: Security vulnerabilities, unsafe functions
 
 ## Comparison Matrix
 
@@ -138,6 +156,7 @@ flawfinder --html --context src/ > security-report.html
 ## Recommended Setup
 
 ### For Development (Fast Feedback)
+
 ```bash
 # Quick checks on every commit
 make lint              # Clang-tidy + Cppcheck
@@ -145,6 +164,7 @@ make check-quality     # Custom checks
 ```
 
 ### For CI/CD (Thorough)
+
 ```yaml
 # GitHub Actions
 - Run clang-tidy
@@ -155,6 +175,7 @@ make check-quality     # Custom checks
 ```
 
 ### For Releases (Deep Analysis)
+
 ```bash
 # Run everything
 ./tools/code-quality/static-analysis.sh
@@ -167,22 +188,26 @@ make check-quality     # Custom checks
 ## Integration with Git-Mind
 
 ### Pre-commit (Quick)
+
 - Function length check
 - Magic value detection
 - Basic formatting
 
 ### Pre-push (Medium)
+
 - Clang-tidy
 - Cppcheck
 - Custom quality checks
 
 ### CI Pipeline (Full)
+
 - All of the above
 - Clang Static Analyzer
 - GCC analyzer
 - CodeQL
 
 ### Release Process (Everything)
+
 - All of the above
 - Coverity Scan
 - PVS-Studio
@@ -191,6 +216,7 @@ make check-quality     # Custom checks
 ## Dealing with False Positives
 
 ### 1. Suppress with Comments
+
 ```c
 // cppcheck-suppress uninitvar
 int x = get_value();  // OK: get_value initializes via pointer
@@ -200,6 +226,7 @@ const int BUFFER_SIZE = 8192;  // OK: Well-known value
 ```
 
 ### 2. Configure Tool
+
 ```yaml
 # .clang-tidy
 Checks: '-readability-magic-numbers'
@@ -209,35 +236,40 @@ CheckOptions:
 ```
 
 ### 3. Fix the Code
+
 Often the tool is right! Consider if the warning indicates a real issue.
 
 ## ROI Analysis
 
 ### High Value (Use Always)
-- **Clang-tidy**: Fast, catches real bugs
-- **Cppcheck**: Very few false positives
-- **Custom checks**: Enforce project standards
+
+- __Clang-tidy__: Fast, catches real bugs
+- __Cppcheck__: Very few false positives
+- __Custom checks__: Enforce project standards
 
 ### Medium Value (Use in CI)
-- **Clang Analyzer**: Deeper but slower
-- **GCC analyzer**: Different perspective
-- **CodeQL**: Great for security
+
+- __Clang Analyzer__: Deeper but slower
+- __GCC analyzer__: Different perspective
+- __CodeQL__: Great for security
 
 ### Situational Value
-- **PVS-Studio**: Excellent but commercial
-- **Coverity**: Great but requires setup
-- **Infer**: Good for specific bug classes
+
+- __PVS-Studio__: Excellent but commercial
+- __Coverity__: Great but requires setup
+- __Infer__: Good for specific bug classes
 
 ## Getting Started
 
-1. **Now**: Run `make lint` locally
-2. **Today**: Install pre-commit hooks
-3. **This Week**: Add to CI pipeline
-4. **This Month**: Register for Coverity/PVS-Studio
+1. __Now__: Run `make lint` locally
+2. __Today__: Install pre-commit hooks
+3. __This Week__: Add to CI pipeline
+4. __This Month__: Register for Coverity/PVS-Studio
 
 ## Summary
 
 We already have good static analysis coverage with:
+
 - Clang-tidy (configured)
 - Cppcheck (configured)
 - Custom project-specific checks
@@ -245,6 +277,7 @@ We already have good static analysis coverage with:
 - CI integration
 
 Additional tools to consider:
+
 - Clang Static Analyzer for security
 - CodeQL for GitHub integration
 - Coverity/PVS-Studio for deep analysis
