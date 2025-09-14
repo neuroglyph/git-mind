@@ -6,6 +6,8 @@
 #include <string.h>
 
 #include "gitmind/edge_attributed.h"
+#include "gitmind/cbor/cbor.h"
+#include "gitmind/cbor/keys.h"
 #include "gitmind/types.h"
 
 static void test_roundtrip_full(void) {
@@ -53,32 +55,57 @@ static void test_roundtrip_full(void) {
 
 static void test_legacy_backfill(void) {
     printf("test_edge_attributed_legacy_backfill... ");
-    /* Build CBOR with only legacy fields, omitting OID keys entirely */
-    gm_edge_attributed_t e = {0};
-    memset(e.src_sha, 0x0A, GM_SHA1_SIZE);
-    memset(e.tgt_sha, 0x0B, GM_SHA1_SIZE);
-    e.rel_type = GM_REL_IMPLEMENTS;
-    e.confidence = 0x3C00;
-    e.timestamp = 9999;
-    strcpy(e.src_path, "x.c");
-    strcpy(e.tgt_path, "y.c");
-    strcpy(e.ulid, "01ARZ3NDEKTSV4RRFFQ69G5FAV");
-    e.attribution.source_type = GM_SOURCE_HUMAN;
-    strcpy(e.attribution.author, "me@example.com");
-    e.attribution.session_id[0] = '\0';
-    e.attribution.flags = 0;
-    e.lane = GM_LANE_DEFAULT;
+    /* Build CBOR with only legacy fields + minimal attribution */
+    uint8_t buf[1024]; size_t off = 0; (void)buf;
+    /* fields: src_sha,tgt_sha,rel,conf,ts,src_path,tgt_path,ulid, src_type,author,session,flags,lane => 13 */
+    buf[off++] = (uint8_t)(0xA0 | 13);
+    gm_result_size_t r;
+    /* src_sha */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_SRC_SHA, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    uint8_t src_sha[GM_SHA1_SIZE]; memset(src_sha, 0x0A, sizeof src_sha);
+    r = gm_cbor_write_bytes(buf + off, sizeof buf - off, src_sha, GM_SHA1_SIZE); assert(r.ok); off += r.u.val;
+    /* tgt_sha */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_TGT_SHA, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    uint8_t tgt_sha[GM_SHA1_SIZE]; memset(tgt_sha, 0x0B, sizeof tgt_sha);
+    r = gm_cbor_write_bytes(buf + off, sizeof buf - off, tgt_sha, GM_SHA1_SIZE); assert(r.ok); off += r.u.val;
+    /* rel */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_REL_TYPE, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    r = gm_cbor_write_uint(GM_REL_IMPLEMENTS, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    /* conf */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_CONFIDENCE, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    r = gm_cbor_write_uint(0x3C00, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    /* ts */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_TIMESTAMP, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    r = gm_cbor_write_uint(9999, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    /* src_path */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_SRC_PATH, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    r = gm_cbor_write_text(buf + off, sizeof buf - off, "x.c"); assert(r.ok); off += r.u.val;
+    /* tgt_path */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_TGT_PATH, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    r = gm_cbor_write_text(buf + off, sizeof buf - off, "y.c"); assert(r.ok); off += r.u.val;
+    /* ulid */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_ULID, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    r = gm_cbor_write_text(buf + off, sizeof buf - off, "01ARZ3NDEKTSV4RRFFQ69G5FAV"); assert(r.ok); off += r.u.val;
+    /* source_type */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_SOURCE_TYPE, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    r = gm_cbor_write_uint(GM_SOURCE_HUMAN, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    /* author */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_AUTHOR, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    r = gm_cbor_write_text(buf + off, sizeof buf - off, "me@example.com"); assert(r.ok); off += r.u.val;
+    /* session */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_SESSION, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    r = gm_cbor_write_text(buf + off, sizeof buf - off, ""); assert(r.ok); off += r.u.val;
+    /* flags */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_FLAGS, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    r = gm_cbor_write_uint(0, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    /* lane */
+    r = gm_cbor_write_uint(GM_CBOR_KEY_LANE, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
+    r = gm_cbor_write_uint(GM_LANE_DEFAULT, buf + off, sizeof buf - off); assert(r.ok); off += r.u.val;
 
-    /* Encode via public encoder includes OIDs; simulate legacy by truncating before OIDs */
-    uint8_t buf[2048]; size_t len = sizeof buf;
-    gm_result_void_t enc = gm_edge_attributed_encode_cbor(&e, buf, &len);
-    assert(enc.ok);
-    /* Manually remove the last 2 OID entries (naive: rely on keys ordering); here we'll rebuild smaller CBOR */
-    /* For brevity in test, we will accept that decoder supports full maps; legacy-only decode is exercised elsewhere. */
-    gm_result_edge_attributed_t dec = gm_edge_attributed_decode_cbor(buf, len);
+    gm_result_edge_attributed_t dec = gm_edge_attributed_decode_cbor(buf, off);
     assert(dec.ok);
     gm_edge_attributed_t d = dec.u.val;
-    assert(!git_oid_iszero(&d.src_oid));
+    assert(!git_oid_iszero(&d.src_oid)); /* backfilled from SHA */
     assert(!git_oid_iszero(&d.tgt_oid));
     printf("OK\n");
 }
@@ -91,4 +118,3 @@ int main(void) {
     printf("\nAll Attributed Edge CBOR Tests Passed! ✅\n");
     return 0;
 }
-
