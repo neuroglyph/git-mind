@@ -29,6 +29,37 @@ reviews:
       mode: warning
     issue_assessment:
       mode: warning
-tools:
-  github-checks:
-    timeout_ms: 300000
+# CodeRabbit configuration
+# Goal: reduce noisy line comments on docs/legacy; prefer summaries
+version: 1
+reviews:
+  profile: chill
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  changed_files_summary: true
+  tools:
+    github-checks:
+      timeout_ms: 300000
+  # Ignore common generated/vendor paths from review
+  path_filters:
+    - "!build/**"
+    - "!dist/**"
+    - "!node_modules/**"
+  # Instruct summarization-only for docs/legacy/markdown
+  path_instructions:
+    - path: "docs/**"
+      instructions: "Do not post inline comments in these files. Summarize feedback in the high-level review only; treat as non-blocking."
+    - path: ".legacy/**"
+      instructions: "Do not post inline comments in these files. Summarize feedback in the high-level review only; treat as non-blocking."
+    - path: "**/*.md"
+      instructions: "Do not post inline comments in these files. Summarize feedback in the high-level review only; treat as non-blocking."
+  # Keep pre-merge checks non-blocking
+  pre_merge_checks:
+    docstrings:
+      mode: off
+    title:
+      mode: warning
+    description:
+      mode: warning
+    issue_assessment:
+      mode: warning
