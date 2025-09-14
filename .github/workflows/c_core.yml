@@ -56,7 +56,8 @@ jobs:
           fi
           docker run --rm --label com.gitmind.project=git-mind \
             -u "$(id -u):$(id -g)" \
-            -v "$PWD":/workspace -w /workspace -e GITMIND_DOCKER=1 "$IMAGE" bash -lc '
+            -v "$PWD":/workspace -w /workspace \
+            -e GITMIND_DOCKER=1 -e GITMIND_SAFETY=off "$IMAGE" bash -lc '
               set -euo pipefail
               BUILD_DIR=/workspace/build-e2e
               if [ -d "$BUILD_DIR" ]; then
