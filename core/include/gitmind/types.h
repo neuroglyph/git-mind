@@ -6,6 +6,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <git2/oid.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,6 +20,10 @@ extern "C" {
 /* Size constants */
 #define GM_SHA1_SIZE 20
 #define GM_SHA256_SIZE 32
+#ifndef GIT_OID_RAWSZ
+#define GIT_OID_RAWSZ 20
+#endif
+#define GM_OID_RAWSZ GIT_OID_RAWSZ
 #define GM_PATH_MAX 256
 #define GM_ULID_SIZE 26
 #define GM_FORMAT_BUFFER_SIZE 512
@@ -37,6 +42,10 @@ typedef enum {
 } gm_rel_type_t;
 
 /* Include sub-types */
+/**
+ * OID type (SHA-agnostic). Use instead of raw byte arrays in new code.
+ */
+typedef git_oid gm_oid_t;
 
 #ifdef __cplusplus
 }

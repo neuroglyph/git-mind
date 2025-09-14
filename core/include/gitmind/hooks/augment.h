@@ -31,8 +31,8 @@ extern "C" {
  * @param sha_out   Output buffer for 20-byte SHA-1
  * @return          0 on success, error code otherwise
  */
-int get_blob_sha(git_repository *repo, const char *commit_ref,
-                 const char *file_path, uint8_t *sha_out);
+int gm_hook_get_blob_sha(git_repository *repo, const char *commit_ref,
+                         const char *file_path, gm_oid_t *sha_out);
 
 /* Find recent edges with given source blob
  *
@@ -42,8 +42,8 @@ int get_blob_sha(git_repository *repo, const char *commit_ref,
  * @param count_out Number of edges found
  * @return          0 on success, error code otherwise
  */
-int find_edges_by_source(gm_context_t *ctx, const uint8_t *src_sha,
-                         gm_edge_t **edges_out, size_t *count_out);
+int gm_hook_find_edges_by_source(gm_context_t *ctx, const gm_oid_t *src_oid,
+                                 gm_edge_t **edges_out, size_t *count_out);
 
 /* Create AUGMENTS edge between two blob versions
  *
@@ -53,8 +53,8 @@ int find_edges_by_source(gm_context_t *ctx, const uint8_t *src_sha,
  * @param file_path Path to file (for human readability)
  * @return          0 on success, error code otherwise
  */
-int create_augments_edge(gm_context_t *ctx, const uint8_t *old_sha,
-                         const uint8_t *new_sha, const char *file_path);
+int gm_hook_create_augments_edge(gm_context_t *ctx, const gm_oid_t *old_oid,
+                                 const gm_oid_t *new_oid, const char *file_path);
 
 /* Process a single changed file
  *
@@ -63,8 +63,8 @@ int create_augments_edge(gm_context_t *ctx, const uint8_t *old_sha,
  * @param file_path Path to changed file
  * @return          0 on success, error code otherwise
  */
-int process_changed_file(gm_context_t *ctx, git_repository *repo,
-                         const char *file_path);
+int gm_hook_process_changed_file(gm_context_t *ctx, git_repository *repo,
+                                 const char *file_path);
 
 /* Check if this is a merge commit
  *
@@ -72,7 +72,14 @@ int process_changed_file(gm_context_t *ctx, git_repository *repo,
  * @param is_merge  Output: true if merge commit
  * @return          0 on success, error code otherwise
  */
-int is_merge_commit(git_repository *repo, bool *is_merge);
+int gm_hook_is_merge_commit(git_repository *repo, bool *is_merge);
+
+/* Backward-compatibility macros (deprecated) */
+#define get_blob_sha gm_hook_get_blob_sha
+#define find_edges_by_source gm_hook_find_edges_by_source
+#define create_augments_edge gm_hook_create_augments_edge
+#define process_changed_file gm_hook_process_changed_file
+#define is_merge_commit gm_hook_is_merge_commit
 
 #ifdef __cplusplus
 }
