@@ -2,6 +2,12 @@ project('git-mind', 'c',
         version: '0.6.0',
         default_options: ['c_std=c23', 'warning_level=3', 'werror=true'])
 
+# Optional feature toggles
+option('enable_io', type: 'boolean', value: false, description: 'Enable IO public headers')
+option('enable_time', type: 'boolean', value: false, description: 'Enable time public headers')
+option('enable_util', type: 'boolean', value: false, description: 'Enable util public headers')
+option('enable_utf8', type: 'boolean', value: true, description: 'Enable UTF-8 public headers')
+
 # HARD E-BRAKE: refuse host builds unless in Docker or CI
 in_docker = run_command('sh', '-lc', '[ "$GITMIND_DOCKER" = "1" ] && echo 1 || echo 0').stdout().strip() == '1'
 in_ci = run_command('sh', '-lc', '[ -n "$GITHUB_ACTIONS" ] && echo 1 || echo 0').stdout().strip() == '1'
@@ -41,6 +47,22 @@ add_project_arguments(
   '-fstrict-aliasing',      # We follow aliasing rules
   language : 'c'
 )
+
+# Define feature toggles globally
+f_cargs = []
+if get_option('enable_io')
+  f_cargs += ['-DGITMIND_ENABLE_IO']
+endif
+if get_option('enable_time')
+  f_cargs += ['-DGITMIND_ENABLE_TIME']
+endif
+if get_option('enable_util')
+  f_cargs += ['-DGITMIND_ENABLE_UTIL']
+endif
+if get_option('enable_utf8')
+  f_cargs += ['-DGITMIND_ENABLE_UTF8']
+endif
+add_project_arguments(f_cargs, language: 'c')
 
 # Dependencies
 libsodium_dep = dependency('libsodium', required : true)
@@ -214,6 +236,12 @@ test_edge = executable('test_edge',
   link_with : libgitmind,
   dependencies : [libsodium_dep, thread_dep])
 
+test_journal_safety = executable('test_journal_safety',
+  'core/tests/unit/test_journal_safety.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, thread_dep])
+
 # Register tests
 test('error', test_error)
 test('id', test_id)
@@ -229,6 +257,7 @@ test('io', test_io)
 test('time', test_time)
 test('cbor', test_cbor)
 test('edge', test_edge)
+test('journal_safety', test_journal_safety)
 
 # Standalone header compilation checks (public headers)
 header_check_src = 'tools/header_compile.c'

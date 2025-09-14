@@ -146,6 +146,10 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
         return GM_ERR_OUT_OF_MEMORY;
     }
     sodium_bin2base64(b64, b64_len, cbor_data, cbor_len, variant);
+    /* Defensive: ensure explicit NUL termination */
+    if (b64_len > 0) {
+        b64[b64_len - 1] = '\0';
+    }
 
     /* Create commit with ASCII-safe message */
     error = git_commit_create(commit_oid, jctx->repo, jctx->ref_name, sig, sig,
@@ -243,53 +247,119 @@ static int edge_encoder_wrapper(const void *edge, uint8_t *buffer,
 /* Wrapper for attributed edge encoder */
 static int edge_attributed_encoder_wrapper(const void *edge, uint8_t *buffer,
                                            size_t *len) {
-    const gm_edge_attributed_t *attr_edge = (const gm_edge_attributed_t *)edge;
-    
-    /* Create a basic edge from the attributed edge fields */
-    gm_edge_t basic_edge = {
-        .rel_type = attr_edge->rel_type,
-        .confidence = attr_edge->confidence,
-        .timestamp = attr_edge->timestamp
+    const gm_edge_attributed_t *e = (const gm_edge_attributed_t *)edge;
+    if (!buffer || !len) return GM_ERR_INVALID_ARGUMENT;
+
+    /* CBOR keys (must match reader) */
+    enum {
+        K_SRC_SHA = 0,
+        K_TGT_SHA = 1,
+        K_REL_TYPE = 2,
+        K_CONFID = 3,
+        K_TS = 4,
+        K_SRC_PATH = 5,
+        K_TGT_PATH = 6,
+        K_ULID = 7,
+        K_SRC_OID = 8,
+        K_TGT_OID = 9,
+        K_SRC_TYPE = 10,
+        K_AUTHOR = 11,
+        K_SESSION = 12,
+        K_FLAGS = 13,
+        K_LANE = 14
     };
-    
-    /* Copy SHA arrays securely */
-    for (size_t i = 0; i < GM_SHA1_SIZE; i++) {
-        basic_edge.src_sha[i] = attr_edge->src_sha[i];
-        basic_edge.tgt_sha[i] = attr_edge->tgt_sha[i];
-    }
-    
-    /* Copy paths securely */
-    size_t src_len = strlen(attr_edge->src_path);
-    if (src_len >= sizeof(basic_edge.src_path)) {
-        src_len = sizeof(basic_edge.src_path) - 1;
-    }
-    for (size_t i = 0; i < src_len; i++) {
-        basic_edge.src_path[i] = attr_edge->src_path[i];
-    }
-    basic_edge.src_path[src_len] = '\0';
-    
-    size_t tgt_len = strlen(attr_edge->tgt_path);
-    if (tgt_len >= sizeof(basic_edge.tgt_path)) {
-        tgt_len = sizeof(basic_edge.tgt_path) - 1;
-    }
-    for (size_t i = 0; i < tgt_len; i++) {
-        basic_edge.tgt_path[i] = attr_edge->tgt_path[i];
-    }
-    basic_edge.tgt_path[tgt_len] = '\0';
-    
-    /* Copy ULID securely */
-    size_t ulid_len = strlen(attr_edge->ulid);
-    if (ulid_len >= sizeof(basic_edge.ulid)) {
-        ulid_len = sizeof(basic_edge.ulid) - 1;
-    }
-    for (size_t i = 0; i < ulid_len; i++) {
-        basic_edge.ulid[i] = attr_edge->ulid[i];
-    }
-    basic_edge.ulid[ulid_len] = '\0';
-    
-    /* Encode the basic edge first */
-    gm_result_void_t result = gm_edge_encode_cbor(&basic_edge, buffer, len);
-    return (int)result.ok ? GM_OK : GM_ERR_INVALID_FORMAT;
+
+    size_t offset = 0;
+    size_t avail = *len;
+    const uint8_t map_type = 0xA0; /* CBOR map */
+    const uint8_t field_count = 15; /* legacy + OID + attribution */
+    if (avail < 1) return GM_ERR_BUFFER_TOO_SMALL;
+    buffer[offset++] = (uint8_t)(map_type | field_count);
+
+    /* Legacy SHA fields */
+    gm_result_size_t r = gm_cbor_write_uint(K_SRC_SHA, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_bytes(buffer + offset, avail - offset, e->src_sha, GM_SHA1_SIZE);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    r = gm_cbor_write_uint(K_TGT_SHA, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_bytes(buffer + offset, avail - offset, e->tgt_sha, GM_SHA1_SIZE);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    /* Numerics */
+    r = gm_cbor_write_uint(K_REL_TYPE, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_uint(e->rel_type, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    r = gm_cbor_write_uint(K_CONFID, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_uint(e->confidence, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    r = gm_cbor_write_uint(K_TS, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_uint(e->timestamp, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    /* Text */
+    r = gm_cbor_write_uint(K_SRC_PATH, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_text(buffer + offset, avail - offset, e->src_path);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    r = gm_cbor_write_uint(K_TGT_PATH, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_text(buffer + offset, avail - offset, e->tgt_path);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    r = gm_cbor_write_uint(K_ULID, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_text(buffer + offset, avail - offset, e->ulid);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    /* OIDs */
+    const uint8_t *src_raw = git_oid_raw(&e->src_oid);
+    const uint8_t *tgt_raw = git_oid_raw(&e->tgt_oid);
+    r = gm_cbor_write_uint(K_SRC_OID, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_bytes(buffer + offset, avail - offset, src_raw ? src_raw : e->src_sha, GM_OID_RAWSZ);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    r = gm_cbor_write_uint(K_TGT_OID, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_bytes(buffer + offset, avail - offset, tgt_raw ? tgt_raw : e->tgt_sha, GM_OID_RAWSZ);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    /* Attribution */
+    r = gm_cbor_write_uint(K_SRC_TYPE, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_uint((uint64_t)e->attribution.source_type, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    r = gm_cbor_write_uint(K_AUTHOR, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_text(buffer + offset, avail - offset, e->attribution.author);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    r = gm_cbor_write_uint(K_SESSION, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_text(buffer + offset, avail - offset, e->attribution.session_id);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    r = gm_cbor_write_uint(K_FLAGS, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_uint((uint64_t)e->attribution.flags, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    r = gm_cbor_write_uint(K_LANE, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+    r = gm_cbor_write_uint((uint64_t)e->lane, buffer + offset, avail - offset);
+    if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
+
+    *len = offset;
+    return GM_OK;
 }
 
 /* Append edges to journal */

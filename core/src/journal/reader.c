@@ -5,12 +5,18 @@
 #include "gitmind/types.h"
 #include "gitmind/context.h"
 #include "gitmind/cbor/constants_cbor.h"
+#include "gitmind/cbor/cbor.h"
 #include "gitmind/error.h"
 #include "gitmind/edge.h"
 #include "gitmind/edge_attributed.h"
 #include "gitmind/attribution.h"
 
-#include <git2.h>
+#include <git2/commit.h>
+#include <git2/oid.h>
+#include <git2/refdb.h>
+#include <git2/refs.h>
+#include <git2/repository.h>
+#include <git2/revwalk.h>
 #include <sodium.h>
 #include <git2/repository.h>
 #include <git2/refs.h>
@@ -93,6 +99,159 @@ static void convert_legacy_to_attributed(const gm_edge_t *legacy,
     attributed->lane = GM_LANE_PRIMARY;
 }
 
+/* Decode attributed edge (CBOR map) with OID-first fields */
+int gm_edge_attributed_decode_cbor_ex(const uint8_t *buffer, size_t len,
+                                      gm_edge_attributed_t *edge,
+                                      size_t *consumed) {
+    if (!buffer || len == 0 || !edge || !consumed) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+
+    size_t offset = 0;
+    if (offset >= len) return GM_ERR_INVALID_FORMAT;
+    uint8_t initial = buffer[offset++];
+    if ((initial & CBOR_TYPE_MASK) != CBOR_TYPE_MAP) {
+        return GM_ERR_INVALID_FORMAT;
+    }
+    uint8_t addl = (uint8_t)(initial & CBOR_ADDITIONAL_INFO_MASK);
+    if (addl >= CBOR_IMMEDIATE_THRESHOLD) {
+        return GM_ERR_INVALID_FORMAT; /* only small maps supported */
+    }
+    uint32_t fields = addl;
+
+    /* Key ids (must match writer) */
+    enum {
+        K_SRC_SHA = 0,
+        K_TGT_SHA = 1,
+        K_REL_TYPE = 2,
+        K_CONFID = 3,
+        K_TS = 4,
+        K_SRC_PATH = 5,
+        K_TGT_PATH = 6,
+        K_ULID = 7,
+        K_SRC_OID = 8,
+        K_TGT_OID = 9,
+        K_SRC_TYPE = 10,
+        K_AUTHOR = 11,
+        K_SESSION = 12,
+        K_FLAGS = 13,
+        K_LANE = 14
+    };
+
+    gm_edge_attributed_t e = {0};
+
+    for (uint32_t i = 0; i < fields; i++) {
+        /* key */
+        size_t key_off = offset;
+        gm_result_uint64_t keyr = gm_cbor_read_uint(buffer, &offset, len);
+        if (!keyr.ok) return GM_ERR_INVALID_FORMAT;
+        uint64_t key = keyr.u.val;
+
+        switch (key) {
+        case K_SRC_SHA: {
+            gm_result_void_t r = gm_cbor_read_bytes(buffer, &offset, len, e.src_sha, GM_SHA1_SIZE);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            break;
+        }
+        case K_TGT_SHA: {
+            gm_result_void_t r = gm_cbor_read_bytes(buffer, &offset, len, e.tgt_sha, GM_SHA1_SIZE);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            break;
+        }
+        case K_REL_TYPE: {
+            gm_result_uint64_t r = gm_cbor_read_uint(buffer, &offset, len);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            e.rel_type = (uint16_t)r.u.val;
+            break;
+        }
+        case K_CONFID: {
+            gm_result_uint64_t r = gm_cbor_read_uint(buffer, &offset, len);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            e.confidence = (uint16_t)r.u.val;
+            break;
+        }
+        case K_TS: {
+            gm_result_uint64_t r = gm_cbor_read_uint(buffer, &offset, len);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            e.timestamp = r.u.val;
+            break;
+        }
+        case K_SRC_PATH: {
+            gm_result_void_t r = gm_cbor_read_text(buffer, &offset, len, e.src_path, GM_PATH_MAX);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            break;
+        }
+        case K_TGT_PATH: {
+            gm_result_void_t r = gm_cbor_read_text(buffer, &offset, len, e.tgt_path, GM_PATH_MAX);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            break;
+        }
+        case K_ULID: {
+            gm_result_void_t r = gm_cbor_read_text(buffer, &offset, len, e.ulid, GM_ULID_SIZE + 1);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            break;
+        }
+        case K_SRC_OID: {
+            uint8_t raw[GM_OID_RAWSZ] = {0};
+            gm_result_void_t r = gm_cbor_read_bytes(buffer, &offset, len, raw, GM_OID_RAWSZ);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            git_oid_fromraw(&e.src_oid, raw);
+            break;
+        }
+        case K_TGT_OID: {
+            uint8_t raw[GM_OID_RAWSZ] = {0};
+            gm_result_void_t r = gm_cbor_read_bytes(buffer, &offset, len, raw, GM_OID_RAWSZ);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            git_oid_fromraw(&e.tgt_oid, raw);
+            break;
+        }
+        case K_SRC_TYPE: {
+            gm_result_uint64_t r = gm_cbor_read_uint(buffer, &offset, len);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            e.attribution.source_type = (gm_source_type_t)r.u.val;
+            break;
+        }
+        case K_AUTHOR: {
+            gm_result_void_t r = gm_cbor_read_text(buffer, &offset, len, e.attribution.author, sizeof e.attribution.author);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            break;
+        }
+        case K_SESSION: {
+            gm_result_void_t r = gm_cbor_read_text(buffer, &offset, len, e.attribution.session_id, sizeof e.attribution.session_id);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            break;
+        }
+        case K_FLAGS: {
+            gm_result_uint64_t r = gm_cbor_read_uint(buffer, &offset, len);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            e.attribution.flags = (uint32_t)r.u.val;
+            break;
+        }
+        case K_LANE: {
+            gm_result_uint64_t r = gm_cbor_read_uint(buffer, &offset, len);
+            if (!r.ok) return GM_ERR_INVALID_FORMAT;
+            e.lane = (gm_lane_type_t)r.u.val;
+            break;
+        }
+        default:
+            (void)key_off; /* suppress unused */
+            return GM_ERR_INVALID_FORMAT;
+        }
+    }
+
+    /* Backfill OIDs from SHA if missing */
+    if (git_oid_iszero(&e.src_oid)) {
+        git_oid_fromraw(&e.src_oid, e.src_sha);
+    }
+    if (git_oid_iszero(&e.tgt_oid)) {
+        git_oid_fromraw(&e.tgt_oid, e.tgt_sha);
+    }
+
+    *edge = e;
+    *consumed = offset;
+    return GM_OK;
+}
+
 /* Process attributed edge from CBOR */
 static int process_attributed_edge(const uint8_t *cbor_data, size_t remaining,
                                    reader_ctx_t *rctx, size_t *consumed) {
@@ -129,15 +288,36 @@ static int process_regular_edge(const uint8_t *cbor_data, size_t remaining,
     gm_edge_t edge;
 
     /* Try to decode a regular edge */
-    int decode_result =
-        gm_edge_decode_cbor_ex(cbor_data, remaining, &edge, consumed);
-    if (decode_result != GM_OK || *consumed == 0) {
+    int decode_result = gm_edge_decode_cbor_ex(cbor_data, remaining, &edge, consumed);
+    if (decode_result == GM_OK && *consumed > 0) {
+        return ((int (*)(const gm_edge_t *, void *))rctx->callback)(&edge, rctx->userdata);
+    }
+
+    /* Fallback: try attributed and down-convert to regular edge */
+    gm_edge_attributed_t aedge;
+    size_t aconsumed = 0;
+    decode_result = gm_edge_attributed_decode_cbor_ex(cbor_data, remaining, &aedge, &aconsumed);
+    if (decode_result != GM_OK || aconsumed == 0) {
         return GM_ERR_INVALID_FORMAT;
     }
 
-    /* Call regular callback */
-    return ((int (*)(const gm_edge_t *, void *))rctx->callback)(&edge,
-                                                                rctx->userdata);
+    gm_edge_t basic = {0};
+    memcpy(basic.src_sha, aedge.src_sha, GM_SHA1_SIZE);
+    memcpy(basic.tgt_sha, aedge.tgt_sha, GM_SHA1_SIZE);
+    basic.src_oid = aedge.src_oid;
+    basic.tgt_oid = aedge.tgt_oid;
+    basic.rel_type = aedge.rel_type;
+    basic.confidence = aedge.confidence;
+    basic.timestamp = aedge.timestamp;
+    strncpy(basic.src_path, aedge.src_path, GM_PATH_MAX - 1);
+    basic.src_path[GM_PATH_MAX - 1] = '\0';
+    strncpy(basic.tgt_path, aedge.tgt_path, GM_PATH_MAX - 1);
+    basic.tgt_path[GM_PATH_MAX - 1] = '\0';
+    strncpy(basic.ulid, aedge.ulid, GM_ULID_SIZE);
+    basic.ulid[GM_ULID_SIZE] = '\0';
+
+    *consumed = aconsumed;
+    return ((int (*)(const gm_edge_t *, void *))rctx->callback)(&basic, rctx->userdata);
 }
 
 /* Process a single commit - generic version */

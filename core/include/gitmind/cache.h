@@ -30,7 +30,7 @@ extern "C" {
 #define GM_CACHE_SHARD_BITS 8 /* 2 hex chars = 256 shards */
 #define GM_CACHE_REF_PREFIX "refs/gitmind/cache/"
 #define GM_CACHE_BRANCH_NAME_SIZE 64  /* Maximum branch name length */
-#define GM_CACHE_OID_STRING_SIZE 41   /* Git OID as string + null terminator */
+#define GM_CACHE_OID_STRING_SIZE (GIT_OID_HEXSZ + 1) /* OID hex + NUL */
 
 /* Cache result containing edge IDs matching a query */
 typedef struct {
@@ -65,9 +65,9 @@ int gm_cache_init(void);
 int gm_cache_rebuild(gm_context_t *ctx, const char *branch, bool force_full);
 
 /**
- * Query edges by source SHA (forward traversal)
+ * Query edges by source OID (forward traversal)
  * @param ctx Git-mind context containing repository
- * @param src_sha Source SHA bytes (20 bytes)
+ * @param src_oid Source object ID
  * @param result Output result structure
  * @return GM_OK on success, error code on failure
  */
@@ -75,10 +75,10 @@ int gm_cache_query_fanout(gm_context_t *ctx, const char *branch, const gm_oid_t 
                           gm_cache_result_t *result);
 
 /**
- * Query edges by target SHA (reverse traversal)
+ * Query edges by target OID (reverse traversal)
  * @param ctx Git-mind context containing repository
  * @param branch Branch name to query
- * @param tgt_sha Target SHA bytes (20 bytes)
+ * @param tgt_oid Target object ID
  * @param result Output result structure
  * @return GM_OK on success, error code on failure
  */

@@ -200,7 +200,11 @@ gm_result_void_t gm_edge_format(const gm_edge_t *edge, char *buffer, size_t len)
 #define CBOR_KEY_SRC_PATH   5
 #define CBOR_KEY_TGT_PATH   6
 #define CBOR_KEY_ULID       7
-#define CBOR_EDGE_FIELDS    8
+/* New preferred OID fields (raw bytes, GM_OID_RAWSZ) */
+#define CBOR_KEY_SRC_OID    8
+#define CBOR_KEY_TGT_OID    9
+/* Total fields written by current encoder (legacy + OIDs) */
+#define CBOR_EDGE_FIELDS_TOTAL 10
 
 /**
  * Write CBOR key-value pair for bytes
@@ -265,12 +269,12 @@ static gm_result_void_t write_cbor_text(uint64_t key, uint8_t *buffer,
 /**
  * Write CBOR map header
  */
-static gm_result_void_t write_cbor_map_header(uint8_t *buffer, size_t available, size_t *offset) {
+static gm_result_void_t write_cbor_map_header(uint8_t *buffer, size_t available, size_t *offset, uint8_t field_count) {
     if (available < 1) {
         return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
                                     "Buffer too small for CBOR map"));
     }
-    buffer[(*offset)++] = CborMapType | CBOR_EDGE_FIELDS;
+    buffer[(*offset)++] = (uint8_t)(CborMapType | (field_count & 0x1F));
     return gm_ok_void();
 }
 
@@ -287,8 +291,8 @@ gm_result_void_t gm_edge_encode_cbor(const gm_edge_t *edge, uint8_t *buffer,
     size_t offset = 0;
     size_t available = *len;
     
-    /* Write map header */
-    gm_result_void_t result = write_cbor_map_header(buffer, available, &offset);
+    /* Write map header (include both legacy SHA and OID fields) */
+    gm_result_void_t result = write_cbor_map_header(buffer, available, &offset, CBOR_EDGE_FIELDS_TOTAL);
     if (!result.ok) {
         return result;
     }
@@ -332,6 +336,19 @@ gm_result_void_t gm_edge_encode_cbor(const gm_edge_t *edge, uint8_t *buffer,
     }
     
     result = write_cbor_text(CBOR_KEY_ULID, buffer, available, &offset, edge->ulid);
+    if (!result.ok) {
+        return result;
+    }
+    /* Write preferred OID fields using raw bytes */
+    const uint8_t *src_raw = git_oid_raw(&edge->src_oid);
+    const uint8_t *tgt_raw = git_oid_raw(&edge->tgt_oid);
+    if (src_raw == NULL) src_raw = edge->src_sha; /* fallback */
+    if (tgt_raw == NULL) tgt_raw = edge->tgt_sha; /* fallback */
+    result = write_cbor_bytes(CBOR_KEY_SRC_OID, buffer, available, &offset, src_raw, GM_OID_RAWSZ);
+    if (!result.ok) {
+        return result;
+    }
+    result = write_cbor_bytes(CBOR_KEY_TGT_OID, buffer, available, &offset, tgt_raw, GM_OID_RAWSZ);
     if (!result.ok) {
         return result;
     }
@@ -421,38 +438,57 @@ static gm_result_void_t decode_cbor_field(const uint8_t *buffer, size_t *offset,
 /**
  * Decode edge from CBOR format
  */
-gm_result_edge_t gm_edge_decode_cbor(const uint8_t *buffer, size_t len) {
-    if (!buffer || len == 0) {
-        return (gm_result_edge_t){
-            .ok = false,
-            .u.err = GM_ERROR(GM_ERR_INVALID_ARGUMENT, "Invalid arguments")
-        };
+static int gm_edge_decode_cbor_ex_impl(const uint8_t *buffer, size_t len, gm_edge_t *edge_out, size_t *consumed) {
+    if (!buffer || len == 0 || !edge_out || !consumed) {
+        return GM_ERR_INVALID_ARGUMENT;
     }
-    
     size_t offset = 0;
-    
-    /* Check map header */
-    if (buffer[offset] != (CborMapType | CBOR_EDGE_FIELDS)) {
-        return (gm_result_edge_t){
-            .ok = false,
-            .u.err = GM_ERROR(GM_ERR_INVALID_FORMAT, "Invalid CBOR map header")
-        };
+    if (offset >= len) return GM_ERR_INVALID_FORMAT;
+    uint8_t initial = buffer[offset++];
+    if ((initial & 0xE0) != CborMapType) {
+        return GM_ERR_INVALID_FORMAT;
     }
-    offset++;
-    
+    uint8_t addl = (uint8_t)(initial & 0x1F);
+    if (addl >= 24) {
+        /* We only support small fixed-size maps in this encoding */
+        return GM_ERR_INVALID_FORMAT;
+    }
+    uint32_t field_count = addl;
+
     gm_edge_t edge;
     edge_init_defaults(&edge);
-    
-    /* Read key-value pairs */
-    for (int i = 0; i < CBOR_EDGE_FIELDS; i++) {
-        gm_result_void_t result = decode_cbor_field(buffer, &offset, len, &edge);
-        if (!result.ok) {
-            return (gm_result_edge_t){.ok = false, .u.err = result.u.err};
+
+    for (uint32_t i = 0; i < field_count; i++) {
+        gm_result_void_t r = decode_cbor_field(buffer, &offset, len, &edge);
+        if (!r.ok) {
+            return GM_ERR_INVALID_FORMAT;
         }
     }
-    /* Backfill git_oid fields from legacy SHA bytes */
-    git_oid_fromraw(&edge.src_oid, edge.src_sha);
-    git_oid_fromraw(&edge.tgt_oid, edge.tgt_sha);
 
+    /* Backfill OIDs from legacy SHA if missing */
+    if (git_oid_iszero(&edge.src_oid)) {
+        git_oid_fromraw(&edge.src_oid, edge.src_sha);
+    }
+    if (git_oid_iszero(&edge.tgt_oid)) {
+        git_oid_fromraw(&edge.tgt_oid, edge.tgt_sha);
+    }
+
+    *edge_out = edge;
+    *consumed = offset;
+    return GM_OK;
+}
+
+gm_result_edge_t gm_edge_decode_cbor(const uint8_t *buffer, size_t len) {
+    gm_edge_t edge;
+    size_t consumed = 0;
+    int rc = gm_edge_decode_cbor_ex_impl(buffer, len, &edge, &consumed);
+    if (rc != GM_OK) {
+        return (gm_result_edge_t){.ok = false, .u.err = GM_ERROR(rc, "Decode failed")};
+    }
     return (gm_result_edge_t){.ok = true, .u.val = edge};
+}
+
+/* Extended decoder used by journal reader */
+int gm_edge_decode_cbor_ex(const uint8_t *buffer, size_t len, gm_edge_t *edge, size_t *consumed) {
+    return gm_edge_decode_cbor_ex_impl(buffer, len, edge, consumed);
 }

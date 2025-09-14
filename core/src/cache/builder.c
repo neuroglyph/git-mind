@@ -370,8 +370,8 @@ static int cache_create_commit(git_repository *repo, const git_oid *tree_oid,
 static int cache_update_ref(git_repository *repo, const char *branch,
                             const git_oid *commit_oid) {
     char ref_name[REF_NAME_BUFFER_SIZE];
-    snprintf(ref_name, sizeof(ref_name), "%s%s/%ld", GM_CACHE_REF_PREFIX,
-             branch, time(NULL));
+    snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX,
+             branch);
 
     git_reference *ref = NULL;
     int rc = git_reference_create(&ref, repo, ref_name, commit_oid, 1,

@@ -43,22 +43,20 @@ static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
 
 /* Load cache metadata from commit message */
 int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *meta) {
+    if (!ctx || !ctx->git_repo || !branch || !meta) return GM_INVALID_ARG;
     git_repository *repo = (git_repository *)ctx->git_repo;
     git_reference *ref = NULL;
     git_commit *commit = NULL;
     char ref_name[REF_NAME_BUFFER_SIZE];
     int rc;
 
-    /* Build cache ref name */
+    /* Build cache ref name and resolve */
     (void)snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
-
-    /* Look up cache reference */
     rc = git_reference_lookup(&ref, repo, ref_name);
     if (rc < 0) {
         return GM_NOT_FOUND;
     }
 
-    /* Get commit */
     git_oid oid;
     rc = git_reference_name_to_id(&oid, repo, ref_name);
     git_reference_free(ref);
@@ -71,16 +69,34 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
         return GM_ERR_UNKNOWN;
     }
 
-    /* Parse metadata from commit message */
-    const char *msg = git_commit_message(commit);
-    if (!msg || strlen(msg) < sizeof(gm_cache_meta_t)) {
-        git_commit_free(commit);
-        return GM_ERR_UNKNOWN;
-    }
-
-    gm_memcpy_safe(meta, sizeof *meta, msg, sizeof(gm_cache_meta_t));
+    /* Synthesize metadata from repo state (no binary commit message parsing) */
+    memset(meta, 0, sizeof *meta);
+    meta->version = GM_CACHE_VERSION;
+    meta->shard_bits = GM_CACHE_SHARD_BITS;
+    strncpy(meta->branch, branch, GM_CACHE_BRANCH_NAME_SIZE - 1);
+    meta->journal_tip_time = (uint64_t)git_commit_time(commit);
     git_commit_free(commit);
 
+    /* Resolve current journal tip OID for branch */
+    git_reference *journal_ref = NULL;
+    char journal_ref_name[REF_NAME_BUFFER_SIZE];
+    (void)snprintf(journal_ref_name, sizeof(journal_ref_name),
+                   "refs/gitmind/edges/%s", branch);
+    if (git_reference_lookup(&journal_ref, repo, journal_ref_name) == 0) {
+        const git_oid *tip_oid = git_reference_target(journal_ref);
+        if (tip_oid) {
+            git_oid_tostr(meta->journal_tip_oid, sizeof(meta->journal_tip_oid), tip_oid);
+        } else {
+            strcpy(meta->journal_tip_oid, ZERO_SHA_STRING);
+        }
+        git_reference_free(journal_ref);
+    } else {
+        strcpy(meta->journal_tip_oid, ZERO_SHA_STRING);
+    }
+
+    /* edge_count and build_time_ms unavailable without dedicated storage */
+    meta->edge_count = 0;
+    meta->build_time_ms = 0;
     return GM_OK;
 }
 
