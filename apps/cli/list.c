@@ -8,6 +8,7 @@
 #include "gitmind/journal.h"
 #include "gitmind/error.h"
 #include "gitmind/constants.h"
+#include "gitmind/constants_internal.h"
 #include "cli_runtime.h"
 
 #include <stdio.h>

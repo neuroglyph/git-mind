@@ -97,7 +97,8 @@ src = files(
 inc = include_directories('core/include', 'include')
 # For CLI, use core headers first; CLI can include umbrella headers explicitly via relative path
 # For CLI, prefer namespaced includes under 'include/gitmind' (no relative includes)
-inc_cli = include_directories('core/include', 'include')
+# For CLI, prefer public headers first, then core internals
+inc_cli = include_directories('include', 'core/include')
 
 # Mark roaring headers as system includes to suppress third-party warnings
 roaring_inc_args = []
