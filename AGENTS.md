@@ -61,3 +61,19 @@
 
 ## External Tracking (Local Experiments)
 If you maintain a separate experimental tracking system locally (e.g., a personal graph database or notes), keep it entirely outside this repository and CI. Do not include configuration or scripts here.
+
+## Agent Activity Log
+
+- 2025-09-13
+  - fix(include): guard time conversion macros in `include/gitmind/constants_internal.h`.
+  - fix(output): add missing EOF newlines in `include/gitmind/output.h` and `apps/cli/output.c`.
+  - feat(cli): introduce `gm_cli_ctx_t`; refactor `apps/cli/main.c` and commands to pass explicit CLI output context (removed global output).
+  - chore(cli): normalize includes; prefer specific public headers; added `inc_cli` include dirs in `meson.build` for CLI builds.
+  - feat(cli/safety): implement libgit2-based safety guard with strict official-repo match; add `GITMIND_SAFETY` override; extracted URL helper in `include/gitmind/safety.h`.
+  - test(core): add `core/tests/unit/test_safety.c` and register in Meson.
+  - ci(e2e): run E2E inside CI Docker image in `.github/workflows/c_core.yml`; improved `tests/e2e/run_all_tests.sh` to honor `GIT_MIND` env.
+  - fix(core/journal): add temporary CBOR decode wrappers in `core/src/journal/reader.c` (`gm_edge_decode_cbor_ex`, `gm_edge_attributed_decode_cbor_ex`) to unblock CLI until attributed decoder lands.
+  - fix(core/journal/tidy): replace `memset/strncpy/snprintf` in `reader.c` with safe wrappers (`GM_MEMSET_SAFE`, `gm_memcpy_safe`, `gm_snprintf`); include security headers. Updated `tools/docker-clang-tidy.sh` to set `GITMIND_DOCKER=1` for Meson.
+  - docs(ops): added `docs/operations/Environment_Variables.md`; linked from `README.md` and `docs/README.md`. Noted runtime safety behavior in Test Plan.
+  - style(include): use angle includes in `include/gitmind.h` and trim optional-include block comment.
+  - Opened PR: https://github.com/neuroglyph/git-mind/pull/166 (branch `feat/cli-safety-e2e`). Built and ran unit tests in Docker (15/15 passing). E2E wired to run in CI container.

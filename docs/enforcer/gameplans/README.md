@@ -153,7 +153,7 @@ Each capability is considered "baked in" when:
 
 ## 📖 Further Reading
 
-- [ARCHITECTURE.md](../../../ARCHITECTURE.md) - Master architecture index
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Master architecture index
 - [MIGRATION_PHILOSOPHY.md](../../architecture/MIGRATION_PHILOSOPHY.md) - Why we're doing this
 - [CLAUDE.md](../../../CLAUDE.md) - The battle plan
 

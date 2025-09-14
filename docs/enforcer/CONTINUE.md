@@ -31,7 +31,7 @@ We're in the **Foundation Building Phase** of the migration, specifically workin
 Before continuing, familiarize yourself with:
 
 1. **Context Documents:**
-   - [ARCHITECTURE.md](../../ARCHITECTURE.md) - Overall architecture vision
+   - [ARCHITECTURE.md](ARCHITECTURE.md) - Overall architecture vision
    - [MIGRATION_PHILOSOPHY.md](../architecture/MIGRATION_PHILOSOPHY.md) - Why we're doing this
    - [CLAUDE.md](../../CLAUDE.md) - The battle that started it all
 
