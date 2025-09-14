@@ -1,6 +1,6 @@
 # 🔮 Future Proofing Without YAGNI Sin: Gameplan
 
-> *"Prepare for change without overengineering."*
+> _"Prepare for change without overengineering."_
 
 ## Executive Summary
 
@@ -459,24 +459,28 @@ gm_result_t gm_platform_init(void);
 ## 🛠️ Implementation Plan
 
 ### Phase 1: Core Abstractions (Immediate)
+
 1. Create storage interface
 2. Add schema versioning
 3. Build platform layer
 4. Design async-ready APIs
 
 ### Phase 2: Extension Points (During Migration)
+
 1. Add enum registry
 2. Create feature flags
 3. Build string tables
 4. Add format abstraction
 
 ### Phase 3: Version Support (As Needed)
+
 1. Implement v1/v2 migration
 2. Add compatibility layer
 3. Create version detection
 4. Build migration tools
 
 ### Phase 4: Platform Expansion (Future)
+
 1. Add Windows support
 2. Implement WASM target
 3. Create language bindings
@@ -558,6 +562,7 @@ if (gm_feature_enabled("new_traversal_algorithm")) {
 ## 🧪 Testing Approach
 
 ### 1. Version Compatibility Tests
+
 ```c
 void test_schema_version_upgrade(void) {
     // Create v1 edge
@@ -583,6 +588,7 @@ void test_schema_version_upgrade(void) {
 ```
 
 ### 2. Platform Abstraction Tests
+
 ```c
 void test_platform_operations(void) {
     // Test works on all platforms
@@ -600,6 +606,7 @@ void test_platform_operations(void) {
 ```
 
 ### 3. Feature Flag Tests
+
 ```c
 void test_feature_flags(void) {
     // Save current state
@@ -620,22 +627,24 @@ void test_feature_flags(void) {
 
 ## 📈 Success Metrics
 
-1. **Zero Breaking Changes**: APIs remain stable
-2. **Easy Extensions**: New features without rewrites
-3. **Platform Portability**: Runs on 3+ platforms
-4. **Format Flexibility**: Support 2+ formats
-5. **Future Features**: Async/distributed ready
+1. __Zero Breaking Changes__: APIs remain stable
+2. __Easy Extensions__: New features without rewrites
+3. __Platform Portability__: Runs on 3+ platforms
+4. __Format Flexibility__: Support 2+ formats
+5. __Future Features__: Async/distributed ready
 
 ## 🎓 Best Practices
 
-### DO:
+### DO
+
 - ✅ Abstract at natural boundaries
 - ✅ Version data structures
 - ✅ Use feature flags for rollout
 - ✅ Design for testability
 - ✅ Document extension points
 
-### DON'T:
+### DON'T
+
 - ❌ Over-abstract everything
 - ❌ Add unused parameters
 - ❌ Create deep hierarchies
@@ -645,16 +654,19 @@ void test_feature_flags(void) {
 ## 🔗 Integration Points
 
 ### With Configuration
+
 - Feature flags in config
 - Storage backend selection
 - Format preferences
 
 ### With Plugin System
+
 - Plugins can add formats
 - Custom storage backends
 - New platform support
 
 ### With Error Handling
+
 - Version mismatch errors
 - Platform-specific errors
 - Migration failures
@@ -668,4 +680,4 @@ void test_feature_flags(void) {
 
 ---
 
-*"The best code is code that's easy to delete. The second best is code that's easy to extend."*
+_"The best code is code that's easy to delete. The second best is code that's easy to extend."_

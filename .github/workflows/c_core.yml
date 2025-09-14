@@ -7,6 +7,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Markdown lint
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npx --yes -p markdownlint-cli2 markdownlint-cli2 "**/*.md" "#.git" "#build"
       - name: Install LLVM 20 and build tools
         run: |
           sudo apt-get update
@@ -31,5 +36,41 @@ jobs:
           grep -E "^/.*core/|^core/" clang-tidy-report-full.txt > clang-tidy-report.txt || true
       - name: Enforce no new warnings
         run: python3 tools/count_warnings.py check clang-tidy-report.txt tools/baseline_count.txt
+      - name: Warm dev-shell container (best-effort)
+        run: |
+          bash ./tools/dev-shell.sh -c true >/dev/null 2>&1 || true
+      - name: Run E2E tests inside CI Docker image
+        run: |
+          IMAGE=${GITMIND_CI_IMAGE:-gitmind/ci:clang-20}
+          # Pull with retry and hard-fail after 3 attempts to avoid implicit pulls
+          pulled=0
+          for i in 1 2 3; do
+            if docker pull "$IMAGE"; then
+              pulled=1; break
+            else
+              echo "docker pull failed (attempt $i), retrying in 5s..."; sleep 5
+            fi
+          done
+          if [ "$pulled" -ne 1 ]; then
+            echo "docker pull failed after 3 attempts"; exit 1
+          fi
+          docker run --rm --label com.gitmind.project=git-mind \
+            -u "$(id -u):$(id -g)" \
+            -v "$PWD":/workspace -w /workspace \
+            -e GITMIND_DOCKER=1 -e GITMIND_SAFETY=off "$IMAGE" bash -lc '
+              set -euo pipefail
+              BUILD_DIR=/workspace/build-e2e
+              if [ -d "$BUILD_DIR" ]; then
+                CC=clang meson setup --reconfigure "$BUILD_DIR"
+              else
+                CC=clang meson setup "$BUILD_DIR"
+              fi
+              ninja -C "$BUILD_DIR" git-mind
+              export GIT_MIND="$BUILD_DIR/git-mind"
+              rm -rf /tmp/gm-e2e && mkdir -p /tmp/gm-e2e
+              cp -r tests/e2e /tmp/gm-e2e/
+              cd /tmp/gm-e2e/e2e
+              bash ./run_all_tests.sh
+            '
       - run: cppcheck --enable=all --inconclusive --quiet apps/cli || true
       - run: python tools/run_fuzz.py 60 || true

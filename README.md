@@ -1,5 +1,16 @@
 # git-mind 🧠
 
+> [!WARNING]  
+> **This project is in its early stages — _USE AT YOUR OWN RISK_.**  
+> Right now you can’t do much with it yet, and it *does* make changes inside your Git repo.  
+> Proceed only if you’re curious and comfortable experimenting.  
+>   
+> This README is more of a **Vision Statement™** than a manual. It’s here to set the direction, hype the idea, and motivate ongoing work.  
+>   
+> If you’re intrigued, **star the repo** ⭐, follow along in **Discussions/Releases**, and watch it grow.  
+>   
+> — *flyingrobots*  
+
 <p align="center">
 <img src="https://media.githubusercontent.com/media/neuroglyph/git-mind/main/assets/images/logo.png" alt="git-mind logo" width="400" />
 </p>
@@ -15,17 +26,6 @@
 **No servers. No setup. Just `git push` your mind.**
 
 ---
-
-> [!WARNING]  
-> **This project is in its early stages — _USE AT YOUR OWN RISK_.**  
-> Right now you can’t do much with it yet, and it *does* make changes inside your Git repo.  
-> Proceed only if you’re curious and comfortable experimenting.  
->   
-> This README is more of a **Vision Statement™** than a manual. It’s here to set the direction, hype the idea, and motivate ongoing work.  
->   
-> If you’re intrigued, **star the repo** ⭐, follow along in **Discussions/Releases**, and watch it grow.  
->   
-> — *flyingrobots*  
 
 ## 🌟 What You Can Do
 

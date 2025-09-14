@@ -1,8 +1,8 @@
-For Hacker News, you need to demonstrate the **"holy shit" moment** in under 30 seconds. Here's what would make HN users get it:
+For Hacker News, you need to demonstrate the __"holy shit" moment__ in under 30 seconds. Here's what would make HN users get it:
 
 ## The Demo That Would Break HN
 
-**"Show HN: Time-travel through your mental model of any Git repo"**
+__"Show HN: Time-travel through your mental model of any Git repo"__
 
 ### The 30-Second Hook
 
@@ -27,7 +27,7 @@ git checkout main
 git mind evolution --show-changes  # Animated view of how your understanding evolved
 ```
 
-**The "holy shit" moment**: Seeing your own mental model from 6 months ago, preserved perfectly.
+__The "holy shit" moment__: Seeing your own mental model from 6 months ago, preserved perfectly.
 
 ### The AI Integration Hook
 
@@ -45,7 +45,7 @@ git mind claude-session --build-on-previous
 # Claude: "Building on our previous discussion about the performance bottleneck..."
 ```
 
-**The "holy shit" moment**: AI that actually remembers and builds on previous conversations.
+__The "holy shit" moment__: AI that actually remembers and builds on previous conversations.
 
 ### The Collaborative Hook
 
@@ -59,29 +59,29 @@ git mind merge-understanding --resolve-conflicts
 # System: "Consensus needed on security-concerns.md"
 ```
 
-**The "holy shit" moment**: Git merge conflicts, but for ideas.
+__The "holy shit" moment__: Git merge conflicts, but for ideas.
 
 ## What HN Needs to See
 
-### 1. **It Actually Works** (Critical)
+### 1. __It Actually Works__ (Critical)
 
 - Live demo, not mockups
 - Real Git repos they can try it on
 - Actual time-travel through commit history
 
-### 2. **Novel Technical Approach** (HN Loves This)
+### 2. __Novel Technical Approach__ (HN Loves This)
 
 - "We're using Git objects as a graph database"
 - "Semantic relationships stored as content-addressed blobs"
 - "Zero dependencies, pure C, 130KB binary"
 
-### 3. **Immediate Practical Value** (Reduces Skepticism)
+### 3. __Immediate Practical Value__ (Reduces Skepticism)
 
 - "Never lose context on why you made decisions"
 - "Onboard new team members by showing them your reasoning"
 - "Document architecture decisions that survive refactoring"
 
-### 4. **The Bigger Vision** (But Understated)
+### 4. __The Bigger Vision__ (But Understated)
 
 - Don't lead with "hive mind" or "consciousness"
 - Instead: "What if your understanding of code could evolve like the code itself?"
@@ -89,26 +89,26 @@ git mind merge-understanding --resolve-conflicts
 
 ## The Perfect HN Title
 
-**"Show HN: git-mind – version control for your understanding of code"**
+__"Show HN: git-mind – version control for your understanding of code"__
 
 Not: "Distributed cognitive infrastructure for hybrid consciousness"
 
 ## The Demo Flow
 
-1. **Hook** (10 seconds): Show time-travel through mental models
-2. **Technical** (30 seconds): Explain Git-native storage, show performance
-3. **Practical** (30 seconds): Real use cases, team collaboration
-4. **Vision** (20 seconds): "This is just the beginning..." (but subtle)
-5. **Try It** (10 seconds): One-line install, works on any Git repo
+1. __Hook__ (10 seconds): Show time-travel through mental models
+2. __Technical__ (30 seconds): Explain Git-native storage, show performance
+3. __Practical__ (30 seconds): Real use cases, team collaboration
+4. __Vision__ (20 seconds): "This is just the beginning..." (but subtle)
+5. __Try It__ (10 seconds): One-line install, works on any Git repo
 
 ## What Would Make HN Explode
 
 If you could show:
 
-- **Working MCP integration** where Claude remembers across sessions
-- **Real-time collaborative understanding** between multiple developers
-- **Actual time-travel** through someone's mental model of a complex codebase
-- **All of this working TODAY** in a simple CLI tool
+- __Working MCP integration__ where Claude remembers across sessions
+- __Real-time collaborative understanding__ between multiple developers
+- __Actual time-travel__ through someone's mental model of a complex codebase
+- __All of this working TODAY__ in a simple CLI tool
 
 ## The Comments You Want
 
@@ -127,6 +127,6 @@ Don't show:
 - Features that don't work yet
 - Marketing speak about "revolutionary" anything
 
-**Show the working tool solving real problems, and let them discover the profound implications themselves.**
+__Show the working tool solving real problems, and let them discover the profound implications themselves.__
 
 The best HN demos are: "I built this simple thing that does X" and then everyone realizes it's actually huge.

@@ -9,9 +9,9 @@
 #include <stdint.h>
 
 #include <git2/types.h>
+#include <git2/oid.h>
 
 #include "gitmind/context.h"
-#include "gitmind/result.h"
 
 #ifdef __cplusplus
 extern "C" {

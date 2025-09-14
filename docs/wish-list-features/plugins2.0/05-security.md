@@ -107,7 +107,7 @@ gm plugin blacklist update
 
 - Plugins manipulating plugin system itself
 - ABI evolution (v3 breaking v2)
-- WASM engine bugs    
+- WASM engine bugs
 - Overly permissive manifest specs
 
 ---

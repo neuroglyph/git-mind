@@ -1,10 +1,11 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#ifndef GM_AUGMENT_H
-#define GM_AUGMENT_H
+#ifndef GITMIND_HOOKS_AUGMENT_H
+#define GITMIND_HOOKS_AUGMENT_H
 
-#include "gitmind.h"
+#include "gitmind/context.h"
+#include "gitmind/edge.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -68,4 +69,4 @@ int process_changed_file(gm_context_t *ctx, git_repository *repo,
  */
 int is_merge_commit(git_repository *repo, bool *is_merge);
 
-#endif /* GM_AUGMENT_H */
+#endif /* GITMIND_HOOKS_AUGMENT_H */

@@ -7,6 +7,7 @@ This folder holds legacy planning artifacts and exploratory notes that predate t
 - How to use: Skim for historical context, not instructions. Check the current docs first: `docs/README.md`.
 
 Contents highlights:
+
 - `plans/` — remaining subfolders from the original `docs/.plans/` (archive, lore, reports, oops)
 - Top-level legacy notes moved from `docs/.plans/` (e.g., early architecture visions, launch drafts)
 

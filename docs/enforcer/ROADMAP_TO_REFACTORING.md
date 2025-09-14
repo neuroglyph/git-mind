@@ -282,7 +282,7 @@ GM_RESULT(gm_node_t) gm_process_node(gm_string_t data) {
 ## 🔗 References
 
 - [Gameplans](./gameplans/) - Detailed capability designs
-- [ARCHITECTURE.md](../../ARCHITECTURE.md) - Overall architecture
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Overall architecture
 - [MIGRATION_PHILOSOPHY.md](../architecture/MIGRATION_PHILOSOPHY.md) - Why we’re doing this
 - [CLAUDE.md](../../CLAUDE.md) - The battle context
 

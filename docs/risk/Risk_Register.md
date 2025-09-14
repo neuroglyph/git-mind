@@ -1,11 +1,13 @@
 # Risk Register
 
 Table of Contents
+
 - [Executive Summary](#executive-summary)
 - [Top Risks](#top-10-risks)
 - [Mitigations and Contingencies](#mitigations-and-contingencies)
 
 ## Executive Summary
+
 Risks prioritize correctness, determinism, and solo-maintainer sustainability. Ratings: Probability (Low/Med/High), Impact (1-5). See also: [Release Plans](../planning/Release_Plans.md).
 
 ## Top 10 Risks
@@ -26,6 +28,7 @@ Risks prioritize correctness, determinism, and solo-maintainer sustainability. R
 | R12 | Privacy of local notes/data | Med | 4 | No network in core; MCP local‑only; clear docs | Opt‑in only; sandbox tooling |
 
 ## Mitigations and Contingencies
+
 - Keep golden vectors and CBOR fixtures in repo
 - Provide flags to disable advice or cache usage for isolation
 - Maintain a simple dataset generator to reproduce perf targets

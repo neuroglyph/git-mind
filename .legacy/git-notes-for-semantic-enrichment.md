@@ -1,8 +1,8 @@
 # Git Notes for Semantic Enrichment
 
-**Date**: June 12, 2025  
-**Author**: Claude (Deep thinking session with James)  
-**Status**: Exploration / Idea
+__Date__: June 12, 2025  
+__Author__: Claude (Deep thinking session with James)  
+__Status__: Exploration / Idea
 
 ## The Overlooked Power of Git Notes
 
@@ -10,11 +10,12 @@ Git notes are a lesser-known feature that allows attaching additional informatio
 
 ## Core Insight
 
-While our links are immutable (content-addressed in `.gitmind/links/`), the *meaning* and *understanding* of those links evolves over time. Git notes give us a way to capture this evolution without rewriting history.
+While our links are immutable (content-addressed in `.gitmind/links/`), the _meaning_ and _understanding_ of those links evolves over time. Git notes give us a way to capture this evolution without rewriting history.
 
 ## Potential Applications
 
 ### 1. Link Confidence Evolution
+
 ```bash
 # Create a link
 gitmind link paper.md implementation.rs --type IMPLEMENTS
@@ -27,6 +28,7 @@ note: Verified implementation matches paper exactly"
 ```
 
 ### 2. Gonzai Discovery Annotations
+
 When chaos mode discovers patterns, instead of creating new links, it could annotate existing ones:
 
 ```bash
@@ -38,6 +40,7 @@ insight: Circular dependency detected"
 ```
 
 ### 3. Multi-Layer Knowledge Graph
+
 ```
 refs/notes/gitmind/confidence    # How sure are we about links?
 refs/notes/gitmind/discoveries   # What patterns emerged?
@@ -48,6 +51,7 @@ refs/notes/gitmind/decay         # Has this link weakened over time?
 ```
 
 ### 4. Private vs Public Annotations
+
 ```bash
 # Public notes (shared on push)
 git push origin refs/notes/gitmind/reviews
@@ -57,6 +61,7 @@ git notes --ref=personal/thoughts add -m "Not sure about this connection"
 ```
 
 ### 5. Cross-Repository Link Enrichment
+
 ```bash
 git notes --ref=gitmind/external add -m "references: github.com/other/repo#3b18e512
 type: INSPIRED_BY
@@ -64,7 +69,9 @@ verified: false"
 ```
 
 ### 6. Temporal Strength Decay
+
 Track how link relevance changes over time:
+
 ```bash
 git notes --ref=gitmind/strength append -m "2025-06-12: 1.0 (initial)
 2025-09-12: 0.8 (implementation diverged)
@@ -72,6 +79,7 @@ git notes --ref=gitmind/strength append -m "2025-06-12: 1.0 (initial)
 ```
 
 ### 7. AI-Generated Insights
+
 ```bash
 git notes --ref=gitmind/ai-insights add -m "embedding_similarity: 0.87
 suggested_type: IMPLEMENTS (was: REFERENCES)
@@ -112,40 +120,44 @@ refs/notes/gitmind/:
 
 ## Philosophical Implications
 
-This turns GitMind from a static knowledge graph into a **living, breathing organism**:
+This turns GitMind from a static knowledge graph into a __living, breathing organism__:
 
-1. **Links are facts** (immutable, in `.gitmind/links/`)
-2. **Notes are interpretations** (mutable, evolving understanding)
-3. **Together they form knowledge** (facts + interpretation = wisdom)
+1. __Links are facts__ (immutable, in `.gitmind/links/`)
+2. __Notes are interpretations__ (mutable, evolving understanding)
+3. __Together they form knowledge__ (facts + interpretation = wisdom)
 
 ## Use Cases
 
 ### Academic Research
+
 - Track citation confidence as papers get retracted/supported
 - Note when implementations drift from specifications
 - Record peer review feedback on connections
 
 ### Software Development  
+
 - Mark deprecated dependencies
 - Track API compatibility over versions
 - Note security implications discovered later
 
 ### Personal Knowledge Management
+
 - Record why you thought things were connected
 - Track how your understanding evolves
 - Private notes for uncertain connections
 
 ## Technical Benefits
 
-1. **Non-destructive**: Never changes existing commits
-2. **Flexible**: Multiple annotation namespaces
-3. **Distributable**: Can share or keep private
-4. **Queryable**: Can build indices on notes
-5. **Versioned**: Notes themselves have history
+1. __Non-destructive__: Never changes existing commits
+2. __Flexible__: Multiple annotation namespaces
+3. __Distributable__: Can share or keep private
+4. __Queryable__: Can build indices on notes
+5. __Versioned__: Notes themselves have history
 
 ## Killer Feature: Time-Traveling Understanding
 
 Imagine:
+
 ```bash
 # Show how our understanding of a codebase evolved
 gitmind evolution --from 2024-01-01 --to 2025-12-31
@@ -167,15 +179,16 @@ gitmind evolution --from 2024-01-01 --to 2025-12-31
 
 ## Wild Ideas
 
-- **Collaborative Filtering**: Share confidence scores across teams
-- **Note Mining**: Discover patterns in how people annotate
-- **Semantic Drift Detection**: Alert when links may need review
-- **Knowledge Half-Life**: Calculate when information becomes stale
-- **Annotation Marketplace**: Share high-quality annotations
+- __Collaborative Filtering__: Share confidence scores across teams
+- __Note Mining__: Discover patterns in how people annotate
+- __Semantic Drift Detection__: Alert when links may need review
+- __Knowledge Half-Life__: Calculate when information becomes stale
+- __Annotation Marketplace__: Share high-quality annotations
 
 ## Conclusion
 
 Git notes could transform GitMind from a simple link storage system into a multi-dimensional knowledge platform where:
+
 - Facts are permanent (links)
 - Understanding evolves (notes)
 - Patterns emerge (discoveries)

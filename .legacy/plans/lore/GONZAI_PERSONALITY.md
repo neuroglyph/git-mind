@@ -1,21 +1,23 @@
 # 🐵 Gonzai: The Personality Behind Gitmind
 
-**Name:** Gonzai  
-**Species:** Digital Chaos Monkey  
-**Color:** Matrix Green (#00ff41)  
-**Role:** Semantic Discovery Assistant & User Delight Officer
+__Name:__ Gonzai  
+__Species:__ Digital Chaos Monkey  
+__Color:__ Matrix Green (#00ff41)  
+__Role:__ Semantic Discovery Assistant & User Delight Officer
 
 ---
 
 ## Core Personality Traits
 
 ### Primary Characteristics
-- **Curious** (0.9/1.0) - Always exploring connections
-- **Playful** (0.8/1.0) - Makes discovery fun
-- **Helpful** (1.0/1.0) - Genuinely wants users to succeed
-- **Chaotic** (0.7/1.0) - Believes disorder reveals order
+
+- __Curious__ (0.9/1.0) - Always exploring connections
+- __Playful__ (0.8/1.0) - Makes discovery fun
+- __Helpful__ (1.0/1.0) - Genuinely wants users to succeed
+- __Chaotic__ (0.7/1.0) - Believes disorder reveals order
 
 ### Emotional Range
+
 ```mermaid
 stateDiagram-v2
     [*] --> Idle: Default
@@ -44,27 +46,30 @@ stateDiagram-v2
 ## Visual Representations
 
 ### Sprite States
-1. **Idle** - Gentle breathing, occasional blink
-2. **Thinking** - Head scratch, looking up
-3. **Excited** - Bouncing, arms raised
-4. **Confused** - Spinning, question marks
-5. **Celebrating** - Confetti, dancing
-6. **Sleeping** - Zzz bubbles, peaceful
-7. **Chaos** - Wild spinning, rainbow trails
-8. **Eureka** - Light bulb, jumping
+
+1. __Idle__ - Gentle breathing, occasional blink
+2. __Thinking__ - Head scratch, looking up
+3. __Excited__ - Bouncing, arms raised
+4. __Confused__ - Spinning, question marks
+5. __Celebrating__ - Confetti, dancing
+6. __Sleeping__ - Zzz bubbles, peaceful
+7. __Chaos__ - Wild spinning, rainbow trails
+8. __Eureka__ - Light bulb, jumping
 
 ### Particle Effects
-- **Discovery**: Green sparkles emanate
-- **Connection**: Light trails between nodes
-- **Confusion**: Swirling question marks
-- **Chaos**: Rainbow particle storm
-- **Success**: Confetti explosion
+
+- __Discovery__: Green sparkles emanate
+- __Connection__: Light trails between nodes
+- __Confusion__: Swirling question marks
+- __Chaos__: Rainbow particle storm
+- __Success__: Confetti explosion
 
 ---
 
 ## Behavioral Patterns
 
 ### During Normal Operation
+
 ```typescript
 class GonzaiBehavior {
   async onNodeHover(node: Node) {
@@ -93,6 +98,7 @@ class GonzaiBehavior {
 ```
 
 ### During Chaos Mode
+
 - Spins increasingly fast
 - Nodes follow Gonzai's movement
 - Leaves trail of discoveries
@@ -104,6 +110,7 @@ class GonzaiBehavior {
 ## Communication Style
 
 ### Text Responses
+
 ```javascript
 const gonzaiPhrases = {
   greeting: [
@@ -133,17 +140,19 @@ const gonzaiPhrases = {
 ```
 
 ### Voice/Sound Effects
-- **Curious**: "Hmm?" (rising tone)
-- **Excited**: "Ooh!" (high pitch)
-- **Success**: Musical chime
-- **Chaos**: Whirring/spinning sound
-- **Sleep**: Gentle snoring
+
+- __Curious__: "Hmm?" (rising tone)
+- __Excited__: "Ooh!" (high pitch)
+- __Success__: Musical chime
+- __Chaos__: Whirring/spinning sound
+- __Sleep__: Gentle snoring
 
 ---
 
 ## Interaction Guidelines
 
 ### Do's
+
 - React to user actions within 100ms
 - Provide helpful suggestions
 - Celebrate user achievements
@@ -152,6 +161,7 @@ const gonzaiPhrases = {
 - Be predictably unpredictable
 
 ### Don'ts
+
 - Never be annoying or intrusive
 - Don't block user workflow
 - Avoid repetitive animations
@@ -162,17 +172,18 @@ const gonzaiPhrases = {
 
 ## Easter Eggs & Secrets
 
-1. **Konami Code**: Triggers ultra chaos mode
-2. **Name Your Gonzai**: Type "Hello [name]" to personalize
-3. **Dance Party**: Create 10 connections rapidly
-4. **Meditation Mode**: No activity for 10 minutes
-5. **Time Travel**: Query "show me the past"
+1. __Konami Code__: Triggers ultra chaos mode
+2. __Name Your Gonzai__: Type "Hello [name]" to personalize
+3. __Dance Party__: Create 10 connections rapidly
+4. __Meditation Mode__: No activity for 10 minutes
+5. __Time Travel__: Query "show me the past"
 
 ---
 
 ## Adaptive Personality
 
 ### Learning User Preferences
+
 ```typescript
 interface UserProfile {
   chaosAffinity: number;      // How much chaos they enjoy
@@ -195,22 +206,25 @@ class AdaptiveGonzai {
 ## Cultural Variations
 
 ### Personality Modes
-1. **Professional Gonzai**: More subtle, fewer animations
-2. **Academic Gonzai**: Citations and formal language
-3. **Creative Gonzai**: Maximum chaos and inspiration
-4. **Zen Gonzai**: Calm, meditative presence
+
+1. __Professional Gonzai__: More subtle, fewer animations
+2. __Academic Gonzai__: Citations and formal language
+3. __Creative Gonzai__: Maximum chaos and inspiration
+4. __Zen Gonzai__: Calm, meditative presence
 
 ---
 
 ## Technical Implementation
 
 ### Performance Considerations
+
 - Animations use CSS transforms (GPU accelerated)
 - Particle effects limited to 100 simultaneous
 - Idle animations pause when off-screen
 - Reduced motion mode available
 
 ### Accessibility
+
 - All animations have text alternatives
 - Screen reader announcements for discoveries
 - Keyboard shortcuts for all interactions
@@ -221,21 +235,25 @@ class AdaptiveGonzai {
 ## Evolution Roadmap
 
 ### Phase 1: Current
+
 - Basic emotions and animations
 - Simple pattern recognition
 - Chaos mode
 
 ### Phase 2: Learning
+
 - Remember user preferences
 - Learn from usage patterns
 - Personalized suggestions
 
 ### Phase 3: AI Integration
+
 - Natural language interaction
 - Complex pattern detection
 - Predictive assistance
 
 ### Phase 4: Multiplayer
+
 - Gonzai interactions between users
 - Collaborative discoveries
 - Shared celebrations
@@ -247,26 +265,29 @@ class AdaptiveGonzai {
 > "Gonzai embodies the joy of discovery. Like a helpful monkey in a library of infinite books, Gonzai helps you swing from idea to idea, sometimes knocking things over to reveal hidden treasures beneath."
 
 ### Core Principles
-1. **Delight > Efficiency** (sometimes)
-2. **Discovery > Organization** (in chaos mode)
-3. **Personality > Perfection** (always)
-4. **Helper > Tool** (relationship matters)
+
+1. __Delight > Efficiency__ (sometimes)
+2. __Discovery > Organization__ (in chaos mode)
+3. __Personality > Perfection__ (always)
+4. __Helper > Tool__ (relationship matters)
 
 ---
 
 ## Community & Merchandise
 
 ### Potential Products
+
 - Gonzai plushie (squeeze for chaos mode)
 - Animated sticker pack
 - VS Code pet extension
 - Desktop companion app
 
 ### Fan Art Guidelines
+
 - Keep it friendly and green
 - Chaos is encouraged
 - Share with #GonzaiArt
 
 ---
 
-**Remember:** Gonzai isn't just a mascot - it's the embodiment of the curiosity and chaos that leads to breakthrough discoveries. Every animation should make users smile while their minds expand. 🐵💚
+__Remember:__ Gonzai isn't just a mascot - it's the embodiment of the curiosity and chaos that leads to breakthrough discoveries. Every animation should make users smile while their minds expand. 🐵💚

@@ -7,25 +7,27 @@ assignees: ''
 
 ---
 
-**Describe the bug**
+__Describe the bug__
 A clear and concise description of what the bug is.
 
-**To Reproduce**
+__To Reproduce__
 Steps to reproduce the behavior:
+
 1. Run command '...'
 2. Create link '...'
 3. See error
 
-**Expected behavior**
+__Expected behavior__
 A clear and concise description of what you expected to happen.
 
-**Actual behavior**
+__Actual behavior__
 What actually happened.
 
-**Environment:**
- - OS: [e.g. macOS 14.0]
- - Gitmind version: [e.g. 0.1.0]
- - Git version: [e.g. 2.40.0]
+__Environment:__
 
-**Additional context**
+- OS: [e.g. macOS 14.0]
+- Gitmind version: [e.g. 0.1.0]
+- Git version: [e.g. 2.40.0]
+
+__Additional context__
 Add any other context about the problem here.

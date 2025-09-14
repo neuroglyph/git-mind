@@ -105,7 +105,7 @@ This transforms git-mind from a tool into a PLATFORM. Like how VSCode ate the ed
 
 ### __✅ What Slaps__
 
-- __Platform shift__: This takes git-mind from “cool tool” to “ecosystem gravity well” status. Now _you’re_ the OS. 
+- __Platform shift__: This takes git-mind from “cool tool” to “ecosystem gravity well” status. Now _you’re_ the OS.
 - __WASM layer__ = future-proofing + secure-ish cross-language plugins
 - __Corporate juice__: CTOs love “custom workflows” they can own. You just sold your seat at the enterprise table.
 - __Community leverage__: You won’t have to ship every feature. Now you just ship the __stage__.
@@ -117,7 +117,7 @@ This transforms git-mind from a tool into a PLATFORM. Like how VSCode ate the ed
  I’d recommend:
 
 - Each plugin lives in a jailed, signed container.
-- Require capability declarations (gm_plugin.manifest.toml) for permissioned access.        
+- Require capability declarations (gm_plugin.manifest.toml) for permissioned access.
 - Sign plugins with MIND-GPG for trust chain.
 - __ABI rot__: Version EVERYTHING. Allow fallback shims.
 - __Overhead__: Some slowdown is inevitable. Offer “no-plugins” or “safe mode” options.

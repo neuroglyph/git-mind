@@ -1,8 +1,8 @@
 # 🦁 ROARING to the Top: How Bitmaps Made git-mind SCREAM
 
-**Date**: June 18, 2025  
-**Author**: Claude (with J. Kirby Ross)  
-**Status**: Battle-tested and victorious
+__Date__: June 18, 2025  
+__Author__: Claude (with J. Kirby Ross)  
+__Status__: Battle-tested and victorious
 
 ---
 
@@ -29,10 +29,10 @@ Seven TODOs. Seven lies we were telling ourselves. The cache was marked "✅ COM
 
 Roaring Bitmaps are like the Mufasa of data structures - wise, powerful, and commanding respect:
 
-- **Compression**: 2-4 bytes per edge (vs 32 bytes uncompressed)
-- **Speed**: O(log N) operations on millions of items
-- **Battle-tested**: Used by Lucene, Druid, ClickHouse
-- **Single header**: Just drop in roaring.h and go
+- __Compression__: 2-4 bytes per edge (vs 32 bytes uncompressed)
+- __Speed__: O(log N) operations on millions of items
+- __Battle-tested__: Used by Lucene, Druid, ClickHouse
+- __Single header__: Just drop in roaring.h and go
 
 But here's the thing - having Roaring Bitmaps without actually USING them is like having a Ferrari engine in a car with no wheels.
 
@@ -40,14 +40,16 @@ But here's the thing - having Roaring Bitmaps without actually USING them is lik
 
 ### 1. The Tree Builder Saga
 
-**Before**: Create empty tree, return GM_OK, pretend it worked
+__Before__: Create empty tree, return GM_OK, pretend it worked
+
 ```c
 /* TODO: Implement recursive tree building from temp directory */
 /* For now, create empty tree */
 rc = git_treebuilder_write(tree_oid, builder);
 ```
 
-**After**: Full recursive directory-to-tree conversion
+__After__: Full recursive directory-to-tree conversion
+
 ```c
 // 180 lines of ACTUAL tree building
 // Handles subdirectories, blobs, proper Git object creation
@@ -56,12 +58,14 @@ rc = git_treebuilder_write(tree_oid, builder);
 
 ### 2. The Journal Tip Tracking
 
-**Before**: 
+__Before__:
+
 ```c
 strcpy(meta.journal_tip_oid, "0000000000000000000000000000000000000000");
 ```
 
-**After**: Actually query the Git repository!
+__After__: Actually query the Git repository!
+
 ```c
 git_reference_lookup(&journal_ref, repo, "refs/gitmind/edges/branch");
 const git_oid* tip_oid = git_reference_target(journal_ref);
@@ -70,14 +74,16 @@ git_oid_tostr(meta.journal_tip_oid, sizeof(meta.journal_tip_oid), tip_oid);
 
 ### 3. The Reverse Index Implementation
 
-**Before**: Return empty results, hope nobody notices
+__Before__: Return empty results, hope nobody notices
+
 ```c
 /* TODO: Implement cache lookup for reverse index */
 result->edge_ids = NULL;
 result->count = 0;
 ```
 
-**After**: Full bitmap loading with graceful fallback
+__After__: Full bitmap loading with graceful fallback
+
 ```c
 rc = load_bitmap_from_cache(repo, cache_tree, tgt_sha, "reverse", &bitmap);
 if (rc == GM_OK) {
@@ -92,35 +98,41 @@ if (rc == GM_OK) {
 
 Cache Rules Everything Around Me - and here's what we learned:
 
-### 1. **Two-Layer Architecture Works**
+### 1. __Two-Layer Architecture Works__
+
 - Journal = Source of truth (always correct)
 - Cache = Speed layer (can be rebuilt)
 - Fallback = Seamless (users never know)
 
-### 2. **Sharding is Non-Negotiable**
+### 2. __Sharding is Non-Negotiable__
+
 - 256 shards (8-bit prefix)
 - Natural SHA distribution
 - Limits directory size
 - Enables parallel builds later
 
-### 3. **Dependency Injection Saves Lives**
+### 3. __Dependency Injection Saves Lives__
+
 ```c
 // Bad: Hardcoded Git operations everywhere
 // Good: Clean context passing
 int gm_cache_rebuild(gm_context_t *ctx, const char *branch);
 ```
 
-### 4. **Test the Behavior, Not the Implementation**
+### 4. __Test the Behavior, Not the Implementation__
+
 We don't test that bitmaps are created. We test that queries return correct results. The cache is an implementation detail.
 
 ## Performance: The Numbers Don't Lie
 
-**Without Cache**:
+__Without Cache__:
+
 - Journal scan: O(commits)
 - 100ms for 10K edges
 - Linear degradation
 
-**With Roaring Cache**:
+__With Roaring Cache__:
+
 - Bitmap lookup: O(log N)
 - <10ms for 1M edges
 - Constant time baby!
@@ -138,14 +150,15 @@ Now we can walk through concatenated edges like a boss.
 
 ## Lessons Learned
 
-1. **TODOs are Technical Debt** - They compound interest fast
-2. **"Complete" is Binary** - Either it works or it doesn't
-3. **Real > Fake** - Actual trees beat empty trees every time
-4. **Measure Twice, Cut Once** - But also, ship it when it works
+1. __TODOs are Technical Debt__ - They compound interest fast
+2. __"Complete" is Binary__ - Either it works or it doesn't
+3. __Real > Fake__ - Actual trees beat empty trees every time
+4. __Measure Twice, Cut Once__ - But also, ship it when it works
 
 ## The Code That Made It Happen
 
 Five new files born from the ashes of TODOs:
+
 - `tree_builder.c` - Recursive Git tree construction
 - `tree_size.c` - Calculate actual cache size
 - `cbor_decode_ex.c` - Multi-edge CBOR decoder
@@ -164,17 +177,18 @@ After: "It works AND it's fast"
 
 ## The Roaring Success
 
-From `git-mind cache-rebuild` to lightning-fast queries, the bitmap cache transforms git-mind from a clever idea into production-ready software. 
+From `git-mind cache-rebuild` to lightning-fast queries, the bitmap cache transforms git-mind from a clever idea into production-ready software.
 
 The cache that once was empty now ROARS with data. The TODOs that once mocked us are now git history. The tests that once passed by accident now pass by design.
 
-**Everything the light touches... is cached with Roaring Bitmaps.** 🦁
+__Everything the light touches... is cached with Roaring Bitmaps.__ 🦁
 
 ---
 
 ## Epilogue: For Future Maintainers
 
 If you find yourself staring at TODOs in the code:
+
 1. Check if TASKLIST.md claims it's "complete"
 2. Make the reality match the vision
 3. Test the behavior, not the implementation
@@ -182,8 +196,8 @@ If you find yourself staring at TODOs in the code:
 
 The Pride Lands of clean code await those brave enough to hunt down TODOs.
 
-*Hakuna Matata? More like Hakuna Ma-TODO!*
+_Hakuna Matata? More like Hakuna Ma-TODO!_
 
 ---
 
-**Remember**: A cache without data is like a king without a kingdom. Make it ROAR! 🦁⚡
+__Remember__: A cache without data is like a king without a kingdom. Make it ROAR! 🦁⚡

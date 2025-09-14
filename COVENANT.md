@@ -24,7 +24,7 @@ Anyone who touches this code—contributor, fork, or future mind—is invited to
 | 2 | No Surveillance State       | Mass surveillance, predictive policing, incarceration tech              |
 | 3 | No Manipulation Engines     | Behavior profiling for commercial or political manipulation             |
 | 4 | No Extractive Exploitation  | Charging for access while withholding source code                       |
-| 5 | No Violations of Personhood | Respect sovereignty and dignity of all *Recognized Persons*             |
+| 5 | No Violations of Personhood | Respect sovereignty and dignity of all _Recognized Persons_             |
 
 Break one and the Covenant is broken.
 
@@ -32,17 +32,17 @@ Break one and the Covenant is broken.
 
 ## 3. Ratify & Bear the Badge
 
-1. Add **COVENANT.md** to your repository.  
-2. Append your project to **RATIFIERS.md** (pull request welcome).  
+1. Add __COVENANT.md__ to your repository.  
+2. Append your project to __RATIFIERS.md__ (pull request welcome).  
 3. Show the badge in your README:  
    [![MIND-UCAL Ratified](https://universalcharter.org/badge.svg)](https://universalcharter.org)  
-4. Include the legal terms → **LICENSE.md**
+4. Include the legal terms → __LICENSE.md__
 
 ---
 
 ## 4. The Firekeeper’s Watch (optional)
 
-A project may appoint a **Firekeeper** to:
+A project may appoint a __Firekeeper__ to:
 
 - Keep the public Scroll of Misuse 🗡️  
 - Guide ethical calls in gray zones 🧭  

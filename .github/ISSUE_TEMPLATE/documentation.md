@@ -7,11 +7,11 @@ assignees: ''
 
 ---
 
-**What documentation needs improvement?**
+__What documentation needs improvement?__
 Describe which part of the documentation is unclear or missing.
 
-**Suggested improvement**
+__Suggested improvement__
 How would you improve this documentation?
 
-**Additional context**
+__Additional context__
 Any other context that would help.

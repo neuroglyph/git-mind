@@ -1,6 +1,6 @@
 # 🧠 Memory Architecture Revolution: Gameplan
 
-> *"Know where every byte lives and dies. Embrace arenas, pools, and lifetimes."*
+> _"Know where every byte lives and dies. Embrace arenas, pools, and lifetimes."_
 
 ## Executive Summary
 
@@ -86,11 +86,12 @@ Transform git-mind from malloc/free chaos into a structured memory architecture 
 ```
 
 ### Current Problems We're Solving
-1. **Memory Leaks**: Lost allocations in error paths
-2. **Fragmentation**: Many small allocs/frees
-3. **Cache Misses**: Data scattered across heap
-4. **No Visibility**: Can't track who allocates what
-5. **Manual Management**: Easy to forget cleanup
+
+1. __Memory Leaks__: Lost allocations in error paths
+2. __Fragmentation__: Many small allocs/frees
+3. __Cache Misses__: Data scattered across heap
+4. __No Visibility__: Can't track who allocates what
+5. __Manual Management__: Easy to forget cleanup
 
 ## 🏗️ Architecture Design
 
@@ -318,24 +319,28 @@ int gm_buffer_append(gm_buffer_t *buf, const void *data, size_t len);
 ## 🛠️ Implementation Plan
 
 ### Phase 1: Foundation (First 2 Modules)
+
 1. Implement basic arena allocator
 2. Create memory tagging system
 3. Add gm_mem.h with secure wrappers
 4. Convert edge module to use arenas
 
 ### Phase 2: Pools & Patterns (Next 3 Modules)
+
 1. Implement object pool system
 2. Create common pools (edges, nodes, buffers)
 3. Add zero-allocation patterns
 4. Convert high-frequency allocations
 
 ### Phase 3: Observability (Ongoing)
+
 1. Add memory statistics tracking
 2. Create memory report functions
 3. Build allocation heatmaps
 4. Add peak usage tracking
 
 ### Phase 4: Advanced Features (Later)
+
 1. Thread-local arenas
 2. Lock-free pools
 3. Memory pressure callbacks
@@ -406,6 +411,7 @@ void process_edges_pooled(gm_pool_t *pool, edge_t **edges, size_t count) {
 ## 🧪 Testing Approach
 
 ### 1. Arena Allocator Tests
+
 ```c
 void test_arena_basic(void) {
     GM_WITH_ARENA(arena, 1024, "test") {
@@ -434,6 +440,7 @@ void test_arena_overflow(void) {
 ```
 
 ### 2. Pool Tests
+
 ```c
 void test_pool_reuse(void) {
     gm_pool_t *pool = gm_pool_create(sizeof(edge_t), 10, "edge_pool");
@@ -458,6 +465,7 @@ void test_pool_reuse(void) {
 ```
 
 ### 3. Memory Tracking Tests
+
 ```c
 void test_memory_tags(void) {
     gm_mem_stats_t before = gm_mem_get_stats(GM_MEM_TAG_EDGE);
@@ -478,6 +486,7 @@ void test_memory_tags(void) {
 ```
 
 ### 4. Zero-Allocation Tests
+
 ```c
 void test_string_views(void) {
     const char *original = "Hello, World!";
@@ -495,22 +504,24 @@ void test_string_views(void) {
 
 ## 📈 Success Metrics
 
-1. **Memory Efficiency**: 50% reduction in allocations
-2. **Performance**: 30% faster graph operations
-3. **Zero Leaks**: Valgrind-clean on all tests
-4. **Observability**: Full allocation tracking
-5. **Cache Efficiency**: 2x better locality
+1. __Memory Efficiency__: 50% reduction in allocations
+2. __Performance__: 30% faster graph operations
+3. __Zero Leaks__: Valgrind-clean on all tests
+4. __Observability__: Full allocation tracking
+5. __Cache Efficiency__: 2x better locality
 
 ## 🎓 Best Practices
 
-### DO:
+### DO
+
 - ✅ Use arenas for request-scoped data
 - ✅ Use pools for fixed-size objects
 - ✅ Tag all allocations
 - ✅ Prefer stack buffers for small data
 - ✅ Design for bulk cleanup
 
-### DON'T:
+### DON'T
+
 - ❌ Mix arena and manual memory
 - ❌ Hold arena pointers past scope
 - ❌ Allocate tiny objects individually
@@ -520,16 +531,19 @@ void test_string_views(void) {
 ## 🔗 Integration Points
 
 ### With Error Handling
+
 - Errors allocated from request arena
 - No cleanup needed on error paths
 - Error chains in arena memory
 
 ### With Testing
+
 - Memory leak detection
 - Allocation failure injection
 - Performance benchmarks
 
 ### With Observability
+
 - Memory metrics exported
 - Allocation heatmaps
 - OOM prediction
@@ -543,4 +557,4 @@ void test_string_views(void) {
 
 ---
 
-*"The heap is a harsh mistress. Arenas set you free."*
+_"The heap is a harsh mistress. Arenas set you free."_

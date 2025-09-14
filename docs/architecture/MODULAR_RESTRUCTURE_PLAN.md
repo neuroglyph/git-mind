@@ -4,16 +4,19 @@
 # Modular Architecture Restructure Plan
 
 Table of Contents
+
 - [Executive Summary](#executive-summary)
 - [Goals](#goals)
 - [Plan](#plan)
 - [Milestones](#milestones)
 - [Compatibility](#compatibility)
+
 ## Executive Summary
 
 Transform git-mind from a monolithic CLI application into a modular, library-first architecture with a true single-header core library and clean separation of concerns.
 
-**Key Goals:**
+__Key Goals:__
+
 1. Create a single-header `gitmind.h` core library
 2. Fix 11,000+ code quality issues during migration
 3. Enable multiple frontends (CLI, MCP, Web)
@@ -22,14 +25,16 @@ Transform git-mind from a monolithic CLI application into a modular, library-fir
 ## Current Problems
 
 ### 1. Architecture Issues
-- **No clear separation** between core logic and UI
-- **Not a single-header library** despite original goal (9+ headers)
-- **Tight coupling** between components
-- **Difficult to embed** in other applications
+
+- __No clear separation__ between core logic and UI
+- __Not a single-header library__ despite original goal (9+ headers)
+- __Tight coupling__ between components
+- __Difficult to embed__ in other applications
 
 ### 2. Code Quality Issues (NOW RESOLVED FOR CORE)
-- **Started with 11,951 clang-tidy warnings**
-- **Now: ZERO warnings in migrated core modules** 
+
+- __Started with 11,951 clang-tidy warnings__
+- __Now: ZERO warnings in migrated core modules__
 - Achieved through systematic migration:
   - Functions refactored to reasonable size
   - All magic numbers → named constants
@@ -38,6 +43,7 @@ Transform git-mind from a monolithic CLI application into a modular, library-fir
   - Self-contained headers
 
 ### 3. Maintenance Challenges
+
 - Hard to test components in isolation
 - Changes ripple across entire codebase
 - Can't reuse core logic in new contexts
@@ -76,6 +82,7 @@ git-mind/
 ## Core Library Design
 
 ### What Goes in Core
+
 - Edge/link data structures
 - CBOR encoding/decoding  
 - Attribution system
@@ -83,6 +90,7 @@ git-mind/
 - Pure algorithms (no I/O)
 
 ### What Stays Out
+
 - Command-line parsing
 - Output formatting
 - Network operations
@@ -90,6 +98,7 @@ git-mind/
 - UI of any kind
 
 ### Single Header Strategy
+
 ```c
 /* gitmind.h - Single header git-mind library */
 #ifndef GITMIND_H
@@ -110,7 +119,9 @@ git-mind/
 ## Migration Strategy ("3 Birds, 1 Stone")
 
 ### Phase 1: Core Extraction (Weeks 1-4)
+
 For each module (edge, cbor, attribution):
+
 1. Move to `core/src/`
 2. Fix ALL clang-tidy warnings
 3. Split functions exceeding size limits
@@ -119,12 +130,14 @@ For each module (edge, cbor, attribution):
 6. Update migration tracker
 
 ### Phase 2: Application Separation (Weeks 5-6)
+
 1. Move CLI to `apps/cli/`
 2. Update to use only `gitmind.h`
 3. Fix quality issues in CLI code
 4. Separate UI logic from business logic
 
 ### Phase 3: New Applications (Week 7+)
+
 1. Create `apps/mcp/` with clean implementation
 2. All new code follows strict quality standards
 3. Share only through core library
@@ -132,6 +145,7 @@ For each module (edge, cbor, attribution):
 ## Quality Enforcement
 
 ### Regression Prevention
+
 ```bash
 # quality/snapshots/{file}.quality
 function-size: 0 warnings (was: 23)
@@ -140,11 +154,13 @@ naming: 0 warnings (was: 67)
 ```
 
 ### Automated Testing
+
 - Generate regression tests for each fix
 - Quality snapshots prevent backsliding
 - CI enforces improvements
 
 ### Progressive Standards
+
 ```yaml
 # .github/workflows/quality-gate.yml
 - core/**: Must pass strict .clang-tidy
@@ -157,6 +173,7 @@ naming: 0 warnings (was: 67)
 Taking `edge.c` as an example:
 
 ### Before Migration
+
 ```c
 // src/edge/edge.c
 void gm_edge_create(...) {
@@ -166,6 +183,7 @@ void gm_edge_create(...) {
 ```
 
 ### After Migration  
+
 ```c
 // core/src/edge/edge.c
 #define MAX_EDGE_TYPE 10
@@ -185,16 +203,19 @@ int gm_edge_create(...) {
 ## Success Metrics
 
 ### Week 1
+
 - [ ] Core directory structure created
 - [ ] First module (edge) migrated and clean
 - [ ] Automated quality tracking in place
 
 ### Week 4  
+
 - [ ] All core modules migrated
 - [ ] Single header amalgamation working
 - [ ] 50% reduction in total warnings
 
 ### Week 8
+
 - [ ] CLI fully separated and using core
 - [ ] MCP server implemented
 - [ ] 100% of core code passes strict quality checks
@@ -202,36 +223,38 @@ int gm_edge_create(...) {
 ## Backwards Compatibility
 
 ### For Users
+
 - `git-mind` CLI commands unchanged
 - Git hooks continue working
 - Existing `.gitmind/` data compatible
 
 ### For Developers  
+
 - Old `#include "gitmind/*.h"` → `#include "gitmind.h"`
 - Function signatures preserved
 - Behavior unchanged (only quality improved)
 
 ## Open Questions
 
-1. **Version during migration?** 
+1. __Version during migration?__
    - Stay on 0.x to indicate instability?
    - Jump to 2.0 when complete?
 
-2. **Breaking changes acceptable?**
+2. __Breaking changes acceptable?__
    - Can we rename poorly-named functions?
    - Standardize return codes?
 
-3. **Migration timeline?**
+3. __Migration timeline?__
    - Aggressive 8-week plan realistic?
    - Do incrementally over months?
 
 ## Next Steps
 
-1. **Create proof-of-concept**: Migrate edge module
-2. **Set up quality automation**: Snapshot and tracking tools  
-3. **Get feedback**: Open discussion on approach
-4. **Begin systematic migration**: Module by module
+1. __Create proof-of-concept__: Migrate edge module
+2. __Set up quality automation__: Snapshot and tracking tools  
+3. __Get feedback__: Open discussion on approach
+4. __Begin systematic migration__: Module by module
 
 ---
 
-*This is a living document. Updates will be tracked in git history.*
+_This is a living document. Updates will be tracked in git history._

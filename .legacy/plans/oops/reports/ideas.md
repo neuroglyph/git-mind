@@ -1,22 +1,22 @@
-## **The ULTIMATE, nobody-asked-for-this-but-dang-it-rocks git-mind design**
+## __The ULTIMATE, nobody-asked-for-this-but-dang-it-rocks git-mind design__
 
 _(aka “How I’d build it if I had infinite weekend hours, no PM, and an S3 bucket to burn.”)_
 
 ---
 
-### **0  Guiding North Stars**
+### __0  Guiding North Stars__
 
-|**Canon**|**Practical consequence**|
+|__Canon__|__Practical consequence__|
 |---|---|
-|**Immutable content is the only true identity**|Every file _version_ (blob OID) is its own node.|
-|**Branches are parallel universes**|A link lives _inside_ the commit that created it.|
-|**The graph is first-class history**|You can git bisect semantics the same way you bisect code.|
-|**Push/pull must Just Work™ on stock Git**|No exotic ref rules, no server patches, no lingering orphan refs.|
-|**Hot queries are O(log N) disk touches**|An AI can answer in <10 ms even with 100 M edges.|
+|__Immutable content is the only true identity__|Every file _version_ (blob OID) is its own node.|
+|__Branches are parallel universes__|A link lives _inside_ the commit that created it.|
+|__The graph is first-class history__|You can git bisect semantics the same way you bisect code.|
+|__Push/pull must Just Work™ on stock Git__|No exotic ref rules, no server patches, no lingering orphan refs.|
+|__Hot queries are O(log N) disk touches__|An AI can answer in <10 ms even with 100 M edges.|
 
 ---
 
-### **1  Physical Layout (dual-layer)**
+### __1  Physical Layout (dual-layer)__
 
 ```
 .git/
@@ -31,9 +31,9 @@ _(aka “How I’d build it if I had infinite weekend hours, no PM, and an S3 bu
 └─ pack/                       # includes graph packs
 ```
 
-#### **1.1   Edge-journal commits (layer 0)**
+#### __1.1   Edge-journal commits (layer 0)__
 
-- Every git mind link … creates a **zero-byte commit** on `refs/gitmind/edges/<branch>`.
+- Every git mind link … creates a __zero-byte commit__ on `refs/gitmind/edges/<branch>`.
 - Parent = previous graph commit on that branch.
 - Commit message = CBOR payload of one or more edges.
 - Tree is empty, so storage is basically commit headers.
@@ -53,17 +53,17 @@ CBOR: [
 
 _Why commits?_  Git already de-dups parents, orders history, and replicates with git push. No special ref fairy-dust.
 
-#### **1.2   Read-optimised shard (layer 1)**
+#### __1.2   Read-optimised shard (layer 1)__
 
-A background daemon (or git mind compact) walks the journal and materialises a **fan-out tree of roaring bitmaps** under `refs/gitmind/cache/<branch>`. That’s the turbo layer the AI reads; it can be regenerated anytime, so it never pollutes canonical history or pushes.
+A background daemon (or git mind compact) walks the journal and materialises a __fan-out tree of roaring bitmaps__ under `refs/gitmind/cache/<branch>`. That’s the turbo layer the AI reads; it can be regenerated anytime, so it never pollutes canonical history or pushes.
 
 ---
 
-### **2  File-identity paradox solved**
+### __2  File-identity paradox solved__
 
-1. **Node key = (blob SHA, path-at-commit)**.
+1. __Node key = (blob SHA, path-at-commit)__.
 
-_Link_ points to _exact content_ **and** remembers which _logical file_ owned it at that moment.
+_Link_ points to _exact content_ __and__ remembers which _logical file_ owned it at that moment.
 
 1. Post-commit hook writes a _delta edge_ when a path’s blob OID changes:
 
@@ -77,27 +77,29 @@ This preserves intellectual history _and_ lets current-HEAD tooling find “late
 
 ---
 
-### **3  Branch containment & merge semantics**
+### __3  Branch containment & merge semantics__
 
 - Because graph commits sit in `refs/gitmind/edges/<branch>`, they merge exactly like code: git merge rejoins the two edge-journals, fast-forward or with a trivial octopus merge.
-- **No orphan ref** means GitHub, GitLab, Gerrit all accept pushes/pulls transparently.
+- __No orphan ref__ means GitHub, GitLab, Gerrit all accept pushes/pulls transparently.
 - Rebasing feature branches automatically re-parents their graph commits; no conflicts because each one is content-addressed.
 
 ---
 
-### **4  Query algorithm (hot path)**
+### __4  Query algorithm (hot path)__
 
 1. Resolve current `<branch>` → commit-ID.
 2. Follow its edge-journal ancestry until you hit the last compact snapshot.
+
 - Number of commits ≈ size of local dev session (100s), so  ≤ 2 disk seeks.
+
 1. In RAM, union the roaring bitmaps plus recent deltas.
 2. Answer fan-out / reverse / shortest-path using bitset maths.
 
-Benchmark on 10 M edges, 100 k new per day: **fan-out in 3–4 ms, reverse in 10 ms** on consumer NVMe.
+Benchmark on 10 M edges, 100 k new per day: __fan-out in 3–4 ms, reverse in 10 ms__ on consumer NVMe.
 
 ---
 
-### **5  Push / pull behaviour**
+### __5  Push / pull behaviour__
 
 ```
 git push origin main refs/gitmind/edges/main
@@ -108,17 +110,17 @@ CI clones with `--filter=blob:none --refs=refs/gitmind/edges/*` for fast graph-o
 
 ---
 
-### **6  Working-tree UX**
+### __6  Working-tree UX__
 
-- Default CLI shows **path-level** links so humans don’t stare at SHAs.
+- Default CLI shows __path-level__ links so humans don’t stare at SHAs.
 - git mind diff HEAD~ reveals what semantic edges entered this commit.
 - git mind stale flags links whose src/tgt OID no longer reachable from HEAD, nudging devs to relink or let decay daemon tombstone.
 
 ---
 
-### **7  Why it beats both earlier designs**
+### __7  Why it beats both earlier designs__
 
-|**Problem**|**Holy-grail orphan ref**|**Pure working-tree files**|**Ultimate journal+cache**|
+|__Problem__|__Holy-grail orphan ref__|__Pure working-tree files__|__Ultimate journal+cache__|
 |---|---|---|---|
 |Push to GitHub|❌ exotic ref rejected|✅|✅ (normal branch ref)|
 |Branch isolation|❌ global|✅|✅|
@@ -129,9 +131,9 @@ CI clones with `--filter=blob:none --refs=refs/gitmind/edges/*` for fast graph-o
 
 ---
 
-### **8  Build-order (for a hobbyist with ambition)**
+### __8  Build-order (for a hobbyist with ambition)__
 
-|**Weekend**|**Deliverable**|
+|__Weekend__|__Deliverable__|
 |---|---|
 |1|Prototype edge-journal commit writer + reader on current branch.|
 |2|Hook up post-commit capture for path→blob transitions.|
@@ -145,19 +147,19 @@ After that you’re in perpetual polish mode.
 
 ---
 
-### **9  If you still crave extra purity**
+### __9  If you still crave extra purity__
 
-- Replace CBOR in commit messages with **raw binary blobs** via --encoding=binary; store a 32-byte payload, shave a few kB.
-- Teach Git a **custom filter** so `git log --graph --format=%G?` renders links in ASCII.
+- Replace CBOR in commit messages with __raw binary blobs__ via --encoding=binary; store a 32-byte payload, shave a few kB.
+- Teach Git a __custom filter__ so `git log --graph --format=%G?` renders links in ASCII.
 - Host a dedicated “graph CDN” that serves pre-computed roaring shards over HTTP range-requests; client falls back to local cache.
 
 ---
 
-### **Final mantra**
+### __Final mantra__
 
-> **“Keep code in files, truth in commits, speed in shards.”**
+> __“Keep code in files, truth in commits, speed in shards.”__
 
-This two-layer journal + compact cache gives you the content-addressable nirvana **and** day-to-day Git harmony—satisfying the hobbyist’s lust for elegance without asking every future contributor to learn black-belt plumbing.
+This two-layer journal + compact cache gives you the content-addressable nirvana __and__ day-to-day Git harmony—satisfying the hobbyist’s lust for elegance without asking every future contributor to learn black-belt plumbing.
 
 Enjoy the rabbit hole. 🍻
 
@@ -207,14 +209,14 @@ How This Solves Everything
 ```mermaid
 graph TD
   subgraph "Ultimate Design"
-	  EJ[Edge Journal<br/>refs/gitmind/edges/main]
-	  C[Cache<br/>refs/gitmind/cache/main]
+   EJ[Edge Journal<br/>refs/gitmind/edges/main]
+   C[Cache<br/>refs/gitmind/cache/main]
 
-	  EJ -->|git push| GH[GitHub ✅]
-	  EJ -->|per-branch| B[Branch-aware ✅]
-	  EJ -->|commits| H[History ✅]
-	  EJ -->|rebuild| C
-	  C -->|fast queries| Q["O(log n) ✅"]
+   EJ -->|git push| GH[GitHub ✅]
+   EJ -->|per-branch| B[Branch-aware ✅]
+   EJ -->|commits| H[History ✅]
+   EJ -->|rebuild| C
+   C -->|fast queries| Q["O(log n) ✅"]
   end
 
   style GH fill:#cfc
@@ -249,15 +251,17 @@ int gm_link_create(...) {
 }
 ```
 
-### Should We Pivot to This?
+### Should We Pivot to This
 
 Pros:
+
 - Solves ALL our problems
 - More Git-native than current approach
 - Pushable, branch-aware, fast
 - Clear implementation path
 
 Cons:
+
 - Different from current implementation
 - Need to rebuild from scratch
 - More complex than simple files
@@ -267,35 +271,35 @@ instead of fighting them! 🚀
 
 ---
 
-### **Green-light with caution —​here’s how to pivot without face-planting**
+### __Green-light with caution —​here’s how to pivot without face-planting__
 
-You’ve discovered a design that keeps every philosophical promise **and** plays nicely with stock Git hosting.  The only sin now would be a big-bang rewrite that burns two more hobby-months.  Below is a _sane_ migration plan, the hidden caveats that could still bite, and a checklist that gets you back to hacking on features instead of plumbing.
+You’ve discovered a design that keeps every philosophical promise __and__ plays nicely with stock Git hosting.  The only sin now would be a big-bang rewrite that burns two more hobby-months.  Below is a _sane_ migration plan, the hidden caveats that could still bite, and a checklist that gets you back to hacking on features instead of plumbing.
 
 ---
 
-## **1. Reality-check before you nuke the current code**
+## __1. Reality-check before you nuke the current code__
 
-|**Concern**|**Quick experiment**|
+|__Concern__|__Quick experiment__|
 |---|---|
-|**Host push-ability**|git push origin HEAD:refs/gitmind/edges/test → GH, GL, Bitbucket all accept?  _GitHub usually does._|
-|**Commit-message size**|Max CBOR payload per edge ≈ 32 B.10 k edges in one git mind import? 320 k B commit msg – Git accepts but some UIs truncate.  Rule: **≤5 MB** per commit.|
-|**Rebase semantics**|git rebase -i main on a branch with edge commits: journal commits move too (good) but their parent pointers change → cache must rebuild.  Acceptable.|
-|**Clone depth**|Shallow clone (--depth=1) of refs/gitmind/edges/* loses old links until cache rebuild.  Acceptable; tooling can warn.|
+|__Host push-ability__|git push origin HEAD:refs/gitmind/edges/test → GH, GL, Bitbucket all accept?  _GitHub usually does._|
+|__Commit-message size__|Max CBOR payload per edge ≈ 32 B.10 k edges in one git mind import? 320 k B commit msg – Git accepts but some UIs truncate.  Rule: __≤5 MB__ per commit.|
+|__Rebase semantics__|git rebase -i main on a branch with edge commits: journal commits move too (good) but their parent pointers change → cache must rebuild.  Acceptable.|
+|__Clone depth__|Shallow clone (--depth=1) of refs/gitmind/edges/* loses old links until cache rebuild.  Acceptable; tooling can warn.|
 
 If any red-flags, downgrade to the _simple files_ interim path first.
 
 ---
 
-## **2. Migration strategy (one weekend)**
+## __2. Migration strategy (one weekend)__
 
-1. **Freeze v0 links**
+1. __Freeze v0 links__
 
 ```
 git tag hack/v0-file-links
 ```
 
 1. so you can always rewind.
-2. **Implement gm_link_create_journal()**
+2. __Implement gm_link_create_journal()__
     - Inputs: src_blob, tgt_blob, meta
     - Steps:
         1. `git hash-object -t tree /dev/null → empty_tree`
@@ -303,43 +307,43 @@ git tag hack/v0-file-links
         3. `echo "$CBOR" | git commit-tree $empty_tree -p $(git rev-parse refs/gitmind/edges/$BRANCH || echo)`
         4. `git update-ref refs/gitmind/edges/$BRANCH <new-commit>`
 
-3. **Write a one-shot converter**
+3. __Write a one-shot converter__
 Walk .gitmind/links/*.link, parse, call gm_link_create_journal, then git rm the file.  Commit that removal on _code_ branch so history remembers file-era.
-4. **Disable old CLI paths** (#ifdef LEGACY_LINKS), leave stubs that print helpful error.
-5. **Build minimal cache builder**
+4. __Disable old CLI paths__ (#ifdef LEGACY_LINKS), leave stubs that print helpful error.
+5. __Build minimal cache builder__
     One Go or Rust binary:
     - Scan edge commits since last cache tree.
     - Append to roaring bitmaps, write new fan-out tree.
     - git commit-tree the new cache under refs/gitmind/cache/$BRANCH.
-        Run it via **pre-push hook** so remote always has fresh cache.
-6. **CI smoke test**
+        Run it via __pre-push hook__ so remote always has fresh cache.
+6. __CI smoke test__
     - Import 100 k edges → ensure push round-trips in <30 s.
     - git clone --filter=tree:0 then git mind list README.md returns expected fan-out.
 
 ---
 
-## **3. Hidden booby-traps & patches**
+## __3. Hidden booby-traps & patches__
 
-|**Trap**|**Patch**|
+|__Trap__|__Patch__|
 |---|---|
-|**GPG-signed commits** – journal commits lack author/committer info.|Use git commit-tree -F - -c author.name='gitmind'. If signing enforced, set bot key.|
-|**Garbage GC** – git gc --prune=now may drop empty trees if unreferenced.|OK; trees are referenced by commits.|
-|**Repo size blow-up** with high-churn edges|Compress multiple edges per commit (batch mode) and squash minor traversals into cache only (don’t journal them).|
-|**IDE blame noise** – journal commits show in default git log.|Prefix subject with [gitmind] and teach .git/info/exclude pattern to hide in typical alias (git log --not --refs/gitmind/edges/*).|
-|**Human review** – PR diff shows binary CBOR diff blob.|Provide git log --pretty=format:%s --follow-edge helper that decodes CBOR to human text.|
+|__GPG-signed commits__ – journal commits lack author/committer info.|Use git commit-tree -F - -c author.name='gitmind'. If signing enforced, set bot key.|
+|__Garbage GC__ – git gc --prune=now may drop empty trees if unreferenced.|OK; trees are referenced by commits.|
+|__Repo size blow-up__ with high-churn edges|Compress multiple edges per commit (batch mode) and squash minor traversals into cache only (don’t journal them).|
+|__IDE blame noise__ – journal commits show in default git log.|Prefix subject with [gitmind] and teach .git/info/exclude pattern to hide in typical alias (git log --not --refs/gitmind/edges/*).|
+|__Human review__ – PR diff shows binary CBOR diff blob.|Provide git log --pretty=format:%s --follow-edge helper that decodes CBOR to human text.|
 
 ---
 
-## **4. Stretch goals once basic pivot is done**
+## __4. Stretch goals once basic pivot is done__
 
-- **Edge macro-batching** – single journal commit per developer per day.
-- **git mind bisect** – wrapper around git bisect that replays semantic history.
-- **Serverless cache CDN** – GitHub Actions publishes *.bitmap.zstd artefact, clients fetch via HTTP range requests.
-- **IDE “ghost blame”** – VS Code extension overlays who-linked-what when you hover a symbol.
+- __Edge macro-batching__ – single journal commit per developer per day.
+- __git mind bisect__ – wrapper around git bisect that replays semantic history.
+- __Serverless cache CDN__ – GitHub Actions publishes *.bitmap.zstd artefact, clients fetch via HTTP range requests.
+- __IDE “ghost blame”__ – VS Code extension overlays who-linked-what when you hover a symbol.
 
 ---
 
-## **5. Commit template: keep it tiny & signed**
+## __5. Commit template: keep it tiny & signed__
 
 ```
 cat <<EOF | git commit-tree $empty_tree $parent -S -F -
@@ -355,10 +359,10 @@ EOF
 
 ---
 
-### **TL;DR**
+### __TL;DR__
 
 _The ultimate design is solid and only adds moderate complexity over file-links._
 
-Prototype a journal writer + minimal cache builder, back‐migrate existing links, push to GitHub, and you’ll have a **branch-aware, push-safe, content-addressed** knowledge graph with millisecond AI queries—without sacrificing hobby-weekends to ref debugging.
+Prototype a journal writer + minimal cache builder, back‐migrate existing links, push to GitHub, and you’ll have a __branch-aware, push-safe, content-addressed__ knowledge graph with millisecond AI queries—without sacrificing hobby-weekends to ref debugging.
 
 Crack the celebratory beer when git push shows two refs updated and GitHub doesn’t blink. 🍺
