@@ -11,11 +11,15 @@
 #include "gitmind/attribution.h"
 
 #include <git2.h>
+#include <git2/repository.h>
+#include <git2/refs.h>
 #include <stdint.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "gitmind/security/memory.h"
+#include "gitmind/security/string.h"
 
 /* Constants */
 #define REFS_GITMIND_PREFIX "refs/gitmind/edges/"
@@ -269,15 +273,19 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
             return GM_ERR_INVALID_FORMAT;
         }
 
-        strncpy(current_branch, name, sizeof(current_branch) - 1);
-        current_branch[sizeof(current_branch) - 1] = '\0';
+        size_t name_len = strlen(name);
+        if (name_len >= sizeof(current_branch)) {
+            name_len = sizeof(current_branch) - 1;
+        }
+        gm_memcpy_safe(current_branch, sizeof(current_branch), name, name_len);
+        current_branch[name_len] = '\0';
         branch = current_branch;
 
         git_reference_free(head);
     }
 
     /* Build ref name */
-    snprintf(ref_name, sizeof(ref_name), "%s%s", REFS_GITMIND_PREFIX, branch);
+    gm_snprintf(ref_name, sizeof(ref_name), "%s%s", REFS_GITMIND_PREFIX, branch);
 
     /* Walk the journal */
     return walk_journal_generic(&rctx, ref_name);

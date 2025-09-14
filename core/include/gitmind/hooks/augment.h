@@ -11,8 +11,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <git2/types.h>
-#include <git2/oid.h>
-#include <git2/repository.h>
 #ifdef __cplusplus
 extern "C" {
 #endif

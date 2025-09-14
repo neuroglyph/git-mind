@@ -4,12 +4,19 @@
 #include "gitmind/journal.h"
 #include "gitmind/types.h"
 #include "gitmind/context.h"
-#include "gitmind/cbor/cbor.h"
 #include "gitmind/cbor/constants_cbor.h"
 #include "gitmind/error.h"
 #include "gitmind/result.h"
+#include "gitmind/edge.h"
+#include "gitmind/edge_attributed.h"
+#include "gitmind/security/string.h"
 
-#include <git2.h>
+#include <git2/repository.h>
+#include <git2/oid.h>
+#include <git2/commit.h>
+#include <git2/tree.h>
+#include <git2/refs.h>
+#include <git2/signature.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,8 +50,8 @@ static int journal_init(journal_ctx_t *jctx, gm_context_t *ctx,
     }
 
     /* Build ref name */
-    snprintf(jctx->ref_name, sizeof(jctx->ref_name), "%s%s",
-             REFS_GITMIND_PREFIX, branch);
+    gm_snprintf(jctx->ref_name, sizeof(jctx->ref_name), "%s%s",
+                REFS_GITMIND_PREFIX, branch);
 
     return GM_OK;
 }
@@ -70,8 +77,10 @@ static int get_current_branch(git_repository *repo, char *branch_name,
     }
 
     /* Copy branch name */
-    strncpy(branch_name, name, len - 1);
-    branch_name[len - 1] = '\0';
+    size_t n = strlen(name);
+    if (n >= len) n = len - 1;
+    memcpy(branch_name, name, n);
+    branch_name[n] = '\0';
 
     git_reference_free(head);
     return GM_OK;
