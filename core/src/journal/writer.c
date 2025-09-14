@@ -17,6 +17,7 @@
 #include <git2/tree.h>
 #include <git2/refs.h>
 #include <git2/signature.h>
+#include <sodium.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,7 +27,7 @@
 #define REFS_GITMIND_PREFIX "refs/gitmind/edges/"
 #define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
 #define REF_NAME_BUFFER_SIZE GM_PATH_MAX
-#define COMMIT_ENCODING "binary"
+#define COMMIT_ENCODING "UTF-8"
 #define CBOR_OVERFLOW_MARGIN GM_FORMAT_BUFFER_SIZE /* CBOR encoding safety margin */
 #define PARENT_COMMITS_MAX 1
 #define EMPTY_TREE_SHA "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
@@ -50,8 +51,11 @@ static int journal_init(journal_ctx_t *jctx, gm_context_t *ctx,
     }
 
     /* Build ref name */
-    gm_snprintf(jctx->ref_name, sizeof(jctx->ref_name), "%s%s",
-                REFS_GITMIND_PREFIX, branch);
+    int nref = gm_snprintf(jctx->ref_name, sizeof(jctx->ref_name), "%s%s",
+                           REFS_GITMIND_PREFIX, branch);
+    if (nref < 0 || (size_t)nref >= sizeof(jctx->ref_name)) {
+        return GM_ERR_BUFFER_TOO_SMALL;
+    }
 
     return GM_OK;
 }
@@ -78,8 +82,10 @@ static int get_current_branch(git_repository *repo, char *branch_name,
 
     /* Copy branch name */
     size_t n = strlen(name);
-    if (n >= len) n = len - 1;
-    memcpy(branch_name, name, n);
+    if (n >= len) {
+        return GM_ERR_BUFFER_TOO_SMALL;
+    }
+    gm_memcpy_safe(branch_name, len, name, n);
     branch_name[n] = '\0';
 
     git_reference_free(head);
@@ -129,12 +135,25 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
         git_reference_free(ref);
     }
 
-    /* Create commit */
+    /* Base64-encode CBOR for commit message safety */
+    const int variant = sodium_base64_VARIANT_ORIGINAL;
+    size_t b64_len = sodium_base64_ENCODED_LEN(cbor_len, variant);
+    char *b64 = (char *)malloc(b64_len);
+    if (!b64) {
+        git_tree_free(tree);
+        git_signature_free(sig);
+        if (parent) git_commit_free(parent);
+        return GM_ERR_OUT_OF_MEMORY;
+    }
+    sodium_bin2base64(b64, b64_len, cbor_data, cbor_len, variant);
+
+    /* Create commit with ASCII-safe message */
     error = git_commit_create(commit_oid, jctx->repo, jctx->ref_name, sig, sig,
-                              COMMIT_ENCODING, (const char *)cbor_data, tree,
+                              COMMIT_ENCODING, b64, tree,
                               (size_t)parent_count, parent_commits);
 
     /* Cleanup */
+    free(b64);
     git_signature_free(sig);
     git_tree_free(tree);
     if (parent) {

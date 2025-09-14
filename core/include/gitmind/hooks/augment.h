@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#ifndef GM_AUGMENT_H
-#define GM_AUGMENT_H
+#ifndef GITMIND_HOOKS_AUGMENT_H
+#define GITMIND_HOOKS_AUGMENT_H
 
 #include "gitmind/context.h"
 #include "gitmind/edge.h"
@@ -13,13 +13,11 @@
 #include <git2/types.h>
 #ifdef __cplusplus
 extern "C" {
+// keep C linkage open until end
 #endif
 
 /* Constants */
 
-#ifdef __cplusplus
-}
-#endif
 #define MAX_CHANGED_FILES 50 /* Skip if more files changed */
 #define LOOKBACK_LIMIT 200   /* Max edges to scan */
 #define HOOK_TIMEOUT_MS 500  /* Abort if taking too long */
@@ -76,4 +74,8 @@ int process_changed_file(gm_context_t *ctx, git_repository *repo,
  */
 int is_merge_commit(git_repository *repo, bool *is_merge);
 
-#endif /* GM_AUGMENT_H */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* GITMIND_HOOKS_AUGMENT_H */

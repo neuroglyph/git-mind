@@ -11,6 +11,7 @@
 #include "gitmind/attribution.h"
 
 #include <git2.h>
+#include <sodium.h>
 #include <git2/repository.h>
 #include <git2/refs.h>
 #include <stdint.h>
@@ -145,6 +146,7 @@ static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
     const uint8_t *cbor_data;
     size_t offset = 0;
     size_t message_len;
+    uint8_t decoded[MAX_CBOR_SIZE];
 
     /* Get raw commit message (contains CBOR data) */
     raw_message = git_commit_message_raw(commit);
@@ -152,8 +154,17 @@ static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
         return GM_ERR_INVALID_FORMAT;
     }
 
-    cbor_data = (const uint8_t *)raw_message;
-    message_len = MAX_CBOR_SIZE;
+    {
+        size_t out_len = 0;
+        const int variant = sodium_base64_VARIANT_ORIGINAL;
+        if (sodium_base642bin(decoded, sizeof(decoded), raw_message,
+                               strlen(raw_message), NULL, &out_len, NULL,
+                               variant) != 0) {
+            return GM_ERR_INVALID_FORMAT;
+        }
+        cbor_data = decoded;
+        message_len = out_len;
+    }
 
     /* Decode edges from CBOR */
     while (offset < message_len) {
@@ -285,7 +296,12 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
     }
 
     /* Build ref name */
-    gm_snprintf(ref_name, sizeof(ref_name), "%s%s", REFS_GITMIND_PREFIX, branch);
+    {
+        int rn = gm_snprintf(ref_name, sizeof(ref_name), "%s%s", REFS_GITMIND_PREFIX, branch);
+        if (rn < 0 || (size_t)rn >= sizeof(ref_name)) {
+            return GM_ERR_BUFFER_TOO_SMALL;
+        }
+    }
 
     /* Walk the journal */
     return walk_journal_generic(&rctx, ref_name);
