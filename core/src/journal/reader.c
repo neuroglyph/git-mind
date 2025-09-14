@@ -6,6 +6,7 @@
 #include "gitmind/context.h"
 #include "gitmind/cbor/constants_cbor.h"
 #include "gitmind/cbor/cbor.h"
+#include "gitmind/cbor/keys.h"
 #include "gitmind/error.h"
 #include "gitmind/edge.h"
 #include "gitmind/edge_attributed.h"
@@ -148,86 +149,86 @@ int gm_edge_attributed_decode_cbor_ex(const uint8_t *buffer, size_t len,
         uint64_t key = keyr.u.val;
 
         switch (key) {
-        case K_SRC_SHA: {
+        case GM_CBOR_KEY_SRC_SHA: {
             gm_result_void_t r = gm_cbor_read_bytes(buffer, &offset, len, e.src_sha, GM_SHA1_SIZE);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             break;
         }
-        case K_TGT_SHA: {
+        case GM_CBOR_KEY_TGT_SHA: {
             gm_result_void_t r = gm_cbor_read_bytes(buffer, &offset, len, e.tgt_sha, GM_SHA1_SIZE);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             break;
         }
-        case K_REL_TYPE: {
+        case GM_CBOR_KEY_REL_TYPE: {
             gm_result_uint64_t r = gm_cbor_read_uint(buffer, &offset, len);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             e.rel_type = (uint16_t)r.u.val;
             break;
         }
-        case K_CONFID: {
+        case GM_CBOR_KEY_CONFIDENCE: {
             gm_result_uint64_t r = gm_cbor_read_uint(buffer, &offset, len);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             e.confidence = (uint16_t)r.u.val;
             break;
         }
-        case K_TS: {
+        case GM_CBOR_KEY_TIMESTAMP: {
             gm_result_uint64_t r = gm_cbor_read_uint(buffer, &offset, len);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             e.timestamp = r.u.val;
             break;
         }
-        case K_SRC_PATH: {
+        case GM_CBOR_KEY_SRC_PATH: {
             gm_result_void_t r = gm_cbor_read_text(buffer, &offset, len, e.src_path, GM_PATH_MAX);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             break;
         }
-        case K_TGT_PATH: {
+        case GM_CBOR_KEY_TGT_PATH: {
             gm_result_void_t r = gm_cbor_read_text(buffer, &offset, len, e.tgt_path, GM_PATH_MAX);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             break;
         }
-        case K_ULID: {
+        case GM_CBOR_KEY_ULID: {
             gm_result_void_t r = gm_cbor_read_text(buffer, &offset, len, e.ulid, GM_ULID_SIZE + 1);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             break;
         }
-        case K_SRC_OID: {
+        case GM_CBOR_KEY_SRC_OID: {
             uint8_t raw[GM_OID_RAWSZ] = {0};
             gm_result_void_t r = gm_cbor_read_bytes(buffer, &offset, len, raw, GM_OID_RAWSZ);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             git_oid_fromraw(&e.src_oid, raw);
             break;
         }
-        case K_TGT_OID: {
+        case GM_CBOR_KEY_TGT_OID: {
             uint8_t raw[GM_OID_RAWSZ] = {0};
             gm_result_void_t r = gm_cbor_read_bytes(buffer, &offset, len, raw, GM_OID_RAWSZ);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             git_oid_fromraw(&e.tgt_oid, raw);
             break;
         }
-        case K_SRC_TYPE: {
+        case GM_CBOR_KEY_SOURCE_TYPE: {
             gm_result_uint64_t r = gm_cbor_read_uint(buffer, &offset, len);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             e.attribution.source_type = (gm_source_type_t)r.u.val;
             break;
         }
-        case K_AUTHOR: {
+        case GM_CBOR_KEY_AUTHOR: {
             gm_result_void_t r = gm_cbor_read_text(buffer, &offset, len, e.attribution.author, sizeof e.attribution.author);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             break;
         }
-        case K_SESSION: {
+        case GM_CBOR_KEY_SESSION: {
             gm_result_void_t r = gm_cbor_read_text(buffer, &offset, len, e.attribution.session_id, sizeof e.attribution.session_id);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             break;
         }
-        case K_FLAGS: {
+        case GM_CBOR_KEY_FLAGS: {
             gm_result_uint64_t r = gm_cbor_read_uint(buffer, &offset, len);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             e.attribution.flags = (uint32_t)r.u.val;
             break;
         }
-        case K_LANE: {
+        case GM_CBOR_KEY_LANE: {
             gm_result_uint64_t r = gm_cbor_read_uint(buffer, &offset, len);
             if (!r.ok) return GM_ERR_INVALID_FORMAT;
             e.lane = (gm_lane_type_t)r.u.val;

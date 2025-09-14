@@ -250,71 +250,54 @@ static int edge_attributed_encoder_wrapper(const void *edge, uint8_t *buffer,
     const gm_edge_attributed_t *e = (const gm_edge_attributed_t *)edge;
     if (!buffer || !len) return GM_ERR_INVALID_ARGUMENT;
 
-    /* CBOR keys (must match reader) */
-    enum {
-        K_SRC_SHA = 0,
-        K_TGT_SHA = 1,
-        K_REL_TYPE = 2,
-        K_CONFID = 3,
-        K_TS = 4,
-        K_SRC_PATH = 5,
-        K_TGT_PATH = 6,
-        K_ULID = 7,
-        K_SRC_OID = 8,
-        K_TGT_OID = 9,
-        K_SRC_TYPE = 10,
-        K_AUTHOR = 11,
-        K_SESSION = 12,
-        K_FLAGS = 13,
-        K_LANE = 14
-    };
+    /* CBOR keys defined in gitmind/cbor/keys.h */
 
     size_t offset = 0;
     size_t avail = *len;
     const uint8_t map_type = 0xA0; /* CBOR map */
-    const uint8_t field_count = 15; /* legacy + OID + attribution */
+    const uint8_t field_count = GM_CBOR_ATTR_EDGE_FIELDS_TOTAL; /* legacy + OID + attribution */
     if (avail < 1) return GM_ERR_BUFFER_TOO_SMALL;
     buffer[offset++] = (uint8_t)(map_type | field_count);
 
     /* Legacy SHA fields */
-    gm_result_size_t r = gm_cbor_write_uint(K_SRC_SHA, buffer + offset, avail - offset);
+    gm_result_size_t r = gm_cbor_write_uint(GM_CBOR_KEY_SRC_SHA, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_bytes(buffer + offset, avail - offset, e->src_sha, GM_SHA1_SIZE);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
 
-    r = gm_cbor_write_uint(K_TGT_SHA, buffer + offset, avail - offset);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_TGT_SHA, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_bytes(buffer + offset, avail - offset, e->tgt_sha, GM_SHA1_SIZE);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
 
     /* Numerics */
-    r = gm_cbor_write_uint(K_REL_TYPE, buffer + offset, avail - offset);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_REL_TYPE, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_uint(e->rel_type, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
 
-    r = gm_cbor_write_uint(K_CONFID, buffer + offset, avail - offset);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_CONFIDENCE, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_uint(e->confidence, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
 
-    r = gm_cbor_write_uint(K_TS, buffer + offset, avail - offset);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_TIMESTAMP, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_uint(e->timestamp, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
 
     /* Text */
-    r = gm_cbor_write_uint(K_SRC_PATH, buffer + offset, avail - offset);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_SRC_PATH, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_text(buffer + offset, avail - offset, e->src_path);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
 
-    r = gm_cbor_write_uint(K_TGT_PATH, buffer + offset, avail - offset);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_TGT_PATH, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_text(buffer + offset, avail - offset, e->tgt_path);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
 
-    r = gm_cbor_write_uint(K_ULID, buffer + offset, avail - offset);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_ULID, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_text(buffer + offset, avail - offset, e->ulid);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
@@ -322,38 +305,38 @@ static int edge_attributed_encoder_wrapper(const void *edge, uint8_t *buffer,
     /* OIDs */
     const uint8_t *src_raw = git_oid_raw(&e->src_oid);
     const uint8_t *tgt_raw = git_oid_raw(&e->tgt_oid);
-    r = gm_cbor_write_uint(K_SRC_OID, buffer + offset, avail - offset);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_SRC_OID, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_bytes(buffer + offset, avail - offset, src_raw ? src_raw : e->src_sha, GM_OID_RAWSZ);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
 
-    r = gm_cbor_write_uint(K_TGT_OID, buffer + offset, avail - offset);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_TGT_OID, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_bytes(buffer + offset, avail - offset, tgt_raw ? tgt_raw : e->tgt_sha, GM_OID_RAWSZ);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
 
     /* Attribution */
-    r = gm_cbor_write_uint(K_SRC_TYPE, buffer + offset, avail - offset);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_SOURCE_TYPE, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_uint((uint64_t)e->attribution.source_type, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
 
-    r = gm_cbor_write_uint(K_AUTHOR, buffer + offset, avail - offset);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_AUTHOR, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_text(buffer + offset, avail - offset, e->attribution.author);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
 
-    r = gm_cbor_write_uint(K_SESSION, buffer + offset, avail - offset);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_SESSION, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_text(buffer + offset, avail - offset, e->attribution.session_id);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
 
-    r = gm_cbor_write_uint(K_FLAGS, buffer + offset, avail - offset);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_FLAGS, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_uint((uint64_t)e->attribution.flags, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
 
-    r = gm_cbor_write_uint(K_LANE, buffer + offset, avail - offset);
+    r = gm_cbor_write_uint(GM_CBOR_KEY_LANE, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;
     r = gm_cbor_write_uint((uint64_t)e->lane, buffer + offset, avail - offset);
     if (!r.ok) return GM_ERR_INVALID_FORMAT; offset += r.u.val;

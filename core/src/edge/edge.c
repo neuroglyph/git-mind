@@ -10,6 +10,7 @@
 #include "gitmind/result.h"
 #include "gitmind/types/ulid.h"
 #include "gitmind/security/string.h"
+#include "gitmind/cbor/keys.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -196,22 +197,7 @@ gm_result_void_t gm_edge_format(const gm_edge_t *edge, char *buffer, size_t len)
     return gm_ok_void();
 }
 
-/**
- * CBOR encoding constants for edge fields
- */
-#define CBOR_KEY_SRC_SHA    0
-#define CBOR_KEY_TGT_SHA    1
-#define CBOR_KEY_REL_TYPE   2
-#define CBOR_KEY_CONFIDENCE 3
-#define CBOR_KEY_TIMESTAMP  4
-#define CBOR_KEY_SRC_PATH   5
-#define CBOR_KEY_TGT_PATH   6
-#define CBOR_KEY_ULID       7
-/* New preferred OID fields (raw bytes, GM_OID_RAWSZ) */
-#define CBOR_KEY_SRC_OID    8
-#define CBOR_KEY_TGT_OID    9
-/* Total fields written by current encoder (legacy + OIDs) */
-#define CBOR_EDGE_FIELDS_TOTAL 10
+/* CBOR keys and field counts are defined in gitmind/cbor/keys.h */
 
 /**
  * Write CBOR key-value pair for bytes
@@ -299,50 +285,50 @@ gm_result_void_t gm_edge_encode_cbor(const gm_edge_t *edge, uint8_t *buffer,
     size_t available = *len;
     
     /* Write map header (include both legacy SHA and OID fields) */
-    gm_result_void_t result = write_cbor_map_header(buffer, available, &offset, CBOR_EDGE_FIELDS_TOTAL);
+    gm_result_void_t result = write_cbor_map_header(buffer, available, &offset, GM_CBOR_EDGE_FIELDS_TOTAL);
     if (!result.ok) {
         return result;
     }
     
     /* Write SHA fields */
-    result = write_cbor_bytes(CBOR_KEY_SRC_SHA, buffer, available, &offset, edge->src_sha, GM_SHA1_SIZE);
+    result = write_cbor_bytes(GM_CBOR_KEY_SRC_SHA, buffer, available, &offset, edge->src_sha, GM_SHA1_SIZE);
     if (!result.ok) {
         return result;
     }
     
-    result = write_cbor_bytes(CBOR_KEY_TGT_SHA, buffer, available, &offset, edge->tgt_sha, GM_SHA1_SIZE);
+    result = write_cbor_bytes(GM_CBOR_KEY_TGT_SHA, buffer, available, &offset, edge->tgt_sha, GM_SHA1_SIZE);
     if (!result.ok) {
         return result;
     }
     
     /* Write numeric fields */
-    result = write_cbor_uint64(CBOR_KEY_REL_TYPE, buffer, available, &offset, edge->rel_type);
+    result = write_cbor_uint64(GM_CBOR_KEY_REL_TYPE, buffer, available, &offset, edge->rel_type);
     if (!result.ok) {
         return result;
     }
     
-    result = write_cbor_uint64(CBOR_KEY_CONFIDENCE, buffer, available, &offset, edge->confidence);
+    result = write_cbor_uint64(GM_CBOR_KEY_CONFIDENCE, buffer, available, &offset, edge->confidence);
     if (!result.ok) {
         return result;
     }
     
-    result = write_cbor_uint64(CBOR_KEY_TIMESTAMP, buffer, available, &offset, edge->timestamp);
+    result = write_cbor_uint64(GM_CBOR_KEY_TIMESTAMP, buffer, available, &offset, edge->timestamp);
     if (!result.ok) {
         return result;
     }
     
     /* Write string fields */
-    result = write_cbor_text(CBOR_KEY_SRC_PATH, buffer, available, &offset, edge->src_path);
+    result = write_cbor_text(GM_CBOR_KEY_SRC_PATH, buffer, available, &offset, edge->src_path);
     if (!result.ok) {
         return result;
     }
     
-    result = write_cbor_text(CBOR_KEY_TGT_PATH, buffer, available, &offset, edge->tgt_path);
+    result = write_cbor_text(GM_CBOR_KEY_TGT_PATH, buffer, available, &offset, edge->tgt_path);
     if (!result.ok) {
         return result;
     }
     
-    result = write_cbor_text(CBOR_KEY_ULID, buffer, available, &offset, edge->ulid);
+    result = write_cbor_text(GM_CBOR_KEY_ULID, buffer, available, &offset, edge->ulid);
     if (!result.ok) {
         return result;
     }
@@ -351,11 +337,11 @@ gm_result_void_t gm_edge_encode_cbor(const gm_edge_t *edge, uint8_t *buffer,
     const uint8_t *tgt_raw = git_oid_raw(&edge->tgt_oid);
     if (src_raw == NULL) src_raw = edge->src_sha; /* fallback */
     if (tgt_raw == NULL) tgt_raw = edge->tgt_sha; /* fallback */
-    result = write_cbor_bytes(CBOR_KEY_SRC_OID, buffer, available, &offset, src_raw, GM_OID_RAWSZ);
+    result = write_cbor_bytes(GM_CBOR_KEY_SRC_OID, buffer, available, &offset, src_raw, GM_OID_RAWSZ);
     if (!result.ok) {
         return result;
     }
-    result = write_cbor_bytes(CBOR_KEY_TGT_OID, buffer, available, &offset, tgt_raw, GM_OID_RAWSZ);
+    result = write_cbor_bytes(GM_CBOR_KEY_TGT_OID, buffer, available, &offset, tgt_raw, GM_OID_RAWSZ);
     if (!result.ok) {
         return result;
     }
@@ -398,13 +384,13 @@ static gm_result_void_t decode_cbor_field(const uint8_t *buffer, size_t *offset,
     
     /* Read value based on key */
     switch (key) {
-    case CBOR_KEY_SRC_SHA: {
+    case GM_CBOR_KEY_SRC_SHA: {
         return decode_cbor_sha(buffer, offset, len, edge->src_sha);
     }
-    case CBOR_KEY_TGT_SHA: {
+    case GM_CBOR_KEY_TGT_SHA: {
         return decode_cbor_sha(buffer, offset, len, edge->tgt_sha);
     }
-    case CBOR_KEY_REL_TYPE: {
+    case GM_CBOR_KEY_REL_TYPE: {
         gm_result_uint64_t result = decode_cbor_uint64(buffer, offset, len);
         if (!result.ok) {
             return gm_err_void(result.u.err);
@@ -412,7 +398,7 @@ static gm_result_void_t decode_cbor_field(const uint8_t *buffer, size_t *offset,
         edge->rel_type = (uint16_t)result.u.val;
         return gm_ok_void();
     }
-    case CBOR_KEY_CONFIDENCE: {
+    case GM_CBOR_KEY_CONFIDENCE: {
         gm_result_uint64_t result = decode_cbor_uint64(buffer, offset, len);
         if (!result.ok) {
             return gm_err_void(result.u.err);
@@ -420,7 +406,7 @@ static gm_result_void_t decode_cbor_field(const uint8_t *buffer, size_t *offset,
         edge->confidence = (uint16_t)result.u.val;
         return gm_ok_void();
     }
-    case CBOR_KEY_TIMESTAMP: {
+    case GM_CBOR_KEY_TIMESTAMP: {
         gm_result_uint64_t result = decode_cbor_uint64(buffer, offset, len);
         if (!result.ok) {
             return gm_err_void(result.u.err);
@@ -428,13 +414,13 @@ static gm_result_void_t decode_cbor_field(const uint8_t *buffer, size_t *offset,
         edge->timestamp = result.u.val;
         return gm_ok_void();
     }
-    case CBOR_KEY_SRC_PATH: {
+    case GM_CBOR_KEY_SRC_PATH: {
         return decode_cbor_text(buffer, offset, len, edge->src_path, GM_PATH_MAX);
     }
-    case CBOR_KEY_TGT_PATH: {
+    case GM_CBOR_KEY_TGT_PATH: {
         return decode_cbor_text(buffer, offset, len, edge->tgt_path, GM_PATH_MAX);
     }
-    case CBOR_KEY_ULID: {
+    case GM_CBOR_KEY_ULID: {
         return decode_cbor_text(buffer, offset, len, edge->ulid, GM_ULID_SIZE + 1);
     }
     default:
