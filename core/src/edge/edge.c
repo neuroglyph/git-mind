@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <git2/oid.h>
 
 /* Result type is defined in edge.h */
 
@@ -95,12 +96,14 @@ gm_result_edge_t gm_edge_create(gm_context_t *ctx, const char *src_path,
     if (!src_result.ok) {
         return (gm_result_edge_t){.ok = false, .u.err = src_result.u.err};
     }
+    git_oid_fromraw(&edge.src_oid, edge.src_sha);
     
     /* Resolve target SHA */
     gm_result_void_t tgt_result = resolve_sha(ctx, tgt_path, edge.tgt_sha);
     if (!tgt_result.ok) {
         return (gm_result_edge_t){.ok = false, .u.err = tgt_result.u.err};
     }
+    git_oid_fromraw(&edge.tgt_oid, edge.tgt_sha);
     
     /* Set fields */
     // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
@@ -131,12 +134,14 @@ bool gm_edge_equal(const gm_edge_t *edge_a, const gm_edge_t *edge_b) {
         return false;
     }
     
-    /* Compare SHAs */
-    if (memcmp(edge_a->src_sha, edge_b->src_sha, GM_SHA1_SIZE) != 0) {
+    /* Prefer OID compare when available; fallback to raw SHA */
+    if (git_oid_cmp(&edge_a->src_oid, &edge_b->src_oid) != 0 &&
+        memcmp(edge_a->src_sha, edge_b->src_sha, GM_SHA1_SIZE) != 0) {
         return false;
     }
-    
-    if (memcmp(edge_a->tgt_sha, edge_b->tgt_sha, GM_SHA1_SIZE) != 0) {
+
+    if (git_oid_cmp(&edge_a->tgt_oid, &edge_b->tgt_oid) != 0 &&
+        memcmp(edge_a->tgt_sha, edge_b->tgt_sha, GM_SHA1_SIZE) != 0) {
         return false;
     }
     
@@ -445,6 +450,9 @@ gm_result_edge_t gm_edge_decode_cbor(const uint8_t *buffer, size_t len) {
             return (gm_result_edge_t){.ok = false, .u.err = result.u.err};
         }
     }
-    
+    /* Backfill git_oid fields from legacy SHA bytes */
+    git_oid_fromraw(&edge.src_oid, edge.src_sha);
+    git_oid_fromraw(&edge.tgt_oid, edge.tgt_sha);
+
     return (gm_result_edge_t){.ok = true, .u.val = edge};
 }
