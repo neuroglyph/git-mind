@@ -37,12 +37,19 @@ jobs:
       - name: Run E2E tests inside CI Docker image
         run: |
           IMAGE=${GITMIND_CI_IMAGE:-gitmind/ci:clang-20}
+          docker pull "$IMAGE" >/dev/null
           docker run --rm --label com.gitmind.project=git-mind \
             -v "$PWD":/workspace -w /workspace -e GITMIND_DOCKER=1 "$IMAGE" bash -lc '
-              set -e
-              CC=clang meson setup build >/dev/null 2>&1 || true
-              ninja -C build git-mind
-              export GIT_MIND=/workspace/build/git-mind
+              set -euo pipefail
+              git config --global --add safe.directory /workspace
+              BUILD_DIR=/workspace/build-e2e
+              if [ -d "$BUILD_DIR" ]; then
+                CC=clang meson setup --reconfigure "$BUILD_DIR"
+              else
+                CC=clang meson setup "$BUILD_DIR"
+              fi
+              ninja -C "$BUILD_DIR" git-mind
+              export GIT_MIND="$BUILD_DIR/git-mind"
               rm -rf /tmp/gm-e2e && mkdir -p /tmp/gm-e2e
               cp -r tests/e2e /tmp/gm-e2e/
               cd /tmp/gm-e2e/e2e

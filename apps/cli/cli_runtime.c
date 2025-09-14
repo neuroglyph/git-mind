@@ -3,5 +3,4 @@
 
 #include "cli_runtime.h"
 
-gm_output_t *g_cli_out = NULL;
 

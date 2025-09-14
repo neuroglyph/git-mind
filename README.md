@@ -1,231 +1,222 @@
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
+<!-- © J. Kirby Ross / Neuroglyph Collective -->
+
 # git-mind 🧠
 
 <p align="center">
-<img src="https://media.githubusercontent.com/media/neuroglyph/git-mind/main/assets/images/logo.png" alt="git-mind logo" width="400" />
+  <img src="assets/logo.jpg" alt="git-mind logo" width="200" />
 </p>
 
-[![Build](https://img.shields.io/github/actions/workflow/status/neuroglyph/git-mind/ci.yml?branch=main)](https://github.com/neuroglyph/git-mind/actions)
-[![License](https://img.shields.io/badge/license-MIND--UCAL--1.0-blue)](LICENSE)
-[![Status](https://img.shields.io/badge/status-early--stage-orange)](docs/roadmap.md)
+## `git‑mind` turns Git repositories into serverless, distributed graph databases where relationships are first‑class and move through time with your history.
 
-> **Version your thoughts. Branch your ideas. Merge understanding.**
-
-`git-mind` transforms any Git repository into a **serverless knowledge graph**, where relationships evolve with your history and AI helps uncover hidden connections.
-
-**No servers. No setup. Just `git push` your mind.**
-
----
-
-## 🌟 What You Can Do
-
-### Navigate Your Codebase by Meaning
-
-```bash
-# "What implements our authentication?"
-$ git mind query --implements "auth-flow.md"
-src/auth.c          (verified, 2 days ago)
-tests/auth.test.js  (verified, 2 days ago)
-src/oauth.c         (AI suggested, 1 hour ago)
-
-# See how your understanding evolved
-$ git checkout main~30
-$ git mind query --implements "auth-flow.md"
-basic_auth.c        (30 days ago)
-
-$ git checkout main
-$ git mind query --implements "auth-flow.md"
-oauth2.c
-jwt_handler.c
-basic_auth.c
-# Your knowledge graph evolved with your code!
-````
-
-### Build a Living Knowledge Base
-
-```bash
-# Connect ideas as you write
-$ git mind link notes/quantum.md papers/bell-1964.pdf --type cites
-$ git mind link notes/quantum.md notes/entanglement.md --type explores
-
-# Discover thought patterns
-$ git mind query "ideas without connections"
-notes/orphaned-thought.md (created 3 weeks ago)
-notes/random-insight.md (created 1 month ago)
-```
-
-### Collaborate Through Forks & Merges
-
-```bash
-# Fork someone's knowledge graph
-$ git clone https://github.com/alice/research.git
-$ git mind explore --author alice
-423 concepts, 1,247 connections
-
-# Merge understanding
-$ git merge bob/authentication-redesign
-Merging 47 new semantic edges...
-3 conflicts in knowledge graph (view with: git mind conflicts)
-```
+- Version your thoughts
+- Travel back in time to see what you were thinking and then step forward, watching your thoughts evolve and change over time
+- Branch your mind
+- Fork someone else's
+- Merge your thoughts
+- AI/human co‑cognition platform
 
 ---
 
-## 🚀 Quick Start
+Table of Contents
+- [Overview](#overview)
+- [Why git-mind](#why-git-mind)
+- [How It Works](#how-it-works)
+- [Core Concepts](#core-concepts)
+- [Quickstart](#quickstart)
+- [Human + AI Co‑Thought](#human--ai-co-thought)
+- [Status & Roadmap](#status--roadmap)
+- [Architecture](#architecture)
+- [Contributing](#contributing)
+- [License](#license)
 
+## Overview
+git‑mind lets you link code, docs, notes, experiments — anything tracked in Git — with first‑class semantic edges (e.g., “implements”, “tests”, “documents”, “refines”, “depends_on”).
+
+These edges are stored in your repository (no servers), replicate with `git clone`, and are scoped to branches and commits. Check out an old commit and you get the semantics from that moment in time. Merge branches and the graph merges deterministically, just like your code.
+
+In short: organize ideas and artifacts as a graph, with Git as the transport, history, and security model.
+
+## Why git-mind
+- Version your thoughts: track the “why” and “how” alongside the “what”.
+- Serverless graph DB: your repo is the database — clone, branch, merge.
+- Time‑travel semantics: branch/commit‑scoped relationships that evolve.
+- Query by meaning: stop guessing with `grep`; ask the graph directly.
+- Fast locally: a Roaring Bitmap cache makes common queries instant.
+- Cross‑repo, forkable semantics: share, branch, and merge understanding across clones.
+
+Human + AI co‑thought
+- Shared memory for people and tools: the repo holds both your links and AI‑suggested links.
+- Trust and review: filter by attribution (human/AI) and lanes (e.g., suggested, verified).
+- Forkable cognition: try ideas in branches, then merge deterministic edges back.
+
+Use cases
+- Architecture: link docs ⇄ code ⇄ tests; explore fan‑in/out and evolution.
+- Notes/Zettelkasten: link ideas, excerpts, and references across a repo.
+- Research: connect papers, datasets, scripts, and results with provenance.
+- Product: trace features through specs, issues, code, tests, and docs.
+- Decisions: tie ADRs to impacted modules and follow their downstream effects.
+
+## How It Works
+- Journal (truth)
+  - Each edge append becomes a Git commit under `refs/gitmind/edges/<branch>` with a compact CBOR payload.
+  - Append‑only, branch‑scoped, time‑travel‑safe; merges behave like code.
+- Cache (speed)
+  - Optional Roaring Bitmap indices under `refs/gitmind/cache/<branch>` for O(log N) set ops.
+  - Rebuildable; never merged; safe to delete.
+
+## Core Concepts
+- Edge: A directed link (source → target) between any two Git blobs with metadata.
+- Names‑as‑truth: `type_name`/`lane_name` are stored as strings on the edge; IDs are derived only for performance.
+- Attribution: Who/what created the edge (human/AI), with author/session metadata. Surfaces as filters and review signals.
+- AUGMENTS: Evolution links (old blob → new blob) created on edits to preserve meaning through change.
+- Advice (optional): Data‑driven semantics (e.g., symmetry, implies) that merge deterministically.
+
+## Quickstart
+Requirements (dev): Git, Meson, Ninja, C23 compiler (gcc‑14 or clang‑20 recommended). See [DEV_SETUP](docs/DEV_SETUP.md).
+
+Build and test
 ```bash
-# Install
-brew install git-mind           # macOS/Linux
-winget install git-mind          # Windows
+make            # meson+ninja build in ./build
+make test       # runs unit tests
+```
 
-# Start linking
-git mind link README.md src/main.c --type documents
-git mind link src/auth.c tests/auth.test.js --type "tested-by"
+Create and query links (code, docs, notes)
+```bash
+# Link a design doc to its implementation
+git mind link docs/auth-flow.md src/auth.c --type implements --lane verified
 
-# Explore connections
+# List links (human)
 git mind list --from src/auth.c
-git mind query "what depends on auth.c"
 
-# What breaks if I change this?
-git mind impact src/api/user.h
-7 files directly affected
-12 files transitively affected
+# Example (stub) output
+> docs/auth-flow.md  (type: implements, lane: verified)
+
+# List links (JSON)
+git mind list --from src/auth.c --format json
+
+# Rebuild performance cache for current branch
+git mind cache-rebuild
+
+# Link notes and research
+git mind link notes/idea.md notes/followup.md --type refines --lane journal
+git mind link notes/notes-on-paper.md data/paper.pdf --type cites
+
+# Query note graph (stub)
+git mind list --from notes/idea.md
+> notes/followup.md  (type: refines, lane: journal)
 ```
 
-👉 For a hands-on walkthrough, see [the tutorial](https://claude.ai/chat/docs/tutorial.md).
+What to expect
+- Links are stored under `refs/gitmind/edges/<branch>` and show up in history.
+- Queries use the cache when available; otherwise scan the journal.
+- Everything is just Git — no external servers, no hidden DBs.
 
----
+### Safety Guard
 
-## ✨ The Magic
+- git‑mind refuses to run inside its own source repository to prevent accidental journal writes.
+- Detection uses Git remotes (via libgit2) and strict matching of the official repo path (`neuroglyph/git-mind[.git]`).
+- To explicitly bypass (e.g., certain CI/E2E scenarios), set `GITMIND_SAFETY=off`.
+- See also: docs/operations/Environment_Variables.md for all supported env vars.
 
-- **Your repo is the database** — No servers, no external dependencies
-- **Time-travel built in** — Check out any commit, get the graph from that moment
-- **AI copilot ready** — Let AI suggest connections, you review and merge
-- **Branch and merge ideas** — Try wild connections in a branch, merge what works
+## Human + AI Co‑Thought
+git‑mind is designed to be a shared, versioned memory for humans and AI — a place where both parties can write edges, discover connections, and converge by merging branches.
 
----
+- Shared memory, no servers: the repo is the database; AI tools can read/write edges locally just like you.
+- Clear authorship: attribution marks edges as human/AI with author/session metadata.
+- Lanes for review: AI can write to a `suggested` lane; humans accept into `verified`.
+- Deterministic merges: edges are append‑only with ULIDs; advice uses hybrid CRDT rules, so branches converge predictably.
+- Control and safety: filter by attribution, lanes, or commit; disable advice application; keep AI ops in a branch until reviewed.
 
-## 🔮 Real-World Uses
-
-**Software Architecture**
-
-- Trace decisions through code
-- See which tests cover which requirements
-- Understand impact before refactoring
-
-**Research & Writing**
-
-- Build Zettelkasten-style note networks
-- Track citation graphs
-- Fork and extend others' research
-
-**Team Knowledge**
-
-- Onboard developers with explorable codebases
-- Preserve institutional memory in the repo
-- Share mental models through PRs
-
----
-
-## 🤖 Human + AI Co-Thought
-
-git-mind treats AI as a collaborator with clear attribution:
-
+Example flows (concept)
 ```bash
-# AI suggests connections in a branch
-$ git checkout -b ai/suggestions
-$ git mind ai discover
-Found 23 potential connections...
+# AI suggests edges into a separate branch/lane
+git checkout -b ai/suggestions
+git mind link notes/idea.md src/feature.c --type implements --lane suggested --source ai
 
-# You review and cherry-pick
-$ git mind review --source ai
-src/cache.c implements docs/caching-strategy.md (confidence: 0.92)
-[Accept/Reject/Skip]? a
+# Human reviews and merges
+git checkout main
+git merge ai/suggestions
+git mind list --lane verified   # or filter out --source ai
 
-# Clear attribution preserved
-$ git mind list --from src/cache.c --format json
-{
-"to": "docs/caching-strategy.md",
-"type": "implements",
-"author": "ai-assistant",
-"verified_by": "james",
-"timestamp": "2024-11-08T10:30:00Z"
-}
+# Inspect AI suggestions (stub output)
+git mind list --lane suggested --source ai
+> notes/idea.md  ->  src/feature.c  (type: implements, lane: suggested, source: ai)
 ```
 
----
+See: [Attribution System](docs/architecture/attribution-system.md) and [ADR 0001](docs/adr/0001-first-class-semantics.md).
 
-## 📖 Documentation
+## Status & Roadmap
+Project status: early‑stage, with core primitives usable today. The vision is a shared, serverless, forkable thought‑graph for humans and AI. Today we are focused on the core that makes that vision real over time:
 
-- **[Install git-mind](https://claude.ai/chat/docs/install.md)** — 30 seconds
-- **[Try the tutorial](https://claude.ai/chat/docs/tutorial.md)** — 5 minutes
-- **[Read the philosophy](https://claude.ai/chat/docs/philosophy.md)** — Why we built this
-- **[Technical details](https://claude.ai/chat/TECHNICAL.md)** — How it works under the hood
-- **[Contributing](https://claude.ai/chat/CONTRIBUTING.md)** — PRs welcome!
+- Shipping now/next: journal (edges‑as‑commits), cache (fast queries), CLI (link/list/cache‑rebuild), names‑as‑truth semantics, AUGMENTS for evolution.
+- Optional (behind flags, later): advice application (symmetry/implies), co‑thought workflows (AI “suggested” lanes, attribution filters), MCP service for tools to read/write edges locally.
 
----
+Expect CLI and APIs to change as we stabilize the core. See the planning docs for the full project scope and staging.
 
-## 🌱 Who's Using git-mind?
+- Roadmap: [Product Roadmap](docs/planning/Product_Roadmap.md)
+- Releases: [Release Plans](docs/planning/Release_Plans.md)
+- Milestones & Sprints: [Milestones](docs/planning/Milestones.md), [Sprint Plans](docs/planning/Sprint_Plans.md)
 
-- 🧪 Early adopters exploring Zettelkasten workflows in Git
-- 🔬 Researchers mapping papers → datasets → results
-- 💻 Dev teams linking docs ⇄ code ⇄ tests
-- 🧠 Individuals experimenting with personal knowledge graphs
+## Architecture
+- System overview: [System Architecture](docs/architecture/System_Architecture.md)
+- Data model: edges as commits, names‑as‑truth, branch/time scoping — see [Journal Architecture Pivot](docs/architecture/journal-architecture-pivot.md)
+- Cache design: [Bitmap Cache](docs/architecture/bitmap-cache-design.md)
+- Semantics PRD & ADR: [PRD](docs/PRDs/PRD-git-mind-semantics-time-travel-prototype.md), [ADR 0001](docs/adr/0001-first-class-semantics.md)
 
-Want to be featured? Open an issue and share your story.
+## Contributing
+- Start here: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Dev setup: [DEV_SETUP](docs/DEV_SETUP.md)
+- Docs index: [docs/README.md](docs/README.md)
+- Pre‑commit: `pre-commit install` (clang‑format, docs link/TOC checks, secrets)
 
----
+Principles
+- C23, warnings‑as‑errors; keep clang‑tidy warnings at zero in target modules.
+- Names‑as‑truth for semantics; caches are derived and rebuildable.
+- Small, pause‑safe increments; document decisions (ADRs) as you go.
 
-## 📊 Status
+### Target Architecture
 
-🚀 **Early release** — Core features work today, API may evolve  
-📅 **[Roadmap](https://claude.ai/chat/docs/roadmap.md)** — See what's coming  
-🤝 **[Contributing](https://claude.ai/chat/CONTRIBUTING.md)** — Join the development
+```
+git-mind/
+├── libgitmind/     # Single-header library
+│   ├── core/       # Foundation (types, crypto, I/O)
+│   ├── graph/      # Graph operations (edges, attribution)
+│   └── storage/    # Git persistence (journal, cache)
+├── apps/
+│   ├── cli/        # Command-line interface
+│   ├── hooks/      # Git hooks (separate binaries)
+│   ├── mcp/        # Model Context Protocol server
+│   └── web/        # Web UI daemon
+└── bindings/       # Language bindings (Python, Rust, etc.)
+```
 
----
+## 🚀 Future Directions (Exploratory)
 
-## HISTORY
+Note: Aspirational concepts — not implemented yet.
 
-`git-mind` emerged from a simple observation:  we spend enormous effort understanding code, then throw that understanding away.  
+### 🧠 Semantic Intelligence
 
-What if we could capture it?
+- __AI-Powered Discovery__: Automatically detect and suggest relationships between code artifacts
+- __Natural Language Queries__: "Show me all code that implements authentication"
+- __Intelligent Refactoring__: Track concept migrations across architectural changes
 
-The journey from idea to implementation taught us:
+### 🌐 Distributed Knowledge
 
-- Simple is powerful (just Git commits)
-- Performance enables adoption (Roaring Bitmaps)
-- Evolution is inevitable (AUGMENTS system)
-- Understanding is the real product
+- __Cross-Repository Links__: Connect knowledge across project boundaries
+- __Federated Graphs__: Share and merge knowledge graphs between teams
+- __Knowledge Synchronization__: Keep understanding in sync across distributed teams
 
-### AUTHORS
+## Support
 
-Created by J. Kirby Ross and the Neuroglyph Collective.  
-
-*"Hakuna Matata"* — no worries, your semantic connections are safe.
-
-### THE PROMISE
-
-*"Remember who you are."*
-
-Your code tells a story. `git-mind` helps you remember it, share it, and build upon it.  
-
-In the great Circle of Development, no understanding is lost, no connection forgotten, no wisdom wasted.
-
----
-
-## EPILOGUE
-
-It was 3 AM. I had just finished implementing **Roaring Bitmaps**,  and in my exhausted haze the wildebeest stampede from *The Lion King*  suddenly snapped into place as the perfect metaphor.  
-
-That moment of delirium became a spark. For a while, many of the `git-mind`  docs had “Circle of Life” editions — Mufasa and Rafiki explaining caches,  hooks, and semantic edges.  Those playful docs are gone now, (well, not really, they're in the git history...),but the spirit remains.  
-
-Because sometimes **art makes itself.**
-
----
-
-*"Oh yes, the past can hurt. But the way I see it, you can either run from it or learn from it."*
-
-**Choose to learn. Choose `git-mind`.**
+- Issues: [GitHub Issues](https://github.com/neuroglyph/git-mind/issues)
+- Discussions: [GitHub Discussions](https://github.com/neuroglyph/git-mind/discussions)
+- Documentation: [docs/](docs/)
 
 ---
 
-_git-mind is open source under [LicenseRef-MIND-UCAL-1.0](https://claude.ai/chat/LICENSE)_  
-_© J. Kirby Ross • [flyingrobots.dev](https://flyingrobots.dev/)_
+## License
+
+Licensed under `LicenseRef-MIND-UCAL-1.0`. See [LICENSE](./LICENSE) file for details.
+
+© J. Kirby Ross • <https://github.com/flyingrobots>
