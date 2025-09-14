@@ -4,6 +4,8 @@
 
 Today's session was a masterclass in test-driven development and Unix philosophy. Started with failing tests and ended with a completely refactored output system that respects the cardinal rule: __silence is golden__.
 
+On success, both stdout and stderr are quiet; exit code 0 is the contract. When machine-readable output is needed, `--porcelain` provides a stable, versioned interface for tools.
+
 ## Key Achievements
 
 ### 1. Output Philosophy Transformation
@@ -24,12 +26,14 @@ printf("Initialized git-mind repository\n");
 #define PORCELAIN_INIT_OK "init:ok\n"
 ```
 
-### 3. Cross-Platform Build Fixes
+### 3. Cross-Platform Build Fixes & Sanitizers
 
 - Fixed all compiler warnings across Alpine, Ubuntu, and macOS
 - Resolved strncpy truncation warnings with proper bounds checking
 - Fixed global option parsing that broke sub-command arguments
 - Dynamic vs static linking for proper valgrind testing
+- CI sanitizer coverage: AddressSanitizer (ASan) and UndefinedBehaviorSanitizer (UBSan) builds run in GitHub Actions (see `.github/workflows/core-quality.yml`). MemorySanitizer (MSan) runs if supported by the toolchain.
+- We avoid Valgrind false positives from static glibc internals by using dynamic binaries in test environments; no repository-wide Valgrind suppression file is required at this time.
 
 ## Technical Challenges Overcome
 
@@ -54,7 +58,9 @@ Static binaries cause valgrind to report false positives from glibc internals. R
 
 ## Lessons Learned
 
-1. __Listen to User Feedback__: "Shhh! Do you hear that? No? Exactly. That's what success sounds like." - This perfectly captured the Unix philosophy we needed to implement.
+1. __Listen to User Feedback__:
+   > “Shhh! Do you hear that? No? Exactly. That's what success sounds like.”
+   This perfectly captured the Unix philosophy we needed to implement.
 
 2. __Don't Skip Tests__: When faced with valgrind false positives, the instinct was to skip. The right answer was to fix the root cause (static linking in test environment).
 
