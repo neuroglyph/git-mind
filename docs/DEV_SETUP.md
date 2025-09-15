@@ -4,26 +4,23 @@
 
 ### LLVM / clang-tidy
 
-We standardize on __LLVM 20.x__.
+We standardize on **LLVM 20.x**.
 
-#### macOS (Homebrew)
-
+#### macOS (Homebrew):
 ```bash
 brew install llvm
 echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
-#### Ubuntu / Debian
-
+#### Ubuntu / Debian:
 ```bash
 wget -O - https://apt.llvm.org/llvm.sh | sudo bash -s -- 20
 sudo apt-get install -y clang-tidy-20
 sudo ln -sf /usr/bin/clang-tidy-20 /usr/local/bin/clang-tidy
 ```
 
-#### Verify installation
-
+#### Verify installation:
 ```bash
 clang-tidy --version   # LLVM version 20.1.x
 ```
@@ -31,24 +28,43 @@ clang-tidy --version   # LLVM version 20.1.x
 ## Pre-commit Hooks
 
 Install pre-commit hooks to ensure code quality:
-
 ```bash
 pre-commit install
 ```
 
-## Docker Development (CI parity)
+## Docker Development
 
-For a consistent development environment, build and test inside the CI container. Local LLVM installs are optional (editor tooling); CI and Docker scripts use LLVM 20 inside the container.
-
-Install local Git hooks for the quick pre‑push gate and docs lint:
-
+For consistent development environment:
 ```bash
-make install-hooks
+make dev  # Opens a shell in the Docker container
 ```
 
-To build and test in Docker:
+## Building
 
+Always build in Docker to match CI:
 ```bash
 make test-core  # Run core tests
 make check      # Run quality checks
 ```
+
+## Build Feature Toggles (Meson)
+
+The library exposes a small set of build‑time feature toggles (Meson options) to control which optional public headers are pulled in by the umbrella `include/gitmind.h`.
+
+- `-Denable_io=true|false` (default: `false`)
+  - Defines `GITMIND_ENABLE_IO` and includes `gitmind/io/io.h` from the umbrella header.
+- `-Denable_time=true|false` (default: `false`)
+  - Defines `GITMIND_ENABLE_TIME` and includes `gitmind/time/time.h`.
+- `-Denable_util=true|false` (default: `false`)
+  - Defines `GITMIND_ENABLE_UTIL` and includes `gitmind/util/memory.h`.
+- `-Denable_utf8=true|false` (default: `true`)
+  - Defines `GITMIND_ENABLE_UTF8` and includes `gitmind/utf8/validate.h`.
+
+Example:
+
+```bash
+meson setup build -Denable_io=true -Denable_time=true
+ninja -C build
+```
+
+These options only affect umbrella header aggregation and do not gate the core library build. They exist to keep downstreams’ public include surface minimal and configurable.

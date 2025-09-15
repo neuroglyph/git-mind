@@ -2,6 +2,12 @@ project('git-mind', 'c',
         version: '0.6.0',
         default_options: ['c_std=c23', 'warning_level=3', 'werror=true'])
 
+# Optional feature toggles
+option('enable_io', type: 'boolean', value: false, description: 'Enable IO public headers')
+option('enable_time', type: 'boolean', value: false, description: 'Enable time public headers')
+option('enable_util', type: 'boolean', value: false, description: 'Enable util public headers')
+option('enable_utf8', type: 'boolean', value: true, description: 'Enable UTF-8 public headers')
+
 # HARD E-BRAKE: refuse host builds unless in Docker or CI
 in_docker = run_command('sh', '-lc', '[ "$GITMIND_DOCKER" = "1" ] && echo 1 || echo 0').stdout().strip() == '1'
 in_ci = run_command('sh', '-lc', '[ -n "$GITHUB_ACTIONS" ] && echo 1 || echo 0').stdout().strip() == '1'
@@ -41,6 +47,22 @@ add_project_arguments(
   '-fstrict-aliasing',      # We follow aliasing rules
   language : 'c'
 )
+
+# Define feature toggles globally
+f_cargs = []
+if get_option('enable_io')
+  f_cargs += ['-DGITMIND_ENABLE_IO']
+endif
+if get_option('enable_time')
+  f_cargs += ['-DGITMIND_ENABLE_TIME']
+endif
+if get_option('enable_util')
+  f_cargs += ['-DGITMIND_ENABLE_UTIL']
+endif
+if get_option('enable_utf8')
+  f_cargs += ['-DGITMIND_ENABLE_UTF8']
+endif
+add_project_arguments(f_cargs, language: 'c')
 
 # Dependencies
 libsodium_dep = dependency('libsodium', required : true)
@@ -95,10 +117,6 @@ src = files(
 
 # Include directories
 inc = include_directories('core/include', 'include')
-# For CLI, use core headers first; CLI can include umbrella headers explicitly via relative path
-# For CLI, prefer namespaced includes under 'include/gitmind' (no relative includes)
-# For CLI, prefer public headers first, then core internals
-inc_cli = include_directories('include', 'core/include')
 
 # Mark roaring headers as system includes to suppress third-party warnings
 roaring_inc_args = []
@@ -218,12 +236,36 @@ test_edge = executable('test_edge',
   link_with : libgitmind,
   dependencies : [libsodium_dep, thread_dep])
 
-# URL safety test
-test_safety = executable('test_safety',
-  'core/tests/unit/test_safety.c',
+test_edge_cbor_oid = executable('test_edge_cbor_oid',
+  'core/tests/unit/test_edge_cbor_oid.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, thread_dep])
+
+test_edge_attributed_cbor = executable('test_edge_attributed_cbor',
+  'core/tests/unit/test_edge_attributed_cbor.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, thread_dep])
+
+test_edge_equal_semantics = executable('test_edge_equal_semantics',
+  'core/tests/unit/test_edge_equal_semantics.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, thread_dep])
+
+test_cache_meta = executable('test_cache_meta',
+  'core/tests/unit/test_cache_meta.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_journal_safety = executable('test_journal_safety',
+  'core/tests/unit/test_journal_safety.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, thread_dep])
+
 # Register tests
 test('error', test_error)
 test('id', test_id)
@@ -239,22 +281,43 @@ test('io', test_io)
 test('time', test_time)
 test('cbor', test_cbor)
 test('edge', test_edge)
-test('safety', test_safety)
+test('edge_cbor_oid', test_edge_cbor_oid)
+test('edge_attributed_cbor', test_edge_attributed_cbor)
+test('edge_equal_semantics', test_edge_equal_semantics)
+test('cache_meta', test_cache_meta)
+test('journal_safety', test_journal_safety)
 
-# CLI executable (apps/cli)
-cli_src = files(
-  'apps/cli/main.c',
-  'apps/cli/output.c',
-  'apps/cli/link.c',
-  'apps/cli/list.c',
-  'apps/cli/cache_rebuild.c',
-  'apps/cli/install_hooks.c',
-)
+# Standalone header compilation checks (public headers)
+header_check_src = 'tools/header_compile.c'
+public_headers = [
+  'include/gitmind/output.h',
+  'include/gitmind/constants.h',
+  'include/gitmind/error.h',
+  'include/gitmind/safety.h',
+  'core/include/gitmind/result.h',
+  'core/include/gitmind/types.h',
+  'core/include/gitmind/context.h',
+  'core/include/gitmind/attribution.h',
+  'core/include/gitmind/edge.h',
+  'core/include/gitmind/edge_attributed.h',
+  'core/include/gitmind/journal.h',
+  'core/include/gitmind/cache.h',
+  'core/include/gitmind/io/io.h',
+  'core/include/gitmind/time/time.h',
+  'core/include/gitmind/util/memory.h',
+  'core/include/gitmind/utf8/validate.h',
+]
 
-git_mind_cli = executable(
-  'git-mind',
-  cli_src,
-  include_directories : inc_cli,
-  link_with : libgitmind,
-  dependencies : [libsodium_dep, libgit2_dep, thread_dep, roaring_dep]
-)
+foreach hdr : public_headers
+  exe_name = 'hdr_' + hdr.split('/')[-1].replace('.', '_')
+  executable(exe_name,
+    header_check_src,
+    include_directories : inc,
+    dependencies : [libsodium_dep, libgit2_dep, thread_dep, roaring_dep],
+    c_args : ['-include', hdr],
+  )
+endforeach
+
+# Lint: header guard prefix check
+run_target('lint_header_guards',
+  command : ['python3', 'tools/quality/check_header_guards.py'])

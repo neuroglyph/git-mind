@@ -4,12 +4,20 @@
 #include "gitmind/journal.h"
 #include "gitmind/types.h"
 #include "gitmind/context.h"
-#include "gitmind/cbor/cbor.h"
 #include "gitmind/cbor/constants_cbor.h"
 #include "gitmind/error.h"
 #include "gitmind/result.h"
+#include "gitmind/edge.h"
+#include "gitmind/edge_attributed.h"
+#include "gitmind/security/string.h"
 
-#include <git2.h>
+#include <git2/repository.h>
+#include <git2/oid.h>
+#include <git2/commit.h>
+#include <git2/tree.h>
+#include <git2/refs.h>
+#include <git2/signature.h>
+#include <sodium.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +27,7 @@
 #define REFS_GITMIND_PREFIX "refs/gitmind/edges/"
 #define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
 #define REF_NAME_BUFFER_SIZE GM_PATH_MAX
-#define COMMIT_ENCODING "binary"
+#define COMMIT_ENCODING "UTF-8"
 #define CBOR_OVERFLOW_MARGIN GM_FORMAT_BUFFER_SIZE /* CBOR encoding safety margin */
 #define PARENT_COMMITS_MAX 1
 #define EMPTY_TREE_SHA "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
@@ -43,8 +51,11 @@ static int journal_init(journal_ctx_t *jctx, gm_context_t *ctx,
     }
 
     /* Build ref name */
-    snprintf(jctx->ref_name, sizeof(jctx->ref_name), "%s%s",
-             REFS_GITMIND_PREFIX, branch);
+    int nref = gm_snprintf(jctx->ref_name, sizeof(jctx->ref_name), "%s%s",
+                           REFS_GITMIND_PREFIX, branch);
+    if (nref < 0 || (size_t)nref >= sizeof(jctx->ref_name)) {
+        return GM_ERR_BUFFER_TOO_SMALL;
+    }
 
     return GM_OK;
 }
@@ -70,8 +81,12 @@ static int get_current_branch(git_repository *repo, char *branch_name,
     }
 
     /* Copy branch name */
-    strncpy(branch_name, name, len - 1);
-    branch_name[len - 1] = '\0';
+    size_t n = strlen(name);
+    if (n >= len) {
+        return GM_ERR_BUFFER_TOO_SMALL;
+    }
+    gm_memcpy_safe(branch_name, len, name, n);
+    branch_name[n] = '\0';
 
     git_reference_free(head);
     return GM_OK;
@@ -120,12 +135,29 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
         git_reference_free(ref);
     }
 
-    /* Create commit */
+    /* Base64-encode CBOR for commit message safety */
+    const int variant = sodium_base64_VARIANT_ORIGINAL;
+    size_t b64_len = sodium_base64_ENCODED_LEN(cbor_len, variant);
+    char *b64 = (char *)malloc(b64_len);
+    if (!b64) {
+        git_tree_free(tree);
+        git_signature_free(sig);
+        if (parent) git_commit_free(parent);
+        return GM_ERR_OUT_OF_MEMORY;
+    }
+    sodium_bin2base64(b64, b64_len, cbor_data, cbor_len, variant);
+    /* Defensive: ensure explicit NUL termination */
+    if (b64_len > 0) {
+        b64[b64_len - 1] = '\0';
+    }
+
+    /* Create commit with ASCII-safe message */
     error = git_commit_create(commit_oid, jctx->repo, jctx->ref_name, sig, sig,
-                              COMMIT_ENCODING, (const char *)cbor_data, tree,
+                              COMMIT_ENCODING, b64, tree,
                               (size_t)parent_count, parent_commits);
 
     /* Cleanup */
+    free(b64);
     git_signature_free(sig);
     git_tree_free(tree);
     if (parent) {
@@ -215,53 +247,10 @@ static int edge_encoder_wrapper(const void *edge, uint8_t *buffer,
 /* Wrapper for attributed edge encoder */
 static int edge_attributed_encoder_wrapper(const void *edge, uint8_t *buffer,
                                            size_t *len) {
-    const gm_edge_attributed_t *attr_edge = (const gm_edge_attributed_t *)edge;
-    
-    /* Create a basic edge from the attributed edge fields */
-    gm_edge_t basic_edge = {
-        .rel_type = attr_edge->rel_type,
-        .confidence = attr_edge->confidence,
-        .timestamp = attr_edge->timestamp
-    };
-    
-    /* Copy SHA arrays securely */
-    for (size_t i = 0; i < GM_SHA1_SIZE; i++) {
-        basic_edge.src_sha[i] = attr_edge->src_sha[i];
-        basic_edge.tgt_sha[i] = attr_edge->tgt_sha[i];
-    }
-    
-    /* Copy paths securely */
-    size_t src_len = strlen(attr_edge->src_path);
-    if (src_len >= sizeof(basic_edge.src_path)) {
-        src_len = sizeof(basic_edge.src_path) - 1;
-    }
-    for (size_t i = 0; i < src_len; i++) {
-        basic_edge.src_path[i] = attr_edge->src_path[i];
-    }
-    basic_edge.src_path[src_len] = '\0';
-    
-    size_t tgt_len = strlen(attr_edge->tgt_path);
-    if (tgt_len >= sizeof(basic_edge.tgt_path)) {
-        tgt_len = sizeof(basic_edge.tgt_path) - 1;
-    }
-    for (size_t i = 0; i < tgt_len; i++) {
-        basic_edge.tgt_path[i] = attr_edge->tgt_path[i];
-    }
-    basic_edge.tgt_path[tgt_len] = '\0';
-    
-    /* Copy ULID securely */
-    size_t ulid_len = strlen(attr_edge->ulid);
-    if (ulid_len >= sizeof(basic_edge.ulid)) {
-        ulid_len = sizeof(basic_edge.ulid) - 1;
-    }
-    for (size_t i = 0; i < ulid_len; i++) {
-        basic_edge.ulid[i] = attr_edge->ulid[i];
-    }
-    basic_edge.ulid[ulid_len] = '\0';
-    
-    /* Encode the basic edge first */
-    gm_result_void_t result = gm_edge_encode_cbor(&basic_edge, buffer, len);
-    return (int)result.ok ? GM_OK : GM_ERR_INVALID_FORMAT;
+    const gm_edge_attributed_t *e = (const gm_edge_attributed_t *)edge;
+    if (!buffer || !len || !e) return GM_ERR_INVALID_ARGUMENT;
+    gm_result_void_t enc = gm_edge_attributed_encode_cbor(e, buffer, len);
+    return enc.ok ? GM_OK : GM_ERR_INVALID_FORMAT;
 }
 
 /* Append edges to journal */

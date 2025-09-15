@@ -20,6 +20,9 @@
 - Enable hooks: `pre-commit install` (clang-format + detect-secrets + docs link/TOC checks)
 - Docs linter (all docs): `python3 tools/docs/check_docs.py --mode link` and `--mode toc`
 - Pre-commit (changed files): `pre-commit run --all-files docs-link-check` and `docs-toc-check`
+ - Markdown linter: `make md-lint` (check) and `make md-fix` (autofix) — uses `.markdownlint.jsonc`
+ - Header guards lint: `meson run -C build lint_header_guards`
+ - Public headers compile check: `ninja -C build header-compile`
 
 ## Coding Style & Naming Conventions
 
@@ -27,6 +30,7 @@
 - Formatting: `.clang-format` (LLVM-based, 4 spaces, 80 cols, pointer alignment right). Pre-commit runs `clang-format`.
 - Naming: functions/vars `lower_snake_case` (prefix `gm_`), macros `UPPER_SNAKE`, types end in `_t`, header guards `GITMIND_*`.
 - Includes: prefer specific headers; order/regroup per `.clang-format`.
+ - Public headers must be umbrella-safe: compile standalone, correct include order, stable header guards, and `extern "C"` when included from C++.
 
 ## Testing Guidelines
 
@@ -38,16 +42,19 @@
 
 - Conventional commits: `type(scope): description` (e.g., `fix(core/cbor): handle null keys`). Reference issues (`Fixes #123`).
 - PRs must describe changes, link issues, include a short test plan, pass CI, and introduce no new clang-tidy warnings (`./tools/docker-clang-tidy.sh`). Update docs when applicable.
+ - Code review (CodeRabbit): Keep `.coderabbit.yml` updated. Prefer summary reviews, limit per-line comments on docs. If rejecting a suggestion, add a note under `docs/code-reviews/rejected-suggestions/{commit}_{branch}_{PR#}_{suggestion}.md` with a link to the original comment and rationale.
 
 ## Security & Configuration
 
 - Do not commit secrets. Pre-commit runs `detect-secrets` with `.secrets.baseline`.
 - Use `.env.example` as a template; never check in real credentials.
+ - E2E safety: some CI E2E steps require `GITMIND_SAFETY=off` in the container environment.
 
 ## Agent-Specific Notes
 
 - Make minimal, focused diffs; avoid drive-by refactors. Match existing patterns in `core/` and headers under `include/`.
 - Run build, tests, and lint locally before proposing changes. Keep changes zero-warnings and formatted.
+ - Prefer OID-first APIs for SHA-agnostic correctness. Use `git_oid` (typedef `gm_oid_t`) in new core interfaces, and compare via `git_oid_cmp`.
 
 ## Working Knowledge (for agents)
 
@@ -58,6 +65,25 @@
 - Link vs code authors: Edge attribution `author` is the link creator (from `git config` unless provided); code authorship at the chosen commit is recorded separately (per-file last commit author/time) when captured by external tooling.
 - Docker hygiene: Images are namespaced/labeled (`gitmind/ci:clang-20`, `gitmind/gauntlet:<compiler>`; label `com.gitmind.project=git-mind`). Use `make docker-clean` to reclaim space safely.
 - CI/Tidy nuance: Local builds and tests pass. Clang-tidy in Docker depends on CRoaring headers in the CI image; add a source build step for deterministic results on aarch64 if CI flags it.
+ - CI path filters: Core build/test workflows are restricted to code paths; doc-only changes do not trigger core builds. Markdown lint runs separately with reduced noise via `.markdownlint.jsonc`.
+
+## Agent Activity Log
+
+2025-09-14
+- CI/CD: Added Markdown linting with repo-aligned rules (`.markdownlint.jsonc`), `make md-lint`/`md-fix` targets, and path filters limiting core workflows to code paths. Enabled docker pull retry and set `GITMIND_SAFETY=off` for E2E in the core workflow.
+- Header hygiene: Standardized header guards to `GITMIND_*`, added umbrella viability check (public headers compile standalone), and a header guard linter (`tools/quality/check_header_guards.py`) wired via Meson run target.
+- OID-first migration: Introduced `typedef git_oid gm_oid_t` and `GM_OID_RAWSZ`. Migrated edges, cache queries, and hooks APIs to OID-first and switched equality to `git_oid_cmp`. Maintained compatibility where needed; CBOR decode backfills OIDs from legacy fields temporarily.
+- Journal safety: Base64-encoded CBOR commit messages on write and decoded on read; added strict `gm_snprintf` overflow checks and security-conscious includes.
+- CLI fixes: Adjusted `apps/cli` commands for include hygiene, error handling, and consistent porcelain output; freed libgit2 arrays correctly.
+- Reviews/PRs: Pushed branches, resolved merge conflicts, and responded to CodeRabbit with summary feedback. Opened a PR for CodeRabbit + markdownlint config changes and updated PRs addressing invalid path errors and core cleanup.
+
+## Next Steps (handoff checklist)
+- Complete on-disk cache migration to OID-only storage and naming; ensure rebuild and fallback readers handle both formats or gate with a one-time migration.
+- Extend journal CBOR schema to store OIDs explicitly (not only derivable from legacy fields); update reader/writer and consumers.
+- Sweep any remaining headers for guard/extern "C" issues and fix items flagged by `lint_header_guards`.
+- Expand attributed edge CBOR to include OIDs alongside legacy fields; update cache/journal consumers accordingly.
+- Stabilize and merge open PRs (#164, #165, #166, #167) after CI green; incorporate CodeRabbit actionable feedback and document any rejections under `docs/code-reviews/rejected-suggestions/`.
+- Add focused tests: journal base64 encode/decode roundtrip, `gm_snprintf` truncation behavior, and OID-based equality/lookup paths in cache and hooks.
 
 ## Vision Snapshot
 

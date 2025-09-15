@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#ifndef GM_CACHE_H
-#define GM_CACHE_H
+#ifndef GITMIND_CACHE_CACHE_H
+#define GITMIND_CACHE_CACHE_H
 
 #include <git2/types.h>
 
@@ -75,4 +75,4 @@ void gm_cache_result_free(gm_cache_result_t *result);
 int gm_cache_stats(git_repository *repo, const char *branch,
                    uint64_t *edge_count, uint64_t *cache_size_bytes);
 
-#endif /* GM_CACHE_H */
+#endif /* GITMIND_CACHE_CACHE_H */

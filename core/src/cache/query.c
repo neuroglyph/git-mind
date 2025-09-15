@@ -42,28 +42,66 @@ static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
 }
 
 /* Load cache metadata from commit message */
+/* Helper to find legacy timestamped cache refs: refs/gitmind/cache/<branch>/<ts> */
+static int find_legacy_cache_ref(git_repository *repo, const char *branch, git_oid *out_oid, uint64_t *out_time) {
+    char pattern[REF_NAME_BUFFER_SIZE + 8];
+    (void)snprintf(pattern, sizeof(pattern), "%s%s/*", GM_CACHE_REF_PREFIX, branch);
+    git_reference *best_ref = NULL;
+    git_reference *ref = NULL;
+    git_reference_iterator *iter = NULL;
+    int rc = git_reference_iterator_glob_new(&iter, repo, pattern);
+    if (rc < 0) return GM_NOT_FOUND;
+
+    uint64_t best_time = 0;
+    while (git_reference_next(&ref, iter) == 0) {
+        const char *name = git_reference_name(ref);
+        git_oid oid;
+        if (git_reference_name_to_id(&oid, repo, name) == 0) {
+            git_commit *c = NULL;
+            if (git_commit_lookup(&c, repo, &oid) == 0) {
+                git_time_t t = git_commit_time(c);
+                if ((uint64_t)t > best_time) {
+                    best_time = (uint64_t)t;
+                    if (best_ref) git_reference_free(best_ref);
+                    best_ref = ref; /* take ownership */
+                    ref = NULL;     /* prevent double free */
+                    *out_oid = oid;
+                }
+                git_commit_free(c);
+            }
+        }
+        if (ref) git_reference_free(ref);
+        ref = NULL;
+    }
+    git_reference_iterator_free(iter);
+    if (ref) git_reference_free(ref);
+    if (!best_ref) return GM_NOT_FOUND;
+    if (out_time) *out_time = best_time;
+    git_reference_free(best_ref);
+    return GM_OK;
+}
+
 int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *meta) {
+    if (!ctx || !ctx->git_repo || !branch || !meta) return GM_INVALID_ARG;
     git_repository *repo = (git_repository *)ctx->git_repo;
     git_reference *ref = NULL;
     git_commit *commit = NULL;
     char ref_name[REF_NAME_BUFFER_SIZE];
     int rc;
 
-    /* Build cache ref name */
+    /* Build cache ref name and resolve */
     (void)snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
-
-    /* Look up cache reference */
     rc = git_reference_lookup(&ref, repo, ref_name);
-    if (rc < 0) {
-        return GM_NOT_FOUND;
-    }
-
-    /* Get commit */
     git_oid oid;
-    rc = git_reference_name_to_id(&oid, repo, ref_name);
-    git_reference_free(ref);
-    if (rc < 0) {
-        return GM_NOT_FOUND;
+    if (rc == 0) {
+        rc = git_reference_name_to_id(&oid, repo, ref_name);
+        git_reference_free(ref);
+        if (rc < 0) return GM_NOT_FOUND;
+    } else {
+        /* Fallback: look for legacy timestamped refs */
+        uint64_t ts = 0;
+        rc = find_legacy_cache_ref(repo, branch, &oid, &ts);
+        if (rc != GM_OK) return GM_NOT_FOUND;
     }
 
     rc = git_commit_lookup(&commit, repo, &oid);
@@ -71,16 +109,34 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
         return GM_ERR_UNKNOWN;
     }
 
-    /* Parse metadata from commit message */
-    const char *msg = git_commit_message(commit);
-    if (!msg || strlen(msg) < sizeof(gm_cache_meta_t)) {
-        git_commit_free(commit);
-        return GM_ERR_UNKNOWN;
-    }
-
-    gm_memcpy_safe(meta, sizeof *meta, msg, sizeof(gm_cache_meta_t));
+    /* Synthesize metadata from repo state (no binary commit message parsing) */
+    memset(meta, 0, sizeof *meta);
+    meta->version = GM_CACHE_VERSION;
+    meta->shard_bits = GM_CACHE_SHARD_BITS;
+    strncpy(meta->branch, branch, GM_CACHE_BRANCH_NAME_SIZE - 1);
+    meta->journal_tip_time = (uint64_t)git_commit_time(commit);
     git_commit_free(commit);
 
+    /* Resolve current journal tip OID for branch */
+    git_reference *journal_ref = NULL;
+    char journal_ref_name[REF_NAME_BUFFER_SIZE];
+    (void)snprintf(journal_ref_name, sizeof(journal_ref_name),
+                   "refs/gitmind/edges/%s", branch);
+    if (git_reference_lookup(&journal_ref, repo, journal_ref_name) == 0) {
+        const git_oid *tip_oid = git_reference_target(journal_ref);
+        if (tip_oid) {
+            git_oid_tostr(meta->journal_tip_oid, sizeof(meta->journal_tip_oid), tip_oid);
+        } else {
+            strcpy(meta->journal_tip_oid, ZERO_SHA_STRING);
+        }
+        git_reference_free(journal_ref);
+    } else {
+        strcpy(meta->journal_tip_oid, ZERO_SHA_STRING);
+    }
+
+    /* edge_count and build_time_ms unavailable without dedicated storage */
+    meta->edge_count = 0;
+    meta->build_time_ms = 0;
     return GM_OK;
 }
 
@@ -140,12 +196,12 @@ static int load_bitmap_from_cache(git_repository *repo, git_tree *tree,
     get_sha_prefix(sha, prefix, GM_CACHE_SHARD_BITS);
 
     /* Convert SHA to hex */
-    for (int i = 0; i < GM_SHA1_SIZE; i++) {
+    for (int i = 0; i < GM_OID_RAWSZ; i++) {
         size_t off = (size_t)i * (size_t)HEX_CHARS_PER_BYTE;
         (void)snprintf(sha_hex + off, (size_t)HEX_CHARS_PER_BYTE + 1, "%02x",
                        sha[i]);
     }
-    sha_hex[(size_t)GM_SHA1_SIZE * (size_t)HEX_CHARS_PER_BYTE] = '\0';
+    sha_hex[(size_t)GM_OID_RAWSZ * (size_t)HEX_CHARS_PER_BYTE] = '\0';
 
     /* Build path: prefix/sha.suffix */
     (void)snprintf(path, sizeof(path), "%s/%s.%s", prefix, sha_hex, suffix);
@@ -183,11 +239,12 @@ typedef struct {
 static int journal_scan_callback_generic(const gm_edge_t *edge,
                                          void *userdata) {
     journal_scan_state_t *state = (journal_scan_state_t *)userdata;
-    const uint8_t *edge_sha =
-        state->check_source ? edge->src_sha : edge->tgt_sha;
+    const uint8_t *edge_sha = state->check_source
+        ? git_oid_raw(&edge->src_oid)
+        : git_oid_raw(&edge->tgt_oid);
 
     /* Check if this edge matches our query */
-    if (memcmp(edge_sha, state->target_sha, GM_SHA1_SIZE) == 0) {
+    if (memcmp(edge_sha, state->target_sha, GM_OID_RAWSZ) == 0) {
         /* Grow array if needed */
         if (state->count >= state->capacity) {
             size_t new_capacity = state->capacity * 2;
@@ -335,16 +392,16 @@ static int cache_query_generic(git_repository *repo, const char *branch,
 
 /* Query edges by source SHA (forward index) */
 int gm_cache_query_fanout(gm_context_t *ctx, const char *branch,
-                          const uint8_t *src_sha, gm_cache_result_t *result) {
+                          const gm_oid_t *src_oid, gm_cache_result_t *result) {
     git_repository *repo = (git_repository *)ctx->git_repo;
-    return cache_query_generic(repo, branch, src_sha, "forward", 1, result);
+    return cache_query_generic(repo, branch, git_oid_raw(src_oid), "forward", 1, result);
 }
 
 /* Query edges by target SHA (reverse index) */
 int gm_cache_query_fanin(gm_context_t *ctx, const char *branch,
-                         const uint8_t *tgt_sha, gm_cache_result_t *result) {
+                         const gm_oid_t *tgt_oid, gm_cache_result_t *result) {
     git_repository *repo = (git_repository *)ctx->git_repo;
-    return cache_query_generic(repo, branch, tgt_sha, "reverse", 0, result);
+    return cache_query_generic(repo, branch, git_oid_raw(tgt_oid), "reverse", 0, result);
 }
 
 /* Free cache result */

@@ -5,12 +5,20 @@
 #include "gitmind/types.h"
 #include "gitmind/context.h"
 #include "gitmind/cbor/constants_cbor.h"
+#include "gitmind/cbor/cbor.h"
+#include "gitmind/cbor/keys.h"
 #include "gitmind/error.h"
 #include "gitmind/edge.h"
 #include "gitmind/edge_attributed.h"
 #include "gitmind/attribution.h"
 
-#include <git2.h>
+#include <git2/commit.h>
+#include <git2/oid.h>
+#include <git2/refdb.h>
+#include <git2/refs.h>
+#include <git2/repository.h>
+#include <git2/revwalk.h>
+#include <sodium.h>
 #include <stdint.h>
 
 #include <stdio.h>
@@ -31,34 +39,6 @@ int gm_edge_decode_cbor_ex(const uint8_t *buffer, size_t len, gm_edge_t *edge,
 int gm_edge_attributed_decode_cbor_ex(const uint8_t *buffer, size_t len,
                                       gm_edge_attributed_t *edge,
                                       size_t *consumed);
-
-/* Temporary compatibility wrappers until attributed CBOR decode is implemented */
-int gm_edge_decode_cbor_ex(const uint8_t *buffer, size_t len, gm_edge_t *edge,
-                           size_t *consumed) {
-    gm_result_edge_t r = gm_edge_decode_cbor(buffer, len);
-    if (!r.ok) {
-        return GM_ERR_INVALID_FORMAT;
-    }
-    if (edge) {
-        *edge = r.u.val;
-    }
-    if (consumed) {
-        *consumed = len; /* Assume full buffer consumed in legacy decoder */
-    }
-    return GM_OK;
-}
-
-int gm_edge_attributed_decode_cbor_ex(const uint8_t *buffer, size_t len,
-                                      gm_edge_attributed_t *edge,
-                                      size_t *consumed) {
-    (void)buffer;
-    (void)len;
-    (void)edge;
-    if (consumed) {
-        *consumed = 0; /* Signal no bytes consumed to trigger legacy fallback */
-    }
-    return GM_ERR_INVALID_FORMAT; /* Indicate decode failure to use legacy path */
-}
 
 /* Generic reader context */
 typedef struct {
@@ -118,11 +98,13 @@ static void convert_legacy_to_attributed(const gm_edge_t *legacy,
     attributed->lane = GM_LANE_PRIMARY;
 }
 
+/* (Removed local attributed CBOR decoder; use public edge API) */
+
 /* Process attributed edge from CBOR */
 static int process_attributed_edge(const uint8_t *cbor_data, size_t remaining,
                                    reader_ctx_t *rctx, size_t *consumed) {
     gm_edge_attributed_t edge;
-    GM_MEMSET_SAFE(&edge, sizeof(edge), 0, sizeof(edge));
+    memset(&edge, 0, sizeof(edge));
 
     /* Try to decode an attributed edge */
     int decode_result = gm_edge_attributed_decode_cbor_ex(cbor_data, remaining,
@@ -154,15 +136,36 @@ static int process_regular_edge(const uint8_t *cbor_data, size_t remaining,
     gm_edge_t edge;
 
     /* Try to decode a regular edge */
-    int decode_result =
-        gm_edge_decode_cbor_ex(cbor_data, remaining, &edge, consumed);
-    if (decode_result != GM_OK || *consumed == 0) {
+    int decode_result = gm_edge_decode_cbor_ex(cbor_data, remaining, &edge, consumed);
+    if (decode_result == GM_OK && *consumed > 0) {
+        return ((int (*)(const gm_edge_t *, void *))rctx->callback)(&edge, rctx->userdata);
+    }
+
+    /* Fallback: try attributed and down-convert to regular edge */
+    gm_edge_attributed_t aedge;
+    size_t aconsumed = 0;
+    decode_result = gm_edge_attributed_decode_cbor_ex(cbor_data, remaining, &aedge, &aconsumed);
+    if (decode_result != GM_OK || aconsumed == 0) {
         return GM_ERR_INVALID_FORMAT;
     }
 
-    /* Call regular callback */
-    return ((int (*)(const gm_edge_t *, void *))rctx->callback)(&edge,
-                                                                rctx->userdata);
+    gm_edge_t basic = {0};
+    memcpy(basic.src_sha, aedge.src_sha, GM_SHA1_SIZE);
+    memcpy(basic.tgt_sha, aedge.tgt_sha, GM_SHA1_SIZE);
+    basic.src_oid = aedge.src_oid;
+    basic.tgt_oid = aedge.tgt_oid;
+    basic.rel_type = aedge.rel_type;
+    basic.confidence = aedge.confidence;
+    basic.timestamp = aedge.timestamp;
+    strncpy(basic.src_path, aedge.src_path, GM_PATH_MAX - 1);
+    basic.src_path[GM_PATH_MAX - 1] = '\0';
+    strncpy(basic.tgt_path, aedge.tgt_path, GM_PATH_MAX - 1);
+    basic.tgt_path[GM_PATH_MAX - 1] = '\0';
+    strncpy(basic.ulid, aedge.ulid, GM_ULID_SIZE);
+    basic.ulid[GM_ULID_SIZE] = '\0';
+
+    *consumed = aconsumed;
+    return ((int (*)(const gm_edge_t *, void *))rctx->callback)(&basic, rctx->userdata);
 }
 
 /* Process a single commit - generic version */
@@ -171,6 +174,7 @@ static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
     const uint8_t *cbor_data;
     size_t offset = 0;
     size_t message_len;
+    uint8_t decoded[MAX_CBOR_SIZE];
 
     /* Get raw commit message (contains CBOR data) */
     raw_message = git_commit_message_raw(commit);
@@ -178,8 +182,17 @@ static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
         return GM_ERR_INVALID_FORMAT;
     }
 
-    cbor_data = (const uint8_t *)raw_message;
-    message_len = MAX_CBOR_SIZE;
+    {
+        size_t out_len = 0;
+        const int variant = sodium_base64_VARIANT_ORIGINAL;
+        if (sodium_base642bin(decoded, sizeof(decoded), raw_message,
+                               strlen(raw_message), NULL, &out_len, NULL,
+                               variant) != 0) {
+            return GM_ERR_INVALID_FORMAT;
+        }
+        cbor_data = decoded;
+        message_len = out_len;
+    }
 
     /* Decode edges from CBOR */
     while (offset < message_len) {
@@ -311,7 +324,12 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
     }
 
     /* Build ref name */
-    gm_snprintf(ref_name, sizeof(ref_name), "%s%s", REFS_GITMIND_PREFIX, branch);
+    {
+        int rn = gm_snprintf(ref_name, sizeof(ref_name), "%s%s", REFS_GITMIND_PREFIX, branch);
+        if (rn < 0 || (size_t)rn >= sizeof(ref_name)) {
+            return GM_ERR_BUFFER_TOO_SMALL;
+        }
+    }
 
     /* Walk the journal */
     return walk_journal_generic(&rctx, ref_name);

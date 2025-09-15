@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#ifndef GITMIND_HOOKS_AUGMENT_H
-#define GITMIND_HOOKS_AUGMENT_H
+#ifndef GITMIND_AUGMENT_H
+#define GITMIND_AUGMENT_H
 
 #include "gitmind/context.h"
 #include "gitmind/edge.h"
@@ -11,12 +11,23 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <git2/types.h>
+#ifdef __cplusplus
+extern "C" {
+// keep C linkage open until end
+#endif
 
-/* Constants */
-#define MAX_CHANGED_FILES 50 /* Skip if more files changed */
-#define LOOKBACK_LIMIT 200   /* Max edges to scan */
-#define HOOK_TIMEOUT_MS 500  /* Abort if taking too long */
-#define MAX_PATH_LENGTH 4096 /* Maximum file path length */
+/* Constants (public, prefixed) */
+
+#define GM_AUGMENT_MAX_CHANGED_FILES 50 /* Skip if more files changed */
+#define GM_AUGMENT_LOOKBACK_LIMIT 200   /* Max edges to scan */
+#define GM_AUGMENT_HOOK_TIMEOUT_MS 500  /* Abort if taking too long */
+#define GM_AUGMENT_MAX_PATH_LENGTH 4096 /* Maximum file path length */
+
+/* Backward-compat (deprecated): old macro names */
+#define MAX_CHANGED_FILES GM_AUGMENT_MAX_CHANGED_FILES
+#define LOOKBACK_LIMIT GM_AUGMENT_LOOKBACK_LIMIT
+#define HOOK_TIMEOUT_MS GM_AUGMENT_HOOK_TIMEOUT_MS
+#define MAX_PATH_LENGTH GM_AUGMENT_MAX_PATH_LENGTH
 
 /* Get blob SHA for a file at a specific commit
  *
@@ -26,19 +37,19 @@
  * @param sha_out   Output buffer for 20-byte SHA-1
  * @return          0 on success, error code otherwise
  */
-int get_blob_sha(git_repository *repo, const char *commit_ref,
-                 const char *file_path, uint8_t *sha_out);
+int gm_hook_get_blob_sha(git_repository *repo, const char *commit_ref,
+                         const char *file_path, gm_oid_t *sha_out);
 
 /* Find recent edges with given source blob
  *
  * @param ctx       git-mind context
  * @param src_sha   Source blob SHA to search for
- * @param edges_out Output array of matching edges (caller must free)
+ * @param edges_out Output array of matching edges (caller must free with free())
  * @param count_out Number of edges found
  * @return          0 on success, error code otherwise
  */
-int find_edges_by_source(gm_context_t *ctx, const uint8_t *src_sha,
-                         gm_edge_t **edges_out, size_t *count_out);
+int gm_hook_find_edges_by_source(gm_context_t *ctx, const gm_oid_t *src_oid,
+                                 gm_edge_t **edges_out, size_t *count_out);
 
 /* Create AUGMENTS edge between two blob versions
  *
@@ -48,8 +59,8 @@ int find_edges_by_source(gm_context_t *ctx, const uint8_t *src_sha,
  * @param file_path Path to file (for human readability)
  * @return          0 on success, error code otherwise
  */
-int create_augments_edge(gm_context_t *ctx, const uint8_t *old_sha,
-                         const uint8_t *new_sha, const char *file_path);
+int gm_hook_create_augments_edge(gm_context_t *ctx, const gm_oid_t *old_oid,
+                                 const gm_oid_t *new_oid, const char *file_path);
 
 /* Process a single changed file
  *
@@ -58,8 +69,8 @@ int create_augments_edge(gm_context_t *ctx, const uint8_t *old_sha,
  * @param file_path Path to changed file
  * @return          0 on success, error code otherwise
  */
-int process_changed_file(gm_context_t *ctx, git_repository *repo,
-                         const char *file_path);
+int gm_hook_process_changed_file(gm_context_t *ctx, git_repository *repo,
+                                 const char *file_path);
 
 /* Check if this is a merge commit
  *
@@ -67,6 +78,24 @@ int process_changed_file(gm_context_t *ctx, git_repository *repo,
  * @param is_merge  Output: true if merge commit
  * @return          0 on success, error code otherwise
  */
-int is_merge_commit(git_repository *repo, bool *is_merge);
+int gm_hook_is_merge_commit(git_repository *repo, bool *is_merge);
 
-#endif /* GITMIND_HOOKS_AUGMENT_H */
+/* Backward-compatibility macros (deprecated) */
+#define get_blob_sha gm_hook_get_blob_sha
+#define find_edges_by_source gm_hook_find_edges_by_source
+#define create_augments_edge gm_hook_create_augments_edge
+#define process_changed_file gm_hook_process_changed_file
+#define is_merge_commit gm_hook_is_merge_commit
+
+/* Preferred names (aliases) */
+#define gm_augment_get_blob_sha gm_hook_get_blob_sha
+#define gm_augment_find_edges_by_source gm_hook_find_edges_by_source
+#define gm_augment_create_augments_edge gm_hook_create_augments_edge
+#define gm_augment_process_changed_file gm_hook_process_changed_file
+#define gm_augment_is_merge_commit gm_hook_is_merge_commit
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* GITMIND_AUGMENT_H */

@@ -38,8 +38,10 @@ typedef enum {
  */
 typedef struct gm_edge_attributed {
     /* Base edge fields */
-    uint8_t src_sha[GM_SHA1_SIZE];      /**< Source object SHA-1 */
-    uint8_t tgt_sha[GM_SHA1_SIZE];      /**< Target object SHA-1 */
+    uint8_t src_sha[GM_SHA1_SIZE];      /**< Source object SHA-1 (legacy) */
+    uint8_t tgt_sha[GM_SHA1_SIZE];      /**< Target object SHA-1 (legacy) */
+    gm_oid_t src_oid;                   /**< Source object OID (preferred) */
+    gm_oid_t tgt_oid;                   /**< Target object OID (preferred) */
     uint16_t rel_type;                  /**< Relationship type */
     uint16_t confidence;                /**< Confidence (IEEE-754 half float) */
     uint64_t timestamp;                 /**< Creation time (Unix millis) */
@@ -118,6 +120,40 @@ gm_result_void_t gm_edge_attributed_format(const gm_edge_attributed_t *edge,
  */
 gm_result_void_t gm_edge_attributed_format_with_attribution(
     const gm_edge_attributed_t *edge, char *buffer, size_t len);
+
+/**
+ * Encode attributed edge to CBOR (OID-first; includes legacy fields for compat).
+ *
+ * @param edge   Edge to encode
+ * @param buffer Output buffer
+ * @param len    In: buffer size, Out: bytes written
+ * @return       Result indicating success or error
+ */
+gm_result_void_t gm_edge_attributed_encode_cbor(const gm_edge_attributed_t *edge,
+                                                uint8_t *buffer, size_t *len);
+
+/**
+ * Decode attributed edge from CBOR.
+ *
+ * @param buffer CBOR data
+ * @param len    Buffer length
+ * @return       Result with decoded edge on success
+ */
+gm_result_edge_attributed_t gm_edge_attributed_decode_cbor(const uint8_t *buffer,
+                                                           size_t len);
+
+/**
+ * Decode attributed edge from CBOR and return bytes consumed.
+ *
+ * @param buffer   CBOR data
+ * @param len      Buffer length
+ * @param edge_out Output edge
+ * @param consumed Bytes consumed
+ * @return         GM_OK on success or error code
+ */
+int gm_edge_attributed_decode_cbor_ex(const uint8_t *buffer, size_t len,
+                                      gm_edge_attributed_t *edge_out,
+                                      size_t *consumed);
 
 #ifdef __cplusplus
 }
