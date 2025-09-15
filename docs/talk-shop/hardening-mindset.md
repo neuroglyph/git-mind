@@ -1,3 +1,13 @@
+---
+title: Talk Shop
+description: Explorations and design discussions.
+audience: [contributors]
+domain: [project]
+tags: [discussion]
+status: archive
+last_updated: 2025-09-15
+---
+
 # The Hardening Mindset: Safety as a Feature
 
 Great semantics deserve great engineering. We treat safety work—bounds‑checked formatting, consistent error codes, and growing tests—as product features. `gm_snprintf` replaces risky `snprintf`; GM_ERR_* codes show up everywhere; and tests cover the paths users actually hit (journal read/write, cache fan‑in/out, equality semantics). The goal isn’t “no crashes,” it’s graceful failure with debuggable signals.

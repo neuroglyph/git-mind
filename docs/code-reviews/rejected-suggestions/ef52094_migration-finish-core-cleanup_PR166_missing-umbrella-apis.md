@@ -1,3 +1,13 @@
+---
+title: Review Artifacts
+description: Preserved review artifacts and rationale.
+audience: [contributors]
+domain: [quality]
+tags: [review]
+status: archive
+last_updated: 2025-09-15
+---
+
 Title: Defer adding standalone public encode/decode APIs for attributed edges
 
 Context

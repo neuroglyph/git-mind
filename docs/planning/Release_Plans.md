@@ -1,3 +1,13 @@
+---
+title: Planning Doc
+description: Planning artifacts: roadmap, releases, sprints, milestones.
+audience: [contributors]
+domain: [project]
+tags: [planning]
+status: archive
+last_updated: 2025-09-15
+---
+
 # Release Plans
 
 Table of Contents

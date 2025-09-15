@@ -41,3 +41,12 @@ Remaining `docs/.plans/` subfolders moved to `.legacy/plans/`:
 - docs/.plans/reports → .legacy/plans/reports
 
 If you notice any missing mapping, ping me and I’ll add it.
+---
+title: Legacy Mapping
+description: Mapping of legacy components to the new architecture.
+audience: [developers]
+domain: [architecture]
+tags: [legacy]
+status: archive
+last_updated: 2025-09-15
+---

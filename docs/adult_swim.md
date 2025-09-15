@@ -105,3 +105,12 @@ For a repository with 100k edges:
 ---
 
 _"Come to the deep end... the water's fine!"_ 🏊‍♂️
+---
+title: Adult Swim Notes
+description: Informal notes and experimental thoughts captured during exploration phases.
+audience: [contributors]
+domain: [project]
+tags: [notes]
+status: archive
+last_updated: 2025-09-15
+---

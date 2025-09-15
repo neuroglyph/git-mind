@@ -15,7 +15,8 @@ Table of Contents
 - [Overview](#overview)
 - [Planned Structure](#planned-structure)
 - [Quick Map of Existing Docs](#quick-map-of-existing-docs)
- - [Getting Started](#getting-started)
+- [Getting Started](#getting-started)
+ - [Docs Conventions](#docs-conventions)
 
 ## Overview
 
@@ -77,3 +78,21 @@ If you add a new doc, link it here under the right section.
 - Philosophy: [philosophy.md](philosophy.md)
 - Technical overview: [TECHNICAL.md](TECHNICAL.md)
 - Roadmap: [roadmap.md](roadmap.md)
+
+## Docs Conventions
+
+- Frontmatter required: Every curated doc begins with a YAML block containing
+  - `title`, `description`, `audience` (e.g., `[users, developers]`), `domain` (e.g., `[architecture]`), `tags`, `status`, and optional `last_updated`.
+  - Example:
+    ---
+    title: Page Title
+    description: One-line summary
+    audience: [developers]
+    domain: [architecture]
+    tags: [journal, cache]
+    status: stable
+    last_updated: 2025-09-15
+    ---
+- Table of Contents: Major docs include a simple TOC section; `tools/docs/check_docs.py --mode toc` enforces presence for designated pages.
+- Link hygiene: Use relative links; `tools/docs/check_docs.py --mode link` validates links in CI and pre-commit.
+- Style: Follow `docs/quality/Markdown_Style_Guide.md`. Use consistent headings, bullet markers, and code fences.

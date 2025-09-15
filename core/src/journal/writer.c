@@ -24,7 +24,8 @@
 #include <string.h>
 
 /* Local constants */
-#define REFS_GITMIND_PREFIX "refs/gitmind/edges/"
+#include "gitmind/constants_internal.h"
+#include "gitmind/util/ref.h"
 #define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
 #define REF_NAME_BUFFER_SIZE GM_PATH_MAX
 #define COMMIT_ENCODING "UTF-8"
@@ -51,9 +52,9 @@ static int journal_init(journal_ctx_t *jctx, gm_context_t *ctx,
     }
 
     /* Build ref name */
-    int nref = gm_snprintf(jctx->ref_name, sizeof(jctx->ref_name), "%s%s",
-                           REFS_GITMIND_PREFIX, branch);
-    if (nref < 0 || (size_t)nref >= sizeof(jctx->ref_name)) {
+    int nref = gm_build_ref(jctx->ref_name, sizeof(jctx->ref_name),
+                            GITMIND_EDGES_REF_PREFIX, branch);
+    if (nref != GM_OK) {
         return GM_ERR_BUFFER_TOO_SMALL;
     }
 

@@ -1,3 +1,13 @@
+---
+title: SITREP
+description: Situation reports and CI notes.
+audience: [contributors]
+domain: [quality]
+tags: [sitrep]
+status: archive
+last_updated: 2025-09-15
+---
+
 # CI Infrastructure SITREP - 2025-06-24
 
 ## Executive Summary

@@ -1,3 +1,13 @@
+---
+title: Talk Shop
+description: Explorations and design discussions.
+audience: [contributors]
+domain: [project]
+tags: [discussion]
+status: archive
+last_updated: 2025-09-15
+---
+
 # OID‑First Migration: Future‑Proof by Design
 
 Relying on raw 20‑byte SHA‑1 arrays is a dead end. git‑mind migrates interfaces to `git_oid` (our `gm_oid_t`) across the core, so the code is agnostic to the underlying hash algorithm. Equality, hashing, and cache sharding all operate on OIDs, not legacy byte blobs. That shift eliminates subtle bugs (like mismatched sizes or comparisons) and ensures we don’t care whether the repo is SHA‑1, SHA‑256, or what comes next.

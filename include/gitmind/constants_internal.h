@@ -53,7 +53,7 @@
 #define REFS_TAGS_PREFIX "refs/tags/"
 #define HEAD_REF "HEAD"
 #define GITMIND_NAMESPACE "refs/gitmind/"
-#define GITMIND_JOURNAL_REF "refs/gitmind/journal"
+#define GITMIND_EDGES_REF_PREFIX "refs/gitmind/edges/"
 #define GITMIND_CACHE_REF "refs/gitmind/cache"
 
 /* Exit Codes */

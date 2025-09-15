@@ -1,3 +1,13 @@
+---
+title: Wish List
+description: Feature brainstorms and design sketches.
+audience: [contributors]
+domain: [project]
+tags: [wishlist]
+status: archive
+last_updated: 2025-09-15
+---
+
 # 🧠💎 CLAUDE'S DEEP THOUGHTS: The Git-Mind Vision Crystallized
 
 _Context remaining: 6%. Time to download the essence._

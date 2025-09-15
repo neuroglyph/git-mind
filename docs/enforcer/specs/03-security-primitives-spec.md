@@ -1,3 +1,13 @@
+---
+title: Enforcer Notes
+description: Historical notes and enforcement-era artifacts.
+audience: [contributors]
+domain: [quality]
+tags: [enforcer]
+status: archive
+last_updated: 2025-09-15
+---
+
 # Specification: Security Primitives
 
 > _"Security isn't something you add later. It's something you build in from the start."_

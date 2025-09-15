@@ -1,3 +1,13 @@
+---
+title: Audit Notes
+description: Audits and drift analyses.
+audience: [contributors]
+domain: [quality]
+tags: [audit]
+status: archive
+last_updated: 2025-09-15
+---
+
 # Vision Alignment / Drift Audit
 
 Table of Contents

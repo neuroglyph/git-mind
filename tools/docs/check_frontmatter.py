@@ -57,15 +57,7 @@ ALWAYS_INCLUDE = {
 
 # Subtrees to exclude (journals, brainstorming, reviews, etc.)
 EXCLUDE_DIR_PREFIXES = (
-    "docs/enforcer/",
-    "docs/sitrep/",
-    "docs/wish-list-features/",
-    "docs/talk-shop/",
-    "docs/audits/",
-    "docs/code-review/",
-    "docs/code-reviews/",
-    "docs/hn-demo/",
-    "docs/planning/",
+    # None: enforce everywhere we include
 )
 
 

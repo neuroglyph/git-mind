@@ -1,3 +1,13 @@
+---
+title: Enforcer Notes
+description: Historical notes and enforcement-era artifacts.
+audience: [contributors]
+domain: [quality]
+tags: [enforcer]
+status: archive
+last_updated: 2025-09-15
+---
+
 # 🔌 Plugin + Extensibility Hooks: Gameplan
 
 > _"Architect for extensibility from the start."_

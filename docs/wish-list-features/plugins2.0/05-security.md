@@ -1,3 +1,13 @@
+---
+title: Wish List
+description: Feature brainstorms and design sketches.
+audience: [contributors]
+domain: [project]
+tags: [wishlist]
+status: archive
+last_updated: 2025-09-15
+---
+
 # __🔒 Security Review: Plugin Architecture 2.0__
 
 # Security Review: Plugin Architecture 2.0

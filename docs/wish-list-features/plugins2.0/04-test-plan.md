@@ -1,3 +1,13 @@
+---
+title: Wish List
+description: Feature brainstorms and design sketches.
+audience: [contributors]
+domain: [project]
+tags: [wishlist]
+status: archive
+last_updated: 2025-09-15
+---
+
 # Test Plan: Plugin Architecture 2.0
 
 ## Objective

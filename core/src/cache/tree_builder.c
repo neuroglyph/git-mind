@@ -55,8 +55,8 @@ static int add_file_to_tree(git_repository *repo, git_treebuilder *builder,
 static int process_fs_entry(git_repository *repo, git_treebuilder *dir_builder,
                             const char *dir_path, const char *entry_name,
                             const char *rel_path) {
-    char full_path[GM_PATH_MAX * 2];
-    char entry_rel_path[GM_PATH_MAX * 2];
+    char full_path[GM_PATH_MAX];
+    char entry_rel_path[GM_PATH_MAX];
     struct stat st;
     int rc;
 

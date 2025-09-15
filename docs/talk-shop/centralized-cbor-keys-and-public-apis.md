@@ -1,3 +1,13 @@
+---
+title: Talk Shop
+description: Explorations and design discussions.
+audience: [contributors]
+domain: [project]
+tags: [discussion]
+status: archive
+last_updated: 2025-09-15
+---
+
 # Centralized CBOR Keys and Public Encoders
 
 Wire formats drift when every module invents its own constants. We centralized CBOR field keys in a single header and exposed public encode/decode helpers. That small move pays huge dividends: writers are consistent, readers are simpler, and schema evolution becomes a surgical change—not a scavenger hunt. It also makes fuzzing and differential testing easier—one place to feed, many places to validate.

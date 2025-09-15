@@ -1,3 +1,13 @@
+---
+title: Enforcer Notes
+description: Historical notes and enforcement-era artifacts.
+audience: [contributors]
+domain: [quality]
+tags: [enforcer]
+status: archive
+last_updated: 2025-09-15
+---
+
 # 🛠️ DevEx: Internal CLI for Developer Tools - Gameplan
 
 > _"Developer experience is user experience."_

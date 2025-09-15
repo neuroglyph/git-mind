@@ -1,3 +1,13 @@
+---
+title: Code Review Notes
+description: Code review guidelines and context.
+audience: [contributors]
+domain: [quality]
+tags: [review]
+status: archive
+last_updated: 2025-09-15
+---
+
 # Code Review: migration/finish-core-cleanup Branch
 **Reviewer:** Claude (Sonnet 4)
 **Date:** 2025-09-14

@@ -6,6 +6,8 @@
 #include "gitmind/context.h"
 #include "gitmind/cbor/constants_cbor.h"
 #include "gitmind/cbor/cbor.h"
+#include "gitmind/constants_internal.h"
+#include "gitmind/util/ref.h"
 #include "gitmind/cbor/keys.h"
 #include "gitmind/error.h"
 #include "gitmind/edge.h"
@@ -324,11 +326,8 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
     }
 
     /* Build ref name */
-    {
-        int rn = gm_snprintf(ref_name, sizeof(ref_name), "%s%s", REFS_GITMIND_PREFIX, branch);
-        if (rn < 0 || (size_t)rn >= sizeof(ref_name)) {
-            return GM_ERR_BUFFER_TOO_SMALL;
-        }
+    if (gm_build_ref(ref_name, sizeof(ref_name), GITMIND_EDGES_REF_PREFIX, branch) != GM_OK) {
+        return GM_ERR_BUFFER_TOO_SMALL;
     }
 
     /* Walk the journal */

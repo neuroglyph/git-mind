@@ -1,3 +1,13 @@
+---
+title: Review Artifacts
+description: Preserved review artifacts and rationale.
+audience: [contributors]
+domain: [quality]
+tags: [review]
+status: archive
+last_updated: 2025-09-15
+---
+
 Title: Keep `c_std=c23` in Meson (no down‑level support)
 
 Context

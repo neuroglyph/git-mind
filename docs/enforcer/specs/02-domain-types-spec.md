@@ -1,3 +1,13 @@
+---
+title: Enforcer Notes
+description: Historical notes and enforcement-era artifacts.
+audience: [contributors]
+domain: [quality]
+tags: [enforcer]
+status: archive
+last_updated: 2025-09-15
+---
+
 # Specification: Domain Types and Strong Typedefs
 
 > _"A type system is a tractable syntactic method for proving the absence of certain program behaviors by classifying phrases according to the kinds of values they compute."_ - Benjamin Pierce

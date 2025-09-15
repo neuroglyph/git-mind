@@ -24,7 +24,7 @@ extern "C" {
 #define GIT_OID_RAWSZ 20
 #endif
 #define GM_OID_RAWSZ GIT_OID_RAWSZ
-#define GM_PATH_MAX 256
+#define GM_PATH_MAX 4096
 #define GM_ULID_SIZE 26
 #define GM_FORMAT_BUFFER_SIZE 512
 

@@ -116,7 +116,7 @@ src = files(
 )
 
 # Include directories
-inc = include_directories('core/include', 'include')
+inc = include_directories('include', 'core/include')
 
 # Mark roaring headers as system includes to suppress third-party warnings
 roaring_inc_args = []

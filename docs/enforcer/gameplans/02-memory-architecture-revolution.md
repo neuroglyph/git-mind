@@ -1,3 +1,13 @@
+---
+title: Enforcer Notes
+description: Historical notes and enforcement-era artifacts.
+audience: [contributors]
+domain: [quality]
+tags: [enforcer]
+status: archive
+last_updated: 2025-09-15
+---
+
 # 🧠 Memory Architecture Revolution: Gameplan
 
 > _"Know where every byte lives and dies. Embrace arenas, pools, and lifetimes."_

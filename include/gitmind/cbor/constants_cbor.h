@@ -69,3 +69,4 @@
      (((x) << 24) & 0xFF000000))
 
 #endif /* GITMIND_CONSTANTS_CBOR_H */
+

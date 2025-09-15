@@ -1,3 +1,13 @@
+---
+title: Talk Shop
+description: Explorations and design discussions.
+audience: [contributors]
+domain: [project]
+tags: [discussion]
+status: archive
+last_updated: 2025-09-15
+---
+
 # Journal‑First CBOR Commits: Time‑Travel You Can Trust
 
 Most systems treat metadata as an afterthought; we made it the source of truth. In git‑mind, every semantic edge is an append‑only CBOR payload committed under a dedicated ref (`refs/gitmind/edges/<branch>`). That journal design buys us three things at once: immutability (no in‑place mutation, ever), auditability (every change has authorship, time, and diff), and actual time‑travel (check out an old commit and you get the semantics from that moment). It’s just Git, which means the transport, permission model, replication, and conflict semantics are already battle‑tested.
