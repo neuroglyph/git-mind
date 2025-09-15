@@ -10,6 +10,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Public output API */
 #include "gitmind/output.h"
 
@@ -50,6 +54,10 @@
 #endif
 #if defined(GITMIND_ENABLE_UTF8)
 #include "gitmind/utf8/validate.h"
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* GITMIND_H */

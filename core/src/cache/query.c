@@ -37,8 +37,8 @@ static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
     int chars = (bits + 3) / BITS_PER_HEX_CHAR; /* Round up to hex chars */
     for (int i = 0; i < chars; i++) {
         size_t off = (size_t)i * (size_t)HEX_CHARS_PER_BYTE;
-        (void)snprintf(prefix + off, (size_t)HEX_CHARS_PER_BYTE + 1, "%02x",
-                       sha[i]);
+        (void)gm_snprintf(prefix + off, (size_t)HEX_CHARS_PER_BYTE + 1, "%02x",
+                          sha[i]);
     }
     prefix[(size_t)chars * (size_t)HEX_CHARS_PER_BYTE] = '\0';
 }
