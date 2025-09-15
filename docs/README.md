@@ -5,6 +5,7 @@ Table of Contents
 - [Overview](#overview)
 - [Planned Structure](#planned-structure)
 - [Quick Map of Existing Docs](#quick-map-of-existing-docs)
+ - [Getting Started](#getting-started)
 
 ## Overview
 
@@ -58,3 +59,11 @@ This index organizes documentation with stable links so the project can be pause
   - [Legacy mapping](Legacy_Mapping.md)
 
 If you add a new doc, link it here under the right section.
+
+## Getting Started
+
+- Install/build: [install.md](install.md)
+- Tutorial: [tutorial.md](tutorial.md)
+- Philosophy: [philosophy.md](philosophy.md)
+- Technical overview: [TECHNICAL.md](TECHNICAL.md)
+- Roadmap: [roadmap.md](roadmap.md)

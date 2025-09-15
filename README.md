@@ -101,7 +101,7 @@ git mind impact src/api/user.h
 12 files transitively affected
 ```
 
-👉 For a hands-on walkthrough, see [the tutorial](https://claude.ai/chat/docs/tutorial.md).
+👉 For a hands-on walkthrough, see `docs/tutorial.md`.
 
 ---
 
@@ -166,11 +166,11 @@ $ git mind list --from src/cache.c --format json
 
 ## 📖 Documentation
 
-- **[Install git-mind](https://claude.ai/chat/docs/install.md)** — 30 seconds
-- **[Try the tutorial](https://claude.ai/chat/docs/tutorial.md)** — 5 minutes
-- **[Read the philosophy](https://claude.ai/chat/docs/philosophy.md)** — Why we built this
-- **[Technical details](https://claude.ai/chat/TECHNICAL.md)** — How it works under the hood
-- **[Contributing](https://claude.ai/chat/CONTRIBUTING.md)** — PRs welcome!
+- `docs/install.md` — Install/build locally
+- `docs/tutorial.md` — Hands‑on walkthrough
+- `docs/philosophy.md` — Why we built this
+- `docs/TECHNICAL.md` — How it works under the hood
+- `CONTRIBUTING.md` — PRs welcome!
 
 ---
 
@@ -187,9 +187,9 @@ Want to be featured? Open an issue and share your story.
 
 ## 📊 Status
 
-🚀 **Early release** — Core features work today, API may evolve  
-📅 **[Roadmap](https://claude.ai/chat/docs/roadmap.md)** — See what's coming  
-🤝 **[Contributing](https://claude.ai/chat/CONTRIBUTING.md)** — Join the development
+🚀 Early release — Core features work today, API may evolve  
+📅 Roadmap: `docs/roadmap.md`  
+🤝 Contributing: `CONTRIBUTING.md`
 
 ---
 
@@ -238,5 +238,5 @@ Because sometimes **art makes itself.**
 
 ---
 
-_git-mind is open source under [LicenseRef-MIND-UCAL-1.0](https://claude.ai/chat/LICENSE)_  
+_git-mind is open source under [LicenseRef-MIND-UCAL-1.0](LICENSE)_  
 _© J. Kirby Ross • [flyingrobots.dev](https://flyingrobots.dev/)_
