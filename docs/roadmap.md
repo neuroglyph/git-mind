@@ -1,3 +1,13 @@
+---
+title: Roadmap (Snapshot)
+description: Near, medium, and long-term direction for git-mind.
+audience: [all]
+domain: [project]
+tags: [roadmap, planning]
+status: draft
+last_updated: 2025-09-15
+---
+
 # Roadmap (Snapshot)
 
 Status: early stage; APIs and CLI may evolve. This snapshot summarizes active tracks. For detailed planning, see `docs/planning/`.
@@ -23,4 +33,3 @@ Status: early stage; APIs and CLI may evolve. This snapshot summarizes active tr
 - Ecosystem integrations (IDEs, docs systems)
 
 Contributions welcome—see `CONTRIBUTING.md`.
-

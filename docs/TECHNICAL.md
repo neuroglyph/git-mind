@@ -1,3 +1,13 @@
+---
+title: Technical Overview
+description: Orientation to git-mind’s architecture, code layout, and engineering practices.
+audience: [developers]
+domain: [architecture, project]
+tags: [architecture, journal, cache, oid, engineering]
+status: stable
+last_updated: 2025-09-15
+---
+
 # Technical Overview
 
 This page orients engineers to the core implementation and points to deeper docs.

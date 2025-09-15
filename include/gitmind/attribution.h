@@ -6,6 +6,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "gitmind/edge_attributed.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,22 +60,7 @@ typedef struct {
     uint32_t flags_excluded;      /* Must not have these flags */
 } gm_filter_t;
 
-/* Extended edge structure with attribution */
-typedef struct {
-    /* Original edge data */
-    uint8_t src_sha[20]; /* Source blob SHA */
-    uint8_t tgt_sha[20]; /* Target blob SHA */
-    uint16_t rel_type;   /* Relationship type */
-    uint16_t confidence; /* IEEE-754 half float */
-    uint64_t timestamp;  /* Unix millis */
-    char src_path[256];  /* Source path */
-    char tgt_path[256];  /* Target path */
-    char ulid[27];       /* Unique ID */
-
-    /* Attribution data */
-    gm_attribution_t attribution; /* Who created this */
-    gm_lane_type_t lane;          /* Which lane it belongs to */
-} gm_edge_attributed_t;
+/* Edge type is declared in gitmind/edge_attributed.h */
 
 /* Attribution functions */
 
@@ -156,31 +142,7 @@ int gm_filter_init_ai_insights(gm_filter_t *filter, float min_confidence);
 int gm_filter_match(const gm_filter_t *filter,
                     const gm_edge_attributed_t *edge);
 
-/* Extended edge functions */
-
-/**
- * Encode attributed edge to CBOR format.
- *
- * Includes all attribution metadata in CBOR.
- *
- * @param edge Edge to encode
- * @param buffer Output buffer
- * @param len In: buffer size, Out: bytes written
- * @return GM_OK on success
- */
-int gm_edge_attributed_encode_cbor(const gm_edge_attributed_t *edge,
-                                   uint8_t *buffer, size_t *len);
-
-/**
- * Decode attributed edge from CBOR format.
- *
- * @param buffer CBOR data
- * @param len Buffer length
- * @param edge Output edge
- * @return GM_OK on success
- */
-int gm_edge_attributed_decode_cbor(const uint8_t *buffer, size_t len,
-                                   gm_edge_attributed_t *edge);
+/* CBOR encode/decode for attributed edges live in gitmind/edge_attributed.h */
 
 #ifdef __cplusplus
 }

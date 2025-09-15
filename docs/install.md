@@ -1,3 +1,13 @@
+---
+title: Install git-mind
+description: How to build and install git-mind locally with CI-parity linting and safety notes.
+audience: [users, developers]
+domain: [project, operations]
+tags: [install, build, meson, ninja, docker]
+status: stable
+last_updated: 2025-09-15
+---
+
 # Install git-mind
 
 This project is early-stage. Prefer running in the provided Docker CI image or build from source locally. Homebrew/Winget packages are not published yet.
@@ -63,4 +73,3 @@ make clean  # cleans shim targets if used
 - Host build refused: set `GITMIND_ALLOW_HOST_BUILD=1` or use the Docker scripts.
 - Tidy mismatches: run `./tools/docker-clang-tidy.sh` to match CI image env.
 - Headers fail to compile: run `ninja -C build header-compile` and fix include hygiene.
-

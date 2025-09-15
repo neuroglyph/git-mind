@@ -1,3 +1,13 @@
+---
+title: Tutorial (5–10 minutes)
+description: A quick, practical walkthrough of the git-mind CLI using implemented commands.
+audience: [users, developers]
+domain: [cli]
+tags: [tutorial, quickstart]
+status: stable
+last_updated: 2025-09-15
+---
+
 # Tutorial (5–10 minutes)
 
 This walkthrough uses currently implemented commands. Some README examples are aspirational; see CLI docs under `docs/cli/` for what’s available today.
@@ -72,4 +82,3 @@ See `docs/operations/Environment_Variables.md`.
 - Journal and cache design: `docs/architecture/`
 - Planned features and roadmap: `docs/roadmap.md`
 - Contributing and development workflow: `CONTRIBUTING.md`
-
