@@ -55,60 +55,60 @@ typedef gm_result_ptr_t gm_result_t;
 #endif
 
 /* Success constructors */
-static inline GM_NODISCARD gm_result_void_t gm_ok_void(void) {
+GM_NODISCARD static inline gm_result_void_t gm_ok_void(void) {
     return (gm_result_void_t){.ok = true, .u.val = 0};
 }
 
-static inline GM_NODISCARD gm_result_ptr_t gm_ok_ptr(void *val) {
+GM_NODISCARD static inline gm_result_ptr_t gm_ok_ptr(void *val) {
     return (gm_result_ptr_t){.ok = true, .u.val = val};
 }
 
-static inline GM_NODISCARD gm_result_int_t gm_ok_int(int val) {
+GM_NODISCARD static inline gm_result_int_t gm_ok_int(int val) {
     return (gm_result_int_t){.ok = true, .u.val = val};
 }
 
-static inline GM_NODISCARD gm_result_bool_t gm_ok_bool(bool val) {
+GM_NODISCARD static inline gm_result_bool_t gm_ok_bool(bool val) {
     return (gm_result_bool_t){.ok = true, .u.val = val};
 }
 
-static inline GM_NODISCARD gm_result_size_t gm_ok_size(size_t val) {
+GM_NODISCARD static inline gm_result_size_t gm_ok_size(size_t val) {
     return (gm_result_size_t){.ok = true, .u.val = val};
 }
 
-static inline GM_NODISCARD gm_result_u32_t gm_ok_u32(uint32_t val) {
+GM_NODISCARD static inline gm_result_u32_t gm_ok_u32(uint32_t val) {
     return (gm_result_u32_t){.ok = true, .u.val = val};
 }
 
 /* Error constructors */
-static inline GM_NODISCARD gm_result_void_t gm_err_void(gm_error_t *err) {
+GM_NODISCARD static inline gm_result_void_t gm_err_void(gm_error_t *err) {
     return (gm_result_void_t){.ok = false, .u.err = err};
 }
 
-static inline GM_NODISCARD gm_result_ptr_t gm_err_ptr(gm_error_t *err) {
+GM_NODISCARD static inline gm_result_ptr_t gm_err_ptr(gm_error_t *err) {
     return (gm_result_ptr_t){.ok = false, .u.err = err};
 }
 
-static inline GM_NODISCARD gm_result_int_t gm_err_int(gm_error_t *err) {
+GM_NODISCARD static inline gm_result_int_t gm_err_int(gm_error_t *err) {
     return (gm_result_int_t){.ok = false, .u.err = err};
 }
 
-static inline GM_NODISCARD gm_result_bool_t gm_err_bool(gm_error_t *err) {
+GM_NODISCARD static inline gm_result_bool_t gm_err_bool(gm_error_t *err) {
     return (gm_result_bool_t){.ok = false, .u.err = err};
 }
 
-static inline GM_NODISCARD gm_result_size_t gm_err_size(gm_error_t *err) {
+GM_NODISCARD static inline gm_result_size_t gm_err_size(gm_error_t *err) {
     return (gm_result_size_t){.ok = false, .u.err = err};
 }
 
-static inline GM_NODISCARD gm_result_u32_t gm_err_u32(gm_error_t *err) {
+GM_NODISCARD static inline gm_result_u32_t gm_err_u32(gm_error_t *err) {
     return (gm_result_u32_t){.ok = false, .u.err = err};
 }
 
-static inline GM_NODISCARD gm_result_u64_t gm_ok_u64(uint64_t val) {
+GM_NODISCARD static inline gm_result_u64_t gm_ok_u64(uint64_t val) {
     return (gm_result_u64_t){.ok = true, .u.val = val};
 }
 
-static inline GM_NODISCARD gm_result_u64_t gm_err_u64(gm_error_t *err) {
+GM_NODISCARD static inline gm_result_u64_t gm_err_u64(gm_error_t *err) {
     return (gm_result_u64_t){.ok = false, .u.err = err};
 }
 

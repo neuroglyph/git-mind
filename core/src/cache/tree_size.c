@@ -11,6 +11,7 @@
 #include <git2/types.h>
 
 #include "gitmind/cache.h"
+#include "cache_internal.h"
 #include "gitmind/error.h"
 
 /* Calculate size of a Git tree recursively */

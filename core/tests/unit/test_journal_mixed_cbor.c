@@ -7,7 +7,10 @@
 #include <git2.h>
 
 #include "gitmind/journal.h"
+#include "gitmind/error.h"
 #include "gitmind/edge.h"
+#include "gitmind/types/ulid.h"
+#include "gitmind/error.h"
 #include "gitmind/edge_attributed.h"
 #include "gitmind/types.h"
 
@@ -33,8 +36,8 @@ int main(void) {
 
     /* Ensure empty tree object exists */
     git_treebuilder *tb = NULL; git_oid empty_tree_oid;
-    rc = git_treebuilder_new(&tb, NULL); assert(rc == 0);
-    rc = git_treebuilder_write(&empty_tree_oid, repo, tb); git_treebuilder_free(tb);
+    rc = git_treebuilder_new(&tb, repo, NULL); assert(rc == 0);
+    rc = git_treebuilder_write(&empty_tree_oid, tb); git_treebuilder_free(tb);
     assert(rc == 0);
 
     /* Set user config for signature default */
@@ -82,4 +85,3 @@ int main(void) {
     printf("OK\n");
     return 0;
 }
-

@@ -6,7 +6,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "gitmind/edge_attributed.h"
+/* Forward declaration to avoid header cycles */
+typedef struct gm_edge_attributed gm_edge_attributed_t;
 
 #ifdef __cplusplus
 extern "C" {

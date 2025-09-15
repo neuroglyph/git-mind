@@ -7,6 +7,8 @@
 #include <git2.h>
 
 #include "gitmind/cache.h"
+#include "gitmind/types/ulid.h"
+#include "gitmind/error.h"
 #include "gitmind/journal.h"
 #include "gitmind/edge.h"
 #include "gitmind/types.h"
@@ -70,4 +72,3 @@ int main(void) {
     printf("OK\n");
     return 0;
 }
-

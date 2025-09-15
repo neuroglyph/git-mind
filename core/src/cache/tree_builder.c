@@ -18,6 +18,8 @@
 #include <unistd.h>
 
 #include "gitmind/cache.h"
+#include "cache_internal.h"
+#include "gitmind/error.h"
 #include "gitmind/constants.h"
 #include "gitmind/context.h"
 #include "gitmind/error.h"
@@ -96,12 +98,12 @@ static int process_fs_entry(git_repository *repo, git_treebuilder *dir_builder,
         }
         rc =
             add_directory_to_tree(repo, dir_builder, full_path, entry_rel_path);
-        return (rc == GM_NOT_FOUND) ? GM_OK : rc;
+        return (rc == GM_ERR_NOT_FOUND) ? GM_OK : rc;
     }
 
     if (S_ISREG(st.st_mode)) {
         rc = add_file_to_tree(repo, dir_builder, full_path, entry_name);
-        return (rc == GM_NOT_FOUND) ? GM_OK : rc;
+        return (rc == GM_ERR_NOT_FOUND) ? GM_OK : rc;
     }
 
     /* Skip other file types (symlinks, devices, etc.) */
@@ -146,7 +148,7 @@ static int add_directory_to_tree(git_repository *repo,
 
     dir = opendir(dir_path);
     if (!dir) {
-        return GM_IO_ERROR;
+        return GM_ERR_IO_FAILED;
     }
 
     /* Create tree builder for this directory */
@@ -220,7 +222,7 @@ static int process_directory_entry(git_repository *repo,
             rc = git_treebuilder_insert(NULL, parent_builder, entry_name,
                                         &subtree_oid, GIT_FILEMODE_TREE);
         }
-    } else if (rc == GM_NOT_FOUND) {
+    } else if (rc == GM_ERR_NOT_FOUND) {
         rc = GM_OK; /* Directory disappeared - not fatal */
     }
 
@@ -233,7 +235,7 @@ static int build_directory_tree(git_repository *repo, git_treebuilder *builder,
                                 const char *dir_path) {
     DIR *dir = opendir(dir_path);
     if (!dir) {
-        return GM_IO_ERROR;
+        return GM_ERR_IO_FAILED;
     }
 
     struct dirent *entry;

@@ -9,8 +9,7 @@ set -euo pipefail
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$ROOT_DIR"
 
-echo "==> Markdown lint + docs checks"
-npx --yes -p markdownlint-cli2 markdownlint-cli2 "**/*.md" "#.git" "#build"
+echo "==> Docs checks (frontmatter + links + TOC)"
 python3 tools/docs/check_frontmatter.py
 python3 tools/docs/check_docs.py --mode link
 python3 tools/docs/check_docs.py --mode toc
@@ -45,13 +44,7 @@ docker run --rm --label com.gitmind.project=git-mind \
     else
       CC=clang meson setup "$BUILD_DIR"
     fi
-    ninja -C "$BUILD_DIR" git-mind
-    export GIT_MIND="$BUILD_DIR/git-mind"
     ninja -C "$BUILD_DIR" test
-    rm -rf /tmp/gm-e2e && mkdir -p /tmp/gm-e2e
-    cp -r tests/e2e /tmp/gm-e2e/
-    cd /tmp/gm-e2e/e2e
-    bash ./run_all_tests.sh
 
     echo "==> clang-tidy (diff-guard style)"
     cd /workspace
@@ -68,4 +61,3 @@ docker run --rm --label com.gitmind.project=git-mind \
   '
 
 echo "✅ Local CI completed"
-

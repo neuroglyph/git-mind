@@ -31,6 +31,12 @@ repos:
       entry: python3 tools/docs/check_frontmatter.py
       language: python
       files: ^docs/.*\.md$
+    - id: one-thing
+      name: policy: one-thing (1 file = 1 thing)
+      entry: python3 tools/quality/check_one_thing.py
+      language: python
+      pass_filenames: false
+      files: ^(include/|core/include/|core/src/).*(\.(c|h))$
     - id: enforce-public-includes
       name: enforce public includes (no core/src)
       entry: bash tools/enforce-public-includes.sh

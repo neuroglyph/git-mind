@@ -4,6 +4,7 @@
 #ifndef GITMIND_JOURNAL_H
 #define GITMIND_JOURNAL_H
 
+#include "gitmind/result.h"
 #include "gitmind/edge.h"
 #include "gitmind/edge_attributed.h"
 #include "gitmind/context.h"
@@ -45,7 +46,7 @@ typedef int (*gm_journal_read_attributed_callback_t)(const gm_edge_attributed_t 
  * @param userdata User data passed to callback
  * @return 0 on success, error code on failure
  */
-int gm_journal_read(gm_context_t *ctx, const char *branch,
+GM_NODISCARD int gm_journal_read(gm_context_t *ctx, const char *branch,
                     gm_journal_read_callback_t callback, void *userdata);
 
 /**
@@ -57,7 +58,7 @@ int gm_journal_read(gm_context_t *ctx, const char *branch,
  * @param userdata User data passed to callback
  * @return 0 on success, error code on failure
  */
-int gm_journal_read_attributed(gm_context_t *ctx, const char *branch,
+GM_NODISCARD int gm_journal_read_attributed(gm_context_t *ctx, const char *branch,
                               gm_journal_read_attributed_callback_t callback, void *userdata);
 
 /**
@@ -68,7 +69,7 @@ int gm_journal_read_attributed(gm_context_t *ctx, const char *branch,
  * @param count Number of edges
  * @return 0 on success, error code on failure
  */
-int gm_journal_append(gm_context_t *ctx, const gm_edge_t *edges, size_t count);
+GM_NODISCARD int gm_journal_append(gm_context_t *ctx, const gm_edge_t *edges, size_t count);
 
 /**
  * Append attributed edges to journal
@@ -78,7 +79,7 @@ int gm_journal_append(gm_context_t *ctx, const gm_edge_t *edges, size_t count);
  * @param count Number of edges
  * @return 0 on success, error code on failure
  */
-int gm_journal_append_attributed(gm_context_t *ctx, const gm_edge_attributed_t *edges, size_t count);
+GM_NODISCARD int gm_journal_append_attributed(gm_context_t *ctx, const gm_edge_attributed_t *edges, size_t count);
 
 /**
  * Create a Git commit with journal data
@@ -89,7 +90,7 @@ int gm_journal_append_attributed(gm_context_t *ctx, const gm_edge_attributed_t *
  * @param len Length of data
  * @return 0 on success, error code on failure
  */
-int gm_journal_create_commit(gm_context_t *ctx, const char *ref, const void *data, size_t len);
+GM_NODISCARD int gm_journal_create_commit(gm_context_t *ctx, const char *ref, const void *data, size_t len);
 
 #ifdef __cplusplus
 }

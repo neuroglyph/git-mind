@@ -27,13 +27,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gitmind/security/memory.h"
-#include "gitmind/security/string.h"
+#include <stdlib.h>
 #include "gitmind/util/memory.h"
 
 /* Constants */
 #define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
-#define REF_NAME_BUFFER_SIZE GM_PATH_MAX
 #define CURRENT_BRANCH_BUFFER_SIZE GM_PATH_MAX
+
+/* Debug flag for CBOR decoding (set GITMIND_CBOR_DEBUG=1) */
+static int g_cbor_debug = -1;
+static inline int cbor_debug_enabled(void) {
+    if (g_cbor_debug == -1) {
+        const char *v = getenv("GITMIND_CBOR_DEBUG");
+        g_cbor_debug = (v && (v[0] == '1' || v[0] == 't' || v[0] == 'T' || v[0] == 'y' || v[0] == 'Y')) ? 1 : 0;
+    }
+    return g_cbor_debug;
+}
 
 /* Forward declarations */
 int gm_edge_decode_cbor_ex(const uint8_t *buffer, size_t len, gm_edge_t *edge,
@@ -97,7 +106,7 @@ static void convert_legacy_to_attributed(const gm_edge_t *legacy,
     attributed->attribution.author[0] = '\0';
     attributed->attribution.session_id[0] = '\0';
     attributed->attribution.flags = 0;
-    attributed->lane = GM_LANE_PRIMARY;
+    attributed->lane = GM_LANE_DEFAULT;
 }
 
 /* (Removed local attributed CBOR decoder; use public edge API) */
@@ -106,7 +115,7 @@ static void convert_legacy_to_attributed(const gm_edge_t *legacy,
 static int process_attributed_edge(const uint8_t *cbor_data, size_t remaining,
                                    reader_ctx_t *rctx, size_t *consumed) {
     gm_edge_attributed_t edge;
-    gm_memset_safe(&edge, 0, sizeof(edge));
+    gm_memset_safe(&edge, sizeof(edge), 0, sizeof(edge));
 
     /* Try to decode an attributed edge */
     int decode_result = gm_edge_attributed_decode_cbor_ex(cbor_data, remaining,
@@ -119,6 +128,9 @@ static int process_attributed_edge(const uint8_t *cbor_data, size_t remaining,
         decode_result = gm_edge_decode_cbor_ex(cbor_data, remaining,
                                                &legacy_edge, &legacy_consumed);
         if (decode_result != GM_OK || legacy_consumed == 0) {
+            if (cbor_debug_enabled()) {
+                fprintf(stderr, "[CBOR DEBUG] Attributed decode failed at offset=%zu remaining=%zu\n", (size_t)0, remaining);
+            }
             return GM_ERR_INVALID_FORMAT;
         }
 
@@ -148,6 +160,9 @@ static int process_regular_edge(const uint8_t *cbor_data, size_t remaining,
     size_t aconsumed = 0;
     decode_result = gm_edge_attributed_decode_cbor_ex(cbor_data, remaining, &aedge, &aconsumed);
     if (decode_result != GM_OK || aconsumed == 0) {
+        if (cbor_debug_enabled()) {
+            fprintf(stderr, "[CBOR DEBUG] Regular decode failed; attributed decode also failed at offset=%zu remaining=%zu\n", (size_t)0, remaining);
+        }
         return GM_ERR_INVALID_FORMAT;
     }
 
@@ -208,6 +223,9 @@ static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
         }
 
         if (cb_result == GM_ERR_INVALID_FORMAT) {
+            if (cbor_debug_enabled()) {
+                fprintf(stderr, "[CBOR DEBUG] Invalid CBOR at commit decode offset=%zu remaining=%zu\n", offset, remaining);
+            }
             break; /* No more edges to decode */
         }
 
@@ -215,6 +233,9 @@ static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
             return cb_result; /* Callback requested stop */
         }
 
+        if (cbor_debug_enabled()) {
+            fprintf(stderr, "[CBOR DEBUG] Decoded an edge (consumed=%zu) at offset=%zu\n", consumed, offset);
+        }
         offset += consumed;
     }
 

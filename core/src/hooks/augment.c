@@ -34,21 +34,21 @@ int gm_hook_get_blob_sha(git_repository *repo, const char *commit_ref,
     /* Resolve commit reference */
     error = git_revparse_single(&obj, repo, commit_ref);
     if (error < 0) {
-        return GM_NOT_FOUND;
+        return GM_ERR_NOT_FOUND;
     }
 
     /* Get commit from object */
     error = git_commit_lookup(&commit, repo, git_object_id(obj));
     git_object_free(obj);
     if (error < 0) {
-        return GM_NOT_FOUND;
+        return GM_ERR_NOT_FOUND;
     }
 
     /* Get tree from commit */
     error = git_commit_tree(&tree, commit);
     git_commit_free(commit);
     if (error < 0) {
-        return GM_NOT_FOUND;
+        return GM_ERR_NOT_FOUND;
     }
 
     /* Look up file in tree */
@@ -61,7 +61,7 @@ int gm_hook_get_blob_sha(git_repository *repo, const char *commit_ref,
     /* Ensure it's a blob (not directory/submodule) */
     if (git_tree_entry_type(entry) != GIT_OBJECT_BLOB) {
         git_tree_entry_free(entry);
-        return GM_NOT_FOUND;
+        return GM_ERR_NOT_FOUND;
     }
 
     /* Copy OID */
@@ -99,7 +99,7 @@ static int edge_search_callback(const gm_edge_t *edge, void *userdata) {
             gm_edge_t *new_edges =
                 realloc(ctx->edges, new_capacity * sizeof(gm_edge_t));
             if (!new_edges) {
-                return GM_NO_MEMORY;
+                return GM_ERR_OUT_OF_MEMORY;
             }
             ctx->edges = new_edges;
             ctx->capacity = new_capacity;
@@ -123,7 +123,7 @@ int gm_hook_find_edges_by_source(gm_context_t *ctx, const gm_oid_t *src_oid,
         .scanned = 0};
 
     if (!search_ctx.edges) {
-        return GM_NO_MEMORY;
+        return GM_ERR_OUT_OF_MEMORY;
     }
 
     /* Walk journal looking for edges */

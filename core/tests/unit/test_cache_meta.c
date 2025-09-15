@@ -8,6 +8,7 @@
 
 #include "gitmind/cache.h"
 #include "gitmind/context.h"
+#include "gitmind/error.h"
 
 static void make_temp_ref(git_repository *repo, const char *refname) {
     git_treebuilder *tb = NULL;
@@ -15,9 +16,9 @@ static void make_temp_ref(git_repository *repo, const char *refname) {
     git_signature *sig = NULL;
     int rc;
 
-    rc = git_treebuilder_new(&tb, NULL);
+    rc = git_treebuilder_new(&tb, repo, NULL);
     assert(rc == 0);
-    rc = git_treebuilder_write(&tree_oid, repo, tb);
+    rc = git_treebuilder_write(&tree_oid, tb);
     git_treebuilder_free(tb);
     assert(rc == 0);
 
@@ -62,4 +63,3 @@ int main(void) {
     printf("OK\n");
     return 0;
 }
-

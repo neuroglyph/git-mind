@@ -42,6 +42,12 @@ This page lists environment variables that influence git‑mind builds, tests, a
   - Values: `off`, `0`, or `false` to disable the guard.
   - Notes: The guard uses libgit2 to inspect Git remotes and blocks only if a remote URL strictly matches the official repo path (`neuroglyph/git-mind[.git]`).
 
+- `GITMIND_CBOR_DEBUG`
+  - Purpose: Enable verbose CBOR decode tracing in the journal reader.
+  - Used by: `core/src/journal/reader.c`.
+  - Values: `1`, `true`, or `yes` (case-insensitive) to enable; anything else disables.
+  - Notes: Prints offsets and decode attempts to `stderr`; use only for debugging.
+
 - `GIT_MIND_SOURCE`
   - Purpose: Set attribution source for edges (e.g., `human`, `claude`, `gpt`, `system`, `import`).
   - Used by: Core attribution (`gm_attribution_from_env`).

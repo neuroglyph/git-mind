@@ -66,3 +66,14 @@ Header guards lint: `meson run -C build lint_header_guards`
 - Zero new warnings: new/modified code should compile clean under clang‑tidy.
 
 See also: `docs/architecture/MIGRATION_PHILOSOPHY.md`.
+
+## Recent Changes (2025‑09‑15)
+
+- OID‑first cache metadata: added binary `journal_tip_oid_bin`; hex string retained for porcelain only.
+- Ref building standardized via `gm_build_ref` with branch validation; all refs use `GITMIND_EDGES_REF_PREFIX`.
+- Unsafe libc calls replaced in core with safe wrappers (`gm_memset_safe`, `gm_memcpy_span`, `gm_strcpy_safe`, `gm_snprintf`).
+- OID formatting/prefixing now uses libgit2 (`git_oid_fmt`, `git_oid_tostr`).
+- Hashing: improved internal OID hash mixing for more resilient distribution.
+- Result constructors annotated `[[nodiscard]]`; more API annotations added in cache/journal/CBOR headers.
+- New tests: ref utils, OID fallback equality, cache shard distribution.
+- CBOR debug flag: `GITMIND_CBOR_DEBUG=1` enables decode tracing in the journal reader.

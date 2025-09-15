@@ -52,7 +52,7 @@ int gm_bitmap_serialize(const gm_bitmap_t *bitmap, uint8_t **buffer,
     /* Allocate buffer */
     *buffer = malloc(total_size);
     if (!*buffer) {
-        return GM_NO_MEMORY;
+        return GM_ERR_OUT_OF_MEMORY;
     }
 
     /* Write header - buffer is malloc'd so alignment is guaranteed */
@@ -122,20 +122,20 @@ int gm_bitmap_write_file(const gm_bitmap_t *bitmap, const char *path) {
     FILE *file = fopen(path, "wb");
     if (!file) {
         free(buffer);
-        return GM_IO_ERROR;
+        return GM_ERR_IO_FAILED;
     }
 
     size_t written = fwrite(buffer, 1, size, file);
     int save_errno = errno;
     if (fclose(file) != 0) {
         free(buffer);
-        return GM_IO_ERROR;
+        return GM_ERR_IO_FAILED;
     }
     free(buffer);
 
     if (written != size) {
         errno = save_errno;
-        return GM_IO_ERROR;
+        return GM_ERR_IO_FAILED;
     }
 
     return GM_OK;
@@ -144,22 +144,22 @@ int gm_bitmap_write_file(const gm_bitmap_t *bitmap, const char *path) {
 int gm_bitmap_read_file(const char *path, gm_bitmap_ptr *bitmap) {
     FILE *file = fopen(path, "rb");
     if (!file) {
-        return GM_NOT_FOUND;
+        return GM_ERR_NOT_FOUND;
     }
 
     /* Get file size */
     if (fseek(file, 0, SEEK_END) != 0) {
         fclose(file);
-        return GM_IO_ERROR;
+        return GM_ERR_IO_FAILED;
     }
     long file_size = ftell(file);
     if (file_size < 0) {
         fclose(file);
-        return GM_IO_ERROR;
+        return GM_ERR_IO_FAILED;
     }
     if (fseek(file, 0, SEEK_SET) != 0) {
         fclose(file);
-        return GM_IO_ERROR;
+        return GM_ERR_IO_FAILED;
     }
 
     if (file_size < 0 || file_size > INT32_MAX) {
@@ -173,18 +173,18 @@ int gm_bitmap_read_file(const char *path, gm_bitmap_ptr *bitmap) {
     uint8_t *buffer = malloc(buffer_size);
     if (!buffer) {
         fclose(file);
-        return GM_NO_MEMORY;
+        return GM_ERR_OUT_OF_MEMORY;
     }
 
     size_t read = fread(buffer, 1, buffer_size, file);
     if (fclose(file) != 0) {
         free(buffer);
-        return GM_IO_ERROR;
+        return GM_ERR_IO_FAILED;
     }
 
     if (read != buffer_size) {
         free(buffer);
-        return GM_IO_ERROR;
+        return GM_ERR_IO_FAILED;
     }
 
     /* Deserialize */

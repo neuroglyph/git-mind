@@ -229,7 +229,7 @@ int main(int argc, char **argv) {
     /* Process files if not too many */
     if (file_count <= MAX_CHANGED_FILES) {
         /* Initialize context */
-        gm_memset_safe(&ctx, 0, sizeof(ctx));
+        gm_memset_safe(&ctx, sizeof(ctx), 0, sizeof(ctx));
         ctx.git_ops.resolve_blob = resolve_blob;
         ctx.git_ops.create_commit = create_commit;
         ctx.git_ops.read_commits = read_commits;

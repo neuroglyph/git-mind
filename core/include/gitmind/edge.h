@@ -103,6 +103,9 @@ gm_result_void_t gm_edge_encode_cbor(const gm_edge_t *edge, uint8_t *buffer,
  */
 gm_result_edge_t gm_edge_decode_cbor(const uint8_t *buffer, size_t len);
 
+/* Internal extension: decode and report bytes consumed */
+int gm_edge_decode_cbor_ex(const uint8_t *buffer, size_t len, gm_edge_t *edge, size_t *consumed);
+
 #ifdef __cplusplus
 }
 #endif

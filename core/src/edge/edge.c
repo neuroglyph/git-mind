@@ -45,7 +45,7 @@ static uint64_t get_timestamp_millis(gm_context_t *ctx) {
  * Initialize edge with default values
  */
 static void edge_init_defaults(gm_edge_t *edge) {
-    (void)gm_memset_safe(edge, 0, sizeof(gm_edge_t));
+    (void)gm_memset_safe(edge, sizeof(gm_edge_t), 0, sizeof(gm_edge_t));
     edge->confidence = DefaultConfidence;
 }
 
@@ -133,21 +133,30 @@ bool gm_edge_equal(const gm_edge_t *edge_a, const gm_edge_t *edge_b) {
     }
 
     /* Source: require OID equality when both OIDs are set; otherwise fallback to legacy SHA */
-    if (!git_oid_iszero(&edge_a->src_oid) && !git_oid_iszero(&edge_b->src_oid)) {
+    if (!git_oid_is_zero(&edge_a->src_oid) && !git_oid_is_zero(&edge_b->src_oid)) {
         if (git_oid_cmp(&edge_a->src_oid, &edge_b->src_oid) != 0) {
+            /* Fallback to legacy SHA match when OIDs differ */
+            if (memcmp(edge_a->src_sha, edge_b->src_sha, GM_SHA1_SIZE) != 0) {
+                return false;
+            }
+        }
+    } else {
+        if (memcmp(edge_a->src_sha, edge_b->src_sha, GM_SHA1_SIZE) != 0) {
             return false;
         }
-    } else if (memcmp(edge_a->src_sha, edge_b->src_sha, GM_SHA1_SIZE) != 0) {
-        return false;
     }
 
     /* Target: same rule as Source */
-    if (!git_oid_iszero(&edge_a->tgt_oid) && !git_oid_iszero(&edge_b->tgt_oid)) {
+    if (!git_oid_is_zero(&edge_a->tgt_oid) && !git_oid_is_zero(&edge_b->tgt_oid)) {
         if (git_oid_cmp(&edge_a->tgt_oid, &edge_b->tgt_oid) != 0) {
+            if (memcmp(edge_a->tgt_sha, edge_b->tgt_sha, GM_SHA1_SIZE) != 0) {
+                return false;
+            }
+        }
+    } else {
+        if (memcmp(edge_a->tgt_sha, edge_b->tgt_sha, GM_SHA1_SIZE) != 0) {
             return false;
         }
-    } else if (memcmp(edge_a->tgt_sha, edge_b->tgt_sha, GM_SHA1_SIZE) != 0) {
-        return false;
     }
 
     /* Relationship type must match */
@@ -330,8 +339,8 @@ gm_result_void_t gm_edge_encode_cbor(const gm_edge_t *edge, uint8_t *buffer,
         return result;
     }
     /* Write preferred OID fields using raw bytes */
-    const uint8_t *src_raw = git_oid_raw(&edge->src_oid);
-    const uint8_t *tgt_raw = git_oid_raw(&edge->tgt_oid);
+    const uint8_t *src_raw = (const uint8_t *)edge->src_oid.id;
+    const uint8_t *tgt_raw = (const uint8_t *)edge->tgt_oid.id;
     if (src_raw == NULL) src_raw = edge->src_sha; /* fallback */
     if (tgt_raw == NULL) tgt_raw = edge->tgt_sha; /* fallback */
     result = write_cbor_bytes(GM_CBOR_KEY_SRC_OID, buffer, available, &offset, src_raw, GM_OID_RAWSZ);
@@ -420,6 +429,20 @@ static gm_result_void_t decode_cbor_field(const uint8_t *buffer, size_t *offset,
     case GM_CBOR_KEY_ULID: {
         return decode_cbor_text(buffer, offset, len, edge->ulid, GM_ULID_SIZE + 1);
     }
+    case GM_CBOR_KEY_SRC_OID: {
+        uint8_t raw[GM_OID_RAWSZ];
+        gm_result_void_t r = gm_cbor_read_bytes(buffer, offset, len, raw, GM_OID_RAWSZ);
+        if (!r.ok) return r;
+        git_oid_fromraw(&edge->src_oid, raw);
+        return gm_ok_void();
+    }
+    case GM_CBOR_KEY_TGT_OID: {
+        uint8_t raw[GM_OID_RAWSZ];
+        gm_result_void_t r = gm_cbor_read_bytes(buffer, offset, len, raw, GM_OID_RAWSZ);
+        if (!r.ok) return r;
+        git_oid_fromraw(&edge->tgt_oid, raw);
+        return gm_ok_void();
+    }
     default:
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_FORMAT, "Unknown CBOR key"));
     }
@@ -456,10 +479,10 @@ static int gm_edge_decode_cbor_ex_impl(const uint8_t *buffer, size_t len, gm_edg
     }
 
     /* Backfill OIDs from legacy SHA if missing */
-    if (git_oid_iszero(&edge.src_oid)) {
+    if (git_oid_is_zero(&edge.src_oid)) {
         git_oid_fromraw(&edge.src_oid, edge.src_sha);
     }
-    if (git_oid_iszero(&edge.tgt_oid)) {
+    if (git_oid_is_zero(&edge.tgt_oid)) {
         git_oid_fromraw(&edge.tgt_oid, edge.tgt_sha);
     }
 

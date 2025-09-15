@@ -9,7 +9,7 @@
 #include "gitmind/result.h"
 #include "gitmind/edge.h"
 #include "gitmind/edge_attributed.h"
-#include "gitmind/security/string.h"
+#include "gitmind/security/memory.h"
 
 #include <git2/repository.h>
 #include <git2/oid.h>
@@ -27,12 +27,9 @@
 #include "gitmind/constants_internal.h"
 #include "gitmind/util/ref.h"
 #define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
-#define REF_NAME_BUFFER_SIZE GM_PATH_MAX
 #define COMMIT_ENCODING "UTF-8"
 #define CBOR_OVERFLOW_MARGIN GM_FORMAT_BUFFER_SIZE /* CBOR encoding safety margin */
 #define PARENT_COMMITS_MAX 1
-#define EMPTY_TREE_SHA "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
-#define BRANCH_BUFFER_SIZE GM_PATH_MAX
 
 /* Journal writer context */
 typedef struct {
@@ -175,7 +172,7 @@ static int journal_append_generic(gm_context_t *ctx, const void *edges,
                                   size_t n_edges, size_t edge_size,
                                   edge_encoder_fn encoder) {
     journal_ctx_t jctx;
-    char branch[BRANCH_BUFFER_SIZE];
+    char branch[GM_PATH_MAX];
     uint8_t *cbor_buffer = NULL;
     size_t offset = 0;
     git_oid commit_oid;

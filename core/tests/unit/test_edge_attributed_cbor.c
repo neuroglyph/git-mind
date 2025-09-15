@@ -105,8 +105,8 @@ static void test_legacy_backfill(void) {
     gm_result_edge_attributed_t dec = gm_edge_attributed_decode_cbor(buf, off);
     assert(dec.ok);
     gm_edge_attributed_t d = dec.u.val;
-    assert(!git_oid_iszero(&d.src_oid)); /* backfilled from SHA */
-    assert(!git_oid_iszero(&d.tgt_oid));
+    assert(!git_oid_is_zero(&d.src_oid)); /* backfilled from SHA */
+    assert(!git_oid_is_zero(&d.tgt_oid));
     printf("OK\n");
 }
 

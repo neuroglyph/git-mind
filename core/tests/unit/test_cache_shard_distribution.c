@@ -30,7 +30,7 @@ int main(void) {
     for (int i = 0; i < N; i++) {
         gm_oid_t oid = {0};
         random_oid(&oid);
-        const uint8_t *raw = git_oid_raw(&oid);
+        const uint8_t *raw = (const uint8_t *)oid.id;
         buckets[raw[0]]++;
     }
 

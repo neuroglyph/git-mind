@@ -23,15 +23,6 @@ extern "C" {
  * author information, source type (human/AI), and confidence scores.
  */
 
-/**
- * Lane types for edge organization
- */
-typedef enum {
-    GM_LANE_PRIMARY = 0,    /**< Primary knowledge lane */
-    GM_LANE_EXPLORATION = 1,/**< Exploratory connections */
-    GM_LANE_REVIEW = 2,     /**< Under review */
-    GM_LANE_ARCHIVED = 3    /**< Archived/deprecated */
-} gm_lane_type_t;
 
 /**
  * Attributed edge structure with full metadata

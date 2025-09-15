@@ -170,8 +170,8 @@ gm_result_void_t gm_edge_attributed_encode_cbor(const gm_edge_attributed_t *e,
     if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
 
     /* OIDs */
-    const uint8_t *src_raw = git_oid_raw(&e->src_oid);
-    const uint8_t *tgt_raw = git_oid_raw(&e->tgt_oid);
+    const uint8_t *src_raw = (const uint8_t *)e->src_oid.id;
+    const uint8_t *tgt_raw = (const uint8_t *)e->tgt_oid.id;
     r = gm_cbor_write_uint(GM_CBOR_KEY_SRC_OID, buffer + offset, avail - offset);
     if (!r.ok) return gm_err_void(r.u.err); offset += r.u.val;
     r = gm_cbor_write_bytes(buffer + offset, avail - offset, src_raw ? src_raw : e->src_sha, GM_OID_RAWSZ);
@@ -280,8 +280,8 @@ static int decode_attr_ex_impl(const uint8_t *buffer, size_t len,
         }
     }
 
-    if (git_oid_iszero(&out.src_oid)) git_oid_fromraw(&out.src_oid, out.src_sha);
-    if (git_oid_iszero(&out.tgt_oid)) git_oid_fromraw(&out.tgt_oid, out.tgt_sha);
+    if (git_oid_is_zero(&out.src_oid)) git_oid_fromraw(&out.src_oid, out.src_sha);
+    if (git_oid_is_zero(&out.tgt_oid)) git_oid_fromraw(&out.tgt_oid, out.tgt_sha);
 
     *e = out; *consumed = offset; return GM_OK;
 }
