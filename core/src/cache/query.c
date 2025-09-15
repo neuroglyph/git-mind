@@ -22,6 +22,7 @@
 #include "gitmind/error.h"
 #include "gitmind/journal.h"
 #include "gitmind/security/memory.h"
+#include "gitmind/security/string.h"
 
 /* Constants */
 #define CACHE_MAX_AGE_SECONDS 3600 /* 1 hour */
@@ -90,7 +91,12 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
     int rc;
 
     /* Build cache ref name and resolve */
-    (void)snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
+    {
+        int rn = gm_snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
+        if (rn < 0 || (size_t)rn >= sizeof(ref_name)) {
+            return GM_ERR_BUFFER_TOO_SMALL;
+        }
+    }
     rc = git_reference_lookup(&ref, repo, ref_name);
     git_oid oid;
     if (rc == 0) {
@@ -159,8 +165,13 @@ bool gm_cache_is_stale(gm_context_t *ctx, const char *branch) {
     /* Check if journal has new commits since cache was built */
     git_reference *journal_ref = NULL;
     char journal_ref_name[REF_NAME_BUFFER_SIZE];
-    (void)snprintf(journal_ref_name, sizeof(journal_ref_name),
-             "refs/gitmind/edges/%s", branch);
+    {
+        int rn = gm_snprintf(journal_ref_name, sizeof(journal_ref_name),
+                              "refs/gitmind/edges/%s", branch);
+        if (rn < 0 || (size_t)rn >= sizeof(journal_ref_name)) {
+            return true; /* treat as stale if we can't build ref safely */
+        }
+    }
 
     if (git_reference_lookup(&journal_ref, repo, journal_ref_name) == 0) {
         const git_oid *current_tip = git_reference_target(journal_ref);
@@ -204,7 +215,12 @@ static int load_bitmap_from_cache(git_repository *repo, git_tree *tree,
     sha_hex[(size_t)GM_OID_RAWSZ * (size_t)HEX_CHARS_PER_BYTE] = '\0';
 
     /* Build path: prefix/sha.suffix */
-    (void)snprintf(path, sizeof(path), "%s/%s.%s", prefix, sha_hex, suffix);
+    {
+        int rn = gm_snprintf(path, sizeof(path), "%s/%s.%s", prefix, sha_hex, suffix);
+        if (rn < 0 || (size_t)rn >= sizeof(path)) {
+            return GM_ERR_BUFFER_TOO_SMALL;
+        }
+    }
 
     /* Look up tree entry */
     rc = git_tree_entry_bypath(&entry, tree, path);
@@ -290,7 +306,12 @@ static int try_cache_query(git_repository *repo, const char *branch,
     }
 
     /* Get cache commit */
-    (void)snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
+    {
+        int rn = gm_snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
+        if (rn < 0 || (size_t)rn >= sizeof(ref_name)) {
+            return GM_ERR_BUFFER_TOO_SMALL;
+        }
+    }
     rc = git_reference_name_to_id(&cache_oid, repo, ref_name);
     if (rc < 0) {
         return GM_NOT_FOUND;
@@ -434,8 +455,13 @@ int gm_cache_stats(gm_context_t *ctx, const char *branch,
     if (cache_size_bytes) {
         /* Calculate actual cache size from tree */
         char ref_name[REF_NAME_BUFFER_SIZE];
-        snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX,
-                 branch);
+        {
+            int rn = gm_snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
+            if (rn < 0 || (size_t)rn >= sizeof(ref_name)) {
+                /* fall back to estimate below */
+                rc = -1;
+            }
+        }
 
         git_oid cache_oid;
         rc = git_reference_name_to_id(&cache_oid, repo, ref_name);
