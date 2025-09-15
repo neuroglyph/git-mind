@@ -22,13 +22,13 @@ reviews:
   # Keep pre-merge checks non-blocking
   pre_merge_checks:
     docstrings:
-      mode: off
+      mode: "off"
     title:
-      mode: warning
+      mode: "warning"
     description:
-      mode: warning
+      mode: "warning"
     issue_assessment:
-      mode: warning
+      mode: "warning"
 # CodeRabbit configuration
 # Goal: reduce noisy line comments on docs/legacy; prefer summaries
 version: 1
