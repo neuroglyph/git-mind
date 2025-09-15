@@ -82,24 +82,23 @@ Merging 47 new semantic edges...
 
 ## 🚀 Quick Start
 
-```bash
-# Install
-brew install git-mind           # macOS/Linux
-winget install git-mind          # Windows
+Install/build instructions: see `docs/install.md`.
 
+CLI examples (subset implemented today):
+
+```bash
 # Start linking
 git mind link README.md src/main.c --type documents
 git mind link src/auth.c tests/auth.test.js --type "tested-by"
 
 # Explore connections
 git mind list --from src/auth.c
-git mind query "what depends on auth.c"
 
-# What breaks if I change this?
-git mind impact src/api/user.h
-7 files directly affected
-12 files transitively affected
+# Rebuild cache when needed
+git mind cache-rebuild
 ```
+
+Package managers (Homebrew/Winget): coming soon.
 
 👉 For a hands-on walkthrough, see `docs/tutorial.md`.
 

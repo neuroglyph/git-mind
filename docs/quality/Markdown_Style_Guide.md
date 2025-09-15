@@ -1,5 +1,12 @@
 # Markdown Style Guide
 
+Table of Contents
+
+- [Core Rules](#core-rules)
+- [Practical Exceptions](#practical-exceptions)
+- [Tooling](#tooling)
+- [Usage](#usage)
+
 This repository standardizes Markdown formatting to reduce noise in reviews and keep docs consistent. Pre-commit enforces these rules automatically.
 
 ## Core Rules

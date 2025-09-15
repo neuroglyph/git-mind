@@ -60,3 +60,21 @@ Key architectural diagrams are embedded throughout the documentation using Merma
 _"Architecture is about the important stuff. Whatever that is."_ - Ralph Johnson
 
 In git-mind, the important stuff is enabling humans and AI to build understanding together.
+
+## Target Architecture (Repo Layout)
+
+```
+git-mind/
+├── core/               # C23 library: include/, src/, tests/
+├── include/            # Umbrella API: gitmind.h and public headers
+├── apps/               # CLI and hooks
+├── tests/              # E2E/integration
+├── tools/              # Dev tooling, quality scripts
+└── docs/               # Architecture and project documentation
+```
+
+Key decisions:
+
+- Lean dependencies (libgit2, CRoaring via CI image)
+- Journal‑first storage, rebuildable cache
+- OID‑first APIs and compare via `git_oid_cmp`

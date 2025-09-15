@@ -1,5 +1,13 @@
 # Cache Migration: OID-Only Format and Stable Refs
 
+Table of Contents
+
+- [Summary](#summary)
+- [Migration Behavior](#migration-behavior)
+- [Impact](#impact)
+- [Recommended Steps](#recommended-steps)
+- [Notes](#notes)
+
 Date: 2025-09-14
 
 ## Summary
@@ -39,4 +47,3 @@ No in‑place modification of legacy refs occurs; new rebuilds update the stable
 
 - Hash function uses raw `git_oid` bytes; naming clarified via `OID_HASH_MULTIPLIER`.
 - This is a forward‑compatible change; future hash algorithms continue to work via libgit2’s `git_oid` abstraction.
-

@@ -47,3 +47,12 @@ Header guards lint: `meson run -C build lint_header_guards`
 - Extend CBOR schema to store OIDs explicitly.
 - Add focused tests: CBOR base64 round‑trip, `gm_snprintf` truncation, OID equality paths.
 
+## Engineering Principles
+
+- Foundations before features: errors/types/validation first, then observability, tests, memory, and higher layers.
+- Simple and explicit: SRP, KISS, YAGNI, DRY; design for testability (dependency injection, stable seams).
+- Result patterns: prefer explicit result/err returns over implicit globals; include source location where helpful.
+- Security hygiene: centralized validation, safe memory helpers, path traversal defenses, Unicode preserved by default.
+- Zero new warnings: new/modified code should compile clean under clang‑tidy.
+
+See also: `docs/architecture/MIGRATION_PHILOSOPHY.md`.

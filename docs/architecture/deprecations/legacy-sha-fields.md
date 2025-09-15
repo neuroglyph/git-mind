@@ -1,5 +1,14 @@
 # Deprecation Notice: Legacy SHA-1 Byte Arrays in Edges
 
+Table of Contents
+
+- [Summary](#summary)
+- [Rationale](#rationale)
+- [Impacted Areas](#impacted-areas)
+- [Migration Plan](#migration-plan)
+- [Action Items](#action-items)
+- [Compatibility](#compatibility)
+
 Date: 2025-09-14
 Status: Planned (grace period)
 
@@ -37,4 +46,3 @@ We have migrated all encode/decode, cache, hooks, and equality semantics to be O
 ## Compatibility
 
 Journal and cache already use OID‑first encoding and compare semantics. Decoders backfill OIDs from legacy bytes, so older commits remain readable throughout the grace period.
-

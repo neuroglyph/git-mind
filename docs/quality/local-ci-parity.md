@@ -1,5 +1,10 @@
 # Local CI Parity (Docker)
 
+Table of Contents
+
+- [TL;DR workflow](#tldr-workflow)
+- [Notes](#notes)
+
 This guide shows how to run the same checks locally that CI/CD runs, using the project’s Docker images and helper scripts.
 
 
@@ -28,4 +33,3 @@ This guide shows how to run the same checks locally that CI/CD runs, using the p
 - For PRs, validate locally first, then push and check GitHub checks with `gh pr view`.
 - CI clang‑tidy excludes `core/src/hooks/`; local scripts mirror that.
 - For PRs, validate locally first, then push and check GitHub checks with `gh pr view`.
-
