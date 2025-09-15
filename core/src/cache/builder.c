@@ -297,8 +297,13 @@ static int cache_get_journal_tip(git_repository *repo, const char *branch,
                                  gm_cache_meta_t *meta) {
     git_reference *journal_ref = NULL;
     char journal_ref_name[REF_NAME_BUFFER_SIZE];
-    snprintf(journal_ref_name, sizeof(journal_ref_name),
-             "refs/gitmind/edges/%s", branch);
+    {
+        int rn = gm_snprintf(journal_ref_name, sizeof(journal_ref_name),
+                              "refs/gitmind/edges/%s", branch);
+        if (rn < 0 || (size_t)rn >= sizeof(journal_ref_name)) {
+            return GM_ERR_BUFFER_TOO_SMALL;
+        }
+    }
 
     if (git_reference_lookup(&journal_ref, repo, journal_ref_name) == 0) {
         const git_oid *tip_oid = git_reference_target(journal_ref);
@@ -370,8 +375,12 @@ static int cache_create_commit(git_repository *repo, const git_oid *tree_oid,
 static int cache_update_ref(git_repository *repo, const char *branch,
                             const git_oid *commit_oid) {
     char ref_name[REF_NAME_BUFFER_SIZE];
-    snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX,
-             branch);
+    {
+        int rn = gm_snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
+        if (rn < 0 || (size_t)rn >= sizeof(ref_name)) {
+            return GM_ERR_BUFFER_TOO_SMALL;
+        }
+    }
 
     git_reference *ref = NULL;
     int rc = git_reference_create(&ref, repo, ref_name, commit_oid, 1,

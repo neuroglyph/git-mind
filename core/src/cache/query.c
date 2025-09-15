@@ -46,7 +46,12 @@ static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
 /* Helper to find legacy timestamped cache refs: refs/gitmind/cache/<branch>/<ts> */
 static int find_legacy_cache_ref(git_repository *repo, const char *branch, git_oid *out_oid, uint64_t *out_time) {
     char pattern[REF_NAME_BUFFER_SIZE + 8];
-    (void)snprintf(pattern, sizeof(pattern), "%s%s/*", GM_CACHE_REF_PREFIX, branch);
+    {
+        int rn = gm_snprintf(pattern, sizeof(pattern), "%s%s/*", GM_CACHE_REF_PREFIX, branch);
+        if (rn < 0 || (size_t)rn >= sizeof(pattern)) {
+            return GM_NOT_FOUND;
+        }
+    }
     git_reference *best_ref = NULL;
     git_reference *ref = NULL;
     git_reference_iterator *iter = NULL;
