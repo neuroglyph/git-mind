@@ -38,8 +38,10 @@ typedef enum {
  */
 typedef struct gm_edge_attributed {
     /* Base edge fields */
-    uint8_t src_sha[GM_SHA1_SIZE];      /**< Source object SHA-1 (legacy) */
-    uint8_t tgt_sha[GM_SHA1_SIZE];      /**< Target object SHA-1 (legacy) */
+    /* DEPRECATED: Legacy SHA-1 bytes retained during grace period.
+     * Prefer src_oid/tgt_oid. See docs/architecture/deprecations/legacy-sha-fields.md */
+    uint8_t src_sha[GM_SHA1_SIZE];      /**< [DEPRECATED] Source object SHA-1 */
+    uint8_t tgt_sha[GM_SHA1_SIZE];      /**< [DEPRECATED] Target object SHA-1 */
     gm_oid_t src_oid;                   /**< Source object OID (preferred) */
     gm_oid_t tgt_oid;                   /**< Target object OID (preferred) */
     uint16_t rel_type;                  /**< Relationship type */
