@@ -6,6 +6,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+/* Pull in libgit2 OID for public gm_oid_t definition */
 #include <git2/oid.h>
 
 #ifdef __cplusplus
@@ -24,6 +25,11 @@ extern "C" {
 #define GIT_OID_RAWSZ 20
 #endif
 #define GM_OID_RAWSZ GIT_OID_RAWSZ
+#ifndef GIT_OID_HEXSZ
+#define GM_OID_HEX_CHARS 40
+#else
+#define GM_OID_HEX_CHARS GIT_OID_HEXSZ
+#endif
 #define GM_PATH_MAX 4096
 #define GM_ULID_SIZE 26
 #define GM_FORMAT_BUFFER_SIZE 512

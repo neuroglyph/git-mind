@@ -25,11 +25,13 @@
 #include "gitmind/cache/bitmap.h"
 #include "cache_internal.h"
 #include "gitmind/constants.h"
+#include "gitmind/constants_internal.h"
 #include "gitmind/context.h"
 #include "gitmind/edge.h"
 #include "gitmind/error.h"
 #include "gitmind/journal.h"
 #include "gitmind/types.h"
+#include "gitmind/security/memory.h"
 #include "gitmind/security/string.h"
 #include "gitmind/util/ref.h"
 #include "gitmind/util/memory.h"
@@ -71,7 +73,7 @@ static edge_map_t *edge_map_create(size_t size) {
 
 /* Hash function for OID: lightweight mixing for better distribution */
 static size_t oid_hash(const gm_oid_t *oid, size_t size) {
-    const uint8_t *raw = git_oid_raw(oid);
+    const uint8_t *raw = (const uint8_t *)oid->id;
     uint32_t x = 0x9E3779B9u; /* golden ratio */
     for (int i = 0; i < GM_OID_RAWSZ; i++) {
         x ^= raw[i];
@@ -102,13 +104,13 @@ static int edge_map_add(edge_map_t *map, const gm_oid_t *oid, uint32_t edge_id) 
     /* Create new entry */
     entry = calloc(1, sizeof(edge_map_entry_t));
     if (!entry)
-        return GM_NO_MEMORY;
+        return GM_ERR_OUT_OF_MEMORY;
 
     entry->oid = *oid;
     entry->bitmap = gm_bitmap_create();
     if (!entry->bitmap) {
         free(entry);
-        return GM_NO_MEMORY;
+        return GM_ERR_OUT_OF_MEMORY;
     }
 
     gm_bitmap_add(entry->bitmap, edge_id);
@@ -141,15 +143,15 @@ static void edge_map_free(edge_map_t *map) {
 static void get_oid_prefix(const gm_oid_t *oid, char *prefix, int bits) {
     int chars = (bits + 3) / BITS_PER_HEX_CHAR; /* Round up to hex chars */
     if (chars <= 0) { prefix[0] = '\0'; return; }
-    char hex[GIT_OID_HEXSZ];
+    char hex[GM_OID_HEX_CHARS];
     git_oid_fmt(hex, oid); /* not null-terminated */
-    if (chars > GIT_OID_HEXSZ) chars = GIT_OID_HEXSZ;
+    if (chars > GM_OID_HEX_CHARS) chars = GM_OID_HEX_CHARS;
     for (int i = 0; i < chars && i < MAX_SHARD_PATH - 1; i++) prefix[i] = hex[i];
     prefix[(chars < (MAX_SHARD_PATH - 1)) ? chars : (MAX_SHARD_PATH - 1)] = '\0';
 }
 
 static int oid_to_hex(const gm_oid_t *oid, char *out, size_t out_size) {
-    if (out_size < SHA_HEX_SIZE) return GM_INVALID_ARG;
+    if (out_size < SHA_HEX_SIZE) return GM_ERR_INVALID_ARGUMENT;
     (void)git_oid_tostr(out, out_size, oid);
     return GM_OK;
 }
@@ -256,7 +258,7 @@ static int cache_prepare_rebuild(gm_context_t *ctx,
     /* Create temp directory */
     (void)gm_snprintf(temp_dir, GM_PATH_MAX, "%s", CACHE_TEMP_DIR);
     if (!mkdtemp(temp_dir)) {
-        return GM_IO_ERROR;
+        return GM_ERR_IO_FAILED;
     }
 
     return GM_OK;
@@ -283,7 +285,7 @@ static int cache_build_edge_map(edge_map_t **forward, edge_map_t **reverse) {
     if (!*forward || !*reverse) {
         edge_map_free(*forward);
         edge_map_free(*reverse);
-        return GM_NO_MEMORY;
+        return GM_ERR_OUT_OF_MEMORY;
     }
 
     return GM_OK;
@@ -330,7 +332,7 @@ static int cache_get_journal_tip(git_repository *repo, const char *branch,
     } else {
         /* No journal yet */
         meta->journal_tip_oid[0] = '\0';
-        gm_memset_safe(&meta->journal_tip_oid_bin, 0, sizeof(meta->journal_tip_oid_bin));
+        gm_memset_safe(&meta->journal_tip_oid_bin, sizeof(meta->journal_tip_oid_bin), 0, sizeof(meta->journal_tip_oid_bin));
     }
 
     return GM_OK;
@@ -487,7 +489,7 @@ cleanup:
 /* Public cache rebuild function matching cache.h signature */
 int gm_cache_rebuild(gm_context_t *ctx, const char *branch, bool force_full) {
     if (!ctx || !ctx->git_repo || !branch) {
-        return GM_INVALID_ARG;
+        return GM_ERR_INVALID_ARGUMENT;
     }
     return gm_cache_rebuild_internal((git_repository *)ctx->git_repo, 
                                      branch, force_full);

@@ -12,8 +12,23 @@
 
 ## Build, Test, and Development Commands
 
-- Configure + build: `meson setup build && ninja -C build`
-- Run unit tests: `ninja -C build test` (or `meson test -C build`)
+> [!WARNING]
+> **DO NOT BUILD GITMIND OUTSIDE OF DOCKER**
+> git-mind manipulates Git internals (refs/*, objects, config). Building or running tests on the host can corrupt this repository or others on your machine. All builds and tests must run inside the CI Docker image for safety and parity.
+
+> [!INFO]
+> _If you really want to..._
+> Use the provided container workflow:
+> - `make ci-local` — runs docs checks, builds, and unit tests in the CI image
+> - `tools/ci/ci_local.sh` — same as above, invoked directly
+>
+> Advanced (at your own risk):
+> - `meson setup build -Dforce_local_builds=true` — explicit Meson override
+> - `GITMIND_ALLOW_HOST_BUILD=1` — legacy env override (discouraged)
+> If you override, you accept responsibility for any repo damage.
+
+- Configure + build (inside CI container): `make ci-local` or `tools/ci/ci_local.sh`
+- Run unit tests (inside CI container): done as part of `make ci-local`
 - Make shims: `make`, `make test`, `make clean`
 - Lint (CI parity): `./tools/docker-clang-tidy.sh` → produces `clang-tidy-report.txt`
 - Strict multi-compiler build: `./tools/gauntlet/run-gauntlet.sh` (recommended before PRs)
@@ -54,7 +69,16 @@
 
 - Make minimal, focused diffs; avoid drive-by refactors. Match existing patterns in `core/` and headers under `include/`.
 - Run build, tests, and lint locally before proposing changes. Keep changes zero-warnings and formatted.
- - Prefer OID-first APIs for SHA-agnostic correctness. Use `git_oid` (typedef `gm_oid_t`) in new core interfaces, and compare via `git_oid_cmp`.
+- Prefer OID-first APIs for SHA-agnostic correctness. Use `git_oid` (typedef `gm_oid_t`) in new core interfaces, and compare via `git_oid_cmp`.
+
+### One-Thing Rule (Touched code policy)
+
+- You touch it? You refactor it. If you modify a type or function that clearly bundles multiple concerns in a single file, split out the thing you touched into its own file (1 file = 1 thing):
+  - One enum per header.
+  - One struct per header (public structs under `include/gitmind/`, internal-only in `core/include/gitmind/<module>/internal/`).
+  - One responsibility per C file where practical.
+- Scope: Only the item you touched (don’t boil the ocean). If you edit `Bar` in `foo.c` and `foo.c` contains 12 types, you only have to extract `Bar` now.
+- Enforcement: Pre-commit includes a heuristic check (`one-thing`); bypass in emergencies with `GM_ONE_THING_ALLOW=1` in the environment. PRs should include a brief note when bypassed.
 
 ## Working Knowledge (for agents)
 
@@ -76,6 +100,19 @@
 - Core (path safety): Removed `GM_PATH_MAX * 2` buffer in `core/src/cache/tree_builder.c`; now uses `GM_PATH_MAX` and bounded `gm_snprintf`.
 - Docs: Added `docs/architecture/Ref_Name_Validation.md` (with ToC) documenting ref-building policy and validation. Updated `docs/CI_STRATEGY.md` and `docs/code-review/CLAUDE.md` to clarify C23 policy expressed via Meson `c2x`. Expanded `docs/operations/Environment_Variables.md` with `GITMIND_CI_IMAGE` and `HOOKS_BYPASS`.
 - Reviews: Documented rejected suggestions for PR #169 under `docs/code-reviews/rejected-suggestions/` (canonical CHANGELOG filename, keep `md-verify` alias, ignore `.PHONY` ordering churn). Linked decisions in the PR thread.
+ - Core (OID-first): Advanced OID-first migration in cache/journal; replaced custom zero/equality checks with `git_oid_is_zero`/`git_oid_cmp` and standardized formatting via `git_oid_fmt`/`git_oid_tostr`. Stored binary tip OID alongside hex in cache meta for performance and porcelain separation.
+ - Core (safe ops): Replaced unsafe libc string/memory calls in hot paths with safe wrappers (`gm_strcpy_safe`, `gm_snprintf`, `gm_memcpy_span`) to maintain warnings-as-errors and harden boundaries.
+ - CBOR: Added `GITMIND_CBOR_DEBUG` flag for verbose decode tracing. Extended edge encoder/decoder to write/read OID fields while keeping legacy SHA fallback for compatibility.
+ - Tests: Added unit tests `core/tests/unit/test_edge_oid_fallback.c` and `core/tests/unit/test_cache_shard_distribution.c`; expanded `test_ref_utils.c`. Registered in Meson. Tracking a small set of failing tests to align equality and fallback semantics.
+ - Policy: Began enforcing the “One-Thing” touched-code policy via a pre-commit heuristic (`tools/quality/check_one_thing.py`) wired into `.pre-commit-config.yaml`.
+ - CI: Ensured `tools/ci/ci_local.sh` builds and runs unit tests entirely inside the CI Docker image; tuned header-compile include paths for container parity.
+
+Learnings (2025-09-15)
+- Equality semantics need OID-first strictness with explicit legacy fallback; tests should state intent to avoid ambiguity when SHA matches but OIDs differ.
+- `git_reference_normalize_name` is reliable for ref validation; rejecting inputs beginning with `refs/` prevents double-prefixing errors when building namespaced refs.
+- Running all builds/tests inside the CI Docker image reduces environment drift; using Meson `c2x` preserves C23 intent while satisfying toolchain expectations.
+- Pre-commit enforcement of the One-Thing rule must stay conservative to minimize false positives on umbrella changes; scope it to files actually touched.
+- CBOR compatibility requires writing new fields while maintaining robust reader fallbacks; do not rely on field ordering and prefer explicit keys.
 
 2025-09-14
 - CI/CD: Added Markdown linting with repo-aligned rules (`.markdownlint.jsonc`), `make md-lint`/`md-fix` targets, and path filters limiting core workflows to code paths. Enabled docker pull retry and set `GITMIND_SAFETY=off` for E2E in the core workflow.

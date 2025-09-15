@@ -4,9 +4,21 @@ Thanks for your interest in improving git‑mind! This guide summarizes expectat
 
 ## Development Workflow
 
-1. Build and test
-   - `meson setup build && ninja -C build`
-   - `ninja -C build test`
+> [!WARNING]
+> **DO NOT BUILD GITMIND OUTSIDE OF DOCKER**
+> git-mind manipulates Git internals (refs/*, objects, config). Building or testing on the host can corrupt this repository or others on your machine. Always use the CI Docker image for safety and parity.
+
+> [!INFO]
+> _If you really want to..._
+> Use the container workflow:
+> - `make ci-local` — docs checks + build + unit tests in the CI image
+> - `tools/ci/ci_local.sh` — same as above, direct
+> Advanced (at your own risk):
+> - `meson setup build -Dforce_local_builds=true` — explicit Meson override
+> - `GITMIND_ALLOW_HOST_BUILD=1` — legacy env override (discouraged)
+
+1. Build and test (in Docker)
+   - `make ci-local` or `tools/ci/ci_local.sh`
 2. Lint (CI parity)
    - `./tools/docker-clang-tidy.sh` → writes `clang-tidy-report.txt`
    - Header guards: `meson run -C build lint_header_guards`
@@ -46,4 +58,3 @@ Thanks for your interest in improving git‑mind! This guide summarizes expectat
 ## Getting Help
 
 Open a Discussion or Issue describing what you’re trying to do and where you’re blocked. Include your environment, commands run, and logs where possible.
-

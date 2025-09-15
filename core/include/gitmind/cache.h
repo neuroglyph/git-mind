@@ -11,6 +11,7 @@
 #include <git2/types.h>
 #include <git2/oid.h>
 #include "gitmind/types.h"
+#include "gitmind/result.h"
 
 #include "gitmind/context.h"
 
@@ -31,7 +32,7 @@ extern "C" {
 #define GM_CACHE_SHARD_BITS 8 /* 2 hex chars = 256 shards */
 #define GM_CACHE_REF_PREFIX "refs/gitmind/cache/"
 #define GM_CACHE_BRANCH_NAME_SIZE 64  /* Maximum branch name length */
-#define GM_CACHE_OID_STRING_SIZE (GIT_OID_HEXSZ + 1) /* OID hex + NUL */
+#define GM_CACHE_OID_STRING_SIZE (GM_OID_HEX_CHARS + 1) /* OID hex + NUL */
 
 /* Cache result containing edge IDs matching a query */
 typedef struct {
@@ -56,7 +57,7 @@ typedef struct {
  * Initialize the cache subsystem
  * @return GM_OK on success, error code on failure
  */
-int gm_cache_init(void);
+GM_NODISCARD int gm_cache_init(void);
 
 /**
  * Rebuild cache from journal data
@@ -64,7 +65,7 @@ int gm_cache_init(void);
  * @param force_full Force full rebuild instead of incremental
  * @return GM_OK on success, error code on failure
  */
-int gm_cache_rebuild(gm_context_t *ctx, const char *branch, bool force_full);
+GM_NODISCARD int gm_cache_rebuild(gm_context_t *ctx, const char *branch, bool force_full);
 
 /**
  * Query edges by source OID (forward traversal)
@@ -73,7 +74,7 @@ int gm_cache_rebuild(gm_context_t *ctx, const char *branch, bool force_full);
  * @param result Output result structure
  * @return GM_OK on success, error code on failure
  */
-int gm_cache_query_fanout(gm_context_t *ctx, const char *branch, const gm_oid_t *src_oid,
+GM_NODISCARD int gm_cache_query_fanout(gm_context_t *ctx, const char *branch, const gm_oid_t *src_oid,
                           gm_cache_result_t *result);
 
 /**
@@ -84,7 +85,7 @@ int gm_cache_query_fanout(gm_context_t *ctx, const char *branch, const gm_oid_t 
  * @param result Output result structure
  * @return GM_OK on success, error code on failure
  */
-int gm_cache_query_fanin(gm_context_t *ctx, const char *branch, const gm_oid_t *tgt_oid,
+GM_NODISCARD int gm_cache_query_fanin(gm_context_t *ctx, const char *branch, const gm_oid_t *tgt_oid,
                          gm_cache_result_t *result);
 
 /**
@@ -94,7 +95,7 @@ int gm_cache_query_fanin(gm_context_t *ctx, const char *branch, const gm_oid_t *
  * @param meta Output metadata structure
  * @return GM_OK on success, error code on failure
  */
-int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *meta);
+GM_NODISCARD int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *meta);
 
 /**
  * Check if cache needs rebuilding
@@ -102,7 +103,7 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
  * @param branch Branch name to check cache for
  * @return true if cache is stale and needs rebuild
  */
-bool gm_cache_is_stale(gm_context_t *ctx, const char *branch);
+GM_NODISCARD bool gm_cache_is_stale(gm_context_t *ctx, const char *branch);
 
 /**
  * Get cache statistics
@@ -111,7 +112,7 @@ bool gm_cache_is_stale(gm_context_t *ctx, const char *branch);
  * @param cache_size_bytes Output cache size in bytes
  * @return GM_OK on success, error code on failure
  */
-int gm_cache_stats(gm_context_t *ctx, const char *branch, uint64_t *edge_count, 
+GM_NODISCARD int gm_cache_stats(gm_context_t *ctx, const char *branch, uint64_t *edge_count, 
                    uint64_t *cache_size_bytes);
 
 /**

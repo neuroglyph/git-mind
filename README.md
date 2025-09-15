@@ -82,6 +82,19 @@ Merging 47 new semantic edges...
 
 Install/build instructions: see `docs/install.md`.
 
+> [!WARNING]
+> **DO NOT BUILD GITMIND OUTSIDE OF DOCKER**
+> git-mind manipulates Git internals (refs/*, objects, config). Building or running tests on the host can corrupt this repository or others on your machine. Always use the CI Docker image for safety and parity.
+
+> [!INFO]
+> _If you really want to..._
+> Use the container workflow:
+> - `make ci-local` — docs checks + build + unit tests in the CI image
+> - `tools/ci/ci_local.sh` — same as above, direct
+> Advanced (at your own risk):
+> - `meson setup build -Dforce_local_builds=true` — explicit Meson override
+> - `GITMIND_ALLOW_HOST_BUILD=1` — legacy env override (discouraged)
+
 CLI examples (subset implemented today):
 
 ```bash
