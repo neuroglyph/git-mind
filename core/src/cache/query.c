@@ -126,6 +126,7 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
     meta->version = GM_CACHE_VERSION;
     meta->shard_bits = GM_CACHE_SHARD_BITS;
     strncpy(meta->branch, branch, GM_CACHE_BRANCH_NAME_SIZE - 1);
+    meta->branch[GM_CACHE_BRANCH_NAME_SIZE - 1] = '\0';
     meta->journal_tip_time = (uint64_t)git_commit_time(commit);
     git_commit_free(commit);
 

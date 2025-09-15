@@ -7,6 +7,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Source types for edge attribution */
 typedef enum {
     GM_SOURCE_HUMAN = 0,     /* Human-created edge */
@@ -177,5 +181,9 @@ int gm_edge_attributed_encode_cbor(const gm_edge_attributed_t *edge,
  */
 int gm_edge_attributed_decode_cbor(const uint8_t *buffer, size_t len,
                                    gm_edge_attributed_t *edge);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GITMIND_ATTRIBUTION_H */

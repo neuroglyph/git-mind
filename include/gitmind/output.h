@@ -7,6 +7,10 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Output levels */
 typedef enum {
     GM_OUTPUT_SILENT = 0, /* No output except errors */
@@ -99,5 +103,9 @@ bool gm_output_is_silent(const gm_output_t *out);
  * @param out Output context to free
  */
 void gm_output_destroy(gm_output_t *out);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GITMIND_OUTPUT_H */
