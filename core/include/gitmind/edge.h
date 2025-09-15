@@ -30,8 +30,10 @@ typedef struct gm_context gm_context_t;
  * Edge structure representing a directed relationship between two git objects
  */
 typedef struct gm_edge {
-    uint8_t src_sha[GM_SHA1_SIZE];      /**< Source object SHA-1 (legacy) */
-    uint8_t tgt_sha[GM_SHA1_SIZE];      /**< Target object SHA-1 (legacy) */
+    /* DEPRECATED: Legacy SHA-1 bytes retained for a short grace period.
+     * Use src_oid/tgt_oid (gm_oid_t) exclusively. See docs/architecture/deprecations/legacy-sha-fields.md */
+    uint8_t src_sha[GM_SHA1_SIZE];      /**< [DEPRECATED] Source object SHA-1 */
+    uint8_t tgt_sha[GM_SHA1_SIZE];      /**< [DEPRECATED] Target object SHA-1 */
     gm_oid_t src_oid;                   /**< Source object OID (preferred) */
     gm_oid_t tgt_oid;                   /**< Target object OID (preferred) */
     uint16_t rel_type;                  /**< Relationship type */
