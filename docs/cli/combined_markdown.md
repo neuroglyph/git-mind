@@ -1,3 +1,13 @@
+---
+title: CLI Combined Reference
+description: Combined CLI reference content for convenience and offline browsing.
+audience: [users, developers]
+domain: [cli]
+tags: [cli]
+status: draft
+last_updated: 2025-09-15
+---
+
 # README.md
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->

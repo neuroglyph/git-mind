@@ -1,3 +1,13 @@
+---
+title: Docs Index
+description: Index of documentation with stable links and key entry points.
+audience: [all]
+domain: [project]
+tags: [index, docs]
+status: stable
+last_updated: 2025-09-15
+---
+
 # docs/ (Index and Structure)
 
 Table of Contents

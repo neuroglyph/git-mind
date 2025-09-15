@@ -1,3 +1,13 @@
+---
+title: Deprecation — Legacy SHA-1 Byte Arrays in Edges
+description: Plan to remove SHA-1 specific arrays in favor of OID-only APIs and storage.
+audience: [developers]
+domain: [architecture]
+tags: [deprecation, oid]
+status: planned
+last_updated: 2025-09-15
+---
+
 # Deprecation Notice: Legacy SHA-1 Byte Arrays in Edges
 
 Table of Contents

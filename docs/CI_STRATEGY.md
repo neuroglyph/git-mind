@@ -1,3 +1,13 @@
+---
+title: CI/CD Strategy
+description: Strategy, matrices, and gating for continuous integration.
+audience: [contributors, developers]
+domain: [quality]
+tags: [ci, matrices]
+status: stable
+last_updated: 2025-09-15
+---
+
 # CI/CD Strategy
 
 ## Overview

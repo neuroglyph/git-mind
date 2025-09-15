@@ -1,3 +1,13 @@
+---
+title: Project Charter
+description: Goals, stakeholders, and success metrics for git-mind.
+audience: [all]
+domain: [project]
+tags: [charter]
+status: stable
+last_updated: 2025-09-15
+---
+
 # Project Charter
 
 Table of Contents

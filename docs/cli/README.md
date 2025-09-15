@@ -1,5 +1,14 @@
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+---
+title: git-mind CLI Reference
+description: Overview and command reference for the git-mind CLI.
+audience: [users, developers]
+domain: [cli]
+tags: [cli]
+status: stable
+last_updated: 2025-09-15
+---
 
 # git-mind Command Reference
 

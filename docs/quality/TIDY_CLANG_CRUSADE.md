@@ -1,3 +1,13 @@
+---
+title: The Great Clang-Tidy Crusade
+description: Tracking clang-tidy issues and progress toward zero warnings.
+audience: [contributors, developers]
+domain: [quality]
+tags: [clang-tidy]
+status: draft
+last_updated: 2025-09-15
+---
+
 # 🚨 The Great Clang-Tidy Crusade
 
 Table of Contents

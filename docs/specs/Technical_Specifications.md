@@ -1,3 +1,13 @@
+---
+title: Technical Specifications
+description: Detailed specifications for semantics, cache integration, and advice.
+audience: [developers]
+domain: [architecture]
+tags: [specs]
+status: draft
+last_updated: 2025-09-15
+---
+
 # Technical Specifications
 
 Table of Contents

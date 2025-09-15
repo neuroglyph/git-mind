@@ -1,3 +1,13 @@
+---
+title: Static Analysis Tools for git-mind
+description: Overview of clang-tidy and related tools for static analysis in this repo.
+audience: [contributors, developers]
+domain: [quality]
+tags: [clang-tidy, static-analysis]
+status: draft
+last_updated: 2025-09-15
+---
+
 # Static Analysis Tools for Git-Mind
 
 Table of Contents

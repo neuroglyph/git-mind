@@ -1,5 +1,14 @@
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+---
+title: Attribution System Integration Guide
+description: How to adopt attribution lanes and metadata in existing modules and CLI commands.
+audience: [developers]
+domain: [architecture]
+tags: [attribution, integration, cli]
+status: stable
+last_updated: 2025-09-15
+---
 
 # Attribution System Integration Guide
 

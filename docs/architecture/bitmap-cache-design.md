@@ -1,3 +1,13 @@
+---
+title: Bitmap Cache Design
+description: High-performance query layer using Roaring Bitmaps for compressed sets and fast operations.
+audience: [developers]
+domain: [architecture]
+tags: [cache, roaring, performance]
+status: stable
+last_updated: 2025-09-15
+---
+
 # Bitmap Cache Design 🦁⚡
 
 ## High-Performance Query Layer for git-mind

@@ -1,3 +1,13 @@
+---
+title: Developer Setup Guide
+description: Required tools and environment configuration for contributors.
+audience: [contributors, developers]
+domain: [operations]
+tags: [dev-setup, clang-tidy]
+status: stable
+last_updated: 2025-09-15
+---
+
 # Developer Setup Guide
 
 ## Required Tools

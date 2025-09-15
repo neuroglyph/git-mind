@@ -1,5 +1,14 @@
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+---
+title: Attribution System Architecture
+description: Human + AI attribution model for edges with lanes, filters, and collaboration flows.
+audience: [developers]
+domain: [architecture]
+tags: [attribution, lanes, filters, ai]
+status: stable
+last_updated: 2025-09-15
+---
 
 # Attribution System Architecture
 

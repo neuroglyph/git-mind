@@ -322,7 +322,8 @@ static int cache_get_journal_tip(git_repository *repo, const char *branch,
         git_reference_free(journal_ref);
     } else {
         /* No journal yet */
-        strcpy(meta->journal_tip_oid, ZERO_SHA_STRING);
+        (void)gm_snprintf(meta->journal_tip_oid, sizeof meta->journal_tip_oid,
+                          "%s", ZERO_SHA_STRING);
     }
 
     return GM_OK;

@@ -1,3 +1,13 @@
+---
+title: Markdown Style Guide
+description: Project-wide rules for formatting Markdown and using markdownlint.
+audience: [contributors]
+domain: [quality]
+tags: [markdown, lint]
+status: stable
+last_updated: 2025-09-15
+---
+
 # Markdown Style Guide
 
 Table of Contents

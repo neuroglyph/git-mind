@@ -1,3 +1,13 @@
+---
+title: Local CI Parity (Docker)
+description: How to run CI-equivalent builds and lint locally using project Docker images.
+audience: [contributors, developers]
+domain: [quality]
+tags: [docker, ci, clang-tidy]
+status: stable
+last_updated: 2025-09-15
+---
+
 # Local CI Parity (Docker)
 
 Table of Contents

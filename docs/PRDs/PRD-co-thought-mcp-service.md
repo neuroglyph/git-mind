@@ -1,3 +1,13 @@
+---
+title: PRD — Co‑Thought MCP Service (Local Tools Integration)
+description: Local-only service for tools/agents to read/write edges and query journal/cache.
+audience: [contributors, developers]
+domain: [project]
+tags: [PRD, MCP, AI]
+status: draft
+last_updated: 2025-09-15
+---
+
 # PRD: Co‑Thought MCP Service (Local Tools Integration)
 
 Table of Contents

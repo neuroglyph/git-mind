@@ -1,5 +1,14 @@
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+---
+title: Architecture Index
+description: Entry point to git-mind’s architecture docs and core systems.
+audience: [developers]
+domain: [architecture]
+tags: [architecture, journal, cache, attribution]
+status: stable
+last_updated: 2025-09-15
+---
 
 # git-mind Architecture Documentation
 

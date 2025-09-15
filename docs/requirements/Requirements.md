@@ -1,3 +1,13 @@
+---
+title: Requirements
+description: Functional and non-functional requirements for git-mind.
+audience: [contributors, developers]
+domain: [project]
+tags: [requirements]
+status: draft
+last_updated: 2025-09-15
+---
+
 # Requirements
 
 Table of Contents

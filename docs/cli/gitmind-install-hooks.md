@@ -1,5 +1,14 @@
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+---
+title: git-mind install-hooks
+description: Install Git hooks to automatically capture certain semantic edges.
+audience: [users, developers]
+domain: [cli]
+tags: [cli, hooks]
+status: stable
+last_updated: 2025-09-15
+---
 
 # git-mind install-hooks
 

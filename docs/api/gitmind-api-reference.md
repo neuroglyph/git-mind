@@ -1,3 +1,13 @@
+---
+title: git-mind C API Reference
+description: Reference for public C API types and functions.
+audience: [developers]
+domain: [api]
+tags: [api, c]
+status: draft
+last_updated: 2025-09-15
+---
+
 # git-mind C API Reference
 
 Complete API documentation for the git-mind library (gitmind_lib.h).

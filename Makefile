@@ -24,4 +24,9 @@ md-lint:
 md-fix:
 	@npx --yes -p markdownlint-cli2 markdownlint-cli2 --fix "**/*.md" "#.git" "#build"
 
-.PHONY: all test clean docker-clean md-lint md-fix
+# Changelog helpers
+.PHONY: changelog-add
+changelog-add:
+	@python3 tools/changelog/add_entry.py -m "$(m)" $(if $(n),-n "$(n)")
+
+.PHONY: all test clean docker-clean md-lint md-fix changelog-add

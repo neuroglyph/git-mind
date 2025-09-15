@@ -1,3 +1,13 @@
+---
+title: Standard Tools vs Custom Checks
+description: Replace bespoke linters with robust, configurable standard tools.
+audience: [contributors, developers]
+domain: [quality]
+tags: [lint, tooling]
+status: stable
+last_updated: 2025-09-15
+---
+
 # Standard Tools vs Custom Checks
 
 Table of Contents

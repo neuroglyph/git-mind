@@ -1,3 +1,13 @@
+---
+title: Test Plan
+description: Strategy and structure for unit, integration, and E2E testing.
+audience: [developers, contributors]
+domain: [testing]
+tags: [testing]
+status: draft
+last_updated: 2025-09-15
+---
+
 # Test Plan
 
 Table of Contents

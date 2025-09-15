@@ -1,6 +1,16 @@
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 
+---
+title: git-mind (command)
+description: Top-level CLI: usage, global flags, and safety guard behavior.
+audience: [users, developers]
+domain: [cli]
+tags: [cli]
+status: stable
+last_updated: 2025-09-15
+---
+
 # git-mind
 
 > _"Remember who you are."_ - Mufasa

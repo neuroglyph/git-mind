@@ -1,5 +1,14 @@
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+---
+title: git-mind cache-rebuild
+description: Rebuild the on-disk cache from the journal.
+audience: [users, developers]
+domain: [cli]
+tags: [cli, cache]
+status: stable
+last_updated: 2025-09-15
+---
 
 # git-mind cache-rebuild
 

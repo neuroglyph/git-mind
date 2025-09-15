@@ -146,11 +146,13 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
         if (tip_oid) {
             git_oid_tostr(meta->journal_tip_oid, sizeof(meta->journal_tip_oid), tip_oid);
         } else {
-            strcpy(meta->journal_tip_oid, ZERO_SHA_STRING);
+            (void)gm_snprintf(meta->journal_tip_oid, sizeof meta->journal_tip_oid,
+                              "%s", ZERO_SHA_STRING);
         }
         git_reference_free(journal_ref);
     } else {
-        strcpy(meta->journal_tip_oid, ZERO_SHA_STRING);
+        (void)gm_snprintf(meta->journal_tip_oid, sizeof meta->journal_tip_oid,
+                          "%s", ZERO_SHA_STRING);
     }
 
     /* edge_count and build_time_ms unavailable without dedicated storage */

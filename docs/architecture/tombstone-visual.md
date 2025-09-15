@@ -1,3 +1,13 @@
+---
+title: Visual Guide — Tombstones
+description: Visual explanation for tombstoned edges and why deletions preserve history.
+audience: [developers]
+domain: [architecture]
+tags: [tombstone, semantics]
+status: draft
+last_updated: 2025-09-15
+---
+
 # Visual Guide: How Tombstones Work
 
 Table of Contents

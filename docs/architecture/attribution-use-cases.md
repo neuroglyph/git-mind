@@ -1,5 +1,14 @@
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+---
+title: Attribution System Use Cases
+description: Scenarios demonstrating lanes, filters, and human+AI collaboration.
+audience: [developers]
+domain: [architecture]
+tags: [attribution, collaboration]
+status: stable
+last_updated: 2025-09-15
+---
 
 # Attribution System Use Cases
 

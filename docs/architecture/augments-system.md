@@ -1,3 +1,13 @@
+---
+title: AUGMENTS System Architecture
+description: System for automatically linking content evolution with AUGMENTS edges.
+audience: [developers]
+domain: [architecture]
+tags: [augments, hooks]
+status: draft
+last_updated: 2025-09-15
+---
+
 # AUGMENTS System Architecture
 
 Table of Contents

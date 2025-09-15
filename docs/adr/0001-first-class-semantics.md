@@ -1,4 +1,14 @@
 
+---
+title: ADR 0001 — First‑Class, Time‑Travel‑Safe Semantics
+description: Treat `type_name` and `lane_name` as authoritative strings; derive IDs only for performance.
+audience: [developers]
+domain: [architecture]
+tags: [ADR, semantics]
+status: proposed
+last_updated: 2025-09-15
+---
+
 # ADR 0001: First‑Class, Time‑Travel‑Safe Semantics (Names as Truth)
 
 Table of Contents

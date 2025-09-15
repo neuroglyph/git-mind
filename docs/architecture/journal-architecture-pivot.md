@@ -1,3 +1,13 @@
+---
+title: Journal Architecture Pivot
+description: Edge-journal commits with branch-aware graphs; the final architecture for storing semantics in Git.
+audience: [developers]
+domain: [architecture]
+tags: [journal, cbor, refs]
+status: stable
+last_updated: 2025-09-15
+---
+
 # Project: No Tux Given 🐧⚡
 
 ## The git-mind Final Architecture

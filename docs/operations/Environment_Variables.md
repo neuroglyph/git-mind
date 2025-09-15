@@ -1,3 +1,13 @@
+---
+title: Environment Variables
+description: Environment variables affecting build, CI, runtime, and tests.
+audience: [developers]
+domain: [operations]
+tags: [environment, ci, runtime, cli]
+status: stable
+last_updated: 2025-09-15
+---
+
 # Environment Variables
 
 This page lists environment variables that influence git‑mind builds, tests, and runtime behavior.

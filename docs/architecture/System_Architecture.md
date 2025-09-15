@@ -1,3 +1,13 @@
+---
+title: System Architecture
+description: High-level view of git-mind components and interactions.
+audience: [developers]
+domain: [architecture]
+tags: [system, overview]
+status: draft
+last_updated: 2025-09-15
+---
+
 # System Architecture
 
 Table of Contents

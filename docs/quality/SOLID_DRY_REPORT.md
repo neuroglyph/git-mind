@@ -1,3 +1,13 @@
+---
+title: SOLID/DRY Compliance Report
+description: Assessment of the codebase against SOLID and DRY with remediation guidance.
+audience: [contributors, developers]
+domain: [quality]
+tags: [solid, dry]
+status: draft
+last_updated: 2025-09-15
+---
+
 # 🚨 SOLID/DRY Compliance Report - CRITICAL SECURITY ASSESSMENT
 
 Table of Contents

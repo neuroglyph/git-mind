@@ -1,3 +1,13 @@
+---
+title: Deployment and Operations
+description: CI/CD pipeline, environments, rollback, and monitoring.
+audience: [contributors, developers]
+domain: [operations]
+tags: [deployment, ci]
+status: draft
+last_updated: 2025-09-15
+---
+
 # Deployment and Operations
 
 Table of Contents
