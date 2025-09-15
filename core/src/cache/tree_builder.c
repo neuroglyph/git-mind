@@ -66,7 +66,12 @@ static int process_fs_entry(git_repository *repo, git_treebuilder *dir_builder,
     }
 
     /* Build full path */
-    (void)snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry_name);
+    {
+        int rn = gm_snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry_name);
+        if (rn < 0 || (size_t)rn >= sizeof(full_path)) {
+            return GM_ERR_BUFFER_TOO_SMALL;
+        }
+    }
 
     /* Get file info - use lstat to avoid following symlinks */
     if (lstat(full_path, &st) < 0) {
@@ -76,11 +81,17 @@ static int process_fs_entry(git_repository *repo, git_treebuilder *dir_builder,
     if (S_ISDIR(st.st_mode)) {
         /* Build relative path for subdirectory */
         if (rel_path) {
-            (void)snprintf(entry_rel_path, sizeof(entry_rel_path), "%s/%s",
-                           rel_path, entry_name);
+            int rn = gm_snprintf(entry_rel_path, sizeof(entry_rel_path), "%s/%s",
+                                 rel_path, entry_name);
+            if (rn < 0 || (size_t)rn >= sizeof(entry_rel_path)) {
+                return GM_ERR_BUFFER_TOO_SMALL;
+            }
         } else {
-            (void)snprintf(entry_rel_path, sizeof(entry_rel_path), "%s",
-                           entry_name);
+            int rn2 = gm_snprintf(entry_rel_path, sizeof(entry_rel_path), "%s",
+                                  entry_name);
+            if (rn2 < 0 || (size_t)rn2 >= sizeof(entry_rel_path)) {
+                return GM_ERR_BUFFER_TOO_SMALL;
+            }
         }
         rc =
             add_directory_to_tree(repo, dir_builder, full_path, entry_rel_path);
@@ -176,7 +187,12 @@ static int process_directory_entry(git_repository *repo,
     }
 
     /* Build full path */
-    snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry_name);
+    {
+        int rn = gm_snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry_name);
+        if (rn < 0 || (size_t)rn >= sizeof(full_path)) {
+            return GM_ERR_BUFFER_TOO_SMALL;
+        }
+    }
 
     /* Check if path exists and is directory */
     if (lstat(full_path, &st) < 0) {
