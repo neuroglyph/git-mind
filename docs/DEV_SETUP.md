@@ -46,3 +46,25 @@ Always build in Docker to match CI:
 make test-core  # Run core tests
 make check      # Run quality checks
 ```
+
+## Build Feature Toggles (Meson)
+
+The library exposes a small set of build‑time feature toggles (Meson options) to control which optional public headers are pulled in by the umbrella `include/gitmind.h`.
+
+- `-Denable_io=true|false` (default: `false`)
+  - Defines `GITMIND_ENABLE_IO` and includes `gitmind/io/io.h` from the umbrella header.
+- `-Denable_time=true|false` (default: `false`)
+  - Defines `GITMIND_ENABLE_TIME` and includes `gitmind/time/time.h`.
+- `-Denable_util=true|false` (default: `false`)
+  - Defines `GITMIND_ENABLE_UTIL` and includes `gitmind/util/memory.h`.
+- `-Denable_utf8=true|false` (default: `true`)
+  - Defines `GITMIND_ENABLE_UTF8` and includes `gitmind/utf8/validate.h`.
+
+Example:
+
+```bash
+meson setup build -Denable_io=true -Denable_time=true
+ninja -C build
+```
+
+These options only affect umbrella header aggregation and do not gate the core library build. They exist to keep downstreams’ public include surface minimal and configurable.

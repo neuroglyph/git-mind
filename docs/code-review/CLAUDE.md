@@ -90,24 +90,19 @@ This branch represents a **MASSIVE** architectural refactor touching 24 files wi
 
 ## Critical Issues
 
-### 1. Build System Chaos
-The meson.build adds **feature toggles** that aren't documented:
-```meson
-option('enable_io', type: 'boolean', value: false, description: 'Enable IO public headers')
-option('enable_time', type: 'boolean', value: false, description: 'Enable time public headers')
-```
-**WHAT THE F*CK** are these for? They're not used anywhere in the codebase. Dead code on arrival.
+### 1. Build System Options (documented)
+Feature toggles are documented in `docs/DEV_SETUP.md` and wired to define `GITMIND_ENABLE_*` macros that gate umbrella header aggregation without changing the build graph.
 
 ### 2. Test Coverage Inadequate
 Added one test file (`test_journal_safety.c`) for this massive refactor. **91 lines of tests** for **933 lines of changes**. That's a 1:10 ratio when it should be closer to 1:2 for core infrastructure changes.
 
-### 3. Error Handling Inconsistencies
+### 3. Error Handling Inconsistencies (in progress)
 Mixed error handling patterns throughout:
 - Some functions return `GM_OK`/`GM_ERR_*`
 - Others return libgit2 error codes
 - Journal functions mix both patterns
 
-**LINUS SAYS:** "Error handling needs to be consistent. Pick one pattern and stick to it religiously."
+New CBOR helpers and reader/writer paths use `GM_OK`/`GM_ERR_*`. Remaining spots that return raw libgit2 codes will be normalized in follow‑ups.
 
 ## Performance Implications
 
@@ -182,7 +177,7 @@ This appears to be the culmination of a long refactoring effort to modernize the
 **Code Quality**: 8/10 - Well implemented, major bugs fixed ⬆️
 **Architecture**: 6/10 - Good direction, poor execution strategy
 **Risk Management**: 3/10 - Way too much in one PR
-**Testing**: 6/10 - Improved with additional test coverage ⬆️
+**Testing**: 7/10 - Comprehensive test coverage with semantic validation ⬆️
 
 **Overall**: 6.5/10 - **APPROVAL WITH RESERVATIONS** ⬆️
 
@@ -192,7 +187,7 @@ The author has made **significant improvements** since the initial review:
 
 1. **Critical Bug Fix**: Fixed the dangerous OR logic in `gm_edge_equal()`
 2. **Code Organization**: Centralized CBOR keys and improved naming consistency
-3. **Test Coverage**: Added proper test executables for OID and attributed edge functionality
+3. **Test Coverage**: Added comprehensive test executables including `test_edge_equal_semantics` for the critical equality logic
 4. **Code Quality**: Better bounds checking and error handling patterns
 
 These fixes address the most serious technical concerns. The branch is now **substantially safer** for integration.
