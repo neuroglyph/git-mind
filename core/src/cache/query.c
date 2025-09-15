@@ -131,8 +131,14 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
     /* Resolve current journal tip OID for branch */
     git_reference *journal_ref = NULL;
     char journal_ref_name[REF_NAME_BUFFER_SIZE];
-    (void)snprintf(journal_ref_name, sizeof(journal_ref_name),
-                   "refs/gitmind/edges/%s", branch);
+    {
+        int rn = gm_snprintf(journal_ref_name, sizeof(journal_ref_name),
+                              "refs/gitmind/edges/%s", branch);
+        if (rn < 0 || (size_t)rn >= sizeof(journal_ref_name)) {
+            strcpy(meta->journal_tip_oid, ZERO_SHA_STRING);
+            /* continue with ZERO oid */
+        }
+    }
     if (git_reference_lookup(&journal_ref, repo, journal_ref_name) == 0) {
         const git_oid *tip_oid = git_reference_target(journal_ref);
         if (tip_oid) {
