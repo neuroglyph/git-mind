@@ -24,6 +24,8 @@
 #include "gitmind/journal.h"
 #include "gitmind/security/memory.h"
 #include "gitmind/security/string.h"
+#include "gitmind/util/ref.h"
+#include "gitmind/util/memory.h"
 
 /* Constants */
 #define CACHE_MAX_AGE_SECONDS 3600 /* 1 hour */
@@ -35,12 +37,15 @@
 /* Get SHA prefix for sharding */
 static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
     int chars = (bits + 3) / BITS_PER_HEX_CHAR; /* Round up to hex chars */
-    for (int i = 0; i < chars; i++) {
-        size_t off = (size_t)i * (size_t)HEX_CHARS_PER_BYTE;
-        (void)gm_snprintf(prefix + off, (size_t)HEX_CHARS_PER_BYTE + 1, "%02x",
-                          sha[i]);
-    }
-    prefix[(size_t)chars * (size_t)HEX_CHARS_PER_BYTE] = '\0';
+    if (chars <= 0) { prefix[0] = '\0'; return; }
+    git_oid tmp;
+    git_oid_fromraw(&tmp, sha);
+    char hex[GIT_OID_HEXSZ];
+    git_oid_fmt(hex, &tmp); /* not null-terminated */
+    if (chars > GIT_OID_HEXSZ) chars = GIT_OID_HEXSZ;
+    /* Copy requested prefix and terminate */
+    for (int i = 0; i < chars; i++) prefix[i] = hex[i];
+    prefix[chars] = '\0';
 }
 
 /* Load cache metadata from commit message */
@@ -98,9 +103,9 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
 
     /* Build cache ref name and resolve */
     {
-        int rn = gm_snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
-        if (rn < 0 || (size_t)rn >= sizeof(ref_name)) {
-            return GM_ERR_BUFFER_TOO_SMALL;
+        int brc = gm_build_ref(ref_name, sizeof(ref_name), GM_CACHE_REF_PREFIX, branch);
+        if (brc != GM_OK) {
+            return brc;
         }
     }
     rc = git_reference_lookup(&ref, repo, ref_name);
@@ -122,10 +127,10 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
     }
 
     /* Synthesize metadata from repo state (no binary commit message parsing) */
-    memset(meta, 0, sizeof *meta);
+    gm_memset_safe(meta, 0, sizeof *meta);
     meta->version = GM_CACHE_VERSION;
     meta->shard_bits = GM_CACHE_SHARD_BITS;
-    strncpy(meta->branch, branch, GM_CACHE_BRANCH_NAME_SIZE - 1);
+    (void)gm_strcpy_safe(meta->branch, GM_CACHE_BRANCH_NAME_SIZE, branch);
     meta->branch[GM_CACHE_BRANCH_NAME_SIZE - 1] = '\0';
     meta->journal_tip_time = (uint64_t)git_commit_time(commit);
     git_commit_free(commit);
@@ -134,25 +139,26 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
     git_reference *journal_ref = NULL;
     char journal_ref_name[REF_NAME_BUFFER_SIZE];
     {
-        int rn = gm_snprintf(journal_ref_name, sizeof(journal_ref_name),
-                              "refs/gitmind/edges/%s", branch);
-        if (rn < 0 || (size_t)rn >= sizeof(journal_ref_name)) {
-            strcpy(meta->journal_tip_oid, ZERO_SHA_STRING);
-            /* continue with ZERO oid */
+        int brc = gm_build_ref(journal_ref_name, sizeof(journal_ref_name),
+                               GITMIND_EDGES_REF_PREFIX, branch);
+        if (brc != GM_OK) {
+            gm_memset_safe(&meta->journal_tip_oid_bin, 0, sizeof(meta->journal_tip_oid_bin));
+            meta->journal_tip_oid[0] = '\0';
         }
     }
     if (git_reference_lookup(&journal_ref, repo, journal_ref_name) == 0) {
         const git_oid *tip_oid = git_reference_target(journal_ref);
         if (tip_oid) {
+            meta->journal_tip_oid_bin = *tip_oid;
             git_oid_tostr(meta->journal_tip_oid, sizeof(meta->journal_tip_oid), tip_oid);
         } else {
-            (void)gm_snprintf(meta->journal_tip_oid, sizeof meta->journal_tip_oid,
-                              "%s", ZERO_SHA_STRING);
+            gm_memset_safe(&meta->journal_tip_oid_bin, 0, sizeof(meta->journal_tip_oid_bin));
+            meta->journal_tip_oid[0] = '\0';
         }
         git_reference_free(journal_ref);
     } else {
-        (void)gm_snprintf(meta->journal_tip_oid, sizeof meta->journal_tip_oid,
-                          "%s", ZERO_SHA_STRING);
+        gm_memset_safe(&meta->journal_tip_oid_bin, 0, sizeof(meta->journal_tip_oid_bin));
+        meta->journal_tip_oid[0] = '\0';
     }
 
     /* edge_count and build_time_ms unavailable without dedicated storage */
@@ -181,9 +187,9 @@ bool gm_cache_is_stale(gm_context_t *ctx, const char *branch) {
     git_reference *journal_ref = NULL;
     char journal_ref_name[REF_NAME_BUFFER_SIZE];
     {
-        int rn = gm_snprintf(journal_ref_name, sizeof(journal_ref_name),
-                              "refs/gitmind/edges/%s", branch);
-        if (rn < 0 || (size_t)rn >= sizeof(journal_ref_name)) {
+        int brc = gm_build_ref(journal_ref_name, sizeof(journal_ref_name),
+                               GITMIND_EDGES_REF_PREFIX, branch);
+        if (brc != GM_OK) {
             return true; /* treat as stale if we can't build ref safely */
         }
     }
@@ -191,14 +197,24 @@ bool gm_cache_is_stale(gm_context_t *ctx, const char *branch) {
     if (git_reference_lookup(&journal_ref, repo, journal_ref_name) == 0) {
         const git_oid *current_tip = git_reference_target(journal_ref);
         if (current_tip) {
-            /* Compare with cached tip OID */
-            git_oid cached_tip;
-            if (git_oid_fromstr(&cached_tip, meta.journal_tip_oid) == 0) {
-                /* If tips don't match, cache is stale */
-                if (git_oid_cmp(current_tip, &cached_tip) != 0) {
+            /* Compare with cached tip OID (binary first) */
+            if (!git_oid_iszero(&meta.journal_tip_oid_bin)) {
+                if (git_oid_cmp(current_tip, &meta.journal_tip_oid_bin) != 0) {
                     git_reference_free(journal_ref);
                     return true;
                 }
+            } else if (meta.journal_tip_oid[0] != '\0') {
+                git_oid cached_tip;
+                if (git_oid_fromstr(&cached_tip, meta.journal_tip_oid) == 0) {
+                    if (git_oid_cmp(current_tip, &cached_tip) != 0) {
+                        git_reference_free(journal_ref);
+                        return true;
+                    }
+                }
+            } else {
+                /* No previous tip known */
+                git_reference_free(journal_ref);
+                return true;
             }
         }
         git_reference_free(journal_ref);
@@ -221,13 +237,12 @@ static int load_bitmap_from_cache(git_repository *repo, git_tree *tree,
     /* Get shard prefix */
     get_sha_prefix(sha, prefix, GM_CACHE_SHARD_BITS);
 
-    /* Convert SHA to hex */
-    for (int i = 0; i < GM_OID_RAWSZ; i++) {
-        size_t off = (size_t)i * (size_t)HEX_CHARS_PER_BYTE;
-        (void)snprintf(sha_hex + off, (size_t)HEX_CHARS_PER_BYTE + 1, "%02x",
-                       sha[i]);
+    /* Convert SHA to hex using libgit2 */
+    {
+        git_oid tmp;
+        git_oid_fromraw(&tmp, sha);
+        git_oid_tostr(sha_hex, sizeof sha_hex, &tmp);
     }
-    sha_hex[(size_t)GM_OID_RAWSZ * (size_t)HEX_CHARS_PER_BYTE] = '\0';
 
     /* Build path: prefix/sha.suffix */
     {
@@ -293,7 +308,7 @@ static int journal_scan_callback_generic(const gm_edge_t *edge,
         }
 
         /* Copy edge */
-        memcpy(&state->edges[state->count], edge, sizeof(gm_edge_t));
+        (void)gm_memcpy_span(&state->edges[state->count], sizeof(gm_edge_t), edge, sizeof(gm_edge_t));
         state->count++;
     }
 
@@ -322,9 +337,9 @@ static int try_cache_query(git_repository *repo, const char *branch,
 
     /* Get cache commit */
     {
-        int rn = gm_snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
-        if (rn < 0 || (size_t)rn >= sizeof(ref_name)) {
-            return GM_ERR_BUFFER_TOO_SMALL;
+        int brc = gm_build_ref(ref_name, sizeof(ref_name), GM_CACHE_REF_PREFIX, branch);
+        if (brc != GM_OK) {
+            return brc;
         }
     }
     rc = git_reference_name_to_id(&cache_oid, repo, ref_name);
@@ -413,7 +428,7 @@ static int cache_query_generic(git_repository *repo, const char *branch,
     int rc;
 
     /* Initialize result */
-    memset(result, 0, sizeof(gm_cache_result_t));
+    gm_memset_safe(result, 0, sizeof(gm_cache_result_t));
     ctx.git_repo = repo;
 
     /* Try cache first */

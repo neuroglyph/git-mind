@@ -1,0 +1,6 @@
+# Feature toggles
+option('enable_io', type: 'boolean', value: false, description: 'Enable IO public headers')
+option('enable_time', type: 'boolean', value: false, description: 'Enable time public headers')
+option('enable_util', type: 'boolean', value: false, description: 'Enable util public headers')
+option('enable_utf8', type: 'boolean', value: true, description: 'Enable UTF-8 public headers')
+

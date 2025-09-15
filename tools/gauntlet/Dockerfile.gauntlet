@@ -5,6 +5,7 @@ LABEL com.gitmind.project="git-mind" \
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
+ENV GITMIND_DOCKER=1
 
 # Install base dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -115,6 +116,7 @@ ENV CXX=clang++-20
 FROM ubuntu:24.04 AS base-noble
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
+ENV GITMIND_DOCKER=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ninja-build \

@@ -22,6 +22,7 @@
 #include "gitmind/context.h"
 #include "gitmind/error.h"
 #include "gitmind/types.h"
+#include "gitmind/security/string.h"
 
 #include <git2/repository.h>
 #include <git2/tree.h>
@@ -177,7 +178,7 @@ static int process_directory_entry(git_repository *repo,
                                    git_treebuilder *parent_builder,
                                    const char *dir_path,
                                    const char *entry_name) {
-    char full_path[GM_PATH_MAX * 2];
+    char full_path[GM_PATH_MAX];
     struct stat st;
     int rc;
 

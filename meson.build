@@ -1,12 +1,8 @@
 project('git-mind', 'c',
         version: '0.6.0',
-        default_options: ['c_std=c23', 'warning_level=3', 'werror=true'])
+        default_options: ['c_std=c2x', 'warning_level=3', 'werror=true'])
 
-# Optional feature toggles
-option('enable_io', type: 'boolean', value: false, description: 'Enable IO public headers')
-option('enable_time', type: 'boolean', value: false, description: 'Enable time public headers')
-option('enable_util', type: 'boolean', value: false, description: 'Enable util public headers')
-option('enable_utf8', type: 'boolean', value: true, description: 'Enable UTF-8 public headers')
+## Optional feature toggles are declared in meson_options.txt
 
 # HARD E-BRAKE: refuse host builds unless in Docker or CI
 in_docker = run_command('sh', '-lc', '[ "$GITMIND_DOCKER" = "1" ] && echo 1 || echo 0').stdout().strip() == '1'
@@ -278,6 +274,29 @@ test_journal_safety = executable('test_journal_safety',
   link_with : libgitmind,
   dependencies : [libsodium_dep, thread_dep])
 
+test_cache_shard_distribution = executable('test_cache_shard_distribution',
+  'core/tests/unit/test_cache_shard_distribution.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_edge_oid_fallback = executable('test_edge_oid_fallback',
+  'core/tests/unit/test_edge_oid_fallback.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+test_ref_utils = executable('test_ref_utils',
+  'core/tests/unit/test_ref_utils.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_ref_utils = executable('test_ref_utils',
+  'core/tests/unit/test_ref_utils.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, thread_dep])
+
 # Register tests
 test('error', test_error)
 test('id', test_id)
@@ -300,6 +319,10 @@ test('cache_meta', test_cache_meta)
 test('journal_mixed_cbor', test_journal_mixed_cbor)
 test('cache_query', test_cache_query)
 test('journal_safety', test_journal_safety)
+test('cache_shard_distribution', test_cache_shard_distribution)
+test('edge_oid_fallback', test_edge_oid_fallback)
+test('ref_utils', test_ref_utils)
+test('ref_utils', test_ref_utils)
 
 # Standalone header compilation checks (public headers)
 header_check_src = 'tools/header_compile.c'

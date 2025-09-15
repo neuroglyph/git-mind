@@ -12,7 +12,7 @@ last_updated: 2025-09-15
 
 ## Overview
 
-This repository enforces high correctness and portability while centering on modern C23. CI is split into:
+This repository enforces high correctness and portability while centering on modern C23 (expressed in Meson as `c_std=c2x` for broad compiler support). CI is split into:
 
 - Gating jobs that must pass for merges
 - Canary jobs that provide early portability signals but do not block

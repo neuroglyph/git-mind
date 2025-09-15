@@ -21,7 +21,11 @@
     512 /* Git reference name buffer (must fit prefix + branch) */
 #endif
 #ifndef SHA_HEX_SIZE
-#define SHA_HEX_SIZE 41   /* SHA1 hex string size (40 + null) */
+# ifdef GIT_OID_HEXSZ
+#  define SHA_HEX_SIZE (GIT_OID_HEXSZ + 1)
+# else
+#  define SHA_HEX_SIZE 41   /* Fallback: SHA1 hex string size (40 + null) */
+# endif
 #endif
 #define SHA_BYTES_SIZE 20 /* SHA1 size in bytes */
 #define ZERO_SHA_STRING "0000000000000000000000000000000000000000"

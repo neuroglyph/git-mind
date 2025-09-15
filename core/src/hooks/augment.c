@@ -4,6 +4,7 @@
 #include "gitmind/hooks/augment.h"
 
 #include <string.h>
+#include "gitmind/util/memory.h"
 #include <time.h>
 
 /* Note: replace any private header usage with public equivalents when available. */
@@ -151,10 +152,8 @@ int gm_hook_create_augments_edge(gm_context_t *ctx, const gm_oid_t *old_oid,
     edge.timestamp = (uint64_t)time(NULL);
 
     /* Set paths (both same for AUGMENTS) */
-    strncpy(edge.src_path, file_path, GM_PATH_MAX - 1);
-    edge.src_path[GM_PATH_MAX - 1] = '\0';
-    strncpy(edge.tgt_path, file_path, GM_PATH_MAX - 1);
-    edge.tgt_path[GM_PATH_MAX - 1] = '\0';
+    (void)gm_strcpy_safe(edge.src_path, GM_PATH_MAX, file_path);
+    (void)gm_strcpy_safe(edge.tgt_path, GM_PATH_MAX, file_path);
 
     /* Generate ULID */
     gm_ulid_generate(edge.ulid);

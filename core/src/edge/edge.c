@@ -10,6 +10,8 @@
 #include "gitmind/result.h"
 #include "gitmind/types/ulid.h"
 #include "gitmind/security/string.h"
+#include "gitmind/security/memory.h"
+#include "gitmind/util/memory.h"
 #include "gitmind/cbor/keys.h"
 #include <stdint.h>
 #include <string.h>
@@ -43,8 +45,7 @@ static uint64_t get_timestamp_millis(gm_context_t *ctx) {
  * Initialize edge with default values
  */
 static void edge_init_defaults(gm_edge_t *edge) {
-    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
-    (void)memset(edge, 0, sizeof(gm_edge_t));
+    (void)gm_memset_safe(edge, 0, sizeof(gm_edge_t));
     edge->confidence = DefaultConfidence;
 }
 
@@ -107,13 +108,9 @@ gm_result_edge_t gm_edge_create(gm_context_t *ctx, const char *src_path,
     git_oid_fromraw(&edge.tgt_oid, edge.tgt_sha);
     
     /* Set fields */
-    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
-    (void)strncpy(edge.src_path, src_path, GM_PATH_MAX - 1);
-    edge.src_path[GM_PATH_MAX - 1] = '\0';
+    (void)gm_strcpy_safe(edge.src_path, GM_PATH_MAX, src_path);
     
-    // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
-    (void)strncpy(edge.tgt_path, tgt_path, GM_PATH_MAX - 1);
-    edge.tgt_path[GM_PATH_MAX - 1] = '\0';
+    (void)gm_strcpy_safe(edge.tgt_path, GM_PATH_MAX, tgt_path);
     
     edge.rel_type = (uint16_t)rel_type;
     edge.timestamp = get_timestamp_millis(ctx);

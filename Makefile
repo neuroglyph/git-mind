@@ -35,4 +35,8 @@ md-fix:
 changelog-add:
 	@python3 tools/changelog/add_entry.py -m "$(m)" $(if $(n),-n "$(n)")
 
-.PHONY: all test clean docker-clean md-lint md-fix changelog-add
+.PHONY: ci-local
+ci-local:
+	@bash tools/ci/ci_local.sh
+
+.PHONY: all test clean docker-clean md-lint md-fix changelog-add ci-local

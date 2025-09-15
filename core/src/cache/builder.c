@@ -31,6 +31,8 @@
 #include "gitmind/journal.h"
 #include "gitmind/types.h"
 #include "gitmind/security/string.h"
+#include "gitmind/util/ref.h"
+#include "gitmind/util/memory.h"
 
 /* Local constants */
 #define CACHE_TEMP_DIR "/tmp/gitmind-cache-\x58\x58\x58\x58\x58\x58"
@@ -67,14 +69,20 @@ static edge_map_t *edge_map_create(size_t size) {
     return map;
 }
 
-/* Hash function for SHA */
+/* Hash function for OID: lightweight mixing for better distribution */
 static size_t oid_hash(const gm_oid_t *oid, size_t size) {
-    size_t hash = 0;
     const uint8_t *raw = git_oid_raw(oid);
+    uint32_t x = 0x9E3779B9u; /* golden ratio */
     for (int i = 0; i < GM_OID_RAWSZ; i++) {
-        hash = (hash * OID_HASH_MULTIPLIER) + raw[i];
+        x ^= raw[i];
+        x *= 0x85EBCA6Bu;      /* mix */
+        x ^= (x >> 13);
     }
-    return hash % size;
+    /* final avalanche */
+    x ^= x >> 16;
+    x *= 0x7FEB352Du;
+    x ^= x >> 15;
+    return (size_t)(x % (uint32_t)size);
 }
 
 /* Add edge ID to map */
@@ -131,15 +139,13 @@ static void edge_map_free(edge_map_t *map) {
 
 /* Get SHA prefix for sharding */
 static void get_oid_prefix(const gm_oid_t *oid, char *prefix, int bits) {
-    size_t bytes = (size_t)((bits + 7) / 8);
-    size_t offset = 0;
-    const uint8_t *raw = git_oid_raw(oid);
-    for (size_t i = 0; i < bytes; i++) {
-        (void)gm_snprintf(prefix + offset, (size_t)MAX_SHARD_PATH - offset,
-                          "%02x", raw[i]);
-        offset += HEX_CHARS_PER_BYTE;
-    }
-    prefix[offset] = '\0';
+    int chars = (bits + 3) / BITS_PER_HEX_CHAR; /* Round up to hex chars */
+    if (chars <= 0) { prefix[0] = '\0'; return; }
+    char hex[GIT_OID_HEXSZ];
+    git_oid_fmt(hex, oid); /* not null-terminated */
+    if (chars > GIT_OID_HEXSZ) chars = GIT_OID_HEXSZ;
+    for (int i = 0; i < chars && i < MAX_SHARD_PATH - 1; i++) prefix[i] = hex[i];
+    prefix[(chars < (MAX_SHARD_PATH - 1)) ? chars : (MAX_SHARD_PATH - 1)] = '\0';
 }
 
 static int oid_to_hex(const gm_oid_t *oid, char *out, size_t out_size) {
@@ -299,10 +305,10 @@ static int cache_get_journal_tip(git_repository *repo, const char *branch,
     git_reference *journal_ref = NULL;
     char journal_ref_name[REF_NAME_BUFFER_SIZE];
     {
-        int rn = gm_snprintf(journal_ref_name, sizeof(journal_ref_name),
-                              "refs/gitmind/edges/%s", branch);
-        if (rn < 0 || (size_t)rn >= sizeof(journal_ref_name)) {
-            return GM_ERR_BUFFER_TOO_SMALL;
+        int brc = gm_build_ref(journal_ref_name, sizeof(journal_ref_name),
+                               GITMIND_EDGES_REF_PREFIX, branch);
+        if (brc != GM_OK) {
+            return brc;
         }
     }
 
@@ -311,6 +317,7 @@ static int cache_get_journal_tip(git_repository *repo, const char *branch,
         if (tip_oid) {
             git_oid_tostr(meta->journal_tip_oid, sizeof(meta->journal_tip_oid),
                           tip_oid);
+            meta->journal_tip_oid_bin = *tip_oid;
 
             /* Also get the timestamp of the tip commit */
             git_commit *tip_commit = NULL;
@@ -322,8 +329,8 @@ static int cache_get_journal_tip(git_repository *repo, const char *branch,
         git_reference_free(journal_ref);
     } else {
         /* No journal yet */
-        (void)gm_snprintf(meta->journal_tip_oid, sizeof meta->journal_tip_oid,
-                          "%s", ZERO_SHA_STRING);
+        meta->journal_tip_oid[0] = '\0';
+        gm_memset_safe(&meta->journal_tip_oid_bin, 0, sizeof(meta->journal_tip_oid_bin));
     }
 
     return GM_OK;
@@ -378,9 +385,9 @@ static int cache_update_ref(git_repository *repo, const char *branch,
                             const git_oid *commit_oid) {
     char ref_name[REF_NAME_BUFFER_SIZE];
     {
-        int rn = gm_snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
-        if (rn < 0 || (size_t)rn >= sizeof(ref_name)) {
-            return GM_ERR_BUFFER_TOO_SMALL;
+        int brc = gm_build_ref(ref_name, sizeof(ref_name), GM_CACHE_REF_PREFIX, branch);
+        if (brc != GM_OK) {
+            return brc;
         }
     }
 
@@ -457,7 +464,7 @@ static int gm_cache_rebuild_internal(git_repository *repo, const char *branch,
     meta.build_time_ms = (uint64_t)((clock() - start_time) / CLOCKS_PER_MS);
     meta.shard_bits = GM_CACHE_SHARD_BITS;
     meta.version = GM_CACHE_VERSION;
-    strncpy(meta.branch, branch, GM_CACHE_BRANCH_NAME_SIZE - 1);
+    (void)gm_strcpy_safe(meta.branch, GM_CACHE_BRANCH_NAME_SIZE, branch);
 
     /* Get journal tip info */
     rc = cache_get_journal_tip(repo, branch, &meta);

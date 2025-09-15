@@ -28,9 +28,9 @@
 #include <string.h>
 #include "gitmind/security/memory.h"
 #include "gitmind/security/string.h"
+#include "gitmind/util/memory.h"
 
 /* Constants */
-#define REFS_GITMIND_PREFIX "refs/gitmind/edges/"
 #define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
 #define REF_NAME_BUFFER_SIZE GM_PATH_MAX
 #define CURRENT_BRANCH_BUFFER_SIZE GM_PATH_MAX
@@ -106,7 +106,7 @@ static void convert_legacy_to_attributed(const gm_edge_t *legacy,
 static int process_attributed_edge(const uint8_t *cbor_data, size_t remaining,
                                    reader_ctx_t *rctx, size_t *consumed) {
     gm_edge_attributed_t edge;
-    memset(&edge, 0, sizeof(edge));
+    gm_memset_safe(&edge, 0, sizeof(edge));
 
     /* Try to decode an attributed edge */
     int decode_result = gm_edge_attributed_decode_cbor_ex(cbor_data, remaining,
@@ -152,19 +152,16 @@ static int process_regular_edge(const uint8_t *cbor_data, size_t remaining,
     }
 
     gm_edge_t basic = {0};
-    memcpy(basic.src_sha, aedge.src_sha, GM_SHA1_SIZE);
-    memcpy(basic.tgt_sha, aedge.tgt_sha, GM_SHA1_SIZE);
+    (void)gm_memcpy_span(basic.src_sha, GM_SHA1_SIZE, aedge.src_sha, GM_SHA1_SIZE);
+    (void)gm_memcpy_span(basic.tgt_sha, GM_SHA1_SIZE, aedge.tgt_sha, GM_SHA1_SIZE);
     basic.src_oid = aedge.src_oid;
     basic.tgt_oid = aedge.tgt_oid;
     basic.rel_type = aedge.rel_type;
     basic.confidence = aedge.confidence;
     basic.timestamp = aedge.timestamp;
-    strncpy(basic.src_path, aedge.src_path, GM_PATH_MAX - 1);
-    basic.src_path[GM_PATH_MAX - 1] = '\0';
-    strncpy(basic.tgt_path, aedge.tgt_path, GM_PATH_MAX - 1);
-    basic.tgt_path[GM_PATH_MAX - 1] = '\0';
-    strncpy(basic.ulid, aedge.ulid, GM_ULID_SIZE);
-    basic.ulid[GM_ULID_SIZE] = '\0';
+    (void)gm_strcpy_safe(basic.src_path, GM_PATH_MAX, aedge.src_path);
+    (void)gm_strcpy_safe(basic.tgt_path, GM_PATH_MAX, aedge.tgt_path);
+    (void)gm_strcpy_safe(basic.ulid, GM_ULID_SIZE + 1, aedge.ulid);
 
     *consumed = aconsumed;
     return ((int (*)(const gm_edge_t *, void *))rctx->callback)(&basic, rctx->userdata);

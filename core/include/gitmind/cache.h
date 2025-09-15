@@ -10,6 +10,7 @@
 
 #include <git2/types.h>
 #include <git2/oid.h>
+#include "gitmind/types.h"
 
 #include "gitmind/context.h"
 
@@ -42,7 +43,8 @@ typedef struct {
 /* Cache metadata and statistics */
 typedef struct {
     uint64_t journal_tip_time; /**< Timestamp of last processed journal commit */
-    char journal_tip_oid[GM_CACHE_OID_STRING_SIZE];  /**< SHA of last processed journal commit */
+    gm_oid_t journal_tip_oid_bin; /**< OID of last processed journal commit (preferred) */
+    char journal_tip_oid[GM_CACHE_OID_STRING_SIZE];  /**< [DEPRECATED] OID hex string of last processed journal commit */
     uint64_t edge_count;       /**< Total edges in cache */
     uint64_t build_time_ms;    /**< Time to build cache (milliseconds) */
     uint32_t shard_bits;       /**< Number of bits for sharding */

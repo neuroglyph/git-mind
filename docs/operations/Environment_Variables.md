@@ -29,6 +29,11 @@ This page lists environment variables that influence git‑mind builds, tests, a
   - Used by: `meson.build` (host build e‑brake).
   - Values: `1` to allow; otherwise refused.
 
+- `GITMIND_CI_IMAGE`
+  - Purpose: Select CI Docker image for local/CI runs that execute builds/tests in a container.
+  - Used by: `.github/workflows/c_core.yml`, `tools/ci/ci_local.sh`.
+  - Default: `gitmind/ci:clang-20`.
+
 ## Runtime (CLI)
 
 - `GITMIND_SAFETY`
@@ -67,6 +72,13 @@ This page lists environment variables that influence git‑mind builds, tests, a
   - Purpose: Path to the built `git-mind` binary used by E2E tests.
   - Used by: `tests/e2e/run_all_tests.sh` and related scripts.
   - Example: `export GIT_MIND=$(pwd)/build/git-mind`
+
+## Git Hooks
+
+- `HOOKS_BYPASS`
+  - Purpose: Bypass local git hooks (e.g., the pre‑push CHANGELOG guard) in emergencies.
+  - Usage: `HOOKS_BYPASS=1 git push`
+  - Notes: Do not make a habit of bypassing hooks; update the CHANGELOG instead.
 
 ## Notes
 

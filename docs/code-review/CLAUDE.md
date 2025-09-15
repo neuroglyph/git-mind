@@ -135,7 +135,7 @@ New CBOR helpers and reader/writer paths use `GM_OK`/`GM_ERR_*`. Remaining spots
 
 ### Broken:
 - **FALLBACK LOGIC BUG** in `gm_edge_equal()` as noted above
-- **BUILD FAILURES** on non-C23 compilers (meson.build hardcodes c_std=c23)
+- **BUILD NOTES**: Project targets C23 semantics; Meson uses `c_std=c2x` to express this across toolchains. Gating CI remains on real C23 compilers (gcc-14/clang-20).
 
 ## Security Analysis
 

@@ -1,29 +1,27 @@
 # git-mind 🧠
 
 > [!WARNING]  
-> **This project is in its early stages — _USE AT YOUR OWN RISK_.**  
-> Right now you can’t do much with it yet, and it *does* make changes inside your Git repo.  
+> __This project is in its early stages — _USE AT YOUR OWN RISK_.__  
+> Right now you can’t do much with it yet, and it _does_ make changes inside your Git repo.  
 > Proceed only if you’re curious and comfortable experimenting.  
->   
-> This README is more of a **Vision Statement™** than a manual. It’s here to set the direction, hype the idea, and motivate ongoing work.  
->   
-> If you’re intrigued, **star the repo** ⭐, follow along in **Discussions/Releases**, and watch it grow.  
->   
-> — *flyingrobots*  
+>
+> This README is more of a __Vision Statement™__ than a manual. It’s here to set the direction, hype the idea, and motivate ongoing work.  
+>
+> If you’re intrigued, __star the repo__ ⭐, follow along in __Discussions/Releases__, and watch it grow.  
+>
+> — _flyingrobots_  
 
-<p align="center">
 <img src="https://media.githubusercontent.com/media/neuroglyph/git-mind/main/assets/images/logo.png" alt="git-mind logo" width="400" />
-</p>
 
 [![Build](https://img.shields.io/github/actions/workflow/status/neuroglyph/git-mind/ci.yml?branch=main)](https://github.com/neuroglyph/git-mind/actions)
 [![License](https://img.shields.io/badge/license-MIND--UCAL--1.0-blue)](LICENSE)
 [![Status](https://img.shields.io/badge/status-early--stage-orange)](docs/roadmap.md)
 
-> **Version your thoughts. Branch your ideas. Merge understanding.**
+> __Version your thoughts. Branch your ideas. Merge understanding.__
 
-`git-mind` transforms any Git repository into a **serverless knowledge graph**, where relationships evolve with your history and AI helps uncover hidden connections.
+`git-mind` transforms any Git repository into a __serverless knowledge graph__, where relationships evolve with your history and AI helps uncover hidden connections.
 
-**No servers. No setup. Just `git push` your mind.**
+__No servers. No setup. Just `git push` your mind.__
 
 ---
 
@@ -49,7 +47,7 @@ oauth2.c
 jwt_handler.c
 basic_auth.c
 # Your knowledge graph evolved with your code!
-````
+```
 
 ### Build a Living Knowledge Base
 
@@ -106,28 +104,28 @@ Package managers (Homebrew/Winget): coming soon.
 
 ## ✨ The Magic
 
-- **Your repo is the database** — No servers, no external dependencies
-- **Time-travel built in** — Check out any commit, get the graph from that moment
-- **AI copilot ready** — Let AI suggest connections, you review and merge
-- **Branch and merge ideas** — Try wild connections in a branch, merge what works
+- __Your repo is the database__ — No servers, no external dependencies
+- __Time-travel built in__ — Check out any commit, get the graph from that moment
+- __AI copilot ready__ — Let AI suggest connections, you review and merge
+- __Branch and merge ideas__ — Try wild connections in a branch, merge what works
 
 ---
 
 ## 🔮 Real-World Uses
 
-**Software Architecture**
+__Software Architecture__
 
 - Trace decisions through code
 - See which tests cover which requirements
 - Understand impact before refactoring
 
-**Research & Writing**
+__Research & Writing__
 
 - Build Zettelkasten-style note networks
 - Track citation graphs
 - Fork and extend others' research
 
-**Team Knowledge**
+__Team Knowledge__
 
 - Onboard developers with explorable codebases
 - Preserve institutional memory in the repo
@@ -173,7 +171,7 @@ $ git mind list --from src/cache.c --format json
 
 ---
 
-## 🌱 Who's Using git-mind?
+## 🌱 Who's Using git-mind
 
 - 🧪 Early adopters exploring Zettelkasten workflows in Git
 - 🔬 Researchers mapping papers → datasets → results
@@ -209,11 +207,11 @@ The journey from idea to implementation taught us:
 
 Created by J. Kirby Ross and the Neuroglyph Collective.  
 
-*"Hakuna Matata"* — no worries, your semantic connections are safe.
+_"Hakuna Matata"_ — no worries, your semantic connections are safe.
 
 ### THE PROMISE
 
-*"Remember who you are."*
+_"Remember who you are."_
 
 Your code tells a story. `git-mind` helps you remember it, share it, and build upon it.  
 
@@ -223,17 +221,17 @@ In the great Circle of Development, no understanding is lost, no connection forg
 
 ## EPILOGUE
 
-It was 3 AM. I had just finished implementing **Roaring Bitmaps**,  and in my exhausted haze the wildebeest stampede from *The Lion King*  suddenly snapped into place as the perfect metaphor.  
+It was 3 AM. I had just finished implementing __Roaring Bitmaps__,  and in my exhausted haze the wildebeest stampede from _The Lion King_  suddenly snapped into place as the perfect metaphor.  
 
 That moment of delirium became a spark. For a while, many of the `git-mind`  docs had “Circle of Life” editions — Mufasa and Rafiki explaining caches,  hooks, and semantic edges.  Those playful docs are gone now, (well, not really, they're in the git history...),but the spirit remains.  
 
-Because sometimes **art makes itself.**
+Because sometimes __art makes itself.__
 
 ---
 
-*"Oh yes, the past can hurt. But the way I see it, you can either run from it or learn from it."*
+_"Oh yes, the past can hurt. But the way I see it, you can either run from it or learn from it."_
 
-**Choose to learn. Choose `git-mind`.**
+__Choose to learn. Choose `git-mind`.__
 
 ---
 
