@@ -1,3 +1,36 @@
-#!/bin/sh
-command -v git-lfs >/dev/null 2>&1 || { printf >&2 "\n%s\n\n" "This repository is configured for Git LFS but 'git-lfs' was not found on your path. If you no longer wish to use Git LFS, remove this hook by deleting the 'pre-push' file in the hooks directory (set by 'core.hookspath'; usually '.git/hooks')."; exit 2; }
-git lfs pre-push "$@"
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Guard: allow bypass
+if [[ "${HOOKS_BYPASS:-}" == "1" ]]; then
+  exit 0
+fi
+
+remote_name=$1
+remote_url=$2
+
+status=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  # Only enforce for pushes to main
+  if [[ "$remote_ref" == "refs/heads/main" ]]; then
+    # Determine the range to inspect
+    range=""
+    if [[ "$remote_sha" == "0000000000000000000000000000000000000000" ]]; then
+      # New branch/update; check last commit only
+      range="$local_sha^..$local_sha"
+    else
+      range="$remote_sha..$local_sha"
+    fi
+
+    # Check if CHANGELOG.md is updated in this push
+    if ! git diff --name-only $range | grep -q '^CHANGELOG.md$'; then
+      echo "[pre-push] CHANGELOG.md not updated for push to main ($range)." >&2
+      echo "           Run: make changelog-add m=\"<one-liner>\"" >&2
+      echo "           Or bypass once: HOOKS_BYPASS=1 git push" >&2
+      status=1
+    fi
+  fi
+done
+
+exit $status
+

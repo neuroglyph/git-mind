@@ -1,3 +1,13 @@
+---
+title: Risk Register
+description: Top risks, mitigations, and contingencies for git-mind.
+audience: [contributors, developers]
+domain: [project]
+tags: [risk]
+status: draft
+last_updated: 2025-09-15
+---
+
 # Risk Register
 
 Table of Contents

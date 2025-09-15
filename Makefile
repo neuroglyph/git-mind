@@ -20,6 +20,12 @@ docker-clean:
 
 md-lint:
 	@npx --yes -p markdownlint-cli2 markdownlint-cli2 "**/*.md" "#.git" "#build"
+	@python3 tools/docs/check_frontmatter.py
+	@python3 tools/docs/check_docs.py --mode link
+	@python3 tools/docs/check_docs.py --mode toc
+
+.PHONY: md-verify
+md-verify: md-lint
 
 md-fix:
 	@npx --yes -p markdownlint-cli2 markdownlint-cli2 --fix "**/*.md" "#.git" "#build"

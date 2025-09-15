@@ -78,3 +78,25 @@ ninja -C build
 ```
 
 These options only affect umbrella header aggregation and do not gate the core library build. They exist to keep downstreams’ public include surface minimal and configurable.
+
+## Git Hooks (optional but recommended)
+
+We ship local Git hooks under `.githooks/`.
+
+- Enable them globally in this repo:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+- Pre‑push: requires a CHANGELOG entry when pushing to `main`. To add an entry quickly:
+
+```bash
+make changelog-add m="One‑liner description" n="Optional note"
+```
+
+To bypass in emergencies:
+
+```bash
+HOOKS_BYPASS=1 git push
+```

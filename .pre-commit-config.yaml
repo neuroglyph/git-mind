@@ -26,6 +26,11 @@ repos:
       entry: python3 tools/docs/check_docs.py --mode toc
       language: python
       files: ^docs/.*\.md$
+    - id: docs-frontmatter-check
+      name: docs: frontmatter check
+      entry: python3 tools/docs/check_frontmatter.py
+      language: python
+      files: ^docs/.*\.md$
     - id: enforce-public-includes
       name: enforce public includes (no core/src)
       entry: bash tools/enforce-public-includes.sh
