@@ -19,8 +19,6 @@
 #include <git2/repository.h>
 #include <git2/revwalk.h>
 #include <sodium.h>
-#include <git2/repository.h>
-#include <git2/refs.h>
 #include <stdint.h>
 
 #include <stdio.h>
