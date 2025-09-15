@@ -15,19 +15,19 @@ test_invalid_path_errors() {
     init_test_repo "invalid-paths"
 
     # No files yet; linking should fail with clear message for source
-    assert_failure "gm link missing.md other.md"
-    assert_contains "gm link missing.md other.md" "Error: Path not found: missing.md"
+    assert_failure "$GIT_MIND link missing.md other.md"
+    assert_contains "$GIT_MIND link missing.md other.md" "Error: Path not found: missing.md"
 
     # Create source, leave target missing
     create_file "exists.md" "content"
     commit "Add exists.md"
-    assert_failure "gm link exists.md other.md"
-    assert_contains "gm link exists.md other.md" "Error: Path not found: other.md"
+    assert_failure "$GIT_MIND link exists.md other.md"
+    assert_contains "$GIT_MIND link exists.md other.md" "Error: Path not found: other.md"
 
     # Directory instead of regular file should fail
     mkdir -p dir
-    assert_failure "gm link exists.md dir"
-    assert_contains "gm link exists.md dir" "Error: Not a regular file: dir"
+    assert_failure "$GIT_MIND link exists.md dir"
+    assert_contains "$GIT_MIND link exists.md dir" "Error: Not a regular file: dir"
 }
 
 # Test 1: Same Content, Different Paths

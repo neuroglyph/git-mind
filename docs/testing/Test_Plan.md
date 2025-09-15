@@ -30,9 +30,11 @@ Testing emphasizes determinism, backward compatibility, and performance. Targets
   - Scalar flips and set diffs across simulated merges
   - Depth capping for `implies` chains; cycle detection
 - CLI Error Handling
+
   - `git-mind link` with missing source/target prints `Error: Path not found: <path>` and exits non-zero
   - `git-mind link` with a directory as source/target prints `Error: Not a regular file: <path>` and exits non-zero
   - E2E coverage in `tests/e2e/02_edge_cases.sh:test_invalid_path_errors`
+
 - Advice Merge (if enabled)
   - LWW and OR-Set behaviors; tombstone wins/remains until re-added
 

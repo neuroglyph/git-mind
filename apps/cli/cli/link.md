@@ -62,6 +62,7 @@ Error: Path not found: missing.md
 $ mkdir dir && git-mind link README.md dir
 Error: Not a regular file: dir
 
+Note: "regular file" excludes directories, FIFOs, devices. Clarify symlink behavior (accepted/rejected).
 $ git-mind link 
 Usage: git-mind link <source> <target> [--type <type>]
 Types: implements, references, depends_on, augments
