@@ -17,6 +17,7 @@
 
 #include "gitmind/cache.h"
 #include "gitmind/cache/bitmap.h"
+#include "cache_internal.h"
 #include "gitmind/constants.h"
 #include "gitmind/context.h"
 #include "gitmind/error.h"
@@ -36,8 +37,8 @@ static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
     int chars = (bits + 3) / BITS_PER_HEX_CHAR; /* Round up to hex chars */
     for (int i = 0; i < chars; i++) {
         size_t off = (size_t)i * (size_t)HEX_CHARS_PER_BYTE;
-        (void)snprintf(prefix + off, (size_t)HEX_CHARS_PER_BYTE + 1, "%02x",
-                       sha[i]);
+        (void)gm_snprintf(prefix + off, (size_t)HEX_CHARS_PER_BYTE + 1, "%02x",
+                          sha[i]);
     }
     prefix[(size_t)chars * (size_t)HEX_CHARS_PER_BYTE] = '\0';
 }
@@ -125,6 +126,7 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
     meta->version = GM_CACHE_VERSION;
     meta->shard_bits = GM_CACHE_SHARD_BITS;
     strncpy(meta->branch, branch, GM_CACHE_BRANCH_NAME_SIZE - 1);
+    meta->branch[GM_CACHE_BRANCH_NAME_SIZE - 1] = '\0';
     meta->journal_tip_time = (uint64_t)git_commit_time(commit);
     git_commit_free(commit);
 
@@ -445,9 +447,7 @@ void gm_cache_result_free(gm_cache_result_t *result) {
     }
 }
 
-/* Forward declaration */
-int gm_cache_calculate_size(git_repository *repo, const git_oid *tree_oid,
-                            uint64_t *size_bytes);
+/* Internal helpers declared in cache_internal.h */
 
 /* Get cache statistics */
 int gm_cache_stats(gm_context_t *ctx, const char *branch,

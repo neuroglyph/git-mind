@@ -6,6 +6,10 @@
 
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Random number operations interface for dependency injection.
  * This allows for test doubles and deterministic testing.
@@ -20,5 +24,9 @@ typedef struct gm_random_ops {
  * Get default random operations (uses real system calls).
  */
 const gm_random_ops_t *gm_random_ops_default(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GITMIND_RANDOM_OPS_H */
