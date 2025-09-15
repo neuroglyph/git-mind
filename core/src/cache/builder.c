@@ -23,6 +23,7 @@
 
 #include "gitmind/cache.h"
 #include "gitmind/cache/bitmap.h"
+#include "cache_internal.h"
 #include "gitmind/constants.h"
 #include "gitmind/context.h"
 #include "gitmind/edge.h"

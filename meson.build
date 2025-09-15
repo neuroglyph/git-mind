@@ -266,6 +266,12 @@ test_journal_mixed_cbor = executable('test_journal_mixed_cbor',
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
+test_cache_query = executable('test_cache_query',
+  'core/tests/unit/test_cache_query.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
 test_journal_safety = executable('test_journal_safety',
   'core/tests/unit/test_journal_safety.c',
   include_directories : inc,
@@ -292,6 +298,7 @@ test('edge_attributed_cbor', test_edge_attributed_cbor)
 test('edge_equal_semantics', test_edge_equal_semantics)
 test('cache_meta', test_cache_meta)
 test('journal_mixed_cbor', test_journal_mixed_cbor)
+test('cache_query', test_cache_query)
 test('journal_safety', test_journal_safety)
 
 # Standalone header compilation checks (public headers)

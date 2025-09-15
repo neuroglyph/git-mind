@@ -17,6 +17,7 @@
 
 #include "gitmind/cache.h"
 #include "gitmind/cache/bitmap.h"
+#include "cache_internal.h"
 #include "gitmind/constants.h"
 #include "gitmind/context.h"
 #include "gitmind/error.h"
@@ -445,9 +446,7 @@ void gm_cache_result_free(gm_cache_result_t *result) {
     }
 }
 
-/* Forward declaration */
-int gm_cache_calculate_size(git_repository *repo, const git_oid *tree_oid,
-                            uint64_t *size_bytes);
+/* Internal helpers declared in cache_internal.h */
 
 /* Get cache statistics */
 int gm_cache_stats(gm_context_t *ctx, const char *branch,

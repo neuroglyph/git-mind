@@ -118,16 +118,8 @@ int gm_cache_stats(gm_context_t *ctx, const char *branch, uint64_t *edge_count,
  */
 void gm_cache_result_free(gm_cache_result_t *result);
 
-/**
- * Calculate total size of cache tree
- * @param repo Git repository
- * @param tree_oid Tree object ID to measure
- * @param size_bytes Output size in bytes
- * @return GM_OK on success, error code on failure
- */
-/* Internal functions - exposed for testing */
-int gm_cache_calculate_size(git_repository *repo, const git_oid *tree_oid, uint64_t *size_bytes);
-int gm_build_tree_from_directory(git_repository *repo, const char *dir_path, git_oid *tree_oid);
+/* Internal functions have been moved to a private header to avoid exposing
+ * non-public API via umbrella headers. See core/src/cache/cache_internal.h. */
 
 #ifdef __cplusplus
 }
