@@ -28,6 +28,6 @@
   "MD056": false,                       // Table column count not enforced
   "MD032": false,                       // Blanks around lists not enforced
   "MD034": false,                       // Bare URLs allowed
-  "MD041": false                        // First-line heading not required
+  "MD041": false,                       // First-line heading not required
   "MD026": { "punctuation": ".,;:!?" }
 }
