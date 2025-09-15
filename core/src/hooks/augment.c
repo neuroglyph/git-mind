@@ -214,7 +214,7 @@ int gm_hook_is_merge_commit(git_repository *repo, bool *is_merge) {
     /* Get HEAD */
     error = git_repository_head(&head_ref, repo);
     if (error < 0) {
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     /* Get commit */
@@ -222,12 +222,12 @@ int gm_hook_is_merge_commit(git_repository *repo, bool *is_merge) {
     error = git_reference_name_to_id(&oid, repo, "HEAD");
     git_reference_free(head_ref);
     if (error < 0) {
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     error = git_commit_lookup(&commit, repo, &oid);
     if (error < 0) {
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
 
     /* Check parent count */

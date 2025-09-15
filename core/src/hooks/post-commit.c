@@ -110,7 +110,7 @@ static int get_changed_files(char ***files_out, size_t *count_out) {
     fp = popen("git diff HEAD~1 HEAD --name-only 2>/dev/null", "r");
     if (!fp) {
         free(files);
-        return GM_ERROR;
+        return GM_ERR_IO_FAILED;
     }
 
     /* Read each file */
@@ -139,7 +139,7 @@ static int initialize_repository(git_repository **repo, int verbose) {
         if (verbose) {
             fprintf(stderr, "Failed to open repository\n");
         }
-        return GM_ERROR;
+        return GM_ERR_UNKNOWN;
     }
     return GM_OK;
 }
