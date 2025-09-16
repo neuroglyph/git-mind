@@ -47,20 +47,56 @@ jobs:
     if: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout fork branch (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-      - name: Seed feedback doc (artifact for fork PR)
+      - name: Try to seed and push to fork (if maintainers can modify)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BOT_PAT: ${{ secrets.BOT_PAT }}
         run: |
+          set -e
           PR=${{ github.event.number }}
           echo "Seeding review for PR#$PR (fork)"
+          # Ensure our tools exist (checked out fork branch may not have them in older forks)
+          if [ ! -f tools/review/seed_feedback_from_github.py ]; then
+            echo "Tools missing in fork, checking out base repo tools..."
+            mkdir -p _tools
+            git clone --depth=1 https://github.com/${GITHUB_REPOSITORY}.git _tools/base
+            cp -r _tools/base/tools/review . || true
+          fi
           python3 tools/review/seed_feedback_from_github.py \
             --owner "${GITHUB_REPOSITORY%%/*}" --repo "${GITHUB_REPOSITORY##*/}" \
-            --pr "$PR" --out review-seed
+            --pr "$PR" --out docs/code-reviews
+          git config user.name  "git-mind-bot"
+          git config user.email "gitmind-bot@example.com"
+          git add docs/code-reviews
+          if git diff --cached --quiet; then
+            echo "No seeded changes to commit"; exit 0; fi
+          git commit -m "chore(review): seed feedback for PR #$PR"
+          # Attempt to push using BOT_PAT if provided and contributor allows edits
+          if [ -n "$BOT_PAT" ]; then
+            repo_full="${{ github.event.pull_request.head.repo.full_name }}"
+            branch="${{ github.event.pull_request.head.ref }}"
+            echo "Attempting push to fork $repo_full branch $branch"
+            git remote set-url origin https://x-access-token:$BOT_PAT@github.com/$repo_full.git
+            if git push origin "HEAD:$branch"; then
+              echo "Pushed seeded doc to fork branch"
+              exit 0
+            else
+              echo "Push to fork failed (likely edits not allowed); will upload artifact instead"
+            fi
+          else
+            echo "BOT_PAT not set; cannot push to fork. Uploading artifact instead."
+          fi
+          # Fall through to artifact path
+          mkdir -p review-seed && cp -r docs/code-reviews/* review-seed/ || true
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -85,4 +121,3 @@ jobs:
               issue_number: pr,
               body: msg
             });
-
