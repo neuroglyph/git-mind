@@ -1,0 +1,88 @@
+name: Auto Seed Review Doc
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  seed-same-repo:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch (same-repo)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Seed feedback doc into repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR=${{ github.event.number }}
+          echo "Seeding review for PR#$PR (same-repo)"
+          python3 tools/review/seed_feedback_from_github.py \
+            --owner "${GITHUB_REPOSITORY%%/*}" --repo "${GITHUB_REPOSITORY##*/}" \
+            --pr "$PR" --out docs/code-reviews
+      - name: Commit and push
+        run: |
+          git config user.name  "git-mind-bot"
+          git config user.email "gitmind-bot@example.com"
+          git add docs/code-reviews
+          if git diff --cached --quiet; then
+            echo "No changes to commit"; exit 0; fi
+          PR=${{ github.event.number }}
+          SHA=${{ github.event.pull_request.head.sha }}
+          git commit -m "chore(review): seed feedback for PR #$PR ($SHA)"
+          git push
+
+  seed-fork:
+    if: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Seed feedback doc (artifact for fork PR)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR=${{ github.event.number }}
+          echo "Seeding review for PR#$PR (fork)"
+          python3 tools/review/seed_feedback_from_github.py \
+            --owner "${GITHUB_REPOSITORY%%/*}" --repo "${GITHUB_REPOSITORY##*/}" \
+            --pr "$PR" --out review-seed
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-seed-PR${{ github.event.number }}
+          path: review-seed/**
+      - name: Comment with instructions
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request.number;
+            const msg = `I've generated a seeded review worksheet as an artifact for this PR (forked branch).
+
+            Steps:
+            1. Download the 'review-seed-PR${pr}' artifact from this workflow run.
+            2. Copy the file under 'docs/code-reviews/PR${pr}/<sha>.md' into your branch.
+            3. Fill in {response} sections with Accepted/Rejected templates and push.
+
+            Maintainers: merging PR branches into the main repo will allow auto-commit of future seeds.`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr,
+              body: msg
+            });
+
