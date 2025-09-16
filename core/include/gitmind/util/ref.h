@@ -6,6 +6,10 @@
 
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Build a full Git ref name with bounds checking.
  * out/out_sz: destination buffer and size
  * prefix    : ref prefix (e.g., "refs/gitmind/edges/")
@@ -15,5 +19,9 @@
  */
 int gm_build_ref(char *out, size_t out_sz, const char *prefix,
                  const char *branch);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GITMIND_UTIL_REF_H */

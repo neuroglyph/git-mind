@@ -151,9 +151,11 @@ int gm_hook_create_augments_edge(gm_context_t *ctx, const gm_oid_t *old_oid,
     edge.confidence = AUGMENT_CONFIDENCE; /* Always 100% for augments */
     edge.timestamp = (uint64_t)time(NULL);
 
-    /* Set paths (both same for AUGMENTS) */
-    (void)gm_strcpy_safe(edge.src_path, GM_PATH_MAX, file_path);
-    (void)gm_strcpy_safe(edge.tgt_path, GM_PATH_MAX, file_path);
+    /* Set paths (both same for AUGMENTS); fail on truncation */
+    if (gm_strcpy_safe(edge.src_path, GM_PATH_MAX, file_path) == -1 ||
+        gm_strcpy_safe(edge.tgt_path, GM_PATH_MAX, file_path) == -1) {
+        return GM_ERR_BUFFER_TOO_SMALL;
+    }
 
     /* Generate ULID */
     gm_ulid_generate(edge.ulid);

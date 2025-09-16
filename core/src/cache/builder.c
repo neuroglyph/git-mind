@@ -466,6 +466,10 @@ static int gm_cache_rebuild_internal(git_repository *repo, const char *branch,
     meta.build_time_ms = (uint64_t)((clock() - start_time) / CLOCKS_PER_MS);
     meta.shard_bits = GM_CACHE_SHARD_BITS;
     meta.version = GM_CACHE_VERSION;
+    if (strlen(branch) >= GM_CACHE_BRANCH_NAME_SIZE) {
+        rc = GM_ERR_INVALID_ARGUMENT;
+        goto cleanup;
+    }
     (void)gm_strcpy_safe(meta.branch, GM_CACHE_BRANCH_NAME_SIZE, branch);
 
     /* Get journal tip info */

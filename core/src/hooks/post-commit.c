@@ -9,7 +9,7 @@
 
 #include "../../include/gitmind/constants_internal.h"
 #include "augment.h"
-#include "gitmind/security/memory.h"
+#include <gitmind/security/memory.h>
 
 /* Array management constants */
 #define INITIAL_FILE_ARRAY_SIZE 10
