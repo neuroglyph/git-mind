@@ -132,13 +132,10 @@ bool gm_edge_equal(const gm_edge_t *edge_a, const gm_edge_t *edge_b) {
         return false;
     }
 
-    /* Source: require OID equality when both OIDs are set; otherwise fallback to legacy SHA */
+    /* Source: if both OIDs present, they must match; otherwise fallback to legacy SHA */
     if (!git_oid_is_zero(&edge_a->src_oid) && !git_oid_is_zero(&edge_b->src_oid)) {
         if (git_oid_cmp(&edge_a->src_oid, &edge_b->src_oid) != 0) {
-            /* Fallback to legacy SHA match when OIDs differ */
-            if (memcmp(edge_a->src_sha, edge_b->src_sha, GM_SHA1_SIZE) != 0) {
-                return false;
-            }
+            return false;
         }
     } else {
         if (memcmp(edge_a->src_sha, edge_b->src_sha, GM_SHA1_SIZE) != 0) {
@@ -149,9 +146,7 @@ bool gm_edge_equal(const gm_edge_t *edge_a, const gm_edge_t *edge_b) {
     /* Target: same rule as Source */
     if (!git_oid_is_zero(&edge_a->tgt_oid) && !git_oid_is_zero(&edge_b->tgt_oid)) {
         if (git_oid_cmp(&edge_a->tgt_oid, &edge_b->tgt_oid) != 0) {
-            if (memcmp(edge_a->tgt_sha, edge_b->tgt_sha, GM_SHA1_SIZE) != 0) {
-                return false;
-            }
+            return false;
         }
     } else {
         if (memcmp(edge_a->tgt_sha, edge_b->tgt_sha, GM_SHA1_SIZE) != 0) {

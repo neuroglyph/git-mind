@@ -79,6 +79,12 @@ This page lists environment variables that influence git‑mind builds, tests, a
   - Used by: `tests/e2e/run_all_tests.sh` and related scripts.
   - Example: `export GIT_MIND=$(pwd)/build/git-mind`
 
+- `GITMIND_TEST_BRANCH`
+  - Purpose: Direct journal writes to a specific branch in tests when the repository has no HEAD yet.
+  - Used by: `core/src/journal/writer.c` (test override).
+  - Example: `export GITMIND_TEST_BRANCH=testq`
+  - Notes: For tests only; production code should rely on current branch.
+
 ## Git Hooks
 
 - `HOOKS_BYPASS`

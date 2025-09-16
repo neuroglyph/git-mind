@@ -182,9 +182,17 @@ static int journal_append_generic(gm_context_t *ctx, const void *edges,
         return GM_ERR_INVALID_ARGUMENT;
     }
 
-    /* Get current branch */
-    if (get_current_branch(ctx->git_repo, branch, sizeof(branch)) != GM_OK) {
-        return GM_ERR_UNKNOWN;
+    /* Determine branch: prefer explicit env for tests, else current branch */
+    const char *env_branch = getenv("GITMIND_TEST_BRANCH");
+    if (env_branch && *env_branch) {
+        size_t n = strlen(env_branch);
+        if (n >= sizeof(branch)) n = sizeof(branch) - 1;
+        gm_memcpy_safe(branch, sizeof(branch), env_branch, n);
+        branch[n] = '\0';
+    } else {
+        if (get_current_branch(ctx->git_repo, branch, sizeof(branch)) != GM_OK) {
+            return GM_ERR_UNKNOWN;
+        }
     }
 
     /* Initialize journal context */

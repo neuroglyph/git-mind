@@ -263,7 +263,7 @@ test_edge_equal_semantics = executable('test_edge_equal_semantics',
   'core/tests/unit/test_edge_equal_semantics.c',
   include_directories : inc,
   link_with : libgitmind,
-  dependencies : [libsodium_dep, thread_dep])
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_cache_meta = executable('test_cache_meta',
   'core/tests/unit/test_cache_meta.c',
@@ -287,7 +287,7 @@ test_journal_safety = executable('test_journal_safety',
   'core/tests/unit/test_journal_safety.c',
   include_directories : inc,
   link_with : libgitmind,
-  dependencies : [libsodium_dep, thread_dep])
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_cache_shard_distribution = executable('test_cache_shard_distribution',
   'core/tests/unit/test_cache_shard_distribution.c',

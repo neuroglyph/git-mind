@@ -28,14 +28,14 @@ int gm_build_ref(char *out, size_t out_sz, const char *prefix,
         return GM_ERR_BUFFER_TOO_SMALL;
     }
 
-    char normalized[REF_NAME_BUFFER_SIZE];
-    int nrc = git_reference_normalize_name(
-        normalized, sizeof normalized, candidate, 0);
-    if (nrc != 0) {
+    /* Validate ref name */
+    int valid = 0;
+    int vrc = git_reference_name_is_valid(&valid, candidate);
+    if (vrc != 0 || valid == 0) {
         return GM_ERR_INVALID_ARGUMENT;
     }
 
-    rn = gm_snprintf(out, out_sz, "%s", normalized);
+    rn = gm_snprintf(out, out_sz, "%s", candidate);
     if (rn < 0 || (size_t)rn >= out_sz) {
         return GM_ERR_BUFFER_TOO_SMALL;
     }

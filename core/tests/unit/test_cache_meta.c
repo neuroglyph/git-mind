@@ -5,15 +5,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <git2.h>
+#include <git2/sys/commit.h>
 
 #include "gitmind/cache.h"
 #include "gitmind/context.h"
 #include "gitmind/error.h"
 
-static void make_temp_ref(git_repository *repo, const char *refname) {
+static void make_temp_ref(git_repository *repo, const char *legacy_refname) {
     git_treebuilder *tb = NULL;
     git_oid tree_oid, commit_oid;
     git_signature *sig = NULL;
+    git_reference *legacy = NULL;
     int rc;
 
     rc = git_treebuilder_new(&tb, repo, NULL);
@@ -24,18 +26,17 @@ static void make_temp_ref(git_repository *repo, const char *refname) {
 
     rc = git_signature_now(&sig, "tester", "tester@example.com");
     assert(rc == 0);
-    rc = git_commit_create_v(&commit_oid, repo, refname, sig, sig, NULL,
-                             "cache", (git_tree*)NULL, 0);
-    /* Older libgit2 requires tree; re-create with tree lookup */
-    if (rc < 0) {
-        git_tree *tree = NULL;
-        rc = git_tree_lookup(&tree, repo, &tree_oid);
-        assert(rc == 0);
-        rc = git_commit_create(&commit_oid, repo, refname, sig, sig, NULL,
-                               "cache", tree, 0, NULL);
-        git_tree_free(tree);
-        assert(rc == 0);
-    }
+
+    /* Create a commit object directly (no ref update) */
+    rc = git_commit_create_from_ids(&commit_oid, repo, NULL, sig, sig, NULL,
+                                    "cache", &tree_oid, 0, NULL);
+    assert(rc == 0);
+
+    /* Create the legacy ref pointing to that commit */
+    rc = git_reference_create(&legacy, repo, legacy_refname, &commit_oid, 1,
+                              "legacy cache ref");
+    assert(rc == 0);
+    git_reference_free(legacy);
     git_signature_free(sig);
 }
 

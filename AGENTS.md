@@ -100,6 +100,9 @@
 - Core (path safety): Removed `GM_PATH_MAX * 2` buffer in `core/src/cache/tree_builder.c`; now uses `GM_PATH_MAX` and bounded `gm_snprintf`.
 - Docs: Added `docs/architecture/Ref_Name_Validation.md` (with ToC) documenting ref-building policy and validation. Updated `docs/CI_STRATEGY.md` and `docs/code-review/CLAUDE.md` to clarify C23 policy expressed via Meson `c2x`. Expanded `docs/operations/Environment_Variables.md` with `GITMIND_CI_IMAGE` and `HOOKS_BYPASS`.
 - Reviews: Documented rejected suggestions for PR #169 under `docs/code-reviews/rejected-suggestions/` (canonical CHANGELOG filename, keep `md-verify` alias, ignore `.PHONY` ordering churn). Linked decisions in the PR thread.
+ - Policy (Docker-only): Enforced Docker-only builds. Added Meson option `-Dforce_local_builds=true` and a large refusal banner for host builds with actionable guidance (`make ci-local` / `tools/ci/ci_local.sh`). Synced admonition blocks to AGENTS.md, README.md, and CONTRIBUTING.md.
+ - Build system: Added `GM_OID_HEX_CHARS` fallback to avoid reliance on libgit2 `GIT_OID_HEXSZ` presence across versions. Adjusted Meson test targets to link against `libgit2_dep` where headers are included.
+ - Repo hygiene: Committed and pushed the changes on branch `feat/changelog-and-sweep-4`.
  - Core (OID-first): Advanced OID-first migration in cache/journal; replaced custom zero/equality checks with `git_oid_is_zero`/`git_oid_cmp` and standardized formatting via `git_oid_fmt`/`git_oid_tostr`. Stored binary tip OID alongside hex in cache meta for performance and porcelain separation.
  - Core (safe ops): Replaced unsafe libc string/memory calls in hot paths with safe wrappers (`gm_strcpy_safe`, `gm_snprintf`, `gm_memcpy_span`) to maintain warnings-as-errors and harden boundaries.
  - CBOR: Added `GITMIND_CBOR_DEBUG` flag for verbose decode tracing. Extended edge encoder/decoder to write/read OID fields while keeping legacy SHA fallback for compatibility.
@@ -113,6 +116,14 @@ Learnings (2025-09-15)
 - Running all builds/tests inside the CI Docker image reduces environment drift; using Meson `c2x` preserves C23 intent while satisfying toolchain expectations.
 - Pre-commit enforcement of the One-Thing rule must stay conservative to minimize false positives on umbrella changes; scope it to files actually touched.
 - CBOR compatibility requires writing new fields while maintaining robust reader fallbacks; do not rely on field ordering and prefer explicit keys.
+
+What I'd Do Next
+- Run `tools/ci/ci_local.sh` to capture failing tests inside the CI Docker image and triage by module.
+- Align `gm_edge_equal` tests and implementation with strict OID-first semantics plus explicit legacy SHA fallback where intended; update tests to state intent.
+- Fix `cache_meta` crash paths by hardening legacy cache-ref fallbacks and ensuring test repos/refs match new unified ref builder.
+- Tighten `gm_build_ref` validation error returns; add tests for invalid inputs and double-prefix protection.
+- Verify CBOR read/write for OID fields and finalize `GITMIND_CBOR_DEBUG` tracing coverage; ensure no field-order dependencies.
+- When CI is fully green, broaden One-Thing enforcement and continue extracting touched items into single-purpose files.
 
 2025-09-14
 - CI/CD: Added Markdown linting with repo-aligned rules (`.markdownlint.jsonc`), `make md-lint`/`md-fix` targets, and path filters limiting core workflows to code paths. Enabled docker pull retry and set `GITMIND_SAFETY=off` for E2E in the core workflow.

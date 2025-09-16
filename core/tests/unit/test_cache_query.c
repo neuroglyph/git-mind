@@ -13,6 +13,37 @@
 #include "gitmind/edge.h"
 #include "gitmind/types.h"
 
+/* kept for reference; unused after env branch override */
+__attribute__((unused)) static void ensure_branch_with_commit(git_repository *repo, const char *branch) {
+    git_treebuilder *tb = NULL;
+    git_oid tree_oid, commit_oid;
+    git_signature *sig = NULL;
+    int rc;
+
+    rc = git_treebuilder_new(&tb, repo, NULL);
+    assert(rc == 0);
+    rc = git_treebuilder_write(&tree_oid, tb);
+    git_treebuilder_free(tb);
+    assert(rc == 0);
+
+    rc = git_signature_now(&sig, "tester", "tester@example.com");
+    assert(rc == 0);
+
+    char refname[128];
+    snprintf(refname, sizeof refname, "refs/heads/%s", branch);
+
+    git_tree *tree = NULL;
+    rc = git_tree_lookup(&tree, repo, &tree_oid);
+    assert(rc == 0);
+    rc = git_commit_create(&commit_oid, repo, refname, sig, sig, NULL,
+                           "init", tree, 0, NULL);
+    git_tree_free(tree);
+    git_signature_free(sig);
+    assert(rc == 0);
+
+    rc = git_repository_set_head(repo, refname);
+    assert(rc == 0);
+}
 static void set_user_config(git_repository *repo) {
     git_config *cfg = NULL;
     int rc = git_repository_config(&cfg, repo);
@@ -32,6 +63,8 @@ int main(void) {
     int rc = git_repository_init(&repo, "./.gm_cache_query_tmp", true);
     assert(rc == 0 && repo);
     set_user_config(repo);
+    /* Direct writer to use this branch name without needing HEAD */
+    setenv("GITMIND_TEST_BRANCH", "testq", 1);
 
     gm_context_t ctx = {0};
     ctx.git_repo = repo;

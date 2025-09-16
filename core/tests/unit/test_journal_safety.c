@@ -61,16 +61,18 @@ static void test_edge_equal_oid_preferred(void) {
     git_oid_fromraw(&b.tgt_oid, same_raw);
     assert(gm_edge_equal(&a, &b));
 
-    /* OIDs differ but legacy SHAs match => still equal */
+    /* OIDs differ but legacy SHAs match => OID-first: not equal */
     gm_edge_t c = a, d = a;
     uint8_t other_raw[GM_OID_RAWSZ];
     memset(other_raw, 0xBB, sizeof other_raw);
     git_oid_fromraw(&c.src_oid, other_raw);
     git_oid_fromraw(&d.tgt_oid, other_raw);
-    assert(gm_edge_equal(&c, &d));
+    assert(!gm_edge_equal(&c, &d));
 
-    /* Both differ => not equal */
+    /* Both differ (OIDs and legacy) => not equal */
     gm_edge_t e1 = a, e2 = b;
+    git_oid_fromraw(&e2.src_oid, other_raw);
+    git_oid_fromraw(&e2.tgt_oid, other_raw);
     assert(!gm_edge_equal(&e1, &e2));
     printf("OK\n");
 }
@@ -88,4 +90,3 @@ int main(void) {
     printf("\nAll Journal/Safety Tests Passed! ✅\n");
     return 0;
 }
-
