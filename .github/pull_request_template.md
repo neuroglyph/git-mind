@@ -1,28 +1,24 @@
-## Description
+## Summary
 
-Brief description of what this PR does.
+Describe the change and why it’s needed. Link issues/PRDs if relevant.
 
-## Related Issue
+## Change Areas
 
-Fixes #(issue number)
+- [ ] Core (C)
+- [ ] CLI / Hooks
+- [ ] Docs
+- [ ] CI / Tooling
 
-## Type of Change
+## Risk
 
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
+- [ ] Behavior change
+- [ ] Public API change
+- [ ] Docs-only
 
-## Testing
+## Code Review Guidance (for humans and CodeRabbit)
 
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-- [ ] I have added/updated documentation as needed
+- Summarize top risks and propose concrete fix-it blocks where needed.
+- Prefer rule/pattern references (e.g., markdownlint MD041) over fragile line numbers.
+- Group nits into a brief summary; avoid inline comments on docs unless correctness is impacted.
+- Provide patch suggestions for repeated issues.
 
-## Checklist
-
-- [ ] My code follows the style guidelines of this project
-- [ ] I have run `make test` in Docker
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works

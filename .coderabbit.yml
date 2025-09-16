@@ -1,0 +1,36 @@
+version: 1
+
+review:
+  summary_preferred: true
+  max_total_comments: 50
+  max_comments_per_file: 5
+  prefer_patch_suggestions: true
+  tone: "concise, constructive, and action-oriented"
+  style:
+    - "Group similar issues together; avoid duplicates"
+    - "Reference rules/patterns (e.g., markdownlint MD041) over fragile line numbers"
+    - "Propose concrete fix-it snippets where possible"
+    - "Avoid inline comments on docs unless correctness is at stake; use summary"
+
+filters:
+  paths:
+    docs/**: summary_only
+    assets/**: ignore
+    build/**: ignore
+    .github/**: summary_only
+
+labels:
+  summary_only:
+    - docs-only
+    - chore
+  skip:
+    - vendored
+
+rules:
+  - name: "Front matter required"
+    paths: ["docs/**/*.md"]
+    summary: true
+  - name: "Single H1 per document"
+    paths: ["docs/**/*.md"]
+    summary: true
+
