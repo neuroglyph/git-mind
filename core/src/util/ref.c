@@ -5,6 +5,7 @@
 #include "gitmind/error.h"
 #include "gitmind/security/string.h"
 #include "gitmind/constants_internal.h"
+#include <string.h>
 
 #include <git2.h>
 
@@ -28,11 +29,21 @@ int gm_build_ref(char *out, size_t out_sz, const char *prefix,
         return GM_ERR_BUFFER_TOO_SMALL;
     }
 
-    /* Validate ref name */
-    int valid = 0;
-    int vrc = git_reference_name_is_valid(&valid, candidate);
-    if (vrc != 0 || valid == 0) {
-        return GM_ERR_INVALID_ARGUMENT;
+    /* Minimal validity checks without libgit2 dependency */
+    {
+        const char *p = branch;
+        if (*p == '/' || p[strlen(p) - 1] == '/') {
+            return GM_ERR_INVALID_ARGUMENT;
+        }
+        for (; *p; ++p) {
+            const char c = *p;
+            if (c == '~' || c == '^' || c == ':' || c == '?' ||
+                c == '[' || c == '*' || c == '\\') {
+                return GM_ERR_INVALID_ARGUMENT;
+            }
+        }
+        if (strstr(branch, "..") != NULL) return GM_ERR_INVALID_ARGUMENT;
+        if (strstr(branch, "@{") != NULL) return GM_ERR_INVALID_ARGUMENT;
     }
 
     rn = gm_snprintf(out, out_sz, "%s", candidate);
