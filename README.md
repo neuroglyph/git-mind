@@ -199,24 +199,30 @@ Want to be featured? Open an issue and share your story.
 
 <!-- features-progress:begin -->
 ```text
-Feature progress to be updated via scripts/update_progress.py
-```
-<!-- features-progress:end -->
-
-
-<!-- features-progress:begin -->
-```text
-To be updated by scripts/update_progress.py
+███████████████████████████░░░░░░░░░░░░░ 66%
 ```
 <!-- features-progress:end -->
 
 
 
-<!-- features-progress:begin -->
-```text
-To be updated by scripts/update_progress.py
-```
-<!-- features-progress:end -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 🚀 Early release — Core features work today, API may evolve  

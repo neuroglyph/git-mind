@@ -1,0 +1,32 @@
+name: Update Features Ledger
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/features/Features_Ledger.md'
+      - 'README.md'
+      - 'scripts/update_progress.py'
+
+permissions:
+  contents: write
+
+jobs:
+  update-ledger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Update progress
+        run: |
+          python3 scripts/update_progress.py
+      - name: Commit changes if any
+        run: |
+          git config user.name  "git-mind-bot"
+          git config user.email "gitmind-bot@example.com"
+          git add README.md docs/features/Features_Ledger.md
+          if git diff --cached --quiet; then
+            echo "No progress changes"; exit 0; fi
+          git commit -m "chore(ledger): auto-update features progress"
+          git push

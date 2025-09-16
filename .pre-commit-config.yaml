@@ -31,6 +31,11 @@ repos:
       entry: python3 tools/docs/check_frontmatter.py
       language: python
       files: ^docs/.*\.md$
+    - id: curate-agents
+      name: curate AGENTS.md recent developments
+      entry: python3 tools/agents/curate_recent.py
+      language: python
+      files: ^AGENTS\.md$
     - id: one-thing
       name: policy: one-thing (1 file = 1 thing)
       entry: python3 tools/quality/check_one_thing.py
@@ -42,6 +47,11 @@ repos:
       entry: bash tools/enforce-public-includes.sh
       language: system
       pass_filenames: false
+    - id: features-update
+      name: features ledger update
+      entry: python3 scripts/update_progress.py
+      language: python
+      files: ^docs/features/Features_Ledger\.md$
 - repo: https://github.com/Yelp/detect-secrets
   rev: v1.4.0
   hooks:
