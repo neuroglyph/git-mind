@@ -10,7 +10,7 @@ last_updated: 2025-09-15
 
 # Technical Specifications
 
-Table of Contents
+## Table of Contents
 
 - [Executive Summary](#executive-summary)
 - [Implementation Approach](#implementation-approach)

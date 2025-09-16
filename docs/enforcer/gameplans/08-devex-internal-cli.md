@@ -1,5 +1,5 @@
 ---
-title: Enforcer Notes
+title: DevEx Internal CLI — Enforcer Notes
 description: Historical notes and enforcement-era artifacts.
 audience: [contributors]
 domain: [quality]

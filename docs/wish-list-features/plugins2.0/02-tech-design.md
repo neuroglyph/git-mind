@@ -1,5 +1,5 @@
 ---
-title: Wish List
+title: Plugin Architecture 2.0 — Tech Design
 description: Feature brainstorms and design sketches.
 audience: [contributors]
 domain: [project]

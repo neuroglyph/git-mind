@@ -10,7 +10,7 @@ last_updated: 2025-09-15
 
 # Project Charter
 
-Table of Contents
+## Table of Contents
 
 - [Executive Summary](#executive-summary)
 - [Goals and Objectives](#goals-and-objectives)

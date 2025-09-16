@@ -20,7 +20,7 @@ Table of Contents
 - [Query Path](#overview)
 
 __Date__: June 2025  
-__Status__: IN PROGRESS  
+__Status__: stable  
 __Goal__: O(log N) queries on millions of edges
 
 ---

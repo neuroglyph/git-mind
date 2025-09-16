@@ -1,6 +1,16 @@
 <!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
 <!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 
+---
+title: Adult Swim Notes
+description: Informal notes and experimental thoughts captured during exploration phases.
+audience: [contributors]
+domain: [project]
+tags: [notes]
+status: archive
+last_updated: 2025-09-15
+---
+
 # 🏊 Adult Swim: Deep End Memory Pool Opportunities
 
 _"No floaties allowed - this is where we optimize HARD"_
@@ -102,15 +112,4 @@ For a repository with 100k edges:
 - Cache efficiency: 5x improvement
 - Allocation overhead: 90% reduction
 
----
-
 _"Come to the deep end... the water's fine!"_ 🏊‍♂️
----
-title: Adult Swim Notes
-description: Informal notes and experimental thoughts captured during exploration phases.
-audience: [contributors]
-domain: [project]
-tags: [notes]
-status: archive
-last_updated: 2025-09-15
----

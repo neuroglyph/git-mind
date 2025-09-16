@@ -1,5 +1,5 @@
 ---
-title: Wish List
+title: Test Plan: Plugin Architecture 2.0
 description: Feature brainstorms and design sketches.
 audience: [contributors]
 domain: [project]

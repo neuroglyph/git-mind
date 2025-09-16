@@ -12,7 +12,7 @@ int main(void) {
     gm_edge_t a = {0};
     gm_edge_t b = {0};
 
-    /* Set legacy SHA bytes different; OIDs zero to force fallback */
+    /* Set legacy SHA bytes identical; OIDs zero to force fallback */
     memset(a.src_sha, 0x11, GM_SHA1_SIZE);
     memset(a.tgt_sha, 0x22, GM_SHA1_SIZE);
     memset(b.src_sha, 0x11, GM_SHA1_SIZE);
@@ -34,4 +34,3 @@ int main(void) {
     printf("OK\n");
     return 0;
 }
-

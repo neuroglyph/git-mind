@@ -12,8 +12,10 @@
 int gm_build_ref(char *out, size_t out_sz, const char *prefix,
                  const char *branch) {
     if (!out || out_sz == 0 || !prefix || !branch) {
+        if (out && out_sz > 0) out[0] = '\0';
         return GM_ERR_INVALID_ARGUMENT;
     }
+    out[0] = '\0';
     if (*branch == '\0') {
         return GM_ERR_INVALID_ARGUMENT;
     }
@@ -25,7 +27,10 @@ int gm_build_ref(char *out, size_t out_sz, const char *prefix,
 
     char candidate[REF_NAME_BUFFER_SIZE];
     int rn = gm_snprintf(candidate, sizeof candidate, "%s%s", prefix, branch);
-    if (rn < 0 || (size_t)rn >= sizeof candidate) {
+    if (rn < 0) {
+        return GM_ERR_UNKNOWN;
+    }
+    if ((size_t)rn >= sizeof candidate) {
         return GM_ERR_BUFFER_TOO_SMALL;
     }
 
@@ -47,7 +52,12 @@ int gm_build_ref(char *out, size_t out_sz, const char *prefix,
     }
 
     rn = gm_snprintf(out, out_sz, "%s", candidate);
-    if (rn < 0 || (size_t)rn >= out_sz) {
+    if (rn < 0) {
+        out[0] = '\0';
+        return GM_ERR_UNKNOWN;
+    }
+    if ((size_t)rn >= out_sz) {
+        out[0] = '\0';
         return GM_ERR_BUFFER_TOO_SMALL;
     }
     return GM_OK;

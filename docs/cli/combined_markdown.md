@@ -6,6 +6,7 @@ domain: [cli]
 tags: [cli]
 status: draft
 last_updated: 2025-09-15
+aggregate: true
 ---
 
 # README.md

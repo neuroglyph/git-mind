@@ -6,6 +6,7 @@ domain: [api]
 tags: [api, c]
 status: draft
 last_updated: 2025-09-15
+api_version: "1.0.0"
 ---
 
 # git-mind C API Reference

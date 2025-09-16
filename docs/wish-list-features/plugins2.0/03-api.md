@@ -1,5 +1,5 @@
 ---
-title: Wish List
+title: Plugin Architecture 2.0 — API Specification
 description: Feature brainstorms and design sketches.
 audience: [contributors]
 domain: [project]
@@ -7,8 +7,6 @@ tags: [wishlist]
 status: archive
 last_updated: 2025-09-15
 ---
-
-# __API Specification: Plugin Architecture 2.0__
 
 # API Specification: Plugin Architecture 2.0
 

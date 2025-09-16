@@ -1,5 +1,5 @@
 ---
-title: Enforcer Notes
+title: Domain Types and Strong Typedefs
 description: Historical notes and enforcement-era artifacts.
 audience: [contributors]
 domain: [quality]
