@@ -168,3 +168,52 @@ If you maintain a separate experimental tracking system locally (e.g., a persona
   - docs(ops): added `docs/operations/Environment_Variables.md`; linked from `README.md` and `docs/README.md`. Noted runtime safety behavior in Test Plan.
   - style(include): use angle includes in `include/gitmind.h` and trim optional-include block comment.
   - Opened PR: <https://github.com/neuroglyph/git-mind/pull/166> (branch `feat/cli-safety-e2e`). Built and ran unit tests in Docker (15/15 passing). E2E wired to run in CI container.
+
+## Regression Guardrails
+
+- Build/run
+  - Docker-only for build and test; use `make ci-local` or `tools/ci/ci_local.sh`.
+  - Meson gate blocks host builds; override only with `-Dforce_local_builds=true` when necessary.
+- API semantics
+  - Equality is OID-first: if both OIDs present they must match; SHA fallback only when OIDs are absent.
+  - Refs: build via `gm_build_ref`; reject inputs starting with `refs/`; follow ref-name safety rules.
+- Safety ops
+  - Use `gm_snprintf`/`gm_strcpy_safe`/`gm_memcpy_span`; check return codes; treat truncation as error.
+  - Zero output buffers on error paths before formatting or copying.
+- Public headers
+  - Umbrella-safe; direct includes only; add C++ linkage guards; stable header guards.
+- Cache/journal
+  - Journal is append-only under `refs/gitmind/edges/<branch>`; cache under `refs/gitmind/cache/<branch>`.
+  - Avoid ABI breaks in public structs; append new fields at struct tail; mark deprecated fields.
+- Paths/buffers
+  - Prefer `GM_PATH_MAX`; do not use `GM_PATH_MAX*2`; allocate if larger is required.
+- Docs
+  - Front matter first; single H1; `## Table of Contents`; titles match H1; add `api_version` to API docs.
+  - License/SPDX comments after front matter.
+- Tests
+  - Run in Docker; avoid HEAD assumptions in bare repos; seed branches in tests when needed.
+
+## PR Review Checklist
+
+- Scope & safety
+  - Docker-only build/test verified; no host-only assumptions.
+  - No public ABI breaks (or explicitly called out and versioned).
+- Semantics & correctness
+  - OID-first behavior enforced; no SHA fallback when OIDs exist.
+  - Refs created via `gm_build_ref` with input validation.
+- Security & robustness
+  - All string/memory ops use safe wrappers; truncation and errors handled.
+  - Outputs zeroed on failure; no partial writes.
+- Headers & includes
+  - C++ linkage guards present; include-what-you-use; umbrella viability.
+- Docs & tooling
+  - Front matter valid; titles/H1 aligned; TOC heading H2; API docs include `api_version`.
+  - Changelog updated for pushes to `main` (pre-push hook regex covers variants).
+- CI & review hygiene
+  - Local CI (Docker) passes (tests + tidy as configured).
+  - If CodeRabbit runs: summary-first; propose fix-it patches; avoid noisy doc inlines.
+
+References
+- Code review seeding script: `tools/review/seed_feedback_from_github.py` (uses `GITHUB_TOKEN`).
+- CodeRabbit config: `.coderabbit.yml` (summary-first, caps, doc filters).
+- PR template: `.github/pull_request_template.md` (guidance for reviewers).
