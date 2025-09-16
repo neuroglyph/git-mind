@@ -59,7 +59,7 @@ jobs:
       - name: Try to seed and push to fork (if maintainers can modify)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BOT_PAT: ${{ secrets.BOT_PAT }}
+          GITMIND_PR_WORKSHEET_BOT: ${{ secrets.GITMIND_PR_WORKSHEET_BOT }}
         run: |
           set -e
           PR=${{ github.event.number }}
@@ -80,12 +80,12 @@ jobs:
           if git diff --cached --quiet; then
             echo "No seeded changes to commit"; exit 0; fi
           git commit -m "chore(review): seed feedback for PR #$PR"
-          # Attempt to push using BOT_PAT if provided and contributor allows edits
-          if [ -n "$BOT_PAT" ]; then
+          # Attempt to push using GITMIND_PR_WORKSHEET_BOT if provided and contributor allows edits
+          if [ -n "$GITMIND_PR_WORKSHEET_BOT" ]; then
             repo_full="${{ github.event.pull_request.head.repo.full_name }}"
             branch="${{ github.event.pull_request.head.ref }}"
             echo "Attempting push to fork $repo_full branch $branch"
-            git remote set-url origin https://x-access-token:$BOT_PAT@github.com/$repo_full.git
+            git remote set-url origin https://x-access-token:$GITMIND_PR_WORKSHEET_BOT@github.com/$repo_full.git
             if git push origin "HEAD:$branch"; then
               echo "Pushed seeded doc to fork branch"
               exit 0
@@ -93,7 +93,7 @@ jobs:
               echo "Push to fork failed (likely edits not allowed); will upload artifact instead"
             fi
           else
-            echo "BOT_PAT not set; cannot push to fork. Uploading artifact instead."
+            echo "GITMIND_PR_WORKSHEET_BOT not set; cannot push to fork. Uploading artifact instead."
           fi
           # Fall through to artifact path
           mkdir -p review-seed && cp -r docs/code-reviews/* review-seed/ || true
