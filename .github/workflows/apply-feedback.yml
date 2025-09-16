@@ -1,0 +1,36 @@
+name: Apply PR Feedback Replies
+
+on:
+  push:
+    branches-ignore: [ main ]
+    paths:
+      - 'docs/code-reviews/**.md'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect changed review worksheets
+        id: files
+        run: |
+          set -e
+          BEFORE=${{ github.event.before }}
+          AFTER=${{ github.sha }}
+          git fetch --no-tags origin "$BEFORE" || true
+          CHANGED=$(git diff --name-only "$BEFORE" "$AFTER" | grep '^docs/code-reviews/PR' || true)
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+      - name: Apply feedback replies
+        if: steps.files.outputs.changed != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          OWNER=${GITHUB_REPOSITORY%%/*}
+          REPO=${GITHUB_REPOSITORY##*/}
+          python3 -m pip install --upgrade pip >/dev/null 2>&1 || true
+          python3 tools/review/apply_feedback_to_github.py --owner "$OWNER" --repo "$REPO" ${{ steps.files.outputs.changed }}

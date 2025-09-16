@@ -1,5 +1,32 @@
 # Repository Guidelines
 
+> Agent TL;DR (read me first)
+- Build/test: `make ci-local` (Docker-only; Meson guard prevents host builds). Docs verify: `make docs-verify`.
+- Review seeding: `make seed-review PR=<number>`; see `docs/tools/Review_Seeding.md`.
+- Red lines: OID-first equality; use `gm_snprintf/gm_strcpy_safe`; append-only journal; no public ABI breaks (append fields).
+- Refs via `gm_build_ref`; reject inputs starting with `refs/`. No `GM_PATH_MAX*2` buffers.
+- Public headers are umbrella-safe with C++ linkage guards; run `make header-compile`.
+- Docker-only policy: override host build only with `-Dforce_local_builds=true` when absolutely necessary.
+
+agent:
+  docker_only: true
+  build: "make ci-local"
+  docs_verify: "make docs-verify"
+  seed_review: "make seed-review PR=${PR}"
+  header_compile: "make header-compile"
+  stop_signs:
+    - behavior_or_abi_change
+    - adding_dependencies
+    - changing_ci_gates
+    - large_refactor
+
+Boot Checklist
+- Check for nested `AGENTS.md` when editing in subdirs
+- Use Docker for builds/tests; never host-run by default
+- Run `make docs-verify` for doc changes; `make header-compile` for new public headers
+- Respect One‑Thing rule for touched files
+- For fork PRs, seeded worksheet may be artifact+comment (see Review_Seeding)
+
 ## Project Structure & Module Organization
 
 - `core/` — C23 library: `include/` (public headers), `src/` (impl), `tests/` (unit). Add new code here.
