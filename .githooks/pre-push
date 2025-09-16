@@ -32,6 +32,25 @@ while read -r local_ref local_sha remote_ref remote_sha; do
       status=1
     fi
   fi
+
+  # Worksheet gate: block pushes when review worksheets contain unfilled templates
+  # Determine the range to inspect for all branches
+  range=""
+  if [[ "$remote_sha" == "0000000000000000000000000000000000000000" ]]; then
+    range="$local_sha^..$local_sha"
+  else
+    range="$remote_sha..$local_sha"
+  fi
+  changed_files=$(git diff --name-only "$range" | grep '^docs/code-reviews/PR' || true)
+  if [[ -n "$changed_files" ]]; then
+    # Run worksheet checker
+    if ! python3 tools/review/check_worksheets.py $changed_files; then
+      echo "[pre-push] Unfilled review worksheet templates detected in changed files." >&2
+      echo "           Please complete Accepted/Rejected sections before pushing." >&2
+      echo "           Bypass once with HOOKS_BYPASS=1 if necessary." >&2
+      status=1
+    fi
+  fi
 done
 
 exit $status
