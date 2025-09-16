@@ -51,6 +51,10 @@ header-compile:
 	@meson setup $(builddir) $(MESON_ARGS) >/dev/null 2>&1 || true
 	@ninja -C $(builddir) header-compile
 
+.PHONY: features-update
+features-update:
+	@python3 scripts/update_progress.py
+
 .PHONY: seed-review
 # Usage: make seed-review PR=169 [OWNER=neuroglyph REPO=git-mind]
 seed-review:
@@ -67,5 +71,22 @@ seed-review:
 	 if [ -z "$(PR)" ]; then echo "PR=<number> is required"; exit 2; fi; \
 	 echo "Seeding review for $$OWNER/$$REPO PR $(PR)"; \
 	 python3 tools/review/seed_feedback_from_github.py --owner $$OWNER --repo $$REPO --pr $(PR)
+
+.PHONY: apply-feedback
+# Usage: make apply-feedback FILES="docs/code-reviews/PR169/<sha>.md [more...]" [OWNER=neuroglyph REPO=git-mind]
+apply-feedback:
+	@OWNER=$(OWNER); REPO=$(REPO); \
+	 if [ -z "$$OWNER" ] || [ -z "$$REPO" ]; then \
+	   url=$$(git remote get-url origin); \
+	   case "$$url" in \
+	     git@github.com:*) base=$${url#git@github.com:};; \
+	     https://github.com/*) base=$${url#https://github.com/};; \
+	     *) base="neuroglyph/git-mind";; \
+	   esac; \
+	   OWNER=$${base%%/*}; REPO=$${base##*/}; REPO=$${REPO%.git}; \
+	 fi; \
+	 if [ -z "$(FILES)" ]; then echo "FILES='<worksheet paths>' is required"; exit 2; fi; \
+	 echo "Applying feedback replies for $$OWNER/$$REPO"; \
+	 python3 tools/review/apply_feedback_to_github.py --owner $$OWNER --repo $$REPO $(FILES)
 
 .PHONY: all test clean docker-clean md-lint md-fix changelog-add ci-local
