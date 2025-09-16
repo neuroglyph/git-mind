@@ -1,4 +1,6 @@
 name: Seed Review Doc (manual)
+permissions:
+  contents: read
 
 on:
   workflow_dispatch:
