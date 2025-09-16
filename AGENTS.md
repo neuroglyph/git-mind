@@ -214,6 +214,7 @@ If you maintain a separate experimental tracking system locally (e.g., a persona
   - If CodeRabbit runs: summary-first; propose fix-it patches; avoid noisy doc inlines.
 
 References
+- Guide: `docs/tools/Review_Seeding.md` (end-to-end review seeding + bot setup)
 - Code review seeding script: `tools/review/seed_feedback_from_github.py` (uses `GITHUB_TOKEN`).
 - CodeRabbit config: `.coderabbit.yml` (summary-first, caps, doc filters).
 - PR template: `.github/pull_request_template.md` (guidance for reviewers).

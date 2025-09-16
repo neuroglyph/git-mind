@@ -54,6 +54,7 @@ Thanks for your interest in improving git‑mind! This guide summarizes expectat
 - Keep `.coderabbit.yml` updated.
 - Prefer summary reviews; limit per‑line comments on docs.
 - If rejecting a suggestion, document rationale under `docs/code-reviews/rejected-suggestions/` with links.
+ - See `docs/tools/Review_Seeding.md` for the auto‑worksheet flow and how to seed PR feedback locally or via CI. Seeded files live under `docs/code-reviews/PR<PR#>/<sha>.md`.
 
 ## Getting Help
 
