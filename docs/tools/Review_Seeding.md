@@ -92,3 +92,15 @@ The workflow will use `GITMIND_PR_WORKSHEET_BOT` to push the seeded doc to fork 
 - `.github/workflows/label-docs-only.yml` — Auto labeler
 - `make docs-verify` — Front matter, link, TOC, title/H1 checks
 
+## Future Work
+
+- GitHub App for Worksheet Bot
+  - Create a GitHub App that contributors can grant access to their fork. The app’s installation token would allow writing the seeded doc directly to fork branches without broad classic PAT scopes.
+  - Benefits: principle‑of‑least‑privilege, per‑repo install, clean audit trail.
+  - Work: app manifest, permissions (Contents:RW, PR:RW, Issues:RW, Metadata:Read), and token exchange in the workflow.
+- Classic PAT for pushing to forks (if needed)
+  - Replace fine‑grained PAT with a classic PAT (scope: `public_repo` for public, or `repo` for private) in the secret `GITMIND_PR_WORKSHEET_BOT` to enable pushes to user‑owned forks.
+  - Trade‑off: broader scope than fine‑grained tokens.
+- Auto‑open helper PR to contributor fork
+  - If push to fork fails, create a helper PR in their fork with the seeded doc. This typically requires permission to fork/cross‑fork and may be restricted. Consider only if contributor experience warrants it.
+
