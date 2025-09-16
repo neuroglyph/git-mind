@@ -1,5 +1,25 @@
 # Repository Guidelines
 
+## Recent Developments
+
+```yaml
+recent_developments:
+- date: 2025-09-15 summary: CI/CD: Fixed C-Core Gate failures. README now complies with markdownlint (underscore emphasis/strong, blockquote spacing, no inline HTML wrappers, code fence fixes, heading punctuation). Added local CI rig `tools/ci/ci_local.sh` and `make ci-local` to mirror C-Core Gate (markdownlint + docs checks, Dockerized build/tests/E2E, clang-tidy pass).
+- date: 2025-09-15 summary: Build: Switched Meson `c_std` from `c23` to `c2x` (Meson-compatible while targeting C23). Moved `option()`s to `meson_options.txt`. Set `GITMIND_DOCKER=1` in gauntlet Dockerfile to satisfy the Meson host-build guard inside gating containers. Registered new unit test target `test_ref_utils` in `meson.build`.
+- date: 2025-09-15 summary: Core (refs): `gm_build_ref` now accepts Git-style branch shorthands (slashes allowed), validates the combined ref via libgit2 `git_reference_normalize_name`, and rejects leading `refs/` to prevent double-prefixing. Updated header docs and added unit tests.
+- date: 2025-09-15 summary: Core (path safety): Removed `GM_PATH_MAX * 2` buffer in `core/src/cache/tree_builder.c`; now uses `GM_PATH_MAX` and bounded `gm_snprintf`.
+- date: 2025-09-15 summary: Docs: Added `docs/architecture/Ref_Name_Validation.md` (with ToC) documenting ref-building policy and validation. Updated `docs/CI_STRATEGY.md` and `docs/code-review/CLAUDE.md` to clarify C23 policy expressed via Meson `c2x`. Expanded `docs/operations/Environment_Variables.md` with `GITMIND_CI_IMAGE` and `HOOKS_BYPASS`.
+- date: 2025-09-15 summary: Reviews: Documented rejected suggestions for PR #169 under `docs/code-reviews/rejected-suggestions/` (canonical CHANGELOG filename, keep `md-verify` alias, ignore `.PHONY` ordering churn). Linked decisions in the PR thread.
+```
+
+- CI/CD: Fixed C-Core Gate failures. README now complies with markdownlint (underscore emphasis/strong, blockquote spacing, no inline HTML wrappers, code fence fixes, heading punctuation). Added local CI rig `tools/ci/ci_local.sh` and `make ci-local` to mirror C-Core Gate (markdownlint + docs checks, Dockerized build/tests/E2E, clang-tidy pass).
+- Build: Switched Meson `c_std` from `c23` to `c2x` (Meson-compatible while targeting C23). Moved `option()`s to `meson_options.txt`. Set `GITMIND_DOCKER=1` in gauntlet Dockerfile to satisfy the Meson host-build guard inside gating containers. Registered new unit test target `test_ref_utils` in `meson.build`.
+- Core (refs): `gm_build_ref` now accepts Git-style branch shorthands (slashes allowed), validates the combined ref via libgit2 `git_reference_normalize_name`, and rejects leading `refs/` to prevent double-prefixing. Updated header docs and added unit tests.
+- Core (path safety): Removed `GM_PATH_MAX * 2` buffer in `core/src/cache/tree_builder.c`; now uses `GM_PATH_MAX` and bounded `gm_snprintf`.
+- Docs: Added `docs/architecture/Ref_Name_Validation.md` (with ToC) documenting ref-building policy and validation. Updated `docs/CI_STRATEGY.md` and `docs/code-review/CLAUDE.md` to clarify C23 policy expressed via Meson `c2x`. Expanded `docs/operations/Environment_Variables.md` with `GITMIND_CI_IMAGE` and `HOOKS_BYPASS`.
+- Reviews: Documented rejected suggestions for PR #169 under `docs/code-reviews/rejected-suggestions/` (canonical CHANGELOG filename, keep `md-verify` alias, ignore `.PHONY` ordering churn). Linked decisions in the PR thread.
+
+
 > Agent TL;DR (read me first)
 - Build/test: `make ci-local` (Docker-only; Meson guard prevents host builds). Docs verify: `make docs-verify`.
 - Review seeding: `make seed-review PR=<number>`; see `docs/tools/Review_Seeding.md`.
@@ -120,45 +140,7 @@ Boot Checklist
 
 ## Agent Activity Log
 
-2025-09-15
-- CI/CD: Fixed C-Core Gate failures. README now complies with markdownlint (underscore emphasis/strong, blockquote spacing, no inline HTML wrappers, code fence fixes, heading punctuation). Added local CI rig `tools/ci/ci_local.sh` and `make ci-local` to mirror C-Core Gate (markdownlint + docs checks, Dockerized build/tests/E2E, clang-tidy pass).
-- Build: Switched Meson `c_std` from `c23` to `c2x` (Meson-compatible while targeting C23). Moved `option()`s to `meson_options.txt`. Set `GITMIND_DOCKER=1` in gauntlet Dockerfile to satisfy the Meson host-build guard inside gating containers. Registered new unit test target `test_ref_utils` in `meson.build`.
-- Core (refs): `gm_build_ref` now accepts Git-style branch shorthands (slashes allowed), validates the combined ref via libgit2 `git_reference_normalize_name`, and rejects leading `refs/` to prevent double-prefixing. Updated header docs and added unit tests.
-- Core (path safety): Removed `GM_PATH_MAX * 2` buffer in `core/src/cache/tree_builder.c`; now uses `GM_PATH_MAX` and bounded `gm_snprintf`.
-- Docs: Added `docs/architecture/Ref_Name_Validation.md` (with ToC) documenting ref-building policy and validation. Updated `docs/CI_STRATEGY.md` and `docs/code-review/CLAUDE.md` to clarify C23 policy expressed via Meson `c2x`. Expanded `docs/operations/Environment_Variables.md` with `GITMIND_CI_IMAGE` and `HOOKS_BYPASS`.
-- Reviews: Documented rejected suggestions for PR #169 under `docs/code-reviews/rejected-suggestions/` (canonical CHANGELOG filename, keep `md-verify` alias, ignore `.PHONY` ordering churn). Linked decisions in the PR thread.
- - Policy (Docker-only): Enforced Docker-only builds. Added Meson option `-Dforce_local_builds=true` and a large refusal banner for host builds with actionable guidance (`make ci-local` / `tools/ci/ci_local.sh`). Synced admonition blocks to AGENTS.md, README.md, and CONTRIBUTING.md.
- - Build system: Added `GM_OID_HEX_CHARS` fallback to avoid reliance on libgit2 `GIT_OID_HEXSZ` presence across versions. Adjusted Meson test targets to link against `libgit2_dep` where headers are included.
- - Repo hygiene: Committed and pushed the changes on branch `feat/changelog-and-sweep-4`.
- - Core (OID-first): Advanced OID-first migration in cache/journal; replaced custom zero/equality checks with `git_oid_is_zero`/`git_oid_cmp` and standardized formatting via `git_oid_fmt`/`git_oid_tostr`. Stored binary tip OID alongside hex in cache meta for performance and porcelain separation.
- - Core (safe ops): Replaced unsafe libc string/memory calls in hot paths with safe wrappers (`gm_strcpy_safe`, `gm_snprintf`, `gm_memcpy_span`) to maintain warnings-as-errors and harden boundaries.
- - CBOR: Added `GITMIND_CBOR_DEBUG` flag for verbose decode tracing. Extended edge encoder/decoder to write/read OID fields while keeping legacy SHA fallback for compatibility.
- - Tests: Added unit tests `core/tests/unit/test_edge_oid_fallback.c` and `core/tests/unit/test_cache_shard_distribution.c`; expanded `test_ref_utils.c`. Registered in Meson. Tracking a small set of failing tests to align equality and fallback semantics.
- - Policy: Began enforcing the “One-Thing” touched-code policy via a pre-commit heuristic (`tools/quality/check_one_thing.py`) wired into `.pre-commit-config.yaml`.
- - CI: Ensured `tools/ci/ci_local.sh` builds and runs unit tests entirely inside the CI Docker image; tuned header-compile include paths for container parity.
-
-Learnings (2025-09-15)
-- Equality semantics need OID-first strictness with explicit legacy fallback; tests should state intent to avoid ambiguity when SHA matches but OIDs differ.
-- `git_reference_normalize_name` is reliable for ref validation; rejecting inputs beginning with `refs/` prevents double-prefixing errors when building namespaced refs.
-- Running all builds/tests inside the CI Docker image reduces environment drift; using Meson `c2x` preserves C23 intent while satisfying toolchain expectations.
-- Pre-commit enforcement of the One-Thing rule must stay conservative to minimize false positives on umbrella changes; scope it to files actually touched.
-- CBOR compatibility requires writing new fields while maintaining robust reader fallbacks; do not rely on field ordering and prefer explicit keys.
-
-What I'd Do Next
-- Run `tools/ci/ci_local.sh` to capture failing tests inside the CI Docker image and triage by module.
-- Align `gm_edge_equal` tests and implementation with strict OID-first semantics plus explicit legacy SHA fallback where intended; update tests to state intent.
-- Fix `cache_meta` crash paths by hardening legacy cache-ref fallbacks and ensuring test repos/refs match new unified ref builder.
-- Tighten `gm_build_ref` validation error returns; add tests for invalid inputs and double-prefix protection.
-- Verify CBOR read/write for OID fields and finalize `GITMIND_CBOR_DEBUG` tracing coverage; ensure no field-order dependencies.
-- When CI is fully green, broaden One-Thing enforcement and continue extracting touched items into single-purpose files.
-
-2025-09-14
-- CI/CD: Added Markdown linting with repo-aligned rules (`.markdownlint.jsonc`), `make md-lint`/`md-fix` targets, and path filters limiting core workflows to code paths. Enabled docker pull retry and set `GITMIND_SAFETY=off` for E2E in the core workflow.
-- Header hygiene: Standardized header guards to `GITMIND_*`, added umbrella viability check (public headers compile standalone), and a header guard linter (`tools/quality/check_header_guards.py`) wired via Meson run target.
-- OID-first migration: Introduced `typedef git_oid gm_oid_t` and `GM_OID_RAWSZ`. Migrated edges, cache queries, and hooks APIs to OID-first and switched equality to `git_oid_cmp`. Maintained compatibility where needed; CBOR decode backfills OIDs from legacy fields temporarily.
-- Journal safety: Base64-encoded CBOR commit messages on write and decoded on read; added strict `gm_snprintf` overflow checks and security-conscious includes.
-- CLI fixes: Adjusted `apps/cli` commands for include hygiene, error handling, and consistent porcelain output; freed libgit2 arrays correctly.
-- Reviews/PRs: Pushed branches, resolved merge conflicts, and responded to CodeRabbit with summary feedback. Opened a PR for CodeRabbit + markdownlint config changes and updated PRs addressing invalid path errors and core cleanup.
+See archives under `docs/activity/` for older logs.
 
 ## Next Steps (handoff checklist)
 - Complete on-disk cache migration to OID-only storage and naming; ensure rebuild and fallback readers handle both formats or gate with a one-time migration.
@@ -179,22 +161,6 @@ What I'd Do Next
 ## External Tracking (Local Experiments)
 
 If you maintain a separate experimental tracking system locally (e.g., a personal graph database or notes), keep it entirely outside this repository and CI. Do not include configuration or scripts here.
-
-## Agent Activity Log
-
-- 2025-09-13
-  - fix(include): guard time conversion macros in `include/gitmind/constants_internal.h`.
-  - fix(output): add missing EOF newlines in `include/gitmind/output.h` and `apps/cli/output.c`.
-  - feat(cli): introduce `gm_cli_ctx_t`; refactor `apps/cli/main.c` and commands to pass explicit CLI output context (removed global output).
-  - chore(cli): normalize includes; prefer specific public headers; added `inc_cli` include dirs in `meson.build` for CLI builds.
-  - feat(cli/safety): implement libgit2-based safety guard with strict official-repo match; add `GITMIND_SAFETY` override; extracted URL helper in `include/gitmind/safety.h`.
-  - test(core): add `core/tests/unit/test_safety.c` and register in Meson.
-  - ci(e2e): run E2E inside CI Docker image in `.github/workflows/c_core.yml`; improved `tests/e2e/run_all_tests.sh` to honor `GIT_MIND` env.
-  - fix(core/journal): add temporary CBOR decode wrappers in `core/src/journal/reader.c` (`gm_edge_decode_cbor_ex`, `gm_edge_attributed_decode_cbor_ex`) to unblock CLI until attributed decoder lands.
-  - fix(core/journal/tidy): replace `memset/strncpy/snprintf` in `reader.c` with safe wrappers (`GM_MEMSET_SAFE`, `gm_memcpy_safe`, `gm_snprintf`); include security headers. Updated `tools/docker-clang-tidy.sh` to set `GITMIND_DOCKER=1` for Meson.
-  - docs(ops): added `docs/operations/Environment_Variables.md`; linked from `README.md` and `docs/README.md`. Noted runtime safety behavior in Test Plan.
-  - style(include): use angle includes in `include/gitmind.h` and trim optional-include block comment.
-  - Opened PR: <https://github.com/neuroglyph/git-mind/pull/166> (branch `feat/cli-safety-e2e`). Built and ran unit tests in Docker (15/15 passing). E2E wired to run in CI container.
 
 ## Regression Guardrails
 
