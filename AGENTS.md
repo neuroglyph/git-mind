@@ -35,6 +35,21 @@ agent:
 
 ```yaml
 recent_developments:
+  - date: 2025-09-16
+    summary: >
+      Review seeding + auto‑replies: added seed script, auto‑seed workflow (same‑repo commit, fork artifact fallback), and apply‑feedback workflow that replies to PR comments from the worksheet. Renamed bot secret to GITMIND_PR_WORKSHEET_BOT.
+  - date: 2025-09-16
+    summary: >
+      Worksheet gates: pre‑push guard + checker to block unfilled templates/undecided sections in review worksheets; bypass knob documented.
+  - date: 2025-09-16
+    summary: >
+      Curated AGENTS.md: TL;DR + machine‑readable agent block + Boot Checklist; added Recent Developments YAML and auto‑archival to docs/activity via pre‑commit hook.
+  - date: 2025-09-16
+    summary: >
+      Features Ledger: introduced docs/features/Features_Ledger.md + scripts/update_progress.py (KLoC‑weighted groups); added README features‑progress block; wired pre‑commit and a main‑branch auto‑update workflow; make features-update.
+  - date: 2025-09-16
+    summary: >
+      Review ergonomics: CodeRabbit config (.coderabbit.yml) for summary‑first; PR template guidance; docs‑only auto‑labeling workflow.
   - date: 2025-09-15
     summary: >
       CI/CD: Fixed C-Core Gate failures. README now complies with markdownlint (underscore emphasis/strong, blockquote spacing, no inline HTML wrappers, code fence fixes, heading punctuation). Added local CI rig `tools/ci/ci_local.sh` and `make ci-local` to mirror C-Core Gate (markdownlint + docs checks, Dockerized build/tests/E2E, clang-tidy pass).
