@@ -1,5 +1,5 @@
 ---
-title: Observability Built-In: Gameplan
+title: 🔍 Observability Built-In: Gameplan
 description: Historical notes and enforcement-era artifacts.
 audience: [contributors]
 domain: [quality]

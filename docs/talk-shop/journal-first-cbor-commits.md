@@ -1,5 +1,5 @@
 ---
-title: Talk Shop
+title: Journal‑First CBOR Commits: Time‑Travel You Can Trust
 description: Explorations and design discussions.
 audience: [contributors]
 domain: [project]

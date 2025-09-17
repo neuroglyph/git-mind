@@ -1,5 +1,5 @@
 ---
-title: Enforcer Notes
+title: Specification: Security Primitives
 description: Historical notes and enforcement-era artifacts.
 audience: [contributors]
 domain: [quality]

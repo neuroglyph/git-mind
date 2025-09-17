@@ -1,5 +1,5 @@
 ---
-title: Enforcer Notes
+title: 🔒 Security Hygiene as Code: Gameplan
 description: Historical notes and enforcement-era artifacts.
 audience: [contributors]
 domain: [quality]

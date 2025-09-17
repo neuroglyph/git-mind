@@ -1,5 +1,5 @@
 ---
-title: Domain Language Purity — Enforcer Notes
+title: 📖 Domain Language Purity: Gameplan
 description: Historical notes and enforcement-era artifacts.
 audience: [contributors]
 domain: [quality]

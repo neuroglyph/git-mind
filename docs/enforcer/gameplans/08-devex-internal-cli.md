@@ -1,5 +1,5 @@
 ---
-title: DevEx Internal CLI — Enforcer Notes
+title: 🛠️ DevEx: Internal CLI for Developer Tools - Gameplan
 description: Historical notes and enforcement-era artifacts.
 audience: [contributors]
 domain: [quality]

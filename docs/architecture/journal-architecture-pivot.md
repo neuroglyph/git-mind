@@ -1,5 +1,5 @@
 ---
-title: Journal Architecture Pivot
+title: Project: No Tux Given 🐧⚡
 description: Edge-journal commits with branch-aware graphs; the final architecture for storing semantics in Git.
 audience: [developers]
 domain: [architecture]

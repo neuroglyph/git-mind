@@ -1,5 +1,5 @@
 ---
-title: Cache Migration — OID-Only
+title: Cache Migration: OID-Only Format and Stable Refs
 description: Migration to OID-only cache format with stable ref naming and legacy fallback.
 audience: [developers]
 domain: [architecture]

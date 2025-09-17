@@ -1,5 +1,5 @@
 ---
-title: Bitmap Cache Design
+title: Bitmap Cache Design 🦁⚡
 description: High-performance query layer using Roaring Bitmaps for compressed sets and fast operations.
 audience: [developers]
 domain: [architecture]

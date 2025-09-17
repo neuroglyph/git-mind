@@ -1,5 +1,5 @@
 ---
-title: ADR 0002 — Documentation Reorganization and Planning Structure
+title: ADR 0002: Documentation Reorganization and Planning Structure
 description: Establish stable docs hubs, add indexes, and improve cross-linking.
 audience: [contributors]
 domain: [project]

@@ -25,6 +25,13 @@ Thanks for your interest in improving git‑mind! This guide summarizes expectat
    - Public headers compile: `ninja -C build header-compile`
 3. Keep diffs focused; match existing patterns in `core/` and `include/`.
 
+## Planning & Feature Tracking
+
+- `docs/features/Features_Ledger.md` is the single source of truth for roadmap, milestones, and tasks.
+- Add new ideas under the appropriate feature group during **Capture**, tag them with a milestone, and log supporting tasks in the `## Tasklist` section.
+- Progress bars are generated automatically—run `make features-update` after updating progress %, KLoC estimates, or tasks.
+- Milestone callouts (`MVP`, `Alpha`, `Beta`, `v1.0.0`) auto-pull outstanding tasks based on `[Milestone]` tags; keep those tags in sync as work moves stages.
+
 ## Code Style
 
 - Language: C23; warnings‑as‑errors; no VLAs or shadowing; explicit prototypes.
@@ -54,7 +61,7 @@ Thanks for your interest in improving git‑mind! This guide summarizes expectat
 - Keep `.coderabbit.yml` updated.
 - Prefer summary reviews; limit per‑line comments on docs.
 - If rejecting a suggestion, document rationale under `docs/code-reviews/rejected-suggestions/` with links.
- - See `docs/tools/Review_Seeding.md` for the auto‑worksheet flow and how to seed PR feedback locally or via CI. Seeded files live under `docs/code-reviews/PR<PR#>/<sha>.md`.
+- See `docs/tools/Review_Seeding.md` for the auto‑worksheet flow and how to seed PR feedback locally or via CI. Seeded files live under `docs/code-reviews/PR<PR#>/<sha>.md`.
 
 ## Getting Help
 

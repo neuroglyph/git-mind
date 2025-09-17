@@ -1,5 +1,5 @@
 ---
-title: Audit Notes
+title: Vision Alignment / Drift Audit
 description: Audits and drift analyses.
 audience: [contributors]
 domain: [quality]

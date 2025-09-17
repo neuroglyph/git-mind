@@ -1,5 +1,5 @@
 ---
-title: Wish List
+title: __🔒 Security Review: Plugin Architecture 2.0__
 description: Feature brainstorms and design sketches.
 audience: [contributors]
 domain: [project]

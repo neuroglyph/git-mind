@@ -1,5 +1,5 @@
 ---
-title: Enforcer Notes
+title: ⚙️ Config & Convention Overhaul: Gameplan
 description: Historical notes and enforcement-era artifacts.
 audience: [contributors]
 domain: [quality]

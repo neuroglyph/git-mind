@@ -1,5 +1,5 @@
 ---
-title: BEFORE WE BEGIN: Clean Slate Strategy
+title: 🚧 BEFORE WE BEGIN: Clean Slate Strategy
 description: Historical notes and enforcement-era artifacts.
 audience: [contributors]
 domain: [quality]

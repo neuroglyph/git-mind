@@ -1,5 +1,5 @@
 ---
-title: Enforcer Notes
+title: 🔮 Future Proofing Without YAGNI Sin: Gameplan
 description: Historical notes and enforcement-era artifacts.
 audience: [contributors]
 domain: [quality]

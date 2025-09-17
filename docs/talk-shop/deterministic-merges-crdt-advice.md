@@ -1,5 +1,5 @@
 ---
-title: Talk Shop
+title: Deterministic Merges with CRDT Advice
 description: Explorations and design discussions.
 audience: [contributors]
 domain: [project]

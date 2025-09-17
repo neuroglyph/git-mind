@@ -1,5 +1,5 @@
 ---
-title: Enforcer Notes
+title: Dev Journal: 2025-06-23 - Foundations and Shame
 description: Historical notes and enforcement-era artifacts.
 audience: [contributors]
 domain: [quality]

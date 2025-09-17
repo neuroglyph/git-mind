@@ -1,5 +1,5 @@
 ---
-title: Plugin Architecture 2.0 — API Specification
+title: API Specification: Plugin Architecture 2.0
 description: Feature brainstorms and design sketches.
 audience: [contributors]
 domain: [project]

@@ -9,9 +9,9 @@ status: archive
 
 # Code Review Feedback
 
-| Date | Agent | SHA | Branch | PR |
-|------|-------|-----|--------|----|
-| {date} | {agent} | `{sha}` | [{branch}]({github_branch_url}) | [PR#{pr_number}]({pr_url}) |
+| Date   | Agent   | SHA     | Branch   | Branch URL            | PR URL     |
+| ------ | ------- | ------- | -------- | --------------------- | ---------- |
+| {date} | {agent} | `{sha}` | {branch} | `{github_branch_url}` | `{pr_url}` |
 
 ## Instructions
 
@@ -25,7 +25,7 @@ Please use the following template to record your acceptance.
 
 ```markdown
 
-> [!NOTE]- **Acceepted**
+> [!NOTE]- **Accepted**
 > | Confidence | Remarks |
 > |------------|---------|
 > | {confidence_score_out_of_10} | {confidence_rationale} |
@@ -38,7 +38,7 @@ Please use the following template to record your acceptance.
 >
 > {what_you_did}
 >
-> ## Regression Avoidance Strategy
+> ## Regression avoidance strategy
 >
 > {regression_avoidance_strategy}
 >
@@ -63,7 +63,7 @@ Please use the following template to record your rejections.
 >
 > {rationale}
 >
-> ## What you did instead
+> ## What did you do instead?
 >
 > {what_you_did}
 >
@@ -85,17 +85,11 @@ Please use the following template to record your rejections.
 
 ## CODE REVIEW FEEDBACK
 
+> How to use: copy one of the fenced templates above, paste under each feedback item, and replace all `{placeholders}`.
+
 The following section contains the feedback items, extracted from the code review linked above. Please read each item and respond with your decision by injecting one of the two above templates beneath the feedback item.
 
 ### {feedback_item_title}
-
-```text
-{feedback_quote}
-```
-
-{response}
-
----
 
 ## Conclusion
 

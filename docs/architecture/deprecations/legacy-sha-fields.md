@@ -1,5 +1,5 @@
 ---
-title: Deprecation — Legacy SHA-1 Byte Arrays in Edges
+title: Deprecation Notice: Legacy SHA-1 Byte Arrays in Edges
 description: Plan to remove SHA-1 specific arrays in favor of OID-only APIs and storage.
 audience: [developers]
 domain: [architecture]

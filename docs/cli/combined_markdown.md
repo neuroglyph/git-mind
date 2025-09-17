@@ -1,5 +1,5 @@
 ---
-title: CLI Combined Reference
+title: README.md
 description: Combined CLI reference content for convenience and offline browsing.
 audience: [users, developers]
 domain: [cli]

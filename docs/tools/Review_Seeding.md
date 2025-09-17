@@ -69,6 +69,15 @@ The workflow will use `GITMIND_PR_WORKSHEET_BOT` to push the seeded doc to fork 
 - Dispatch from Actions with input `pr=<number>`
 - Produces an artifact (folder `review-seed`) with the generated worksheet
 
+## Reply Workflow Validation
+
+When updating templates or automation, run a quick readability check:
+
+1. Open a scratch PR (or reuse a maintenance PR) and ensure it has at least one unresolved review thread.
+2. Update the worksheet locally, then run `make apply-feedback FILES="docs/code-reviews/PR<PR#>/*.md"` so the workflow replies on your behalf (requires `GITHUB_TOKEN`).
+3. Inspect the GitHub conversation to confirm Markdown renders correctly (callouts collapsed, bullets aligned) and capture a screenshot for the changelog if formatting changed.
+4. If anything regresses, roll back the worksheet commit and iterate locally before retrying.
+
 ## Review Document Structure
 
 - Location: `docs/code-reviews/PR<PR#>/<sha>.md`
@@ -103,4 +112,3 @@ The workflow will use `GITMIND_PR_WORKSHEET_BOT` to push the seeded doc to fork 
   - Trade‑off: broader scope than fine‑grained tokens.
 - Auto‑open helper PR to contributor fork
   - If push to fork fails, create a helper PR in their fork with the seeded doc. This typically requires permission to fork/cross‑fork and may be restricted. Consider only if contributor experience warrants it.
-

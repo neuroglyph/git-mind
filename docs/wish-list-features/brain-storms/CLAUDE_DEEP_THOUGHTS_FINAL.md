@@ -1,5 +1,5 @@
 ---
-title: Wish List
+title: 🧠💎 CLAUDE'S DEEP THOUGHTS: The Git-Mind Vision Crystallized
 description: Feature brainstorms and design sketches.
 audience: [contributors]
 domain: [project]

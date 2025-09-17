@@ -1,5 +1,5 @@
 ---
-title: PRD — First‑Class, Time‑Travel‑Safe Semantics
+title: PRD: First‑Class, Time‑Travel‑Safe Semantics for git‑mind
 description: Requirements for semantics stored in Git with branch and time-travel correctness.
 audience: [contributors, developers]
 domain: [project, architecture]

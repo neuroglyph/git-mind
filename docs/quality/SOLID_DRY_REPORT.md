@@ -1,5 +1,5 @@
 ---
-title: SOLID/DRY Compliance Report
+title: 🚨 SOLID/DRY Compliance Report - CRITICAL SECURITY ASSESSMENT
 description: Assessment of the codebase against SOLID and DRY with remediation guidance.
 audience: [contributors, developers]
 domain: [quality]

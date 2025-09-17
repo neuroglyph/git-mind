@@ -1,5 +1,5 @@
 ---
-title: Testing Infrastructure Uplift: Gameplan
+title: 🧪 Testing Infrastructure Uplift: Gameplan
 description: Historical notes and enforcement-era artifacts.
 audience: [contributors]
 domain: [quality]

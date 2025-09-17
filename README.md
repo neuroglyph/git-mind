@@ -199,31 +199,9 @@ Want to be featured? Open an issue and share your story.
 
 <!-- features-progress:begin -->
 ```text
-███████████████████████████░░░░░░░░░░░░░ 66%
+█████████████████████████████░░░░░░░░░░░ 72%
 ```
 <!-- features-progress:end -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 🚀 Early release — Core features work today, API may evolve  
 📅 Roadmap: `docs/roadmap.md`  

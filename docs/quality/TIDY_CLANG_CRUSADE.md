@@ -1,5 +1,5 @@
 ---
-title: The Great Clang-Tidy Crusade
+title: 🚨 The Great Clang-Tidy Crusade
 description: Tracking clang-tidy issues and progress toward zero warnings.
 audience: [contributors, developers]
 domain: [quality]

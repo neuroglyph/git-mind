@@ -1,5 +1,5 @@
 ---
-title: Visual Guide — Tombstones
+title: Visual Guide: How Tombstones Work
 description: Visual explanation for tombstoned edges and why deletions preserve history.
 audience: [developers]
 domain: [architecture]

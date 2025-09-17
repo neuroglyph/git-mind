@@ -1,5 +1,5 @@
 ---
-title: Plugin Architecture 2.0 — Tech Design
+title: Technical Design: Plugin Architecture 2.0
 description: Feature brainstorms and design sketches.
 audience: [contributors]
 domain: [project]

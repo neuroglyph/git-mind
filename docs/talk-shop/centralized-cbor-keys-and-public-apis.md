@@ -1,5 +1,5 @@
 ---
-title: Talk Shop
+title: Centralized CBOR Keys and Public Encoders
 description: Explorations and design discussions.
 audience: [contributors]
 domain: [project]

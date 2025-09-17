@@ -1,5 +1,5 @@
 ---
-title: Talk Shop
+title: The Hardening Mindset: Safety as a Feature
 description: Explorations and design discussions.
 audience: [contributors]
 domain: [project]

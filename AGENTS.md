@@ -30,6 +30,7 @@ agent:
 - Run `make docs-verify` for doc changes; `make header-compile` for new public headers
 - Respect One‑Thing rule for touched files
 - For fork PRs, seeded worksheet may be artifact+comment (see Review_Seeding)
+- Sync feature/milestone updates in `docs/features/Features_Ledger.md`; follow the Capture→GA lifecycle and rerun `make features-update`.
 
 ## Recent Developments
 

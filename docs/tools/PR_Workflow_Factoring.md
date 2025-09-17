@@ -8,9 +8,11 @@ status: draft
 last_updated: 2025-09-16
 ---
 
-# Overview
+# Factoring PR Workflow to a Standalone Repo
 
-This guide captures how to factor our “PR feedback → worksheet → auto‑reply” workflow into a separate, reusable repository that any project can consume with minimal setup.
+## Overview
+
+This guide captures how to factor our “PR feedback → worksheet → auto-reply” workflow into a separate, reusable repository that any project can consume with minimal setup.
 
 The goal is a portable, easy‑install review pipeline that works great for both AI agents and humans: seed a worksheet from PR comments, fill in Accepted/Rejected with rationale, and let the bot reply and (optionally) resolve threads.
 
@@ -217,4 +219,3 @@ Deliver smooth on‑ramp + high trust:
 - Safety: dry‑run modes, explicit labels to enable writing.
 - Telemetry: text summaries + JSON for automation.
 - Extensibility: template markers for block parsing, configurable decision markers, pluggable resolvers.
-

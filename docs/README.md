@@ -1,5 +1,5 @@
 ---
-title: Docs Index
+title: docs/ (Index and Structure)
 description: Index of documentation with stable links and key entry points.
 audience: [all]
 domain: [project]

@@ -1,5 +1,5 @@
 ---
-title: SITREP
+title: CI Infrastructure SITREP - 2025-06-24
 description: Situation reports and CI notes.
 audience: [contributors]
 domain: [quality]

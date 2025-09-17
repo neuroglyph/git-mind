@@ -1,5 +1,5 @@
 ---
-title: Enforcer Notes
+title: Specification: Error Handling and Result Types
 description: Historical notes and enforcement-era artifacts.
 audience: [contributors]
 domain: [quality]

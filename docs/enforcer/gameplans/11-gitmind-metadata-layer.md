@@ -1,5 +1,5 @@
 ---
-title: Enforcer Notes
+title: 🎁 GitMind-Native Metadata Layer: Gameplan
 description: Historical notes and enforcement-era artifacts.
 audience: [contributors]
 domain: [quality]

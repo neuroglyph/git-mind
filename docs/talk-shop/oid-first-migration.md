@@ -1,5 +1,5 @@
 ---
-title: Talk Shop
+title: OID‑First Migration: Future‑Proof by Design
 description: Explorations and design discussions.
 audience: [contributors]
 domain: [project]

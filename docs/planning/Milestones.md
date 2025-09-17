@@ -1,5 +1,5 @@
 ---
-title: Planning Doc
+title: Milestones
 description: Planning artifacts: roadmap, releases, sprints, milestones.
 audience: [contributors]
 domain: [project]
