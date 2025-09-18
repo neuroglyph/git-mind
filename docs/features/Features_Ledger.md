@@ -120,322 +120,254 @@ MVP 74% | ALPHA 73% | BETA 55% | V1.0.0 82%
 
 Use the ledger as the single system of record from ideation through release:
 
-1. **Capture (Planned)** — When a new idea lands (roadmap review, retro, support signal), add a row under the appropriate group with a short name, owning area, and initial KLoC estimate. Link to any discovery notes/spec drafts in the “Spec” column and file a task in the `## Tasklist` section if further framing is needed.
-2. **Framing (Planned → In Progress)** — Once scope and acceptance criteria are clear, mark status `In Progress`, ensure the “Current State” block describes the baseline, and list outstanding engineering/design work in the “Todo (Tasks)” column. Keep KLoC estimates realistic as tickets are broken down.
-3. **Build & Land (In Progress)** — Engineers ship code behind feature flags/guards. Update progress % weekly (or when a significant chunk lands) and log validation tasks (tests, docs, follow-up stories). Reference the primary implementation branches/paths in the “Code” column.
-4. **Validation (MVP)** — When the feature is usable end-to-end for the target persona, flip status to `MVP`. Document rollout steps, known gaps, and add stabilization tasks (dogfooding, bug bashes) to the ledger’s task list.
-5. **Hardening (Alpha/Beta)** — Scale to broader audiences, tighten reliability/perf, and ensure telemetry/observability is live. Integrate feedback into Todo, tag follow-up tasks with `[Alpha]` or `[Beta]` as appropriate.
-6. **General Availability (v1.0.0)** — All quality bars met, docs/tests complete, downstream consumers notified. Continue to attach post-GA follow-ups (deprecation notices, future enhancements) either as new ledger entries or subtasks in the Notes section.
-
-Operational rules:
-
-- Every feature row must have: owning area, milestone tag, spec/code pointers, KLoC estimate, status, progress %, and actionable Todo/Triage notes. Update KLoC when scope materially changes.
-- The `## Tasklist` checklist is the authoritative backlog for cross-cutting work. Sync it whenever Todo items are resolved or re-scoped.
-- README’s “📊 Status” reflects the overall milestone-weighted bar automatically; run `make features-update` after edits.
-- For net-new features, create discovery docs in `docs/` and link them before moving past Planned.
-- Retire legacy items by marking status `Deprecated` (optional column note) and migrating remaining tasks to successors.
-
----
-
-### Core & Platform
-<!-- group-progress:core-platform:begin -->
-```text
-████████████████████████████████░░░░░░░░ 79%
-------------|-------------|------------|
-           MVP          Alpha    v1.0.0 
-features=8
-```
-<!-- group-progress:core-platform:end -->
-
-| Emoji | Feature | Area | Spec | Code | Milestone | KLoC (approx) | Status | Progress % | Bar | Current State | Tests | Remarks |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 🧱 | OID‑first Core | Core | — | core/include, core/src | v1.0.0 | 3.5 | Alpha | 85% | █████████░ | Equality OID‑first; OID fields in CBOR; cache/journal aligned. | Unit passing | Good foundation. |
-| 🗄️ | Journal (CBOR) | Core | docs/architecture/journal-architecture-pivot.md | core/src/journal, core/src/cbor | Alpha | 1.2 | Alpha | 80% | ████████░░ | Writer/reader with base64; debug flag; attributed edges. | Unit passing | Backwards compat OK. |
-| ⚡ | Cache (Bitmap) | Core | docs/architecture/bitmap-cache-design.md | core/src/cache | Alpha | 1.6 | In Progress | 75% | ███████░░░ | Rebuild + query; shard; metadata. | Unit partial | Added branch-limit + tree-size coverage. |
-| 🔗 | Ref Utilities | Core | docs/architecture/Ref_Name_Validation.md | core/src/util | MVP | 0.5 | MVP | 75% | ███████░░░ | `gm_build_ref` with validation; tests. | Unit | Good coverage. |
-| 🧰 | Safe String/Memory | Core | — | core/include/gitmind/util | v1.0.0 | 0.4 | V1 | 90% | █████████░ | Safe wrappers adopted in hot paths. | Unit | Security uplift. |
-| 🕸️ | Edge Graph Engine | Core | docs/architecture/System_Architecture.md | core/src/edge, core/include/gitmind/edge | Alpha | 1.0 | Alpha | 75% | ████████░░ | ULID-ordered edges; journal append + cache hydration. | Unit + fuzz | Forms graph spine. |
-| 🧬 | Semantics & Type System | Core | docs/architecture/System_Architecture.md | core/src/types, core/src/utf8, core/src/time | MVP | 2.7 | Alpha | 80% | ████████░░ | Stable hashed IDs; NFC normalization; time-safe stamping. | Unit | Ready for consumers. |
-| 🪪 | Attribution Metadata | Core | docs/architecture/attribution-system.md | core/src/attribution | Beta | 0.2 | In Progress | 55% | ██████░░░░ | Capture author/time for edges; merge helpers in place. | Unit scaffolding | Needs UX polish. |
-| 🗂️ | Sandbox Transactions | Core | docs/talk-shop/Sandbox_Transactions.md | core/src/journal (planned) | Alpha | 0.8 | Planned | 5% | █░░░░░░░░░ | Pending refs + CLI flow to stage/apply journal mutations safely. | Planned | Draft RFC merged. |
-
-### CLI, Hooks & UX
-<!-- group-progress:cli-hooks-ux:begin -->
-```text
-████████████████████████████░░░░░░░░░░░░ 69%
-------------|-------------|------------|
-           MVP          Alpha    v1.0.0 
-features=7
-```
-<!-- group-progress:cli-hooks-ux:end -->
-
-| Emoji | Feature | Area | Spec | Code | Milestone | KLoC (approx) | Status | Progress % | Bar | Current State | Tests | Remarks |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 🪝 | Post‑commit Hook (AUGMENTS) | Hooks | docs/hooks | core/src/hooks | Alpha | 0.5 | In Progress | 50% | █████░░░░░ | Process changed files; AUGMENTS edge. | Unit | Wire to journal read. |
-| 🔒 | CLI Safety Guard | CLI | docs/operations/Environment_Variables.md | apps/cli/cli_runtime.c | MVP | 0.6 | MVP | 70% | ███████░░░ | Official repo guard; env override; safe install workflow. | Unit | Solid baseline. |
-| 🛠️ | `git mind` CLI Commands | CLI | apps/cli/main.md | apps/cli | MVP | 1.2 | MVP | 65% | ██████░░░░ | `link`, `list`, cache rebuild; shared runtime utilities. | Unit + manual | Ready for daily use. |
-| 🧰 | Review Seeding & Replies | DX | docs/tools | tools/review, workflows | Alpha | 0.4 | MVP | 80% | ████████░░ | Seed + auto‑reply; artifact fallback; reply templates rendered cleanly. | CI + unit | High leverage. |
-| 📜 | Docs Tooling | Docs | docs/tools | tools/docs | MVP | 0.4 | MVP | 70% | ███████░░░ | Frontmatter/TOC/title checks; labeler. | Scripted | Good base. |
-| 🧭 | Curated AGENTS.md | DX | docs | tools/agents | MVP | 0.2 | MVP | 80% | ████████░░ | TL;DR + YAML; curator; archives. | Scripted | Fast onboarding. |
-| 🧪 | Worksheet Gates | DX | docs/tools | tools/review | Alpha | 0.3 | V1 | 90% | █████████░ | Pre‑push checks for placeholders + decisions. | Scripted | Keeps quality high. |
-
-### Observability & Analytics
-<!-- group-progress:observability-analytics:begin -->
-```text
-█████████████████████▓░░░░░░░░░░░░░░░░░░ 53%
-------------|-------------|------------|
-           MVP          Alpha    v1.0.0 
-features=3
-```
-<!-- group-progress:observability-analytics:end -->
-
-| Emoji | Feature | Area | Spec | Code | Milestone | KLoC (approx) | Status | Progress % | Bar | Current State | Tests | Remarks |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 🔎 | CBOR Debug Tracing | Core/Obs | docs/operations | core/src/journal | Alpha | 0.2 | MVP | 60% | ██████░░░░ | Env flag for verbose decode. | Unit | Helpful during migration. |
-| 📈 | Progress Ledgers | DX/Obs | docs/features | scripts | MVP | 0.3 | MVP | 70% | ███████░░░ | Ledger + updater script; KLoC-weighted bars + README sync. | Scripted | Improves planning. |
-| 📊 | CI Trend Baselines | Obs | docs/ci | tools | v1.0.0 | 0.2 | Planned | 20% | ██░░░░░░░░ | Not started. | Planned | Future. |
-
-## Tasklist
-## Tasklist
+1. **Capture (Planned)** — When a new idea lands (roadmap review, retro, support signal), add a row under the appropriate group with a short name, owning area, and initial KLoC estimate. Link to any discovery notes/spec drafts in the “Spec” column and file a task in the `## Tasklist
 
 ![Task Dependency Map](images/task_dag.svg)
 
 ### MVP
 
-#### Core & Platform
+#### Core
 
-<a id="gmmvp001"></a>
-- [ ] (GM.MVP.T001) Finalize strict equality; docs complete.
+<a id="gmmvpt001"></a>
+- [ ] (GM.MVP.T001) Finalize strict equality
 > [!INFO]- Step-by-step Instructions
-> - [ ] Audit equality helpers in cache/journal and ensure OID-first comparisons never fall back when OIDs exist.
-> - [ ] Add regression tests covering mixed OID/string paths.
-> - [ ] Update `docs/TECHNICAL.md` and related ADRs to document the strict behavior.
-> - [ ] Sweep references to legacy SHA fallbacks in docs/examples.
+> - [ ] Audit equality helpers in cache and journal to ensure OID-first comparisons never fall back when OIDs exist.
+> - [ ] Add regression tests covering mixed OID/string paths across cache and journal utilities.
+> - [ ] Update `docs/TECHNICAL.md` and any relevant ADRs to document strict equality behavior.
+> - [ ] Sweep references to legacy SHA fallbacks in docs and CLI examples.
 > [!NOTE]- Dependencies
 > - (none)
 
-<a id="gmmvp002"></a>
-- [ ] (GM.MVP.T002) Add negative tests and docs for ref utilities.
+<a id="gmmvpt002"></a>
+- [ ] (GM.MVP.T002) Negative tests for ref utils
 > [!INFO]- Step-by-step Instructions
 > - [ ] Extend `test_ref_utils` to cover invalid prefixes, length overflows, and reserved refs.
 > - [ ] Ensure errors propagate with meaningful `GM_ERR_*` codes.
-> - [ ] Update docstrings and `docs/architecture/Ref_Name_Validation.md` with new failure cases.
+> - [ ] Update `docs/architecture/Ref_Name_Validation.md` with new failure scenarios.
 > - [ ] Mention failure scenarios in README/tutorial examples.
 > [!NOTE]- Dependencies
-> - [GM.MVP.T001](#gmmvp001)
+> - **Hard:** [GM.MVP.T001](#gmmvpt001)
 
-#### CLI, Hooks & UX
+#### CLI
 
-<a id="gmmvp003"></a>
-- [ ] (GM.MVP.T003) Extend host override tests; document upgrade path.
+<a id="gmmvpt003"></a>
+- [ ] (GM.MVP.T003) Extend CLI safety tests
 > [!INFO]- Step-by-step Instructions
-> - [ ] Expand CLI safety tests to cover new env overrides.
-> - [ ] Document the upgrade path in `docs/operations/Environment_Variables.md`.
-> - [ ] Announce safe override usage in README/CLI help.
-> - [ ] Confirm behavior in Docker CI harness.
+> - [ ] Expand CLI safety guard tests to cover host override permutations.
+> - [ ] Document the override matrix in `docs/operations/Environment_Variables.md`.
+> - [ ] Highlight safe override usage in README/CLI help.
+> - [ ] Verify behavior in Docker CI harness.
 > [!NOTE]- Dependencies
 > - (none)
 
-<a id="gmmvp004"></a>
-- [ ] (GM.MVP.T004) Add query subcommands; richer diagnostics.
+<a id="gmmvpt004"></a>
+- [ ] (GM.MVP.T004) Query subcommands & diagnostics
 > [!INFO]- Step-by-step Instructions
-> - [ ] Design subcommand syntax and update CLI help output.
-> - [ ] Implement parsing + output formatting for new queries.
-> - [ ] Write unit/integration tests for diagnostics coverage.
-> - [ ] Update tutorial examples and docs.
+> - [ ] Design CLI syntax and update command help output for new query modes.
+> - [ ] Implement parsing and output formatting for diagnostic flags.
+> - [ ] Add unit/integration tests for diagnostic output.
+> - [ ] Update tutorial examples with new query flows.
 > [!NOTE]- Dependencies
-> - [GM.MVP.T003](#gmmvp003)
+> - **Hard:** [GM.MVP.T003](#gmmvpt003)
 
-<a id="gmmvp005"></a>
-- [ ] (GM.MVP.T005) Extend docs templates and guides.
+#### Docs
+
+<a id="gmmvpt005"></a>
+- [ ] (GM.MVP.T005) Extend docs templates
 > [!INFO]- Step-by-step Instructions
-> - [ ] Audit existing docs templates for gaps (status blocks, TOC conventions).
-> - [ ] Add missing sections and update template examples.
-> - [ ] Enhance docs lint to verify new expectations.
-> - [ ] Announce updates in contributor guide.
+> - [ ] Audit existing document templates for missing sections (status, TOC guidance, review notes).
+> - [ ] Add missing sections and refresh template examples.
+> - [ ] Update docs tooling lint to enforce new expectations.
+> - [ ] Announce template changes in the contributor guide.
 > [!NOTE]- Dependencies
 > - (none)
 
-<a id="gmmvp006"></a>
-- [ ] (GM.MVP.T006) Tune AGENTS summaries; monthly rollup.
+<a id="gmmvpt006"></a>
+- [ ] (GM.MVP.T006) Tune AGENTS monthly rollup
 > [!INFO]- Step-by-step Instructions
-> - [ ] Define monthly rollup process for AGENTS highlights.
-> - [ ] Provide script or automation to generate summaries.
+> - [ ] Define the monthly rollup cadence for AGENTS summaries.
+> - [ ] Provide a script or automation to generate rollups.
 > - [ ] Update `AGENTS.md` with cadence instructions.
-> - [ ] Verify pre-commit hook enforces formatting.
+> - [ ] Verify the pre-commit hook enforces the new format.
 > [!NOTE]- Dependencies
-> - [GM.MVP.T005](#gmmvp005)
+> - **Soft:** [GM.MVP.T005](#gmmvpt005)
 
-<a id="gmmvp007"></a>
-- [ ] (GM.MVP.T007) Expose CLI summary; automate weekly progress snapshots.
+#### Observability
+
+<a id="gmmvpt007"></a>
+- [ ] (GM.MVP.T007) CLI summary & snapshots
 > [!INFO]- Step-by-step Instructions
-> - [ ] Implement a CLI summary command reading ledger progress.
-> - [ ] Automate a cron/workflow to update snapshot outputs.
-> - [ ] Document snapshot cadence for contributors.
+> - [ ] Implement CLI summary command reading ledger progress.
+> - [ ] Automate a cron/workflow to publish weekly snapshots.
+> - [ ] Document the snapshot cadence and expectations.
 > - [ ] Add regression test verifying README/ledger sync.
 > [!NOTE]- Dependencies
-> - [GM.MVP.T005](#gmmvp005)
+> - **Soft:** [GM.MVP.T005](#gmmvpt005)
 
 ### Alpha
 
-#### Core & Platform
+#### Core
 
-<a id="gmalpha001"></a>
-- [ ] (GM.ALPHA.T001) Finalize ordering; add tests for CBOR journal reader.
+<a id="gmalphat001"></a>
+- [ ] (GM.ALPHA.T001) Journal ordering tests
 > [!INFO]- Step-by-step Instructions
-> - [ ] Write table-driven tests validating iteration order across branches.
-> - [ ] Exercise attributed vs. plain edge decoding paths.
-> - [ ] Patch reader docs to reflect ordering guarantees.
-> - [ ] Wire tests into `meson.build` and ensure they run in CI.
+> - [ ] Write table-driven tests exercising journal iteration order across branches.
+> - [ ] Cover both plain and attributed edges in CBOR fixtures.
+> - [ ] Document ordering guarantees in journal reader docs.
+> - [ ] Wire new tests into `meson.build` and CI.
 > [!NOTE]- Dependencies
-> - [GM.MVP.T001](#gmmvp001)
+> - **Hard:** [GM.MVP.T001](#gmmvpt001)
 
-<a id="gmalpha002"></a>
-- [ ] (GM.ALPHA.T002) Perf tuning + shard benchmarks.
+<a id="gmalphat002"></a>
+- [ ] (GM.ALPHA.T002) Cache perf tuning & benchmarks
 > [!INFO]- Step-by-step Instructions
-> - [ ] Capture baseline timings for cache rebuild/query across representative repos.
+> - [ ] Capture baseline rebuild/query timings across representative repos.
 > - [ ] Profile shard fan-out hotspots and prototype optimizations.
-> - [ ] Automate a lightweight benchmark harness (Docker-safe) to guard regressions.
-> - [ ] Document results in `docs/architecture/bitmap-cache-design.md`.
+> - [ ] Automate a Docker-safe benchmark harness for regressions.
+> - [ ] Document findings in `docs/architecture/bitmap-cache-design.md`.
 > [!NOTE]- Dependencies
-> - [GM.ALPHA.T001](#gmalpha001)
+> - **Hard:** [GM.ALPHA.T001](#gmalphat001)
 
-<a id="gmalpha003"></a>
-- [ ] (GM.ALPHA.T003) Edge diff coverage; multi-branch stress harness.
+<a id="gmalphat003"></a>
+- [ ] (GM.ALPHA.T003) Edge diff coverage
 > [!INFO]- Step-by-step Instructions
-> - [ ] Create fixture branches with divergent edge histories to prove diff stability.
+> - [ ] Create fixture branches with divergent edge histories to stress diffs.
 > - [ ] Add integration tests comparing fan-in/out across merge commits.
-> - [ ] Ensure cache/journal diff helpers handle branch fan-out.
+> - [ ] Ensure cache/journal diff helpers handle branch fan-out scenarios.
 > - [ ] Document the harness in `docs/architecture/System_Architecture.md`.
 > [!NOTE]- Dependencies
-> - [GM.ALPHA.T002](#gmalpha002)
+> - **Hard:** [GM.ALPHA.T002](#gmalphat002)
 
-<a id="gmalpha004"></a>
-- [ ] (GM.ALPHA.T004) Implement sandbox txn start/apply/abort; hook integration.
+<a id="gmalphat004"></a>
+- [ ] (GM.ALPHA.T004) Sandbox transactions
 > [!INFO]- Step-by-step Instructions
 > - [ ] Implement `gm_txn_start/apply/abort` helpers manipulating pending refs.
 > - [ ] Build CLI plumbing (`git mind txn ...`) with dry-run/apply flows.
 > - [ ] Add local/server hook snippets to enforce provenance.
 > - [ ] Ship documentation updates (RFC, roadmap, tutorial snippet).
 > [!NOTE]- Dependencies
-> - [GM.ALPHA.T003](#gmalpha003)
-> - [GM.MVP.T002](#gmmvp002)
+> - **Hard:** [GM.ALPHA.T003](#gmalphat003)
+> - **Hard:** [GM.MVP.T002](#gmmvpt002)
 
-<a id="gmalpha005"></a>
-- [ ] (GM.ALPHA.T005) Post-commit AUGMENTS wiring.
+#### CLI
+
+<a id="gmalphat005"></a>
+- [ ] (GM.ALPHA.T005) Post-commit AUGMENTS wiring
 > [!INFO]- Step-by-step Instructions
 > - [ ] Finish journal read integration and handle path truncation errors.
 > - [ ] Add end-to-end test demonstrating AUGMENTS edges emitted via hooks.
-> - [ ] Document error/fallback behavior in hooks guide.
-> - [ ] Verify containerized tests cover new path.
+> - [ ] Document error/fallback behavior in hook guides.
+> - [ ] Verify containerized tests cover the new path.
 > [!NOTE]- Dependencies
-> - [GM.ALPHA.T004](#gmalpha004)
+> - **Hard:** [GM.ALPHA.T004](#gmalphat004)
 
-<a id="gmalpha006"></a>
-- [ ] (GM.ALPHA.T006) Gate GraphQL auto-resolve behind flag; document validation; GH App roadmap.
+<a id="gmalphat006"></a>
+- [ ] (GM.ALPHA.T006) GraphQL auto-resolve flag
 > [!INFO]- Step-by-step Instructions
-> - [ ] Introduce feature flag controlling auto-resolve behavior.
+> - [ ] Introduce a feature flag controlling auto-resolve behavior.
 > - [ ] Document validation workflow with screenshots in Review Seeding docs.
 > - [ ] Outline GH App roadmap clarifying future automation.
-> - [ ] Add regression tests around new flag default.
+> - [ ] Add regression tests around the new flag default.
 > [!NOTE]- Dependencies
-> - [GM.MVP.T004](#gmmvp004)
+> - **Hard:** [GM.MVP.T004](#gmmvpt004)
 
-#### Observability & Analytics
+#### Observability
 
-<a id="gmalpha007"></a>
-- [ ] (GM.ALPHA.T007) Structured logging; sampling options.
+<a id="gmalphat007"></a>
+- [ ] (GM.ALPHA.T007) Structured logging & sampling
 > [!INFO]- Step-by-step Instructions
 > - [ ] Design logging schema for CBOR debug tracing.
-> - [ ] Implement sampling controls (env/config toggles).
-> - [ ] Update ops docs with usage examples.
+> - [ ] Implement sampling controls (environment/config toggles).
+> - [ ] Update operations docs with usage examples.
 > - [ ] Add tests ensuring logs redact sensitive content.
 > [!NOTE]- Dependencies
-> - [GM.ALPHA.T004](#gmalpha004)
+> - **Hard:** [GM.ALPHA.T004](#gmalphat004)
 
 ### Beta
 
-#### Core & Platform
+#### Core
 
-<a id="gmbeta001"></a>
-- [ ] (GM.BETA.T001) Extend multi-author rollups; surface in CLI output.
+<a id="gmbetat001"></a>
+- [ ] (GM.BETA.T001) Multi-author attribution rollups
 > [!INFO]- Step-by-step Instructions
-> - [ ] Extend attribution data structure to track multiple authors/time windows.
-> - [ ] Update cache/journal serialization to carry additional metadata.
+> - [ ] Extend attribution data structure to track multiple authors and time windows.
+> - [ ] Update cache/journal serialization to carry new metadata.
 > - [ ] Add CLI flags to display attribution columns.
-> - [ ] Document workflow and examples in attribution architecture doc.
+> - [ ] Document workflow and examples in attribution docs.
 > [!NOTE]- Dependencies
-> - [GM.ALPHA.T004](#gmalpha004)
-> - [GM.MVP.T002](#gmmvp002)
+> - **Hard:** [GM.ALPHA.T004](#gmalphat004)
+> - **Soft:** [GM.MVP.T002](#gmmvpt002)
 
 ### v1.0.0
 
-#### Core & Platform
+#### Core
 
 <a id="gmv1t001"></a>
-- [ ] (GM.V1.T001) Finalize strict equality enforcement across core.
+- [ ] (GM.V1.T001) Strict equality enforcement
 > [!INFO]- Step-by-step Instructions
-> - [ ] Harmonize equality helpers in cache/journal/util modules.
-> - [ ] Add regression tests covering mixed OID/string paths.
-> - [ ] Update `docs/TECHNICAL.md` and ADRs with strict behavior guarantees.
-> - [ ] Sweep references to legacy SHA fallbacks in docs/examples.
+> - [ ] Harmonize equality helpers across cache/journal/util modules.
+> - [ ] Add regression tests covering strict equality edges-to-cache interactions.
+> - [ ] Document long-term guarantees in architecture docs.
+> - [ ] Ensure release notes highlight the enforcement.
 > [!NOTE]- Dependencies
-> - [GM.ALPHA.T001](#gmalpha001)
-> - [GM.MVP.T001](#gmmvp001)
+> - **Hard:** [GM.ALPHA.T001](#gmalphat001)
+> - **Hard:** [GM.MVP.T001](#gmmvpt001)
 
 <a id="gmv1t002"></a>
-- [ ] (GM.V1.T002) Sweep remaining safe-string/memory stragglers and docs.
+- [ ] (GM.V1.T002) Safe-string sweep
 > [!INFO]- Step-by-step Instructions
 > - [ ] Grep for raw `strcpy`/`sprintf` usage outside approved wrappers.
 > - [ ] Replace with `gm_snprintf`/`gm_strcpy_safe` equivalents.
 > - [ ] Update safety documentation and examples.
 > - [ ] Add unit coverage where new wrappers are introduced.
 > [!NOTE]- Dependencies
-> - [GM.MVP.T001](#gmmvp001)
+> - **Hard:** [GM.MVP.T001](#gmmvpt001)
+
+#### CLI
 
 <a id="gmv1t003"></a>
-- [ ] (GM.V1.T003) Optional heuristics for worksheet gates.
+- [ ] (GM.V1.T003) Worksheet heuristics
 > [!INFO]- Step-by-step Instructions
 > - [ ] Define heuristic rules (placeholder detection, decision coverage).
-> - [ ] Implement optional flag to enable heuristics in gate tooling.
+> - [ ] Implement optional flag enabling heuristics in gate tooling.
 > - [ ] Document opt-in usage and backward compatibility.
 > - [ ] Add tests covering heuristic outcomes.
 > [!NOTE]- Dependencies
-> - [GM.MVP.T005](#gmmvp005)
-> - [GM.MVP.T006](#gmmvp006)
+> - **Hard:** [GM.MVP.T005](#gmmvpt005)
+> - **Soft:** [GM.MVP.T006](#gmmvpt006)
 
-#### Observability & Analytics
+#### Observability
 
 <a id="gmv1t004"></a>
-- [ ] (GM.V1.T004) Collect tidy counts and failures; render trends.
+- [ ] (GM.V1.T004) CI trend baselines
 > [!INFO]- Step-by-step Instructions
 > - [ ] Instrument CI to capture tidy counts and unit failures.
 > - [ ] Store trend data (JSON/CSV) for dashboards.
 > - [ ] Render trend visualization in docs/dashboard.
 > - [ ] Document maintenance workflow for trend data.
 > [!NOTE]- Dependencies
-> - [GM.ALPHA.T007](#gmalpha007)
-> - [GM.MVP.T007](#gmmvp007)
+> - **Hard:** [GM.ALPHA.T007](#gmalphat007)
+> - **Soft:** [GM.MVP.T007](#gmmvpt007)
 
 ## Completeness
 
 | Task | Started? | Finished? | Tested? | Shipped? |
 |------|----------|-----------|---------|----------|
-| [GM.MVP.T001](#gmmvp001) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.MVP.T002](#gmmvp002) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.MVP.T003](#gmmvp003) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.MVP.T004](#gmmvp004) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.MVP.T005](#gmmvp005) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.MVP.T006](#gmmvp006) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.MVP.T007](#gmmvp007) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.ALPHA.T001](#gmalpha001) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.ALPHA.T002](#gmalpha002) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.ALPHA.T003](#gmalpha003) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.ALPHA.T004](#gmalpha004) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.ALPHA.T005](#gmalpha005) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.ALPHA.T006](#gmalpha006) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.ALPHA.T007](#gmalpha007) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.BETA.T001](#gmbeta001) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.MVP.T001](#gmmvpt001) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.MVP.T002](#gmmvpt002) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.MVP.T003](#gmmvpt003) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.MVP.T004](#gmmvpt004) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.MVP.T005](#gmmvpt005) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.MVP.T006](#gmmvpt006) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.MVP.T007](#gmmvpt007) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.ALPHA.T001](#gmalphat001) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.ALPHA.T002](#gmalphat002) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.ALPHA.T003](#gmalphat003) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.ALPHA.T004](#gmalphat004) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.ALPHA.T005](#gmalphat005) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.ALPHA.T006](#gmalphat006) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.ALPHA.T007](#gmalphat007) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.BETA.T001](#gmbetat001) | 🚫 | 🚫 | 🚫 | 🚫 |
 | [GM.V1.T001](#gmv1t001) | 🚫 | 🚫 | 🚫 | 🚫 |
 | [GM.V1.T002](#gmv1t002) | 🚫 | 🚫 | 🚫 | 🚫 |
 | [GM.V1.T003](#gmv1t003) | 🚫 | 🚫 | 🚫 | 🚫 |
