@@ -1,0 +1,124 @@
+digraph G {
+  rankdir=LR;
+  graph [pad="0.5", nodesep="0.6", ranksep="1.0"];
+  node [shape=box, style=filled, fontname="IBM Plex Sans", fontsize=10];
+  subgraph cluster_MVP {
+    label="Milestone: MVP";
+    color="#666666";
+    subgraph cluster_MVP_Core {
+      label="Core";
+      color="#aaaaaa";
+      "GM.MVP.T001" [label="GM.MVP.T001
+Finalize strict equality", fillcolor="#ffe599"];
+      "GM.MVP.T002" [label="GM.MVP.T002
+Negative tests for ref utils", fillcolor="#ffe599"];
+    }
+    subgraph cluster_MVP_CLI {
+      label="CLI";
+      color="#aaaaaa";
+      "GM.MVP.T003" [label="GM.MVP.T003
+Extend CLI safety tests", fillcolor="#cfe2f3"];
+      "GM.MVP.T004" [label="GM.MVP.T004
+Query subcommands & diagnostics", fillcolor="#cfe2f3"];
+    }
+    subgraph cluster_MVP_Docs {
+      label="Docs";
+      color="#aaaaaa";
+      "GM.MVP.T005" [label="GM.MVP.T005
+Extend docs templates", fillcolor="#ead1dc"];
+      "GM.MVP.T006" [label="GM.MVP.T006
+Tune AGENTS rollup", fillcolor="#ead1dc"];
+    }
+    subgraph cluster_MVP_Observability {
+      label="Observability";
+      color="#aaaaaa";
+      "GM.MVP.T007" [label="GM.MVP.T007
+CLI summary & snapshots", fillcolor="#d9ead3"];
+    }
+  }
+  subgraph cluster_Alpha {
+    label="Milestone: Alpha";
+    color="#666666";
+    subgraph cluster_Alpha_Core {
+      label="Core";
+      color="#aaaaaa";
+      "GM.ALPHA.T001" [label="GM.ALPHA.T001
+Journal ordering tests", fillcolor="#ffe599"];
+      "GM.ALPHA.T002" [label="GM.ALPHA.T002
+Cache perf tuning", fillcolor="#ffe599"];
+      "GM.ALPHA.T003" [label="GM.ALPHA.T003
+Edge diff coverage", fillcolor="#ffe599"];
+      "GM.ALPHA.T004" [label="GM.ALPHA.T004
+Sandbox transactions", fillcolor="#ffe599"];
+    }
+    subgraph cluster_Alpha_CLI {
+      label="CLI";
+      color="#aaaaaa";
+      "GM.ALPHA.T005" [label="GM.ALPHA.T005
+Post-commit AUGMENTS wiring", fillcolor="#cfe2f3"];
+      "GM.ALPHA.T006" [label="GM.ALPHA.T006
+GraphQL auto-resolve flag", fillcolor="#cfe2f3"];
+    }
+    subgraph cluster_Alpha_Observability {
+      label="Observability";
+      color="#aaaaaa";
+      "GM.ALPHA.T007" [label="GM.ALPHA.T007
+Structured logging & sampling", fillcolor="#d9ead3"];
+    }
+  }
+  subgraph cluster_Beta {
+    label="Milestone: Beta";
+    color="#666666";
+    subgraph cluster_Beta_Core {
+      label="Core";
+      color="#aaaaaa";
+      "GM.BETA.T001" [label="GM.BETA.T001
+Multi-author attribution rollups", fillcolor="#ffe599"];
+    }
+  }
+  subgraph cluster_v1_0_0 {
+    label="Milestone: v1.0.0";
+    color="#666666";
+    subgraph cluster_v1_0_0_Core {
+      label="Core";
+      color="#aaaaaa";
+      "GM.V1.T001" [label="GM.V1.T001
+Strict equality enforcement", fillcolor="#ffe599"];
+      "GM.V1.T002" [label="GM.V1.T002
+Safe-string sweep", fillcolor="#ffe599"];
+    }
+    subgraph cluster_v1_0_0_CLI {
+      label="CLI";
+      color="#aaaaaa";
+      "GM.V1.T003" [label="GM.V1.T003
+Worksheet heuristics", fillcolor="#cfe2f3"];
+    }
+    subgraph cluster_v1_0_0_Observability {
+      label="Observability";
+      color="#aaaaaa";
+      "GM.V1.T004" [label="GM.V1.T004
+CI trend baselines", fillcolor="#d9ead3"];
+    }
+  }
+  "GM.MVP.T001" -> "GM.MVP.T002";
+  "GM.MVP.T003" -> "GM.MVP.T004";
+  "GM.MVP.T005" -> "GM.MVP.T006";
+  "GM.MVP.T005" -> "GM.MVP.T007";
+  "GM.MVP.T001" -> "GM.ALPHA.T001";
+  "GM.ALPHA.T001" -> "GM.ALPHA.T002";
+  "GM.ALPHA.T002" -> "GM.ALPHA.T003";
+  "GM.ALPHA.T003" -> "GM.ALPHA.T004";
+  "GM.MVP.T002" -> "GM.ALPHA.T004";
+  "GM.ALPHA.T004" -> "GM.ALPHA.T005";
+  "GM.MVP.T004" -> "GM.ALPHA.T006";
+  "GM.ALPHA.T004" -> "GM.ALPHA.T007";
+  "GM.ALPHA.T004" -> "GM.BETA.T001";
+  "GM.MVP.T002" -> "GM.BETA.T001";
+  "GM.ALPHA.T001" -> "GM.V1.T001";
+  "GM.MVP.T001" -> "GM.V1.T001";
+  "GM.MVP.T001" -> "GM.V1.T002";
+  "GM.MVP.T005" -> "GM.V1.T003";
+  "GM.MVP.T006" -> "GM.V1.T003";
+  "GM.ALPHA.T007" -> "GM.V1.T004";
+  "GM.MVP.T007" -> "GM.V1.T004";
+}

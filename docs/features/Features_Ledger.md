@@ -196,90 +196,35 @@ features=3
 | 📊 | CI Trend Baselines | Obs | docs/ci | tools | v1.0.0 | 0.2 | Planned | 20% | ██░░░░░░░░ | Not started. | Planned | Future. |
 
 ## Tasklist
+## Tasklist
 
-### Core & Platform
+![Task Dependency Map](images/task_dag.svg)
 
-<a id="gmv1t001"></a>
-- [ ] (GM.V1.T001) Finalize strict equality; docs complete.
+### MVP
+
+#### Core & Platform
+
+<a id="gmmvp001"></a>
+- [ ] (GM.MVP.T001) Finalize strict equality; docs complete.
 > [!INFO]- Step-by-step Instructions
 > - [ ] Audit equality helpers in cache/journal and ensure OID-first comparisons never fall back when OIDs exist.
 > - [ ] Add regression tests covering mixed OID/string paths.
 > - [ ] Update `docs/TECHNICAL.md` and related ADRs to document the strict behavior.
 > - [ ] Sweep references to legacy SHA fallbacks in docs/examples.
+> [!NOTE]- Dependencies
+> - (none)
 
-<a id="gmalpha001"></a>
-- [ ] (GM.ALPHA.T001) Finalize ordering; add tests for CBOR journal reader.
-> [!INFO]- Step-by-step Instructions
-> - [ ] Write table-driven tests for journal iteration order (newest-first, branch boundaries).
-> - [ ] Exercise attributed vs. plain edges in CBOR fixtures.
-> - [ ] Patch reader docs to reflect ordering guarantees.
-> - [ ] Wire tests into `meson.build` and ensure they run in CI.
-
-<a id="gmalpha002"></a>
-- [ ] (GM.ALPHA.T002) Perf tuning + shard benchmarks.
-> [!INFO]- Step-by-step Instructions
-> - [ ] Capture baseline timings for cache rebuild/query across representative repos.
-> - [ ] Profile shard fan-out hotspots and prototype optimizations.
-> - [ ] Automate a lightweight benchmark harness (Docker-safe) to guard regressions.
-> - [ ] Document results in `docs/architecture/bitmap-cache-design.md`.
-
-<a id="gmmvp001"></a>
-- [ ] (GM.MVP.T001) Add negative tests and docs for ref utilities.
+<a id="gmmvp002"></a>
+- [ ] (GM.MVP.T002) Add negative tests and docs for ref utilities.
 > [!INFO]- Step-by-step Instructions
 > - [ ] Extend `test_ref_utils` to cover invalid prefixes, length overflows, and reserved refs.
 > - [ ] Ensure errors propagate with meaningful `GM_ERR_*` codes.
-> - [ ] Update ref utilities docstrings and the Narrative in `docs/architecture/Ref_Name_Validation.md`.
+> - [ ] Update docstrings and `docs/architecture/Ref_Name_Validation.md` with new failure cases.
 > - [ ] Mention failure scenarios in README/tutorial examples.
+> [!NOTE]- Dependencies
+> - [GM.MVP.T001](#gmmvp001)
 
-<a id="gmv1t002"></a>
-- [ ] (GM.V1.T002) Sweep remaining safe-string/memory stragglers and docs.
-> [!INFO]- Step-by-step Instructions
-> - [ ] Grep for raw `strcpy`/`sprintf` usage outside approved wrappers.
-> - [ ] Replace with `gm_snprintf`/`gm_strcpy_safe` equivalents.
-> - [ ] Update Safety section in `docs/enforcer/gameplans/03-observability-built-in.md`.
-> - [ ] Add unit coverage where new wrappers are introduced.
-
-<a id="gmalpha003"></a>
-- [ ] (GM.ALPHA.T003) Edge diff coverage; multi-branch stress harness.
-> [!INFO]- Step-by-step Instructions
-> - [ ] Create fixture branches with divergent edge histories to prove diff stability.
-> - [ ] Add integration tests comparing fan-in/out across merge commits.
-> - [ ] Ensure cache/journal diff helpers handle branch fan-out.
-> - [ ] Document the harness in `docs/architecture/System_Architecture.md`.
-
-<a id="gmmvp002"></a>
-- [ ] (GM.MVP.T002) Expose helper API; document naming rules.
-> [!INFO]- Step-by-step Instructions
-> - [ ] Promote internal semantics helpers to public headers (review include hygiene).
-> - [ ] Add examples demonstrating NFC normalization to docs/tutorials.
-> - [ ] Write API reference entries with usage notes.
-> - [ ] Cover helper functions with unit tests.
-
-<a id="gmbeta001"></a>
-- [ ] (GM.BETA.T001) Extend multi-author rollups; surface in CLI.
-> [!INFO]- Step-by-step Instructions
-> - [ ] Extend attribution data structure to track multiple authors/time windows.
-> - [ ] Update cache/journal serialization to carry additional metadata.
-> - [ ] Add CLI flags to display attribution columns.
-> - [ ] Document workflow and examples in attribution architecture doc.
-
-<a id="gmalpha004"></a>
-- [ ] (GM.ALPHA.T004) Implement sandbox txn start/apply/abort; hook integration.
-> [!INFO]- Step-by-step Instructions
-> - [ ] Implement `gm_txn_start/apply/abort` helpers manipulating pending refs.
-> - [ ] Build CLI plumbing (`git mind txn ...`) with dry-run/apply flows.
-> - [ ] Add local/server hook snippets to enforce provenance.
-> - [ ] Ship documentation updates (RFC, roadmap, tutorial snippet).
-
-### CLI, Hooks & UX
-
-<a id="gmalpha005"></a>
-- [ ] (GM.ALPHA.T005) Path truncation handling follow-ups; wire to journal read.
-> [!INFO]- Step-by-step Instructions
-> - [ ] Add failing test covering truncated paths in augment hook.
-> - [ ] Ensure journal read/write propagates truncation errors cleanly.
-> - [ ] Update hook documentation with failure guidance.
-> - [ ] Verify behavior through integration test in container.
+#### CLI, Hooks & UX
 
 <a id="gmmvp003"></a>
 - [ ] (GM.MVP.T003) Extend host override tests; document upgrade path.
@@ -288,48 +233,115 @@ features=3
 > - [ ] Document the upgrade path in `docs/operations/Environment_Variables.md`.
 > - [ ] Announce safe override usage in README/CLI help.
 > - [ ] Confirm behavior in Docker CI harness.
+> [!NOTE]- Dependencies
+> - (none)
 
 <a id="gmmvp004"></a>
 - [ ] (GM.MVP.T004) Add query subcommands; richer diagnostics.
 > [!INFO]- Step-by-step Instructions
-> - [ ] Design subcommand syntax and update CLI help.
+> - [ ] Design subcommand syntax and update CLI help output.
 > - [ ] Implement parsing + output formatting for new queries.
-> - [ ] Write unit/integration tests for diagnostics.
-> - [ ] Update tutorial examples.
+> - [ ] Write unit/integration tests for diagnostics coverage.
+> - [ ] Update tutorial examples and docs.
+> [!NOTE]- Dependencies
+> - [GM.MVP.T003](#gmmvp003)
+
+<a id="gmmvp005"></a>
+- [ ] (GM.MVP.T005) Extend docs templates and guides.
+> [!INFO]- Step-by-step Instructions
+> - [ ] Audit existing docs templates for gaps (status blocks, TOC conventions).
+> - [ ] Add missing sections and update template examples.
+> - [ ] Enhance docs lint to verify new expectations.
+> - [ ] Announce updates in contributor guide.
+> [!NOTE]- Dependencies
+> - (none)
+
+<a id="gmmvp006"></a>
+- [ ] (GM.MVP.T006) Tune AGENTS summaries; monthly rollup.
+> [!INFO]- Step-by-step Instructions
+> - [ ] Define monthly rollup process for AGENTS highlights.
+> - [ ] Provide script or automation to generate summaries.
+> - [ ] Update `AGENTS.md` with cadence instructions.
+> - [ ] Verify pre-commit hook enforces formatting.
+> [!NOTE]- Dependencies
+> - [GM.MVP.T005](#gmmvp005)
+
+<a id="gmmvp007"></a>
+- [ ] (GM.MVP.T007) Expose CLI summary; automate weekly progress snapshots.
+> [!INFO]- Step-by-step Instructions
+> - [ ] Implement a CLI summary command reading ledger progress.
+> - [ ] Automate a cron/workflow to update snapshot outputs.
+> - [ ] Document snapshot cadence for contributors.
+> - [ ] Add regression test verifying README/ledger sync.
+> [!NOTE]- Dependencies
+> - [GM.MVP.T005](#gmmvp005)
+
+### Alpha
+
+#### Core & Platform
+
+<a id="gmalpha001"></a>
+- [ ] (GM.ALPHA.T001) Finalize ordering; add tests for CBOR journal reader.
+> [!INFO]- Step-by-step Instructions
+> - [ ] Write table-driven tests validating iteration order across branches.
+> - [ ] Exercise attributed vs. plain edge decoding paths.
+> - [ ] Patch reader docs to reflect ordering guarantees.
+> - [ ] Wire tests into `meson.build` and ensure they run in CI.
+> [!NOTE]- Dependencies
+> - [GM.MVP.T001](#gmmvp001)
+
+<a id="gmalpha002"></a>
+- [ ] (GM.ALPHA.T002) Perf tuning + shard benchmarks.
+> [!INFO]- Step-by-step Instructions
+> - [ ] Capture baseline timings for cache rebuild/query across representative repos.
+> - [ ] Profile shard fan-out hotspots and prototype optimizations.
+> - [ ] Automate a lightweight benchmark harness (Docker-safe) to guard regressions.
+> - [ ] Document results in `docs/architecture/bitmap-cache-design.md`.
+> [!NOTE]- Dependencies
+> - [GM.ALPHA.T001](#gmalpha001)
+
+<a id="gmalpha003"></a>
+- [ ] (GM.ALPHA.T003) Edge diff coverage; multi-branch stress harness.
+> [!INFO]- Step-by-step Instructions
+> - [ ] Create fixture branches with divergent edge histories to prove diff stability.
+> - [ ] Add integration tests comparing fan-in/out across merge commits.
+> - [ ] Ensure cache/journal diff helpers handle branch fan-out.
+> - [ ] Document the harness in `docs/architecture/System_Architecture.md`.
+> [!NOTE]- Dependencies
+> - [GM.ALPHA.T002](#gmalpha002)
+
+<a id="gmalpha004"></a>
+- [ ] (GM.ALPHA.T004) Implement sandbox txn start/apply/abort; hook integration.
+> [!INFO]- Step-by-step Instructions
+> - [ ] Implement `gm_txn_start/apply/abort` helpers manipulating pending refs.
+> - [ ] Build CLI plumbing (`git mind txn ...`) with dry-run/apply flows.
+> - [ ] Add local/server hook snippets to enforce provenance.
+> - [ ] Ship documentation updates (RFC, roadmap, tutorial snippet).
+> [!NOTE]- Dependencies
+> - [GM.ALPHA.T003](#gmalpha003)
+> - [GM.MVP.T002](#gmmvp002)
+
+<a id="gmalpha005"></a>
+- [ ] (GM.ALPHA.T005) Post-commit AUGMENTS wiring.
+> [!INFO]- Step-by-step Instructions
+> - [ ] Finish journal read integration and handle path truncation errors.
+> - [ ] Add end-to-end test demonstrating AUGMENTS edges emitted via hooks.
+> - [ ] Document error/fallback behavior in hooks guide.
+> - [ ] Verify containerized tests cover new path.
+> [!NOTE]- Dependencies
+> - [GM.ALPHA.T004](#gmalpha004)
 
 <a id="gmalpha006"></a>
 - [ ] (GM.ALPHA.T006) Gate GraphQL auto-resolve behind flag; document validation; GH App roadmap.
 > [!INFO]- Step-by-step Instructions
 > - [ ] Introduce feature flag controlling auto-resolve behavior.
 > - [ ] Document validation workflow with screenshots in Review Seeding docs.
-> - [ ] Outline GH App roadmap section clarifying future automation.
+> - [ ] Outline GH App roadmap clarifying future automation.
 > - [ ] Add regression tests around new flag default.
+> [!NOTE]- Dependencies
+> - [GM.MVP.T004](#gmmvp004)
 
-<a id="gmmvp005"></a>
-- [ ] (GM.MVP.T005) Extend templates; more guides.
-> [!INFO]- Step-by-step Instructions
-> - [ ] Audit existing docs templates for gaps.
-> - [ ] Add missing sections (TOC hints, status guidance).
-> - [ ] Update docs tooling lint to confirm compliance.
-> - [ ] Announce templates in contributor guide.
-
-<a id="gmmvp006"></a>
-- [ ] (GM.MVP.T006) Tune AGENTS summaries; monthly rollup.
-> [!INFO]- Step-by-step Instructions
-> - [ ] Define monthly rollup process for AGENTS highlights.
-> - [ ] Automate summary generation or provide script.
-> - [ ] Update AGENTS.md with new cadence instructions.
-> - [ ] Verify pre-commit hook enforces formatting.
-
-<a id="gmv1t003"></a>
-- [ ] (GM.V1.T003) Optional heuristics for worksheet gates.
-> [!INFO]- Step-by-step Instructions
-> - [ ] Define heuristic rules (placeholder detection, decision coverage).
-> - [ ] Implement optional flag to enable heuristics in gate tooling.
-> - [ ] Document opt-in usage and backward compatibility.
-> - [ ] Add tests covering heuristic outcomes.
-
-### Observability & Analytics
+#### Observability & Analytics
 
 <a id="gmalpha007"></a>
 - [ ] (GM.ALPHA.T007) Structured logging; sampling options.
@@ -338,14 +350,61 @@ features=3
 > - [ ] Implement sampling controls (env/config toggles).
 > - [ ] Update ops docs with usage examples.
 > - [ ] Add tests ensuring logs redact sensitive content.
+> [!NOTE]- Dependencies
+> - [GM.ALPHA.T004](#gmalpha004)
 
-<a id="gmmvp007"></a>
-- [ ] (GM.MVP.T007) Expose CLI summary; automate weekly snapshots.
+### Beta
+
+#### Core & Platform
+
+<a id="gmbeta001"></a>
+- [ ] (GM.BETA.T001) Extend multi-author rollups; surface in CLI output.
 > [!INFO]- Step-by-step Instructions
-> - [ ] Implement CLI summary command reading ledger progress.
-> - [ ] Automate snapshot job (cron/workflow) updating docs.
-> - [ ] Document snapshot cadence for contributors.
-> - [ ] Add regression test verifying README sync.
+> - [ ] Extend attribution data structure to track multiple authors/time windows.
+> - [ ] Update cache/journal serialization to carry additional metadata.
+> - [ ] Add CLI flags to display attribution columns.
+> - [ ] Document workflow and examples in attribution architecture doc.
+> [!NOTE]- Dependencies
+> - [GM.ALPHA.T004](#gmalpha004)
+> - [GM.MVP.T002](#gmmvp002)
+
+### v1.0.0
+
+#### Core & Platform
+
+<a id="gmv1t001"></a>
+- [ ] (GM.V1.T001) Finalize strict equality enforcement across core.
+> [!INFO]- Step-by-step Instructions
+> - [ ] Harmonize equality helpers in cache/journal/util modules.
+> - [ ] Add regression tests covering mixed OID/string paths.
+> - [ ] Update `docs/TECHNICAL.md` and ADRs with strict behavior guarantees.
+> - [ ] Sweep references to legacy SHA fallbacks in docs/examples.
+> [!NOTE]- Dependencies
+> - [GM.ALPHA.T001](#gmalpha001)
+> - [GM.MVP.T001](#gmmvp001)
+
+<a id="gmv1t002"></a>
+- [ ] (GM.V1.T002) Sweep remaining safe-string/memory stragglers and docs.
+> [!INFO]- Step-by-step Instructions
+> - [ ] Grep for raw `strcpy`/`sprintf` usage outside approved wrappers.
+> - [ ] Replace with `gm_snprintf`/`gm_strcpy_safe` equivalents.
+> - [ ] Update safety documentation and examples.
+> - [ ] Add unit coverage where new wrappers are introduced.
+> [!NOTE]- Dependencies
+> - [GM.MVP.T001](#gmmvp001)
+
+<a id="gmv1t003"></a>
+- [ ] (GM.V1.T003) Optional heuristics for worksheet gates.
+> [!INFO]- Step-by-step Instructions
+> - [ ] Define heuristic rules (placeholder detection, decision coverage).
+> - [ ] Implement optional flag to enable heuristics in gate tooling.
+> - [ ] Document opt-in usage and backward compatibility.
+> - [ ] Add tests covering heuristic outcomes.
+> [!NOTE]- Dependencies
+> - [GM.MVP.T005](#gmmvp005)
+> - [GM.MVP.T006](#gmmvp006)
+
+#### Observability & Analytics
 
 <a id="gmv1t004"></a>
 - [ ] (GM.V1.T004) Collect tidy counts and failures; render trends.
@@ -354,28 +413,30 @@ features=3
 > - [ ] Store trend data (JSON/CSV) for dashboards.
 > - [ ] Render trend visualization in docs/dashboard.
 > - [ ] Document maintenance workflow for trend data.
+> [!NOTE]- Dependencies
+> - [GM.ALPHA.T007](#gmalpha007)
+> - [GM.MVP.T007](#gmmvp007)
 
 ## Completeness
 
 | Task | Started? | Finished? | Tested? | Shipped? |
 |------|----------|-----------|---------|----------|
-| [GM.V1.T001](#gmv1t001) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.ALPHA.T001](#gmalpha001) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.ALPHA.T002](#gmalpha002) | 🚫 | 🚫 | 🚫 | 🚫 |
 | [GM.MVP.T001](#gmmvp001) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.V1.T002](#gmv1t002) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.ALPHA.T003](#gmalpha003) | 🚫 | 🚫 | 🚫 | 🚫 |
 | [GM.MVP.T002](#gmmvp002) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.BETA.T001](#gmbeta001) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.ALPHA.T004](#gmalpha004) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.ALPHA.T005](#gmalpha005) | 🚫 | 🚫 | 🚫 | 🚫 |
 | [GM.MVP.T003](#gmmvp003) | 🚫 | 🚫 | 🚫 | 🚫 |
 | [GM.MVP.T004](#gmmvp004) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.ALPHA.T006](#gmalpha006) | 🚫 | 🚫 | 🚫 | 🚫 |
 | [GM.MVP.T005](#gmmvp005) | 🚫 | 🚫 | 🚫 | 🚫 |
 | [GM.MVP.T006](#gmmvp006) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.V1.T003](#gmv1t003) | 🚫 | 🚫 | 🚫 | 🚫 |
-| [GM.ALPHA.T007](#gmalpha007) | 🚫 | 🚫 | 🚫 | 🚫 |
 | [GM.MVP.T007](#gmmvp007) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.ALPHA.T001](#gmalpha001) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.ALPHA.T002](#gmalpha002) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.ALPHA.T003](#gmalpha003) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.ALPHA.T004](#gmalpha004) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.ALPHA.T005](#gmalpha005) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.ALPHA.T006](#gmalpha006) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.ALPHA.T007](#gmalpha007) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.BETA.T001](#gmbeta001) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.V1.T001](#gmv1t001) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.V1.T002](#gmv1t002) | 🚫 | 🚫 | 🚫 | 🚫 |
+| [GM.V1.T003](#gmv1t003) | 🚫 | 🚫 | 🚫 | 🚫 |
 | [GM.V1.T004](#gmv1t004) | 🚫 | 🚫 | 🚫 | 🚫 |
-
