@@ -50,6 +50,7 @@ This guide aligns the many planning artifacts (HN demo plan, roadmap snapshots, 
   - Cohesion report + branch-aware queries (Milestones M5, Release v0.7–v0.8).
   - Worksheet automation + reply workflows (Features Ledger “Review Seeding & Replies”).
   - Cache performance guardrails (<10ms median per Release Plan), telemetry knobs (Roadmap “Medium Term”).
+  - Sandbox transaction blocks to preview journal mutations safely before apply (`docs/talk-shop/Sandbox_Transactions.md`).
   - Observability: CBOR debug tracing, ledger snapshot tasks.
 - **Exit criteria:** Cache rebuilds complete without manual babysitting; collaboration loops (worksheet, review replies) exercised on real PR; alpha docs outline known gaps.
 

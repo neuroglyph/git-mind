@@ -157,6 +157,7 @@ features=8
 | 🕸️ | Edge Graph Engine | Core | docs/architecture/System_Architecture.md | core/src/edge, core/include/gitmind/edge | Alpha | 1.0 | Alpha | 75% | ████████░░ | ULID-ordered edges; journal append + cache hydration. | Edge diff coverage; multi-branch stress. | Unit + fuzz | Forms graph spine. |
 | 🧬 | Semantics & Type System | Core | docs/architecture/System_Architecture.md | core/src/types, core/src/utf8, core/src/time | MVP | 2.7 | Alpha | 80% | ████████░░ | Stable hashed IDs; NFC normalization; time-safe stamping. | Expose helper API; document name rules. | Unit | Ready for consumers. |
 | 🪪 | Attribution Metadata | Core | docs/architecture/attribution-system.md | core/src/attribution | Beta | 0.2 | In Progress | 55% | ██████░░░░ | Capture author/time for edges; merge helpers in place. | Extend multi-author rollups; CLI surfacing. | Unit scaffolding | Needs UX polish. |
+| 🗂️ | Sandbox Transactions | Core | docs/talk-shop/Sandbox_Transactions.md | core/src/journal (planned) | Alpha | 0.8 | Planned | 5% | █░░░░░░░░░ | Pending refs + CLI flow to stage/apply journal mutations safely. | Implement txn start/apply/abort; hook integration. | Planned | Draft RFC merged. |
 
 ### CLI, Hooks & UX
 <!-- group-progress:cli-hooks-ux:begin -->
