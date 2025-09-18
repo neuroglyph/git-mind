@@ -151,7 +151,7 @@ features=8
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 🧱 | OID‑first Core | Core | — | core/include, core/src | v1.0.0 | 3.5 | Alpha | 85% | █████████░ | Equality OID‑first; OID fields in CBOR; cache/journal aligned. | Finalize strict equality; docs complete. | Unit passing | Good foundation. |
 | 🗄️ | Journal (CBOR) | Core | docs/architecture/journal-architecture-pivot.md | core/src/journal, core/src/cbor | Alpha | 1.2 | Alpha | 80% | ████████░░ | Writer/reader with base64; debug flag; attributed edges. | Finalize ordering; more tests. | Unit passing | Backwards compat OK. |
-| ⚡ | Cache (Bitmap) | Core | docs/architecture/bitmap-cache-design.md | core/src/cache | Alpha | 1.6 | In Progress | 70% | ███████░░░ | Rebuild + query; shard; metadata. | Conformance tests; size calc. | Unit partial | Performance tuning next. |
+| ⚡ | Cache (Bitmap) | Core | docs/architecture/bitmap-cache-design.md | core/src/cache | Alpha | 1.6 | In Progress | 75% | ███████░░░ | Rebuild + query; shard; metadata. | Perf tuning + shard benchmarks. | Unit partial | Added branch-limit + tree-size coverage. |
 | 🔗 | Ref Utilities | Core | docs/architecture/Ref_Name_Validation.md | core/src/util | MVP | 0.5 | MVP | 75% | ███████░░░ | `gm_build_ref` with validation; tests. | More negative tests; docs link. | Unit | Good coverage. |
 | 🧰 | Safe String/Memory | Core | — | core/include/gitmind/util | v1.0.0 | 0.4 | V1 | 90% | █████████░ | Safe wrappers adopted in hot paths. | Sweep stragglers; docs. | Unit | Security uplift. |
 | 🕸️ | Edge Graph Engine | Core | docs/architecture/System_Architecture.md | core/src/edge, core/include/gitmind/edge | Alpha | 1.0 | Alpha | 75% | ████████░░ | ULID-ordered edges; journal append + cache hydration. | Edge diff coverage; multi-branch stress. | Unit + fuzz | Forms graph spine. |
@@ -202,7 +202,7 @@ features=3
 > [!INFO]-
 > Update comparisons and tests; align cache/journal; document in TECHNICAL.md.
 
-- [ ] [Alpha] Finalize bitmap cache conformance tests
+- [x] [Alpha] Finalize bitmap cache conformance tests
 > [!INFO]-
 > Build synthetic repos; verify shard distribution and size calculations; add docs.
 

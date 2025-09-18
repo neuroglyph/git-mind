@@ -283,6 +283,12 @@ test_cache_query = executable('test_cache_query',
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
+test_cache_branch_limits = executable('test_cache_branch_limits',
+  'core/tests/unit/test_cache_branch_limits.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
 test_journal_safety = executable('test_journal_safety',
   'core/tests/unit/test_journal_safety.c',
   include_directories : inc,
@@ -291,6 +297,12 @@ test_journal_safety = executable('test_journal_safety',
 
 test_cache_shard_distribution = executable('test_cache_shard_distribution',
   'core/tests/unit/test_cache_shard_distribution.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_cache_tree_size = executable('test_cache_tree_size',
+  'core/tests/unit/test_cache_tree_size.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
@@ -328,8 +340,10 @@ test('edge_equal_semantics', test_edge_equal_semantics)
 test('cache_meta', test_cache_meta)
 test('journal_mixed_cbor', test_journal_mixed_cbor)
 test('cache_query', test_cache_query)
+test('cache_branch_limits', test_cache_branch_limits)
 test('journal_safety', test_journal_safety)
 test('cache_shard_distribution', test_cache_shard_distribution)
+test('cache_tree_size', test_cache_tree_size)
 test('edge_oid_fallback', test_edge_oid_fallback)
 test('ref_utils', test_ref_utils)
 
