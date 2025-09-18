@@ -36,26 +36,30 @@ Non-goals for the first iteration: multi-user locking, conflict resolution UI, o
 
 ```
 refs/gitmind/
-  edges/<branch>          # canonical journal
-  pending/<txn-id>        # sandbox transaction refs
-  applied/<txn-id>        # (optional) archive for auditing
+  edges/<branch>                          # canonical journal
+  pending/<actor>/<txn-id>/edges/<branch> # sandbox transactions (namespaced)
+  pending/<actor>/<txn-id>/meta           # json metadata for the txn
+  applied/<txn-id>                        # optional archival pointer
 ```
 
-- Transaction IDs are ULIDs; metadata stored under `refs/gitmind/pending/<txn-id>/meta`.
-- Payload edges live under `refs/gitmind/pending/<txn-id>/edges/<branch>` mirroring the canonical layout so reuse is easy.
+- Transactions are ULID-keyed and namespaced by the author (CLI derives `<actor>` from git config or `GITMIND_TXN_NAMESPACE`). This prevents cross-claiming someone else’s sandbox.
+- Metadata (JSON) records author, branch target, base journal OID, start time, edge-count hash, and applied-by provenance. Payload edges mirror the canonical layout so replay logic can reuse existing helpers.
 
 ### CLI Flow
 
 1. `git mind txn start [--branch main]` → returns txn ID, records base journal OID.
 2. Subsequent `git mind link/list/...` commands operate inside the transaction by default (reads merge pending + canonical, writes hit pending).
 3. `git mind txn show [--format table|json|diff]` renders edges staged in the transaction.
-4. Users choose `git mind txn apply [--branch main]` or `git mind txn abort`.
+4. Users choose `git mind txn apply [--branch main]` (alias: `txn commit`) or `git mind txn abort`.
+
+`git mind txn show --format diff` is the default preview; `--dry-run` performs the apply simulation without mutating refs (useful for CI or pre-review).
 
 ### Apply Logic
 
 - Collect pending commits for `<txn-id>`.
-- Confirm the canonical journal tip still equals the recorded base OID (fast-forward); else replay on top (append new commits).
-- Update `refs/gitmind/edges/<branch>` and move the transaction ref under `refs/gitmind/applied/<txn-id>` (or delete if retention not needed).
+- Confirm the canonical journal tip still equals the recorded base OID (fast-forward); else replay on top (append new commits) and surface schema/ULID conflicts loudly.
+- Stamp the apply commit with trailers (`Gm-Txn:` and `Gm-Apply:`) for provenance.
+- Update `refs/gitmind/edges/<branch>` and move the transaction ref under `refs/gitmind/applied/<txn-id>` (retention policy below) or prune it if configured.
 - Trigger cache rebuild hooks or mark the cache dirty if the branch matches current context.
 
 ### Abort Logic
@@ -69,24 +73,31 @@ refs/gitmind/
 
 ### Hooks & Tests
 
-- Hooks (pre-push) should whitelist pending refs or ignore them entirely.
+- Local hooks (pre-push) should block accidental pushes of `refs/gitmind/pending/*` unless an override flag is set; server-side hooks enforce trailers on canonical refs and optionally auto-archive transactions (see worked example in `Sandbox_Transactions_Feedback.md`).
 - Unit tests for `gm_journal` should ensure reads can accept a transaction ref override (`gm_journal_read_txn(ctx, txn_id, ...)`).
 - E2E: script that starts a transaction, stages edges, aborts, verifies canonical journal unchanged; then repeat with apply and validate.
 
 ## Implementation Phases
 
 1. **Scaffold** – add `gm_txn_*` helpers (start/apply/abort) that manipulate Git refs only; no CLI surface yet.
-2. **CLI Preview** – wire `git mind txn` commands, default writes to a transaction when `GITMIND_TXN_ID` is set (useful for `make ci-local` test harnesses).
-3. **Opt-in Auto-Txn** – add `--txn` flag to commands, environment variable for automation, and docs for contributors.
-4. **Enforce Default** – eventually, disallow direct journal writes outside of a transaction unless `--apply` is passed explicitly (with a hook guard).
+2. **CLI Preview** – wire `git mind txn` commands, default writes to a transaction when `GITMIND_TXN_ID` is set (useful for `make ci-local` harnesses).
+3. **Opt-in Auto-Txn** – add `--txn` flag, environment variable, and docs. CI remains “apply-only”; developers manually apply before running pipelines.
+4. **Retention + Enforcement** – implement configurable retention (`git config gitmind.txn.retention=keep|days=<n>|delete`) and disallow direct journal writes outside of a transaction unless `--apply` is passed explicitly (with a hook guard).
 
-## Open Questions / Feedback Needed
+Default retention proposal:
 
-- **Transaction retention** – do we keep applied transactions under `refs/gitmind/applied/` for audit trails, or rely on Git history only?
-- **CI strategy** – should CI automatically apply transactions (and roll back) to run tests, or do we rely on developers applying manually first?
-- **Integration with review seeding** – can CodeRabbit or the worksheet flow respond to transaction comments when edges are applied?
-- **Merge tool** – do we want a `gm mind txn rebase` to restack the transaction on a new base before applying?
-- **Security** – do we need ACLs to prevent transactions from referencing other users’ pending refs (e.g., namespace by user)?
+- Pending refs are pruned automatically on abort.
+- Applied refs are archived under `refs/gitmind/applied/` for 14 days by default, overridden via config or `git mind txn apply --no-archive`.
+- A periodic `git mind txn gc` command prunes expired archives.
+
+## Decisions & Remaining Questions
+
+- ✅ **Retention** — archive applied transactions for 14 days by default with `gitmind.txn.retention` override; pending refs auto-pruned on abort/apply.
+- ✅ **CI strategy** — CI remains “apply-only”; pipelines fail fast if pending refs are pushed. Developers must apply (or use dry-run apply locally) before running `make ci-local`.
+- ✅ **Namespaces & metadata** — each transaction stores author, base OID, branch, start time, edge digest, and apply provenance; refs are namespaced by actor.
+- ✅ **Replay semantics** — schema violations or duplicate ULIDs abort apply. No silent skipping; users fix the transaction then re-apply.
+- ❓ **Review tooling** — explore integrating transaction IDs into worksheet/review seeding so bots can comment before apply.
+- ❓ **Rebase support** — evaluate need for `git mind txn rebase` once transactions are in heavy use.
 
 ## Related Work
 
@@ -96,4 +107,4 @@ refs/gitmind/
 
 ---
 
-Feedback welcome, especially on apply semantics and how strict we want to be before promoting transactions to canonical refs.
+Feedback welcome—especially on the remaining review/rebase questions. A worked end-to-end example (including hook snippets) lives in `docs/talk-shop/Sandbox_Transactions_Feedback.md` for quick reference.
