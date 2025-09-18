@@ -1,3 +1,13 @@
+---
+title: Legacy Notes — SHA Resolution Utilities
+description: Archived notes on SHA helpers prior to the core/ migration.
+audience: [contributors]
+domain: [legacy]
+tags: [hashing, legacy]
+status: archive
+last_updated: 2025-09-17
+---
+
 # SHA Resolution Utilities
 
 ## Purpose

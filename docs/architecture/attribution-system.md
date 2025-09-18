@@ -309,7 +309,7 @@ graph LR
 
 - `src/attribution/attribution.c` - Core attribution functions
 - `src/attribution/cbor.c` - CBOR encoding/decoding for attributed edges
-- `src/attribution/attribution.md` - Implementation notes
+- `docs/legacy/src/attribution.md` - Implementation notes
 
 ### Integration Points
 

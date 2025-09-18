@@ -1,3 +1,13 @@
+---
+title: Legacy Notes — Edge Management
+description: Historical design notes from the pre-core era covering edge structures and rationale.
+audience: [contributors]
+domain: [legacy]
+tags: [edges, legacy]
+status: archive
+last_updated: 2025-09-17
+---
+
 # Edge Management
 
 ## Purpose
