@@ -199,8 +199,8 @@ AUGMENTS edges have a special format:
   tgt_sha: "def456...",  // New blob SHA  
   rel_type: "AUGMENTS",
   confidence: 1.0,
-  src_path: "src/old.c", // For readability
-  tgt_path: "src/new.c"  // May differ if renamed
+  src_path: "core/src/old.c", // For readability
+  tgt_path: "core/src/new.c"  // May differ if renamed
 }
 ```
 

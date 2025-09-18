@@ -32,9 +32,9 @@ __No servers. No setup. Just `git push` your mind.__
 ```bash
 # "What implements our authentication?"
 $ git mind query --implements "auth-flow.md"
-src/auth.c          (verified, 2 days ago)
-tests/auth.test.js  (verified, 2 days ago)
-src/oauth.c         (AI suggested, 1 hour ago)
+core/src/auth.c          (verified, 2 days ago)
+tests/auth.test.c        (verified, 2 days ago)
+core/src/oauth.c         (AI suggested, 1 hour ago)
 
 # See how your understanding evolved
 $ git checkout main~30
@@ -99,11 +99,11 @@ CLI examples (subset implemented today):
 
 ```bash
 # Start linking
-git mind link README.md src/main.c --type documents
-git mind link src/auth.c tests/auth.test.js --type "tested-by"
+git mind link README.md core/src/main.c --type documents
+git mind link core/src/auth.c tests/auth.test.c --type "tested-by"
 
 # Explore connections
-git mind list --from src/auth.c
+git mind list --from core/src/auth.c
 
 # Rebuild cache when needed
 git mind cache-rebuild
@@ -158,11 +158,11 @@ Found 23 potential connections...
 
 # You review and cherry-pick
 $ git mind review --source ai
-src/cache.c implements docs/caching-strategy.md (confidence: 0.92)
+core/src/cache.c implements docs/caching-strategy.md (confidence: 0.92)
 [Accept/Reject/Skip]? a
 
 # Clear attribution preserved
-$ git mind list --from src/cache.c --format json
+$ git mind list --from core/src/cache.c --format json
 {
 "to": "docs/caching-strategy.md",
 "type": "implements",

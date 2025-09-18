@@ -687,7 +687,7 @@ void test_type_safety(void) {
     // Runtime type validation
     gm_node_id_t node_id;
     GM_ASSERT_OK(gm_node_id_from_path(
-        (gm_path_t){.value = "src/main.c"}, &node_id));
+        (gm_path_t){.value = "core/src/main.c"}, &node_id));
     
     // Invalid types rejected
     GM_ASSERT_ERROR(gm_node_id_from_path(
@@ -727,7 +727,7 @@ void test_semantic_api(void) {
     ));
     
     GM_ASSERT_OK(gm_knowledge_node_create(
-        gm_path_from_string("src/main.c"),
+        gm_path_from_string("core/src/main.c"),
         GM_NODE_TYPE_FILE,
         &source_file
     ));

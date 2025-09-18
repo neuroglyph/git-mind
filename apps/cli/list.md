@@ -37,9 +37,9 @@ Why callbacks?
 ### Default Output
 
 ```
-IMPLEMENTS: src/main.c -> include/api.h
+IMPLEMENTS: core/src/main.c -> include/api.h
 REFERENCES: README.md -> docs/design.md
-DEPENDS_ON: Makefile -> src/main.c
+DEPENDS_ON: Makefile -> core/src/main.c
 
 Total: 3 links
 ```
@@ -109,7 +109,7 @@ git-mind list --type implements
 git-mind list --since 2024-01-01
 
 # Pattern matching
-git-mind list "src/*.c"
+git-mind list "core/src/*.c"
 
 # Combining filters
 git-mind list --type references docs/ --since yesterday
@@ -207,21 +207,21 @@ REFERENCES: café.md -> naïve.md
 ### Current: Human-readable
 
 ```
-IMPLEMENTS: src/main.c -> include/api.h
+IMPLEMENTS: core/src/main.c -> include/api.h
 ```
 
 ### Future: Machine-readable
 
 ```bash
 $ git-mind list --format=json
-{"type":"implements","src":"src/main.c","tgt":"include/api.h",...}
+{"type":"implements","src":"core/src/main.c","tgt":"include/api.h",...}
 
 $ git-mind list --format=csv
-implements,src/main.c,include/api.h,1.0,1720000000000
+implements,core/src/main.c,include/api.h,1.0,1720000000000
 
 $ git-mind list --format=dot
 digraph G {
-  "src/main.c" -> "include/api.h" [label="implements"];
+  "core/src/main.c" -> "include/api.h" [label="implements"];
 }
 ```
 
@@ -230,8 +230,8 @@ digraph G {
 ```bash
 $ git-mind list --group-by=type
 IMPLEMENTS (5):
-  src/main.c -> include/api.h
-  src/parser.c -> include/parser.h
+  core/src/main.c -> include/api.h
+  core/src/parser.c -> include/parser.h
   ...
 
 REFERENCES (12):
@@ -329,14 +329,14 @@ By type:
   augments: 17 (1%)
 Most connected:
   README.md (50 edges)
-  src/main.c (45 edges)
+  core/src/main.c (45 edges)
 ```
 
 ### Watch Mode
 
 ```bash
 $ git-mind list --watch
-IMPLEMENTS: src/main.c -> include/api.h
+IMPLEMENTS: core/src/main.c -> include/api.h
 [watching for changes...]
 NEW: REFERENCES: README.md -> CHANGELOG.md
 ```

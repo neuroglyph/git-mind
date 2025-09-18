@@ -30,8 +30,8 @@ export GITMIND_SAFETY=off
 Create a semantic edge between two files (document → code, code → test, etc.).
 
 ```bash
-$ "$GIT_MIND" link README.md src/main.c --type documents
-Created: README.md -[documents]-> src/main.c
+$ "$GIT_MIND" link README.md core/src/main.c --type documents
+  Created: README.md -[documents]-> core/src/main.c
 ```
 
 More linking examples and options: `docs/cli/gitmind-link.md`.
@@ -42,7 +42,7 @@ List edges from a file to see what it’s connected to.
 
 ```bash
 $ "$GIT_MIND" list --from README.md
-README.md -> src/main.c (documents)
+README.md -> core/src/main.c (documents)
 ```
 
 Formatting and filters: `docs/cli/gitmind-list.md`.

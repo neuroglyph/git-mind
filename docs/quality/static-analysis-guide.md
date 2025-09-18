@@ -144,7 +144,7 @@ __Strengths__: Interprocedural, incremental analysis
 pip install flawfinder
 
 # Run
-flawfinder --html --context src/ > security-report.html
+flawfinder --html --context core/src/ > security-report.html
 ```
 
 __Catches__: Security vulnerabilities, unsafe functions

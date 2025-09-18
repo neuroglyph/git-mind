@@ -55,7 +55,7 @@ Welcome to the tank queue. Strap in; by the time you exit, you should be dangero
 | --- | --- | --- |
 | “All artifacts tied to this file” | `MATCH (f:File {oid:$oid})-[:TOUCHES|:REFLECTS|:JOURNEY_HAS*1..2]->(x) RETURN x` | Include journey bundles for 1-hop hits. |
 | “Which commits closed issue #42?” | `MATCH (i:Issue {number:42})-[:RESOLVED_IN]->(j:Journey)-[:MERGED_IN]->(c:Commit) RETURN c` | Journey keeps metadata; fallback to merge edges. |
-| “Retro notes within 2 hops of auth.c” | `MATCH (f:File {path:'src/auth.c'})-[:REFLECTS\|:JOURNEY_HAS*1..2]->(r:Retro) RETURN DISTINCT r` | Filters keep CLI output sane. |
+| “Retro notes within 2 hops of auth.c” | `MATCH (f:File {path:'core/src/auth.c'})-[:REFLECTS\|:JOURNEY_HAS*1..2]->(r:Retro) RETURN DISTINCT r` | Filters keep CLI output sane. |
 | “What changed between C2 and C5?” | Use timeline diff: `gm timeline diff --from C2 --to C5 --edge-types implements,verified_by` | Rely on cache deltas; avoid brute-force BFS. |
 
 ## 4. Modeling Checklist (Before You Commit Your Thoughts)
@@ -72,7 +72,7 @@ Welcome to the tank queue. Strap in; by the time you exit, you should be dangero
 - **Docs Backfill**: Update `docs/architecture/*` whenever you invent a new edge type or path strategy; ledger tasks depend on that clarity.
 
 ## 6. Level-Up Quests (XP Farming)
-1. Run `git mind list --from src/auth.c --with-attribution` and sketch the path you *expected* vs. what exists. Gap? Add edges or journeys.
+1. Run `git mind list --from core/src/auth.c --with-attribution` and sketch the path you *expected* vs. what exists. Gap? Add edges or journeys.
 2. Model Issue → Review → Merge as a journey node in a scratch graph; verify you can reach every participant in ≤2 hops.
 3. Draft a Cypher query that respects time-travel (`WHERE c.ulid BETWEEN $from AND $to`). Translate it into git-mind CLI verbs.
 4. Teach someone else the difference between canonical vs. derived edges. If you can’t explain it in one whiteboard, repeat this tank session.

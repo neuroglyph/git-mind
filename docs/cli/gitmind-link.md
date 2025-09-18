@@ -44,8 +44,8 @@ This is the command that started it all. When you create a link, you're not just
 
 ```bash
 # The moment of connection
-$ git mind link design.md src/parser.c --type implements
-Created edge: design.md ──implements──> src/parser.c
+$ git mind link design.md core/src/parser.c --type implements
+Created edge: design.md ──implements──> core/src/parser.c
 ```
 
 From this moment forward, anyone who checks out your code can discover this relationship. More importantly, they can travel back in time and see what you understood at any point in history.
@@ -87,53 +87,53 @@ From this moment forward, anyone who checks out your code can discover this rela
 
 ```bash
 # Implementation tracks design
-$ git mind link src/auth.c docs/auth-design.md --type implements
+$ git mind link core/src/auth.c docs/auth-design.md --type implements
 
 # Test validates implementation  
-$ git mind link tests/test_auth.c src/auth.c --type tests
+$ git mind link tests/test_auth.c core/src/auth.c --type tests
 
 # Config guides behavior
-$ git mind link src/auth.c config/auth.yaml --type depends_on
+$ git mind link core/src/auth.c config/auth.yaml --type depends_on
 ```
 
 ### With confidence - Encoding uncertainty
 
 ```bash
 # Human creating a confident link (confidence defaults to 1.0)
-$ git mind link src/parser.c rfc/grammar.txt --type implements
+$ git mind link core/src/parser.c rfc/grammar.txt --type implements
 
 # AI suggesting a relationship with confidence score
 $ export GIT_MIND_SOURCE=claude
 $ export GIT_MIND_AUTHOR=claude@anthropic
-$ git mind link src/parser.c rfc/grammar.txt --type implements --confidence 0.85
-Created link: src/parser.c ──implements──> rfc/grammar.txt [claude: claude@anthropic, conf: 0.85]
+$ git mind link core/src/parser.c rfc/grammar.txt --type implements --confidence 0.85
+Created link: core/src/parser.c ──implements──> rfc/grammar.txt [claude: claude@anthropic, conf: 0.85]
 
 # High-confidence AI relationship
-$ git mind link src/algorithm.c papers/dijkstra62.pdf --type references --confidence 0.95
+$ git mind link core/src/algorithm.c papers/dijkstra62.pdf --type references --confidence 0.95
 ```
 
 ### Bidirectional links - Symmetric relationships
 
 ```bash
 # These files are peers that reference each other
-$ git mind link src/client.c src/server.c --type references --bidirectional
-Created edge: src/client.c ──references──> src/server.c
-Created edge: src/server.c ──references──> src/client.c
+$ git mind link core/src/client.c core/src/server.c --type references --bidirectional
+Created edge: core/src/client.c ──references──> core/src/server.c
+Created edge: core/src/server.c ──references──> core/src/client.c
 ```
 
 ### Human-AI Collaboration - Attribution System
 
 ```bash
 # Human creates edge (default behavior)
-$ git mind link README.md src/main.c --type documents
-Created link: README.md ──documents──> src/main.c
+$ git mind link README.md core/src/main.c --type documents
+Created link: README.md ──documents──> core/src/main.c
 
 # AI creates edge with attribution
 $ export GIT_MIND_SOURCE=claude
 $ export GIT_MIND_AUTHOR=claude@anthropic  
 $ export GIT_MIND_SESSION=analysis_2025
-$ git mind link src/auth.c config/oauth.json --type depends_on --confidence 0.82
-Created link: src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.82]
+$ git mind link core/src/auth.c config/oauth.json --type depends_on --confidence 0.82
+Created link: core/src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.82]
 
 # System-generated edge (from hooks)
 $ export GIT_MIND_SOURCE=system
@@ -168,7 +168,7 @@ Links are branch-specific. Create different connections on different branches:
 
 ```bash
 git checkout -b feature/auth
-git mind link src/auth.c new-auth-api.md --type implements
+git mind link core/src/auth.c new-auth-api.md --type implements
 
 git checkout main  
 git mind list  # Won't show the feature branch link
@@ -212,10 +212,10 @@ While you can use any string as a relationship type, these conventions help main
 
 ```bash
 # Too vague
-$ git mind link src/parser.c docs/ --type references  # Which doc?
+$ git mind link core/src/parser.c docs/ --type references  # Which doc?
 
 # Better
-$ git mind link src/parser.c docs/parser-design.md --type implements
+$ git mind link core/src/parser.c docs/parser-design.md --type implements
 ```
 
 ### Use Conventional Types
@@ -237,7 +237,7 @@ $ git mind list --type tests
 
 ```bash
 # Why does the parser depend on the logger config?
-$ git mind link src/parser.c config/logger.yaml --type depends_on \
+$ git mind link core/src/parser.c config/logger.yaml --type depends_on \
     --note "Parser uses logger for syntax error reporting"
 ```
 

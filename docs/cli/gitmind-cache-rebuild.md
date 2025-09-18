@@ -83,8 +83,8 @@ Cache rebuilt successfully!
 ### Rebuild after heavy development
 
 ```bash
-$ git mind link src/parser.c docs/parsing.md --type implements
-$ git mind link src/lexer.c src/parser.c --type feeds
+$ git mind link core/src/parser.c docs/parsing.md --type implements
+$ git mind link core/src/lexer.c core/src/parser.c --type feeds
 $ git mind cache-rebuild
 Rebuilding cache for branch 'feature/parser'...
 Processed 2 new edges from 2 commits
@@ -97,7 +97,7 @@ Cache updated incrementally!
 $ git mind cache-rebuild --force --verbose
 Force rebuilding cache for branch 'main'...
 Walking journal from refs/gitmind/edges/main
-[00] Processing edge: design.md -> src/main.c (implements)
+[00] Processing edge: design.md -> core/src/main.c (implements)
 [01] Processing edge: README.md -> docs/api.md (references)
 ...
 Building forward index bitmaps...

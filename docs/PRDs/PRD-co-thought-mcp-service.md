@@ -66,7 +66,7 @@ Resource: Edge
       "repo": "/path/to/repo",
       "ref": "refs/gitmind/edges/main",
       "src_path": "docs/auth-flow.md",
-      "tgt_path": "src/auth.c",
+      "tgt_path": "core/src/auth.c",
       "type_name": "implements",
       "lane_name": "suggested",
       "attribution": {"source": "ai", "author": "tool@local", "session": "abc"},

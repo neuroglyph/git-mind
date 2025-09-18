@@ -205,7 +205,7 @@ __Notes:__
 __Example:__
 
 ```c
-int ret = gm_link_create(ctx, "src/main.c", "docs/api.md", "implements");
+int ret = gm_link_create(ctx, "core/src/main.c", "docs/api.md", "implements");
 if (ret != GM_OK) {
     fprintf(stderr, "Failed to create link: %s\n", gm_last_error(ctx));
 }
@@ -252,7 +252,7 @@ int ret = gm_link_list(ctx, &links, NULL, NULL);
 ret = gm_link_list(ctx, &links, "README.md", NULL);
 
 // List links between specific files
-ret = gm_link_list(ctx, &links, "src/main.c", "docs/api.md");
+ret = gm_link_list(ctx, &links, "core/src/main.c", "docs/api.md");
 
 if (ret == GM_OK) {
     for (size_t i = 0; i < links->count; i++) {

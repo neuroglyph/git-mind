@@ -214,11 +214,11 @@ features=3
 > [!INFO]-
 > Thread author/time data through cache rebuild + `git mind list`; document flag to toggle extended columns.
 
-- [ ] [Alpha] Retire legacy `src/` tree
+- [x] [Alpha] Retire legacy `src/` tree
 > [!INFO]-
 > Move remaining markdown artifacts under `src/` into `docs/legacy/src/`, remove empty scaffolding, and update references so core/ is the sole code root.
 
-- [ ] [Alpha] Sweep includes and docs for `src/` references
+- [x] [Alpha] Sweep includes and docs for `src/` references
 > [!INFO]-
 > Replace lingering `src/` include or doc paths with `core/` equivalents and ensure tooling/tests reflect the finalized layout.
 

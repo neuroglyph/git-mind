@@ -72,13 +72,13 @@ Properties:
 
 ```c
 // Direct lookup
-edges_from("src/auth.c")
+edges_from("core/src/auth.c")
 
 // Pattern matching  
 edges_matching(type="implements", lane="verified")
 
 // Graph traversal
-transitive_closure("src/main.c", max_depth=3)
+transitive_closure("core/src/main.c", max_depth=3)
 
 // Temporal
 edges_at_commit("abc123def")

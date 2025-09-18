@@ -40,7 +40,7 @@ safe_string_copy(edge->src_path, src_path, GM_PATH_MAX);
 safe_string_copy(edge->tgt_path, tgt_path, GM_PATH_MAX);
 
 /* Observation: Same paths appear in MANY edges */
-// "src/main.c" might be in 100+ edges
+// "core/src/main.c" might be in 100+ edges
 // "refs/heads/main" appears everywhere
 ```
 

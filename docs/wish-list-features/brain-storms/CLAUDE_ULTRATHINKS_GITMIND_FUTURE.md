@@ -478,7 +478,7 @@ typedef struct {
 // Inference API
 gm_prediction_t *predictions = gm_ml_predict_edges(
     engine, 
-    "src/auth.c", 
+    "core/src/auth.c", 
     GM_PREDICT_DEPENDENCIES | GM_PREDICT_IMPLEMENTS
 );
 ```

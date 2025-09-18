@@ -143,32 +143,32 @@ README.md ──references──> docs/quickstart.md
 
 ```bash
 # Document implementation relationships
-$ git mind link src/parser.c docs/parser-design.md --type implements
-$ git mind link src/lexer.c docs/parser-design.md --type implements
+$ git mind link core/src/parser.c docs/parser-design.md --type implements
+$ git mind link core/src/lexer.c docs/parser-design.md --type implements
 
 # Track test coverage
-$ git mind link tests/test_parser.c src/parser.c --type tests
-$ git mind link tests/test_lexer.c src/lexer.c --type tests
+$ git mind link tests/test_parser.c core/src/parser.c --type tests
+$ git mind link tests/test_lexer.c core/src/lexer.c --type tests
 
 # Show everything connected to the design
 $ git mind list --to docs/parser-design.md
-src/parser.c ──implements──> docs/parser-design.md
-src/lexer.c ──implements──> docs/parser-design.md
+core/src/parser.c ──implements──> docs/parser-design.md
+core/src/lexer.c ──implements──> docs/parser-design.md
 ```
 
 ### Time Travel Through Understanding
 
 ```bash
 # Current state
-$ git mind list --from src/api.c
-src/api.c ──depends_on──> config/api.yaml
-src/api.c ──implements──> docs/api-v2.md
+$ git mind list --from core/src/api.c
+core/src/api.c ──depends_on──> config/api.yaml
+core/src/api.c ──implements──> docs/api-v2.md
 
 # Travel back 30 commits
 $ git checkout HEAD~30
-$ git mind list --from src/api.c  
-src/api.c ──implements──> docs/api-v1.md
-src/api.c ──experimental──> research/new-approach.pdf
+$ git mind list --from core/src/api.c  
+core/src/api.c ──implements──> docs/api-v1.md
+core/src/api.c ──experimental──> research/new-approach.pdf
 
 # Return to present
 $ git checkout main
@@ -182,12 +182,12 @@ $ git mind install-hooks
 ✓ Hooks installed - file evolution will be tracked automatically
 
 # Edit a file that has connections
-$ vim src/parser.c
-$ git add src/parser.c && git commit -m "Optimize parser"
+$ vim core/src/parser.c
+$ git add core/src/parser.c && git commit -m "Optimize parser"
 
 # The connections followed the change!
-$ git mind list --from src/parser.c
-src/parser.c ──implements──> docs/parser-design.md
+$ git mind list --from core/src/parser.c
+core/src/parser.c ──implements──> docs/parser-design.md
 # (connection automatically updated to new blob SHA)
 ```
 
@@ -199,7 +199,7 @@ $ git mind status
 Semantic Graph Statistics:
 - Total edges: 3,847
 - Unique relationships: 12 types
-- Most connected: src/core.c (147 connections)
+- Most connected: core/src/core.c (147 connections)
 
 # Queries getting slow?
 $ git mind cache-rebuild

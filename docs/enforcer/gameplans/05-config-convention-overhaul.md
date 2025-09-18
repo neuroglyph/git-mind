@@ -536,7 +536,7 @@ void test_cli_flag_parsing(void) {
         "-c", "/custom/config.toml",
         "link",
         "--type", "depends",
-        "src/a.c", "src/b.c"
+        "core/src/a.c", "core/src/b.c"
     };
     int argc = sizeof(argv) / sizeof(argv[0]);
     

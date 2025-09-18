@@ -55,10 +55,10 @@ With git-mind:
 
 ```bash
 # All connections at a glance
-$ git mind list --from src/parser.c
+$ git mind list --from core/src/parser.c
 
 # Specific relationships
-$ git mind list --type tests --to src/auth.c
+$ git mind list --type tests --to core/src/auth.c
 
 # Everything in the web
 $ git mind list
@@ -124,9 +124,9 @@ Show all connections:
 ```bash
 $ git mind list
 README.md ──references──> docs/quickstart.md
-src/main.c ──implements──> docs/design.md
-tests/test_parser.c ──tests──> src/parser.c
-src/parser.c ──depends_on──> config/grammar.yaml
+core/src/main.c ──implements──> docs/design.md
+tests/test_parser.c ──tests──> core/src/parser.c
+core/src/parser.c ──depends_on──> config/grammar.yaml
 ... (42 more edges)
 ```
 
@@ -135,20 +135,20 @@ src/parser.c ──depends_on──> config/grammar.yaml
 What does this file connect to?
 
 ```bash
-$ git mind list --from src/auth.c
-src/auth.c ──implements──> docs/auth-design.md
-src/auth.c ──depends_on──> config/auth.yaml
-src/auth.c ──references──> lib/crypto.c
+$ git mind list --from core/src/auth.c
+core/src/auth.c ──implements──> docs/auth-design.md
+core/src/auth.c ──depends_on──> config/auth.yaml
+core/src/auth.c ──references──> lib/crypto.c
 ```
 
 What connects to this file?
 
 ```bash
-$ git mind list --to src/parser.c
-tests/test_parser.c ──tests──> src/parser.c
-tests/bench_parser.c ──benchmarks──> src/parser.c
-docs/parser-guide.md ──documents──> src/parser.c
-src/compiler.c ──depends_on──> src/parser.c
+$ git mind list --to core/src/parser.c
+tests/test_parser.c ──tests──> core/src/parser.c
+tests/bench_parser.c ──benchmarks──> core/src/parser.c
+docs/parser-guide.md ──documents──> core/src/parser.c
+core/src/compiler.c ──depends_on──> core/src/parser.c
 ```
 
 ### Filtered Queries
@@ -157,17 +157,17 @@ Find all test files:
 
 ```bash
 $ git mind list --type tests
-tests/test_auth.c ──tests──> src/auth.c
-tests/test_parser.c ──tests──> src/parser.c
-tests/integration/test_flow.c ──tests──> src/flow.c
+tests/test_auth.c ──tests──> core/src/auth.c
+tests/test_parser.c ──tests──> core/src/parser.c
+tests/integration/test_flow.c ──tests──> core/src/flow.c
 ```
 
 Find uncertain connections:
 
 ```bash
 $ git mind list --min-confidence 0.8
-src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.85]
-src/parser.c ──implements──> specs/grammar.md [gpt: gpt4@openai, conf: 0.92]
+core/src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.85]
+core/src/parser.c ──implements──> specs/grammar.md [gpt: gpt4@openai, conf: 0.92]
 ```
 
 ### Attribution Filtering
@@ -176,34 +176,34 @@ Show only human-created edges:
 
 ```bash
 $ git mind list --source human
-README.md ──documents──> src/main.c
-src/auth.c ──implements──> docs/auth-design.md
-tests/test_auth.c ──tests──> src/auth.c
+README.md ──documents──> core/src/main.c
+core/src/auth.c ──implements──> docs/auth-design.md
+tests/test_auth.c ──tests──> core/src/auth.c
 ```
 
 Show only AI-suggested edges:
 
 ```bash
 $ git mind list --source ai
-src/parser.c ──depends_on──> lib/lexer.h [claude: claude@anthropic, conf: 0.78]
-src/crypto.c ──references──> papers/aes.pdf [gpt: gpt4@openai, conf: 0.91]
+core/src/parser.c ──depends_on──> lib/lexer.h [claude: claude@anthropic, conf: 0.78]
+core/src/crypto.c ──references──> papers/aes.pdf [gpt: gpt4@openai, conf: 0.91]
 ```
 
 Show attribution for all edges:
 
 ```bash
 $ git mind list --show-attribution
-README.md ──documents──> src/main.c [human: user@example.com]
-src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.85]
-src/test.c ──tests──> src/main.c [human: developer@team.com]
+README.md ──documents──> core/src/main.c [human: user@example.com]
+core/src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.85]
+core/src/test.c ──tests──> core/src/main.c [human: developer@team.com]
 ```
 
 High-confidence AI insights only:
 
 ```bash
 $ git mind list --source ai --min-confidence 0.9
-src/crypto.c ──references──> papers/aes.pdf [gpt: gpt4@openai, conf: 0.91]
-src/algorithm.c ──implements──> papers/dijkstra.pdf [claude: claude@anthropic, conf: 0.95]
+core/src/crypto.c ──references──> papers/aes.pdf [gpt: gpt4@openai, conf: 0.91]
+core/src/algorithm.c ──implements──> papers/dijkstra.pdf [claude: claude@anthropic, conf: 0.95]
 ```
 
 ### Time Travel Queries
@@ -227,8 +227,8 @@ See how files evolved:
 
 ```bash
 $ git mind list --show-augments
-src/auth.c:8a9f3b ──AUGMENTS──> src/auth.c:7c4d5e
-src/auth.c:7c4d5e ──AUGMENTS──> src/auth.c:current
+core/src/auth.c:8a9f3b ──AUGMENTS──> core/src/auth.c:7c4d5e
+core/src/auth.c:7c4d5e ──AUGMENTS──> core/src/auth.c:current
 docs/api.md:3f2a1b ──AUGMENTS──> docs/api.md:current
 ```
 
@@ -299,7 +299,7 @@ The list command uses the Roaring Bitmap cache for O(log N) queries:
 
 ```bash
 # What does my module depend on?
-$ git mind list --from "src/mymodule/**" --type depends_on
+$ git mind list --from "core/src/mymodule/**" --type depends_on
 
 # What depends on this config?
 $ git mind list --to config/database.yaml --type depends_on
@@ -310,7 +310,7 @@ $ git mind list --to config/database.yaml --type depends_on
 ```bash
 # What files lack tests?
 $ comm -23 \
-    <(git ls-files src/ | sort) \
+    <(git ls-files core/src/ | sort) \
     <(git mind list --type tests --format tsv | cut -f2 | sort)
 ```
 
@@ -326,7 +326,7 @@ $ dot -Tsvg arch.dot -o architecture.svg
 
 ```bash
 # What might break if I change this?
-$ git mind list --to src/core-api.h --type depends_on
+$ git mind list --to core/src/core-api.h --type depends_on
 ```
 
 ## PHILOSOPHY

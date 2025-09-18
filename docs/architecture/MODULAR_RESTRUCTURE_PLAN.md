@@ -64,7 +64,7 @@ git-mind/
 ├── core/                      # Single-header library
 │   ├── include/
 │   │   └── gitmind.h         # THE single header (amalgamated)
-│   ├── src/                  # Source files (pre-amalgamation)
+│   ├── core/src/             # Source files (post-migration)
 │   │   ├── edge/
 │   │   ├── cbor/
 │   │   ├── attribution/
@@ -115,8 +115,8 @@ git-mind/
 
 #ifdef GITMIND_IMPLEMENTATION
   /* Implementation details */
-  #include "src/edge/edge.c"
-  #include "src/cbor/cbor.c"
+  #include "core/src/edge/edge.c"
+  #include "core/src/cbor/cbor.c"
   /* ... */
 #else
   /* Public API only */
@@ -184,7 +184,7 @@ Taking `edge.c` as an example:
 ### Before Migration
 
 ```c
-// src/edge/edge.c
+// core/src/edge/edge.c
 void gm_edge_create(...) {
     // 45 line function with magic numbers
     if (type > 10) { ... }  // Magic number!

@@ -175,8 +175,8 @@ Cache rebuilt successfully!
 ### Rebuild after heavy development
 
 ```bash
-$ git mind link src/parser.c docs/parsing.md --type implements
-$ git mind link src/lexer.c src/parser.c --type feeds
+$ git mind link core/src/parser.c docs/parsing.md --type implements
+$ git mind link core/src/lexer.c core/src/parser.c --type feeds
 $ git mind cache-rebuild
 Rebuilding cache for branch 'feature/parser'...
 Processed 2 new edges from 2 commits
@@ -189,7 +189,7 @@ Cache updated incrementally!
 $ git mind cache-rebuild --force --verbose
 Force rebuilding cache for branch 'main'...
 Walking journal from refs/gitmind/edges/main
-[00] Processing edge: design.md -> src/main.c (implements)
+[00] Processing edge: design.md -> core/src/main.c (implements)
 [01] Processing edge: README.md -> docs/api.md (references)
 ...
 Building forward index bitmaps...
@@ -473,8 +473,8 @@ AUGMENTS edges have a special format:
   tgt_sha: "def456...",  // New blob SHA  
   rel_type: "AUGMENTS",
   confidence: 1.0,
-  src_path: "src/old.c", // For readability
-  tgt_path: "src/new.c"  // May differ if renamed
+  src_path: "core/src/old.c", // For readability
+  tgt_path: "core/src/new.c"  // May differ if renamed
 }
 ```
 
@@ -547,8 +547,8 @@ This is the command that started it all. When you create a link, you're not just
 
 ```bash
 # The moment of connection
-$ git mind link design.md src/parser.c --type implements
-Created edge: design.md ──implements──> src/parser.c
+$ git mind link design.md core/src/parser.c --type implements
+Created edge: design.md ──implements──> core/src/parser.c
 ```
 
 From this moment forward, anyone who checks out your code can discover this relationship. More importantly, they can travel back in time and see what you understood at any point in history.
@@ -590,53 +590,53 @@ From this moment forward, anyone who checks out your code can discover this rela
 
 ```bash
 # Implementation tracks design
-$ git mind link src/auth.c docs/auth-design.md --type implements
+$ git mind link core/src/auth.c docs/auth-design.md --type implements
 
 # Test validates implementation  
-$ git mind link tests/test_auth.c src/auth.c --type tests
+$ git mind link tests/test_auth.c core/src/auth.c --type tests
 
 # Config guides behavior
-$ git mind link src/auth.c config/auth.yaml --type depends_on
+$ git mind link core/src/auth.c config/auth.yaml --type depends_on
 ```
 
 ### With confidence - Encoding uncertainty
 
 ```bash
 # Human creating a confident link (confidence defaults to 1.0)
-$ git mind link src/parser.c rfc/grammar.txt --type implements
+$ git mind link core/src/parser.c rfc/grammar.txt --type implements
 
 # AI suggesting a relationship with confidence score
 $ export GIT_MIND_SOURCE=claude
 $ export GIT_MIND_AUTHOR=claude@anthropic
-$ git mind link src/parser.c rfc/grammar.txt --type implements --confidence 0.85
-Created link: src/parser.c ──implements──> rfc/grammar.txt [claude: claude@anthropic, conf: 0.85]
+$ git mind link core/src/parser.c rfc/grammar.txt --type implements --confidence 0.85
+Created link: core/src/parser.c ──implements──> rfc/grammar.txt [claude: claude@anthropic, conf: 0.85]
 
 # High-confidence AI relationship
-$ git mind link src/algorithm.c papers/dijkstra62.pdf --type references --confidence 0.95
+$ git mind link core/src/algorithm.c papers/dijkstra62.pdf --type references --confidence 0.95
 ```
 
 ### Bidirectional links - Symmetric relationships
 
 ```bash
 # These files are peers that reference each other
-$ git mind link src/client.c src/server.c --type references --bidirectional
-Created edge: src/client.c ──references──> src/server.c
-Created edge: src/server.c ──references──> src/client.c
+$ git mind link core/src/client.c core/src/server.c --type references --bidirectional
+Created edge: core/src/client.c ──references──> core/src/server.c
+Created edge: core/src/server.c ──references──> core/src/client.c
 ```
 
 ### Human-AI Collaboration - Attribution System
 
 ```bash
 # Human creates edge (default behavior)
-$ git mind link README.md src/main.c --type documents
-Created link: README.md ──documents──> src/main.c
+$ git mind link README.md core/src/main.c --type documents
+Created link: README.md ──documents──> core/src/main.c
 
 # AI creates edge with attribution
 $ export GIT_MIND_SOURCE=claude
 $ export GIT_MIND_AUTHOR=claude@anthropic  
 $ export GIT_MIND_SESSION=analysis_2025
-$ git mind link src/auth.c config/oauth.json --type depends_on --confidence 0.82
-Created link: src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.82]
+$ git mind link core/src/auth.c config/oauth.json --type depends_on --confidence 0.82
+Created link: core/src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.82]
 
 # System-generated edge (from hooks)
 $ export GIT_MIND_SOURCE=system
@@ -671,7 +671,7 @@ Links are branch-specific. Create different connections on different branches:
 
 ```bash
 git checkout -b feature/auth
-git mind link src/auth.c new-auth-api.md --type implements
+git mind link core/src/auth.c new-auth-api.md --type implements
 
 git checkout main  
 git mind list  # Won't show the feature branch link
@@ -715,10 +715,10 @@ While you can use any string as a relationship type, these conventions help main
 
 ```bash
 # Too vague
-$ git mind link src/parser.c docs/ --type references  # Which doc?
+$ git mind link core/src/parser.c docs/ --type references  # Which doc?
 
 # Better
-$ git mind link src/parser.c docs/parser-design.md --type implements
+$ git mind link core/src/parser.c docs/parser-design.md --type implements
 ```
 
 ### Use Conventional Types
@@ -740,7 +740,7 @@ $ git mind list --type tests
 
 ```bash
 # Why does the parser depend on the logger config?
-$ git mind link src/parser.c config/logger.yaml --type depends_on \
+$ git mind link core/src/parser.c config/logger.yaml --type depends_on \
     --note "Parser uses logger for syntax error reporting"
 ```
 
@@ -843,10 +843,10 @@ With git-mind:
 
 ```bash
 # All connections at a glance
-$ git mind list --from src/parser.c
+$ git mind list --from core/src/parser.c
 
 # Specific relationships
-$ git mind list --type tests --to src/auth.c
+$ git mind list --type tests --to core/src/auth.c
 
 # Everything in the web
 $ git mind list
@@ -912,9 +912,9 @@ Show all connections:
 ```bash
 $ git mind list
 README.md ──references──> docs/quickstart.md
-src/main.c ──implements──> docs/design.md
-tests/test_parser.c ──tests──> src/parser.c
-src/parser.c ──depends_on──> config/grammar.yaml
+core/src/main.c ──implements──> docs/design.md
+tests/test_parser.c ──tests──> core/src/parser.c
+core/src/parser.c ──depends_on──> config/grammar.yaml
 ... (42 more edges)
 ```
 
@@ -923,20 +923,20 @@ src/parser.c ──depends_on──> config/grammar.yaml
 What does this file connect to?
 
 ```bash
-$ git mind list --from src/auth.c
-src/auth.c ──implements──> docs/auth-design.md
-src/auth.c ──depends_on──> config/auth.yaml
-src/auth.c ──references──> lib/crypto.c
+$ git mind list --from core/src/auth.c
+core/src/auth.c ──implements──> docs/auth-design.md
+core/src/auth.c ──depends_on──> config/auth.yaml
+core/src/auth.c ──references──> lib/crypto.c
 ```
 
 What connects to this file?
 
 ```bash
-$ git mind list --to src/parser.c
-tests/test_parser.c ──tests──> src/parser.c
-tests/bench_parser.c ──benchmarks──> src/parser.c
-docs/parser-guide.md ──documents──> src/parser.c
-src/compiler.c ──depends_on──> src/parser.c
+$ git mind list --to core/src/parser.c
+tests/test_parser.c ──tests──> core/src/parser.c
+tests/bench_parser.c ──benchmarks──> core/src/parser.c
+docs/parser-guide.md ──documents──> core/src/parser.c
+core/src/compiler.c ──depends_on──> core/src/parser.c
 ```
 
 ### Filtered Queries
@@ -945,17 +945,17 @@ Find all test files:
 
 ```bash
 $ git mind list --type tests
-tests/test_auth.c ──tests──> src/auth.c
-tests/test_parser.c ──tests──> src/parser.c
-tests/integration/test_flow.c ──tests──> src/flow.c
+tests/test_auth.c ──tests──> core/src/auth.c
+tests/test_parser.c ──tests──> core/src/parser.c
+tests/integration/test_flow.c ──tests──> core/src/flow.c
 ```
 
 Find uncertain connections:
 
 ```bash
 $ git mind list --min-confidence 0.8
-src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.85]
-src/parser.c ──implements──> specs/grammar.md [gpt: gpt4@openai, conf: 0.92]
+core/src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.85]
+core/src/parser.c ──implements──> specs/grammar.md [gpt: gpt4@openai, conf: 0.92]
 ```
 
 ### Attribution Filtering
@@ -964,34 +964,34 @@ Show only human-created edges:
 
 ```bash
 $ git mind list --source human
-README.md ──documents──> src/main.c
-src/auth.c ──implements──> docs/auth-design.md
-tests/test_auth.c ──tests──> src/auth.c
+README.md ──documents──> core/src/main.c
+core/src/auth.c ──implements──> docs/auth-design.md
+tests/test_auth.c ──tests──> core/src/auth.c
 ```
 
 Show only AI-suggested edges:
 
 ```bash
 $ git mind list --source ai
-src/parser.c ──depends_on──> lib/lexer.h [claude: claude@anthropic, conf: 0.78]
-src/crypto.c ──references──> papers/aes.pdf [gpt: gpt4@openai, conf: 0.91]
+core/src/parser.c ──depends_on──> lib/lexer.h [claude: claude@anthropic, conf: 0.78]
+core/src/crypto.c ──references──> papers/aes.pdf [gpt: gpt4@openai, conf: 0.91]
 ```
 
 Show attribution for all edges:
 
 ```bash
 $ git mind list --show-attribution
-README.md ──documents──> src/main.c [human: user@example.com]
-src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.85]
-src/test.c ──tests──> src/main.c [human: developer@team.com]
+README.md ──documents──> core/src/main.c [human: user@example.com]
+core/src/auth.c ──depends_on──> config/oauth.json [claude: claude@anthropic, conf: 0.85]
+core/src/test.c ──tests──> core/src/main.c [human: developer@team.com]
 ```
 
 High-confidence AI insights only:
 
 ```bash
 $ git mind list --source ai --min-confidence 0.9
-src/crypto.c ──references──> papers/aes.pdf [gpt: gpt4@openai, conf: 0.91]
-src/algorithm.c ──implements──> papers/dijkstra.pdf [claude: claude@anthropic, conf: 0.95]
+core/src/crypto.c ──references──> papers/aes.pdf [gpt: gpt4@openai, conf: 0.91]
+core/src/algorithm.c ──implements──> papers/dijkstra.pdf [claude: claude@anthropic, conf: 0.95]
 ```
 
 ### Time Travel Queries
@@ -1015,8 +1015,8 @@ See how files evolved:
 
 ```bash
 $ git mind list --show-augments
-src/auth.c:8a9f3b ──AUGMENTS──> src/auth.c:7c4d5e
-src/auth.c:7c4d5e ──AUGMENTS──> src/auth.c:current
+core/src/auth.c:8a9f3b ──AUGMENTS──> core/src/auth.c:7c4d5e
+core/src/auth.c:7c4d5e ──AUGMENTS──> core/src/auth.c:current
 docs/api.md:3f2a1b ──AUGMENTS──> docs/api.md:current
 ```
 
@@ -1087,7 +1087,7 @@ The list command uses the Roaring Bitmap cache for O(log N) queries:
 
 ```bash
 # What does my module depend on?
-$ git mind list --from "src/mymodule/**" --type depends_on
+$ git mind list --from "core/src/mymodule/**" --type depends_on
 
 # What depends on this config?
 $ git mind list --to config/database.yaml --type depends_on
@@ -1098,7 +1098,7 @@ $ git mind list --to config/database.yaml --type depends_on
 ```bash
 # What files lack tests?
 $ comm -23 \
-    <(git ls-files src/ | sort) \
+    <(git ls-files core/src/ | sort) \
     <(git mind list --type tests --format tsv | cut -f2 | sort)
 ```
 
@@ -1114,7 +1114,7 @@ $ dot -Tsvg arch.dot -o architecture.svg
 
 ```bash
 # What might break if I change this?
-$ git mind list --to src/core-api.h --type depends_on
+$ git mind list --to core/src/core-api.h --type depends_on
 ```
 
 ## PHILOSOPHY
@@ -1288,32 +1288,32 @@ README.md ──references──> docs/quickstart.md
 
 ```bash
 # Document implementation relationships
-$ git mind link src/parser.c docs/parser-design.md --type implements
-$ git mind link src/lexer.c docs/parser-design.md --type implements
+$ git mind link core/src/parser.c docs/parser-design.md --type implements
+$ git mind link core/src/lexer.c docs/parser-design.md --type implements
 
 # Track test coverage
-$ git mind link tests/test_parser.c src/parser.c --type tests
-$ git mind link tests/test_lexer.c src/lexer.c --type tests
+$ git mind link tests/test_parser.c core/src/parser.c --type tests
+$ git mind link tests/test_lexer.c core/src/lexer.c --type tests
 
 # Show everything connected to the design
 $ git mind list --to docs/parser-design.md
-src/parser.c ──implements──> docs/parser-design.md
-src/lexer.c ──implements──> docs/parser-design.md
+core/src/parser.c ──implements──> docs/parser-design.md
+core/src/lexer.c ──implements──> docs/parser-design.md
 ```
 
 ### Time Travel Through Understanding
 
 ```bash
 # Current state
-$ git mind list --from src/api.c
-src/api.c ──depends_on──> config/api.yaml
-src/api.c ──implements──> docs/api-v2.md
+$ git mind list --from core/src/api.c
+core/src/api.c ──depends_on──> config/api.yaml
+core/src/api.c ──implements──> docs/api-v2.md
 
 # Travel back 30 commits
 $ git checkout HEAD~30
-$ git mind list --from src/api.c  
-src/api.c ──implements──> docs/api-v1.md
-src/api.c ──experimental──> research/new-approach.pdf
+$ git mind list --from core/src/api.c  
+core/src/api.c ──implements──> docs/api-v1.md
+core/src/api.c ──experimental──> research/new-approach.pdf
 
 # Return to present
 $ git checkout main
@@ -1327,12 +1327,12 @@ $ git mind install-hooks
 ✓ Hooks installed - file evolution will be tracked automatically
 
 # Edit a file that has connections
-$ vim src/parser.c
-$ git add src/parser.c && git commit -m "Optimize parser"
+$ vim core/src/parser.c
+$ git add core/src/parser.c && git commit -m "Optimize parser"
 
 # The connections followed the change!
-$ git mind list --from src/parser.c
-src/parser.c ──implements──> docs/parser-design.md
+$ git mind list --from core/src/parser.c
+core/src/parser.c ──implements──> docs/parser-design.md
 # (connection automatically updated to new blob SHA)
 ```
 
@@ -1344,7 +1344,7 @@ $ git mind status
 Semantic Graph Statistics:
 - Total edges: 3,847
 - Unique relationships: 12 types
-- Most connected: src/core.c (147 connections)
+- Most connected: core/src/core.c (147 connections)
 
 # Queries getting slow?
 $ git mind cache-rebuild
