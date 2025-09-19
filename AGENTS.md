@@ -74,6 +74,7 @@ recent_developments:
 ## Lessons Learned
 
 - 2025-09-17 — Legacy GitHub issues drift fast; triage with `possibly-*` labels and mirror anything still relevant into `docs/features/Features_Ledger.md` so the ledger stays the source of truth.
+- 2025-09-19 — Treat clang-tidy "warning counts" as per-diagnostic, not per-include churn; measure progress via filtered reports and keep lint passes surgical without opportunistic feature work.
 
 ## Project Structure & Module Organization
 
@@ -145,6 +146,7 @@ recent_developments:
 - Make minimal, focused diffs; avoid drive-by refactors. Match existing patterns in `core/` and headers under `include/`.
 - Run build, tests, and lint locally before proposing changes. Keep changes zero-warnings and formatted.
 - Prefer OID-first APIs for SHA-agnostic correctness. Use `git_oid` (typedef `gm_oid_t`) in new core interfaces, and compare via `git_oid_cmp`.
+- Current top priority: drive clang-tidy to zero warnings. Pause feature work; focus on cleaning modules one by one. Measure per-file warning counts via `rg 'path/to/file' clang-tidy-report-full.txt | wc -l` and confirm the filtered count drops to 0 before moving on.
 
 ### One-Thing Rule (Touched code policy)
 
