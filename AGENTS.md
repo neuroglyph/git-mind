@@ -47,7 +47,7 @@ recent_developments:
       Curated AGENTS.md: TL;DR + machine‑readable agent block + Boot Checklist; added Recent Developments YAML and auto‑archival to docs/activity via pre‑commit hook.
   - date: 2025-09-16
     summary: >
-      Features Ledger: introduced docs/features/Features_Ledger.md + scripts/update_progress.py (KLoC‑weighted groups); added README features‑progress block; wired pre‑commit and a main‑branch auto‑update workflow; make features-update.
+      Features Ledger: introduced docs/features/Features_Ledger.md + hubless/update_progress.py (KLoC‑weighted groups); added README features-progress block; wired pre-commit and a main-branch auto-update workflow; make features-update.
   - date: 2025-09-16
     summary: >
       Review ergonomics: CodeRabbit config (.coderabbit.yml) for summary‑first; PR template guidance; docs‑only auto‑labeling workflow.
@@ -70,6 +70,10 @@ recent_developments:
     summary: >
       Reviews: Documented rejected suggestions for PR #169 under `docs/code-reviews/rejected-suggestions/` (canonical CHANGELOG filename, keep `md-verify` alias, ignore `.PHONY` ordering churn). Linked decisions in the PR thread.
 ```
+
+## Lessons Learned
+
+- 2025-09-17 — Legacy GitHub issues drift fast; triage with `possibly-*` labels and mirror anything still relevant into `docs/features/Features_Ledger.md` so the ledger stays the source of truth.
 
 ## Project Structure & Module Organization
 

@@ -199,7 +199,7 @@ Want to be featured? Open an issue and share your story.
 
 <!-- features-progress:begin -->
 ```text
-█████████████████████████████░░░░░░░░░░░ 72%
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0%
 ```
 <!-- features-progress:end -->
 

@@ -18,6 +18,8 @@ Format options:
 
 ## Daily Dev Log
 
+## 2025-09-18
+
 Use the following snippet for quick, timestamped notes as work lands. This complements the release‑oriented sections above.
 
 ```
@@ -29,3 +31,4 @@ Use the following snippet for quick, timestamped notes as work lands. This compl
 > Optional context about the day/decisions
 ```
 
+- @ 20:56 – `753821a` docs: sync legacy backlog and update logs

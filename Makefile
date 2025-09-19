@@ -53,7 +53,20 @@ header-compile:
 
 .PHONY: features-update
 features-update:
-	@python3 scripts/update_progress.py
+	@HUBLESS_PATH=${HUBLESS_PATH}; \
+	HUBLESS_REPO=${HUBLESS_REPO}; \
+	if [ -n "$$HUBLESS_REPO" ]; then \
+	  SCRIPT="$$HUBLESS_REPO/update_progress.py"; \
+	elif [ -n "$$HUBLESS_PATH" ]; then \
+	  SCRIPT="$$HUBLESS_PATH/update_progress.py"; \
+	else \
+	  SCRIPT="../hubless/update_progress.py"; \
+	fi; \
+	if [ ! -f "$$SCRIPT" ]; then \
+	  echo "hubless script not found. Set HUBLESS_REPO=<path-to-hubless> (or HUBLESS_PATH)."; \
+	  exit 1; \
+	fi; \
+	python3 "$$SCRIPT" --root "$(PWD)"
 
 .PHONY: seed-review
 # Usage: make seed-review PR=169 [OWNER=neuroglyph REPO=git-mind]
