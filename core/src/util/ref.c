@@ -5,58 +5,94 @@
 #include "gitmind/error.h"
 #include "gitmind/security/string.h"
 #include "gitmind/constants_internal.h"
+
+#include <stdbool.h>
 #include <string.h>
 
-#include <git2.h>
+static bool branch_has_forbidden_prefix(const char *branch) {
+    return branch[0] == 'r' && branch[1] == 'e' && branch[2] == 'f' &&
+           branch[3] == 's' && branch[4] == '/';
+}
+
+static bool branch_has_edge_slashes(const char *branch) {
+    size_t length = strlen(branch);
+    return length == 0 || branch[0] == '/' || branch[length - 1] == '/';
+}
+
+static bool branch_contains_invalid_char(const char *branch) {
+    for (const char *cursor = branch; *cursor; ++cursor) {
+        switch (*cursor) {
+        case '~':
+        case '^':
+        case ':':
+        case '?':
+        case '[':
+        case '*':
+        case '\\':
+            return true;
+        default:
+            break;
+        }
+    }
+    return false;
+}
+
+static bool branch_has_forbidden_sequence(const char *branch) {
+    return strstr(branch, "..") != NULL || strstr(branch, "@{") != NULL;
+}
+
+static int validate_branch(const char *branch) {
+    if (*branch == '\0') {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    if (branch_has_forbidden_prefix(branch)) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    if (branch_has_edge_slashes(branch)) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    if (branch_contains_invalid_char(branch)) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    if (branch_has_forbidden_sequence(branch)) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    return GM_OK;
+}
 
 int gm_build_ref(char *out, size_t out_sz, const char *prefix,
                  const char *branch) {
     if (!out || out_sz == 0 || !prefix || !branch) {
-        if (out && out_sz > 0) out[0] = '\0';
+        if (out && out_sz > 0) {
+            out[0] = '\0';
+        }
         return GM_ERR_INVALID_ARGUMENT;
     }
     out[0] = '\0';
-    if (*branch == '\0') {
-        return GM_ERR_INVALID_ARGUMENT;
-    }
     /* Require shorthand branch (no leading "refs/") to avoid double prefixing */
-    if (branch[0] == 'r' && branch[1] == 'e' && branch[2] == 'f' &&
-        branch[3] == 's' && branch[4] == '/') {
-        return GM_ERR_INVALID_ARGUMENT;
+    {
+        int validation_rc = validate_branch(branch);
+        if (validation_rc != GM_OK) {
+            return validation_rc;
+        }
     }
 
     char candidate[REF_NAME_BUFFER_SIZE];
-    int rn = gm_snprintf(candidate, sizeof candidate, "%s%s", prefix, branch);
-    if (rn < 0) {
+    int written =
+        gm_snprintf(candidate, sizeof candidate, "%s%s", prefix, branch);
+    if (written < 0) {
         return GM_ERR_UNKNOWN;
     }
-    if ((size_t)rn >= sizeof candidate) {
+    if ((size_t)written >= sizeof candidate) {
         return GM_ERR_BUFFER_TOO_SMALL;
     }
 
-    /* Minimal validity checks without libgit2 dependency */
-    {
-        const char *p = branch;
-        if (*p == '/' || p[strlen(p) - 1] == '/') {
-            return GM_ERR_INVALID_ARGUMENT;
-        }
-        for (; *p; ++p) {
-            const char c = *p;
-            if (c == '~' || c == '^' || c == ':' || c == '?' ||
-                c == '[' || c == '*' || c == '\\') {
-                return GM_ERR_INVALID_ARGUMENT;
-            }
-        }
-        if (strstr(branch, "..") != NULL) return GM_ERR_INVALID_ARGUMENT;
-        if (strstr(branch, "@{") != NULL) return GM_ERR_INVALID_ARGUMENT;
-    }
-
-    rn = gm_snprintf(out, out_sz, "%s", candidate);
-    if (rn < 0) {
+    written = gm_snprintf(out, out_sz, "%s", candidate);
+    if (written < 0) {
         out[0] = '\0';
         return GM_ERR_UNKNOWN;
     }
-    if ((size_t)rn >= out_sz) {
+    if ((size_t)written >= out_sz) {
         out[0] = '\0';
         return GM_ERR_BUFFER_TOO_SMALL;
     }
