@@ -9,18 +9,22 @@
 #include <stdbool.h>
 #include <string.h>
 
-static bool branch_has_forbidden_prefix(const char *branch) {
-    return branch[0] == 'r' && branch[1] == 'e' && branch[2] == 'f' &&
-           branch[3] == 's' && branch[4] == '/';
-}
-
-static bool branch_has_edge_slashes(const char *branch) {
+static int validate_branch(const char *branch) {
+    if (*branch == '\0') {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    if (branch[0] == 'r' && branch[1] == 'e' && branch[2] == 'f' &&
+        branch[3] == 's' && branch[4] == '/') {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
     size_t length = strlen(branch);
-    return length == 0 || branch[0] == '/' || branch[length - 1] == '/';
-}
-
-static bool branch_contains_invalid_char(const char *branch) {
-    for (const char *cursor = branch; *cursor; ++cursor) {
+    if (length == 0U) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    if (branch[0] == '/' || branch[length - 1U] == '/') {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    for (const char *cursor = branch; *cursor != '\0'; ++cursor) {
         switch (*cursor) {
         case '~':
         case '^':
@@ -29,32 +33,12 @@ static bool branch_contains_invalid_char(const char *branch) {
         case '[':
         case '*':
         case '\\':
-            return true;
+            return GM_ERR_INVALID_ARGUMENT;
         default:
             break;
         }
     }
-    return false;
-}
-
-static bool branch_has_forbidden_sequence(const char *branch) {
-    return strstr(branch, "..") != NULL || strstr(branch, "@{") != NULL;
-}
-
-static int validate_branch(const char *branch) {
-    if (*branch == '\0') {
-        return GM_ERR_INVALID_ARGUMENT;
-    }
-    if (branch_has_forbidden_prefix(branch)) {
-        return GM_ERR_INVALID_ARGUMENT;
-    }
-    if (branch_has_edge_slashes(branch)) {
-        return GM_ERR_INVALID_ARGUMENT;
-    }
-    if (branch_contains_invalid_char(branch)) {
-        return GM_ERR_INVALID_ARGUMENT;
-    }
-    if (branch_has_forbidden_sequence(branch)) {
+    if (strstr(branch, "..") != NULL || strstr(branch, "@{") != NULL) {
         return GM_ERR_INVALID_ARGUMENT;
     }
     return GM_OK;
