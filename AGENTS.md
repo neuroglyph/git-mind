@@ -156,6 +156,7 @@ recent_developments:
 - Beyond the “one thing” split, every touched area must uphold SRP, be test-double friendly, and lean on dependency injection. Whenever an operation can fail, surface a proper result type. New or modified code must stay warning-free under the current clang‑tidy rules before the change is considered done.
 - Scope: Only the item you touched (don’t boil the ocean). If you edit `Bar` in `foo.c` and `foo.c` contains 12 types, you only have to extract `Bar` now.
 - Enforcement: Pre-commit includes a heuristic check (`one-thing`); bypass in emergencies with `GM_ONE_THING_ALLOW=1` in the environment. PRs should include a brief note when bypassed.
+- History policy: Do not amend or rebase once commits exist. Create new commits for follow-up fixes, merge instead of rebasing, and never rewrite history. Force pushes are forbidden—if you believe one is unavoidable, stop and get explicit user approval first.
 
 ## Working Knowledge (for agents)
 
