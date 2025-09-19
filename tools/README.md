@@ -21,7 +21,7 @@ This directory contains build, CI, and development tools for the git-mind projec
 - __Output__:
   - `clang-tidy-report-full.txt` - Complete output
   - `clang-tidy-report.txt` - Filtered to project warnings only
-- __Images__: Tags under `${GITMIND_NS:-gitmind}/ci:<version>` (labeled `com.gitmind.project=git-mind`)
+- __Images__: Tags under `${GITMIND_NS:-gitmind}/ci:<version>` (labeled `com.gitmind.project=git-mind`), built locally from `.ci/Dockerfile` when needed.
 
 ### 🎉 `check-warning-fix.sh`
 
@@ -82,7 +82,7 @@ This directory contains build, CI, and development tools for the git-mind projec
 
 ## Docker Image
 
-The Docker image (`${GITMIND_NS:-gitmind}/ci:clang-20`) is built on first run and includes:
+The Docker image (`${GITMIND_NS:-gitmind}/ci:clang-20`) is built locally from `.ci/Dockerfile` on first use and includes:
 
 - Ubuntu 22.04 (matching GitHub Actions)
 - LLVM/Clang 20
