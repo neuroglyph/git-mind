@@ -4,10 +4,13 @@
 #ifndef GITMIND_CONTEXT_H
 #define GITMIND_CONTEXT_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <time.h>
 /* Keep time ops local here to preserve stable test interfaces */
+
+#include "gitmind/ports/fs_temp_port.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,10 +40,14 @@ typedef struct gm_context {
     
     /* Time operations for dependency injection */
     const gm_time_ops_t *time_ops;
-    
+
     /* User data */
     void *git_repo;
     void *user_data;
+
+    /* Ports */
+    gm_fs_temp_port_t fs_temp_port;
+    void (*fs_temp_port_dispose)(gm_fs_temp_port_t *port);
 } gm_context_t;
 
 #ifdef __cplusplus

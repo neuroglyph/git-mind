@@ -11,8 +11,11 @@
 #include "gitmind/types/ulid.h"
 #include "gitmind/error.h"
 #include "gitmind/journal.h"
+#include "gitmind/result.h"
 #include "gitmind/edge.h"
 #include "gitmind/types.h"
+
+#include "gitmind/adapters/fs/posix_temp_adapter.h"
 
 static void ensure_branch_with_commit(git_repository *repo, const char *branch) {
     git_treebuilder *tb = NULL;
@@ -69,6 +72,11 @@ int main(void) {
     gm_context_t ctx = {0};
     ctx.git_repo = repo;
 
+    gm_result_void_t fs_result =
+        gm_posix_fs_temp_port_create(&ctx.fs_temp_port, NULL,
+                                     &ctx.fs_temp_port_dispose);
+    assert(fs_result.ok);
+
     /* Create two edges A->B and A->C */
     gm_edge_t edges[2]; memset(edges, 0, sizeof edges);
     uint8_t A[GM_OID_RAWSZ], B[GM_OID_RAWSZ], C[GM_OID_RAWSZ];
@@ -100,6 +108,9 @@ int main(void) {
     assert(r2.count >= 1);
     gm_cache_result_free(&r2);
 
+    if (ctx.fs_temp_port_dispose != NULL) {
+        ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
+    }
     git_repository_free(repo);
     git_libgit2_shutdown();
     printf("OK\n");

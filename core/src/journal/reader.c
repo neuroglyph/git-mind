@@ -5,60 +5,73 @@
 #include "gitmind/types.h"
 #include "gitmind/context.h"
 #include "gitmind/cbor/constants_cbor.h"
-#include "gitmind/cbor/cbor.h"
 #include "gitmind/constants_internal.h"
-#include "gitmind/util/ref.h"
-#include "gitmind/cbor/keys.h"
 #include "gitmind/error.h"
 #include "gitmind/edge.h"
 #include "gitmind/edge_attributed.h"
 #include "gitmind/attribution.h"
+#include "gitmind/security/memory.h"
+#include "gitmind/security/string.h"
+#include "gitmind/util/memory.h"
+#include "gitmind/util/ref.h"
 
 #include <git2/commit.h>
 #include <git2/oid.h>
-#include <git2/refdb.h>
 #include <git2/refs.h>
 #include <git2/repository.h>
 #include <git2/revwalk.h>
-#include <sodium.h>
-#include <stdint.h>
+#include <git2/types.h>
 
+#include <sodium/utils.h>
+
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "gitmind/security/memory.h"
-#include <stdlib.h>
-#include "gitmind/util/memory.h"
 
 /* Constants */
 #define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
 #define CURRENT_BRANCH_BUFFER_SIZE GM_PATH_MAX
+#define CBOR_DEBUG_BUFFER_SIZE 256
 
 /* Debug flag for CBOR decoding (set GITMIND_CBOR_DEBUG=1) */
 static int g_cbor_debug = -1;
-static inline int cbor_debug_enabled(void) {
+
+static bool cbor_debug_enabled(void) {
     if (g_cbor_debug == -1) {
-        const char *v = getenv("GITMIND_CBOR_DEBUG");
-        g_cbor_debug = (v && (v[0] == '1' || v[0] == 't' || v[0] == 'T' || v[0] == 'y' || v[0] == 'Y')) ? 1 : 0;
+        const char *value = getenv("GITMIND_CBOR_DEBUG");
+        g_cbor_debug = (value != NULL &&
+                        (value[0] == '1' || value[0] == 't' || value[0] == 'T' ||
+                         value[0] == 'y' || value[0] == 'Y'))
+                           ? 1
+                           : 0;
     }
-    return g_cbor_debug;
+    return g_cbor_debug == 1;
 }
 
-/* Forward declarations */
-int gm_edge_decode_cbor_ex(const uint8_t *buffer, size_t len, gm_edge_t *edge,
-                           size_t *consumed);
-int gm_edge_attributed_decode_cbor_ex(const uint8_t *buffer, size_t len,
-                                      gm_edge_attributed_t *edge,
-                                      size_t *consumed);
+static void cbor_debug_log_two_values(const char *message, size_t first,
+                                      size_t second) {
+    if (!cbor_debug_enabled()) {
+        return;
+    }
+
+    char buffer[CBOR_DEBUG_BUFFER_SIZE];
+    (void)gm_snprintf(buffer, sizeof(buffer), message, first, second);
+    (void)fputs(buffer, stderr);
+}
+
+typedef int (*edge_callback_fn)(const gm_edge_t *, void *);
+typedef int (*edge_attr_callback_fn)(const gm_edge_attributed_t *, void *);
 
 /* Generic reader context */
 typedef struct {
     gm_context_t *gm_ctx;
     git_repository *repo;
-    void *callback;
+    edge_callback_fn edge_callback;
+    edge_attr_callback_fn edge_attr_callback;
     void *userdata;
-    int error;
-    int is_attributed;
+    bool is_attributed;
 } reader_ctx_t;
 
 /* Convert legacy edge to attributed edge */
@@ -128,9 +141,9 @@ static int process_attributed_edge(const uint8_t *cbor_data, size_t remaining,
         decode_result = gm_edge_decode_cbor_ex(cbor_data, remaining,
                                                &legacy_edge, &legacy_consumed);
         if (decode_result != GM_OK || legacy_consumed == 0) {
-            if (cbor_debug_enabled()) {
-                fprintf(stderr, "[CBOR DEBUG] Attributed decode failed at offset=%zu remaining=%zu\n", (size_t)0, remaining);
-            }
+            cbor_debug_log_two_values(
+                "[CBOR DEBUG] Attributed decode failed at offset=%zu remaining=%zu\n",
+                (size_t)0, remaining);
             return GM_ERR_INVALID_FORMAT;
         }
 
@@ -139,9 +152,10 @@ static int process_attributed_edge(const uint8_t *cbor_data, size_t remaining,
         *consumed = legacy_consumed;
     }
 
-    /* Call attributed callback */
-    return ((int (*)(const gm_edge_attributed_t *, void *))rctx->callback)(
-        &edge, rctx->userdata);
+    if (rctx->edge_attr_callback == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    return rctx->edge_attr_callback(&edge, rctx->userdata);
 }
 
 /* Process regular edge from CBOR */
@@ -152,19 +166,22 @@ static int process_regular_edge(const uint8_t *cbor_data, size_t remaining,
     /* Try to decode a regular edge */
     int decode_result = gm_edge_decode_cbor_ex(cbor_data, remaining, &edge, consumed);
     if (decode_result == GM_OK && *consumed > 0) {
-        return ((int (*)(const gm_edge_t *, void *))rctx->callback)(&edge, rctx->userdata);
+        if (rctx->edge_callback == NULL) {
+            return GM_ERR_INVALID_ARGUMENT;
+        }
+        return rctx->edge_callback(&edge, rctx->userdata);
     }
 
     /* Fallback: try attributed and down-convert to regular edge */
     gm_edge_attributed_t aedge;
     size_t aconsumed = 0;
     decode_result = gm_edge_attributed_decode_cbor_ex(cbor_data, remaining, &aedge, &aconsumed);
-    if (decode_result != GM_OK || aconsumed == 0) {
-        if (cbor_debug_enabled()) {
-            fprintf(stderr, "[CBOR DEBUG] Regular decode failed; attributed decode also failed at offset=%zu remaining=%zu\n", (size_t)0, remaining);
+        if (decode_result != GM_OK || aconsumed == 0) {
+            cbor_debug_log_two_values(
+                "[CBOR DEBUG] Regular decode failed; attributed decode also failed at offset=%zu remaining=%zu\n",
+                (size_t)0, remaining);
+            return GM_ERR_INVALID_FORMAT;
         }
-        return GM_ERR_INVALID_FORMAT;
-    }
 
     gm_edge_t basic = {0};
     (void)gm_memcpy_span(basic.src_sha, GM_SHA1_SIZE, aedge.src_sha, GM_SHA1_SIZE);
@@ -179,63 +196,101 @@ static int process_regular_edge(const uint8_t *cbor_data, size_t remaining,
     (void)gm_strcpy_safe(basic.ulid, GM_ULID_SIZE + 1, aedge.ulid);
 
     *consumed = aconsumed;
-    return ((int (*)(const gm_edge_t *, void *))rctx->callback)(&basic, rctx->userdata);
+    if (rctx->edge_callback == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    return rctx->edge_callback(&basic, rctx->userdata);
 }
 
 /* Process a single commit - generic version */
-static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
-    const char *raw_message;
-    const uint8_t *cbor_data;
-    size_t offset = 0;
-    size_t message_len;
-    uint8_t decoded[MAX_CBOR_SIZE];
-
-    /* Get raw commit message (contains CBOR data) */
-    raw_message = git_commit_message_raw(commit);
-    if (!raw_message) {
+static int decode_commit_message(const git_commit *commit,
+                                 uint8_t *decoded_message,
+                                 size_t *decoded_length) {
+    const char *raw_message = git_commit_message_raw(commit);
+    if (raw_message == NULL) {
         return GM_ERR_INVALID_FORMAT;
     }
 
-    {
-        size_t out_len = 0;
-        const int variant = sodium_base64_VARIANT_ORIGINAL;
-        if (sodium_base642bin(decoded, sizeof(decoded), raw_message,
-                               strlen(raw_message), NULL, &out_len, NULL,
-                               variant) != 0) {
-            return GM_ERR_INVALID_FORMAT;
-        }
-        cbor_data = decoded;
-        message_len = out_len;
+    const size_t raw_length = strlen(raw_message);
+    const int variant = sodium_base64_VARIANT_ORIGINAL;
+    size_t out_len = 0;
+    if (sodium_base642bin(decoded_message, MAX_CBOR_SIZE, raw_message,
+                          raw_length, NULL, &out_len, NULL, variant) != 0) {
+        return GM_ERR_INVALID_FORMAT;
     }
 
-    /* Decode edges from CBOR */
+    *decoded_length = out_len;
+    return GM_OK;
+}
+
+static int resolve_branch(git_repository *repo, const char *requested_branch,
+                          char *buffer, size_t buffer_len,
+                          const char **resolved_branch) {
+    if (requested_branch != NULL) {
+        *resolved_branch = requested_branch;
+        return GM_OK;
+    }
+
+    git_reference *head = NULL;
+    int error = git_repository_head(&head, repo);
+    if (error < 0) {
+        return GM_ERR_INVALID_FORMAT;
+    }
+
+    const char *name = git_reference_shorthand(head);
+    if (name == NULL) {
+        git_reference_free(head);
+        return GM_ERR_INVALID_FORMAT;
+    }
+
+    size_t name_len = strlen(name);
+    if (name_len >= buffer_len) {
+        name_len = buffer_len - 1U;
+    }
+    gm_memcpy_safe(buffer, buffer_len, name, name_len);
+    buffer[name_len] = '\0';
+    *resolved_branch = buffer;
+
+    git_reference_free(head);
+    return GM_OK;
+}
+
+static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
+    uint8_t decoded[MAX_CBOR_SIZE];
+    size_t message_len = 0;
+    int decode_status = decode_commit_message(commit, decoded, &message_len);
+    if (decode_status != GM_OK) {
+        return decode_status;
+    }
+
+    size_t offset = 0U;
     while (offset < message_len) {
-        size_t remaining = message_len - offset;
-        size_t consumed = 0;
-        int cb_result;
-
+        const size_t remaining = message_len - offset;
+        size_t consumed = 0U;
+        int edge_status = GM_OK;
         if (rctx->is_attributed) {
-            cb_result = process_attributed_edge(cbor_data + offset, remaining,
-                                                rctx, &consumed);
+            edge_status = process_attributed_edge(decoded + offset, remaining,
+                                                  rctx, &consumed);
         } else {
-            cb_result = process_regular_edge(cbor_data + offset, remaining,
-                                             rctx, &consumed);
+            edge_status = process_regular_edge(decoded + offset, remaining,
+                                               rctx, &consumed);
         }
 
-        if (cb_result == GM_ERR_INVALID_FORMAT) {
-            if (cbor_debug_enabled()) {
-                fprintf(stderr, "[CBOR DEBUG] Invalid CBOR at commit decode offset=%zu remaining=%zu\n", offset, remaining);
-            }
-            break; /* No more edges to decode */
+        if (edge_status == GM_ERR_INVALID_FORMAT) {
+            cbor_debug_log_two_values(
+                "[CBOR DEBUG] Invalid CBOR at commit decode offset=%zu remaining=%zu\n",
+                offset, remaining);
+            break;
         }
 
-        if (cb_result != 0) {
-            return cb_result; /* Callback requested stop */
+        if (edge_status != GM_OK) {
+            return edge_status;
         }
 
-        if (cbor_debug_enabled()) {
-            fprintf(stderr, "[CBOR DEBUG] Decoded an edge (consumed=%zu) at offset=%zu\n", consumed, offset);
-        }
+        cbor_debug_log_two_values(
+            "[CBOR DEBUG] Decoded an edge (consumed=%zu) at offset=%zu\n",
+            consumed, offset);
+
         offset += consumed;
     }
 
@@ -299,52 +354,42 @@ static int walk_journal_generic(reader_ctx_t *rctx, const char *ref_name) {
 
 /* Generic journal read function */
 static int journal_read_generic(gm_context_t *ctx, const char *branch,
-                                void *callback, void *userdata,
-                                int is_attributed) {
+                                edge_callback_fn edge_cb,
+                                edge_attr_callback_fn attr_cb,
+                                bool is_attributed, void *userdata) {
     reader_ctx_t rctx;
     char ref_name[REF_NAME_BUFFER_SIZE];
     char current_branch[CURRENT_BRANCH_BUFFER_SIZE];
 
-    if (!ctx || !callback) {
+    if (ctx == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    if (is_attributed) {
+        if (attr_cb == NULL) {
+            return GM_ERR_INVALID_ARGUMENT;
+        }
+    } else if (edge_cb == NULL) {
         return GM_ERR_INVALID_ARGUMENT;
     }
 
     /* Initialize reader context */
     rctx.gm_ctx = ctx;
     rctx.repo = (git_repository *)ctx->git_repo;
-    rctx.callback = callback;
+    rctx.edge_callback = edge_cb;
+    rctx.edge_attr_callback = attr_cb;
     rctx.userdata = userdata;
-    rctx.error = GM_OK;
     rctx.is_attributed = is_attributed;
 
-    /* Determine branch */
-    if (!branch) {
-        /* Use current branch */
-        git_reference *head = NULL;
-        int error = git_repository_head(&head, rctx.repo);
-        if (error < 0) {
-            return GM_ERR_INVALID_FORMAT;
-        }
-
-        const char *name = git_reference_shorthand(head);
-        if (!name) {
-            git_reference_free(head);
-            return GM_ERR_INVALID_FORMAT;
-        }
-
-        size_t name_len = strlen(name);
-        if (name_len >= sizeof(current_branch)) {
-            name_len = sizeof(current_branch) - 1;
-        }
-        gm_memcpy_safe(current_branch, sizeof(current_branch), name, name_len);
-        current_branch[name_len] = '\0';
-        branch = current_branch;
-
-        git_reference_free(head);
+    const char *resolved_branch = branch;
+    int branch_rc = resolve_branch(rctx.repo, branch, current_branch,
+                                   sizeof(current_branch), &resolved_branch);
+    if (branch_rc != GM_OK) {
+        return branch_rc;
     }
 
     /* Build ref name */
-    if (gm_build_ref(ref_name, sizeof(ref_name), GITMIND_EDGES_REF_PREFIX, branch) != GM_OK) {
+    if (gm_build_ref(ref_name, sizeof(ref_name), GITMIND_EDGES_REF_PREFIX,
+                     resolved_branch) != GM_OK) {
         return GM_ERR_BUFFER_TOO_SMALL;
     }
 
@@ -356,12 +401,12 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
 int gm_journal_read(gm_context_t *ctx, const char *branch,
                     gm_journal_read_callback_t callback,
                     void *userdata) {
-    return journal_read_generic(ctx, branch, (void*)callback, userdata, 0);
+    return journal_read_generic(ctx, branch, callback, NULL, false, userdata);
 }
 
 /* Read attributed journal for a branch */
 int gm_journal_read_attributed(gm_context_t *ctx, const char *branch,
                                gm_journal_read_attributed_callback_t callback,
                                void *userdata) {
-    return journal_read_generic(ctx, branch, (void*)callback, userdata, 1);
+    return journal_read_generic(ctx, branch, NULL, callback, true, userdata);
 }

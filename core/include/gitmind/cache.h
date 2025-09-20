@@ -8,8 +8,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <git2/types.h>
-#include <git2/oid.h>
 #include "gitmind/types.h"
 #include "gitmind/result.h"
 

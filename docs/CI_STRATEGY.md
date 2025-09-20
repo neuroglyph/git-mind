@@ -59,7 +59,7 @@ flowchart LR
 
 ## Docker Hygiene
 
-- Images are namespaced and labeled for safe cleanup: `gitmind/ci:clang-20`, `gitmind/gauntlet:<compiler>`; label `com.gitmind.project=git-mind`.
+- Images are namespaced and labeled for safe cleanup: `gitmind/ci:clang-20`, `gitmind/gauntlet:<compiler>`; label `com.gitmind.project=git-mind`. The CI image is built from the checked-in `.ci/Dockerfile` when missing (no registry dependency).
 - Local helper: `make docker-clean` removes only project images/containers and builder cache.
 
 ## Time & Cost

@@ -13,8 +13,11 @@
 #include "gitmind/edge.h"
 #include "gitmind/error.h"
 #include "gitmind/journal.h"
+#include "gitmind/result.h"
 #include "gitmind/types.h"
 #include "gitmind/types/ulid.h"
+
+#include "gitmind/adapters/fs/posix_temp_adapter.h"
 
 static void set_user_config(git_repository *repo) {
     git_config *cfg = NULL;
@@ -99,6 +102,11 @@ int main(void) {
     gm_context_t ctx = {0};
     ctx.git_repo = repo;
 
+    gm_result_void_t fs_result =
+        gm_posix_fs_temp_port_create(&ctx.fs_temp_port, NULL,
+                                     &ctx.fs_temp_port_dispose);
+    assert(fs_result.ok);
+
     append_dummy_edge(&ctx);
     rc = gm_cache_rebuild(&ctx, valid_branch, true);
     assert(rc == GM_OK);
@@ -112,6 +120,9 @@ int main(void) {
     rc = gm_cache_rebuild(&ctx, invalid_branch, true);
     assert(rc == GM_ERR_INVALID_ARGUMENT);
 
+    if (ctx.fs_temp_port_dispose != NULL) {
+        ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
+    }
     git_repository_free(repo);
     git_libgit2_shutdown();
     printf("OK\n");

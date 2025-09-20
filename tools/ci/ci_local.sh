@@ -29,8 +29,17 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 0
 fi
 
-echo "==> Pulling CI image (best-effort)"
-docker pull "$IMAGE" || true
+if [ ! -f .ci/Dockerfile ]; then
+  echo "❌ Missing .ci/Dockerfile (expected committed CI recipe)."
+  echo "   Regenerate via ./tools/docker-clang-tidy.sh or restore from git."
+  exit 1
+fi
+
+echo "==> Ensuring CI image is available locally"
+if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  echo "   Building $IMAGE from .ci/Dockerfile ..."
+  docker build -t "$IMAGE" --label com.gitmind.project=git-mind -f .ci/Dockerfile .ci
+fi
 
 echo "==> Containerized build + tests + E2E"
 docker run --rm --label com.gitmind.project=git-mind \

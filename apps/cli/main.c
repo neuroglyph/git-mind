@@ -7,6 +7,8 @@
 #include "gitmind/safety.h"
 #include "cli_runtime.h"
 
+#include "gitmind/adapters/fs/posix_temp_adapter.h"
+
 #include "gitmind/constants_internal.h"
 
 #include <git2.h>
@@ -180,6 +182,19 @@ static int init_context(gm_context_t *ctx, gm_output_level_t level,
     /* Set up core context */
     memset(ctx, 0, sizeof(gm_context_t));
     ctx->git_repo = repo;
+
+    gm_result_void_t fs_port_result =
+        gm_posix_fs_temp_port_create(&ctx->fs_temp_port, NULL,
+                                     &ctx->fs_temp_port_dispose);
+    if (!fs_port_result.ok) {
+        int code = GM_ERR_UNKNOWN;
+        if (fs_port_result.u.err != NULL) {
+            code = fs_port_result.u.err->code;
+            gm_error_free(fs_port_result.u.err);
+        }
+        git_repository_free(repo);
+        return code;
+    }
     
     /* Create CLI output context (separate from core context) */
     cli->out = gm_output_create(level, format);
@@ -196,6 +211,10 @@ static void cleanup_context(gm_context_t *ctx, gm_cli_ctx_t *cli) {
     if (cli && cli->out) {
         gm_output_destroy(cli->out);
         cli->out = NULL;
+    }
+    if (ctx->fs_temp_port_dispose != NULL) {
+        ctx->fs_temp_port_dispose(&ctx->fs_temp_port);
+        ctx->fs_temp_port_dispose = NULL;
     }
     if (ctx->git_repo) {
         git_repository_free((git_repository *)ctx->git_repo);
