@@ -3,7 +3,17 @@ title: Filesystem & Temp Path Service Plan
 description: Strategy for introducing a platform-aware filesystem/temp-path port.
 audience: [contributors]
 status: draft
+domain: infrastructure
+tags: [filesystem, temp, ports]
 ---
+
+## Table of Contents
+
+- [Motivation](#motivation)
+- [Deliverables](#deliverables)
+- [Implementation Steps](#implementation-steps)
+- [Open Questions](#open-questions)
+- [Timeline](#timeline)
 
 # Filesystem & Temp Path Service Plan
 
@@ -19,6 +29,7 @@ status: draft
    - `make_temp_dir(repo_id, component)` → returns the fully-qualified path inside `~/.gitmind/<repo>/component-XXXXXX`.
    - `remove_tree(path)` → recursive delete used by cache rebuild service and tests.
    - Potential helpers (`path_join`, `ensure_directory`).
+   - `canonicalize_ex(path, opts)` → mode-aware normalization resolving either logical strings or physical filesystem paths (see notes below).
 2. **Adapters**
    - Production adapter under `core/src/adapters/fs/posix_temp_adapter.c` implementing the port using platform checks (POSIX APIs now; Windows stub to follow).
    - Test fake under `core/tests/fakes/fs/temp_fs_fake.c` mirroring behaviour in-memory.
@@ -38,6 +49,13 @@ status: draft
 5. Refactor cache service + tests to call the port.
 6. Add unit tests for the adapter (under `core/tests/unit/test_fs_temp_service.c`).
 7. Update docs once the implementation lands.
+
+### Canonicalization Modes
+
+- `GM_FS_CANON_LOGICAL` (default): collapses `//`, `/./`, and safe `/../` segments without touching the filesystem. Works for non-existent paths and keeps symlink segments intact.
+- `GM_FS_CANON_PHYSICAL_EXISTING`: resolves symlinks and requires the path to exist (implemented via `realpath` on POSIX). Returns `GM_ERR_NOT_FOUND` for missing inputs.
+- `GM_FS_CANON_PHYSICAL_CREATE_OK`: resolves the parent directory physically (must exist) and then appends the final segment logically so callers can prepare paths they intend to create.
+- Adapters must implement all three modes; fakes should mirror the contract so unit tests can validate both success and error paths consistently.
 
 ## Open Questions
 

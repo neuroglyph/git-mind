@@ -3,6 +3,8 @@ title: Cache Rebuild Service
 description: Application-level orchestration for cache rebuilds.
 audience: [contributors]
 status: draft
+domain: cache
+tags: [cache, service]
 ---
 
 # Cache Rebuild Service

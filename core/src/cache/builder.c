@@ -11,5 +11,9 @@ int gm_cache_rebuild(gm_context_t *ctx, const char *branch, bool force_full) {
         return GM_ERR_INVALID_ARGUMENT;
     }
 
+    if (ctx->fs_temp_port.vtbl == NULL) {
+        return GM_ERR_INVALID_STATE;
+    }
+
     return gm_cache_rebuild_execute(ctx, branch, force_full);
 }

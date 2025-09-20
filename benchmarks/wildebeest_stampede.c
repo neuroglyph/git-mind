@@ -13,12 +13,15 @@
  * how fast our cache can dodge them.
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 #include "../include/gitmind.h"
+#include "gitmind/adapters/fs/posix_temp_adapter.h"
+#include "gitmind/result.h"
 
 #define WILDEBEEST_COUNT 100000 /* Start with 100K edges */
 #define STAMPEDE_ROUNDS 10      /* Multiple runs */
@@ -85,6 +88,14 @@ static void run_stampede(git_repository *repo, const char *branch,
     gm_context_t ctx = {0};
     ctx.git_repo = repo;
 
+    gm_result_void_t fs_result =
+        gm_posix_fs_temp_port_create(&ctx.fs_temp_port, NULL,
+                                     &ctx.fs_temp_port_dispose);
+    if (!fs_result.ok) {
+        fprintf(stderr, "failed to create fs temp port\n");
+        exit(EXIT_FAILURE);
+    }
+
     /* Batch insert for efficiency */
     for (int i = 0; i < wildebeest_count; i += 100) {
         int batch_size =
@@ -109,7 +120,7 @@ static void run_stampede(git_repository *repo, const char *branch,
 
     /* Build cache - "Simba returns!" */
     printf("\n" BLUE "🦁 SIMBA BUILDS THE CACHE..." RESET "\n");
-    gm_cache_rebuild(&ctx, branch);
+    gm_cache_rebuild(&ctx, branch, true);
 
     /* Benchmark 2: Cache query */
     printf("\n" GREEN "⚡ SIMBA WITH ROARING CACHE:" RESET "\n");
@@ -129,6 +140,9 @@ static void run_stampede(git_repository *repo, const char *branch,
     /* Calculate speedup */
     result->speedup = result->journal_scan_ms / result->cache_query_ms;
 
+    if (ctx.fs_temp_port_dispose != NULL) {
+        ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
+    }
     free(herd);
 }
 

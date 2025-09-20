@@ -3,6 +3,8 @@ title: Legacy Cache Builder Adapter
 description: Thin compatibility layer that exposes the historic gm_cache_rebuild entry point.
 audience: [contributors]
 status: draft
+domain: cache
+tags: [cache, adapter]
 ---
 
 # Legacy Cache Builder Adapter

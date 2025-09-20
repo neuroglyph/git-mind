@@ -3,6 +3,8 @@ title: Cache Edge Map
 description: Domain data structure backing forward/reverse edge indexing.
 audience: [contributors]
 status: draft
+domain: cache
+tags: [cache, domain]
 ---
 
 # Cache Edge Map

@@ -3,6 +3,8 @@ title: Cache Architecture Overview
 description: Map of contents and executive summary for the cache subsystem within the hexagonal architecture.
 audience: [contributors]
 status: draft
+domain: cache
+tags: [cache, hexagonal]
 ---
 
 # Cache Architecture Overview

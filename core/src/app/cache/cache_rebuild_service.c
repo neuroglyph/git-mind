@@ -12,7 +12,6 @@
 #include <git2/signature.h>
 #include <git2/tree.h>
 
-#include <dirent.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -32,19 +31,16 @@
 #include "gitmind/edge.h"
 #include "gitmind/error.h"
 #include "gitmind/journal.h"
+#include "gitmind/ports/fs_temp_port.h"
 #include "gitmind/result.h"
 #include "gitmind/security/memory.h"
 #include "gitmind/security/string.h"
 #include "gitmind/util/memory.h"
 #include "gitmind/util/ref.h"
 
-#define CACHE_TEMP_DIR_PREFIX "/tmp/gitmind-cache-"
 #define MAX_SHARD_PATH 32
 #define CLOCKS_PER_MS (CLOCKS_PER_SEC / (clock_t)MILLIS_PER_SECOND)
-#define MAX_TEMP_ATTEMPTS 32U
-#define RANDOM_MULTIPLIER 1103515245U
-#define RANDOM_INCREMENT 12345U
-#define RANDOM_MASK 0xFFFFFFU
+#define CACHE_TEMP_COMPONENT "cache"
 
 static int cache_get_journal_tip(git_repository *repo, const char *branch,
                                  gm_cache_meta_t *meta);
@@ -52,37 +48,6 @@ static int cache_create_commit(git_repository *repo, const git_oid *tree_oid,
                                const gm_cache_meta_t *meta, git_oid *commit_oid);
 static int cache_update_ref(git_repository *repo, const char *branch,
                             const git_oid *commit_oid);
-
-static int create_temp_directory(char *buffer, size_t buffer_size) {
-    if (buffer == NULL || buffer_size == 0U) {
-        return GM_ERR_INVALID_ARGUMENT;
-    }
-
-    unsigned int seed = (unsigned int)time(NULL) ^ (unsigned int)getpid();
-
-    for (unsigned int attempt = 0; attempt < MAX_TEMP_ATTEMPTS; ++attempt) {
-        seed = (RANDOM_MULTIPLIER * seed) + RANDOM_INCREMENT;
-        unsigned int suffix = seed & RANDOM_MASK;
-
-        if (gm_snprintf(buffer, buffer_size, "%s%06X", CACHE_TEMP_DIR_PREFIX,
-                        suffix) < 0) {
-            return GM_ERR_UNKNOWN;
-        }
-
-        if (mkdir(buffer, DIR_PERMS_NORMAL) == 0) {
-            return GM_OK;
-        }
-
-        struct stat existing = {0};
-        if (stat(buffer, &existing) == 0 && S_ISDIR(existing.st_mode)) {
-            continue;
-        }
-
-        return GM_ERR_IO_FAILED;
-    }
-
-    return GM_ERR_IO_FAILED;
-}
 
 static int unwrap_result(gm_result_void_t result) {
     if (result.ok) {
@@ -95,6 +60,59 @@ static int unwrap_result(gm_result_void_t result) {
         gm_error_free(result.u.err);
     }
     return code;
+}
+
+static int compute_repo_id(gm_context_t *ctx, gm_repo_id_t *repo_id) {
+    if (ctx == NULL || repo_id == NULL || ctx->git_repo == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    if (ctx->fs_temp_port.vtbl == NULL) {
+        return GM_ERR_INVALID_STATE;
+    }
+
+    git_repository *repo = (git_repository *)ctx->git_repo;
+    const char *repo_path = git_repository_path(repo);
+    if (repo_path == NULL) {
+        return GM_ERR_INVALID_STATE;
+    }
+
+    const char *canonical = NULL;
+    gm_fs_canon_opts_t canon_opts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
+    int code = unwrap_result(gm_fs_temp_port_canonicalize_ex(
+        &ctx->fs_temp_port, repo_path, canon_opts, &canonical));
+    if (code != GM_OK) {
+        return code;
+    }
+
+    return unwrap_result(gm_repo_id_from_path(canonical, repo_id));
+}
+
+static int make_temp_workspace(gm_context_t *ctx, gm_tempdir_t *temp_dir) {
+    if (temp_dir == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+
+    gm_repo_id_t repo_id = {0};
+    int status = compute_repo_id(ctx, &repo_id);
+    if (status != GM_OK) {
+        return status;
+    }
+
+    return unwrap_result(gm_fs_temp_port_make_temp_dir(
+        &ctx->fs_temp_port, repo_id, CACHE_TEMP_COMPONENT, true, temp_dir));
+}
+
+static void release_temp_dir(gm_context_t *ctx, const gm_tempdir_t *temp_dir) {
+    if (ctx == NULL || temp_dir == NULL || temp_dir->path == NULL ||
+        ctx->fs_temp_port.vtbl == NULL) {
+        return;
+    }
+
+    gm_result_void_t remove_result =
+        gm_fs_temp_port_remove_tree(&ctx->fs_temp_port, temp_dir->path);
+    if (!remove_result.ok && remove_result.u.err != NULL) {
+        gm_error_free(remove_result.u.err);
+    }
 }
 
 static void get_oid_prefix(const gm_oid_t *oid, char *prefix, int bits) {
@@ -138,7 +156,7 @@ typedef struct {
 
 typedef struct {
     const char *branch;
-    const char *temp_dir;
+    const gm_tempdir_t *temp_dir;
 } cache_commit_inputs_t;
 
 static bool is_valid_directory_name(char *path_buffer, size_t buffer_size,
@@ -230,88 +248,17 @@ static int build_tree_from_temp(git_repository *repo, const char *temp_dir,
     return gm_build_tree_from_directory(repo, temp_dir, tree_oid);
 }
 
-static int remove_tree_recursive(const char *path); // NOLINT(misc-no-recursion)
-
-static bool is_dot_entry(const struct dirent *entry) {
-    if (entry == NULL) {
-        return false;
-    }
-    return (strcmp(entry->d_name, ".") == 0) || (strcmp(entry->d_name, "..") == 0);
-}
-
-static int remove_child_entry(const char *parent_path,
-                              const struct dirent *entry) { // NOLINT(misc-no-recursion)
-    char child_path[GM_PATH_MAX];
-    if (gm_snprintf(child_path, sizeof(child_path), "%s/%s", parent_path,
-                    entry->d_name) < 0) {
-        return GM_ERR_UNKNOWN;
-    }
-
-    struct stat entry_stat;
-    if (stat(child_path, &entry_stat) != 0) {
-        return GM_ERR_IO_FAILED;
-    }
-
-    if (S_ISDIR(entry_stat.st_mode)) {
-        int child_result = remove_tree_recursive(child_path);
-        if (child_result != GM_OK) {
-            return child_result;
-        }
-        if (rmdir(child_path) != 0) {
-            return GM_ERR_IO_FAILED;
-        }
-        return GM_OK;
-    }
-
-    if (unlink(child_path) != 0) {
-        return GM_ERR_IO_FAILED;
-    }
-
-    return GM_OK;
-}
-
-static int remove_tree_recursive(const char *path) { // NOLINT(misc-no-recursion)
-    DIR *dir = opendir(path);
-    if (dir == NULL) {
-        return GM_ERR_IO_FAILED;
-    }
-
-    int result_code = GM_OK;
-    struct dirent *entry = NULL;
-    while ((entry = readdir(dir)) != NULL) {
-        if (is_dot_entry(entry)) {
-            continue;
-        }
-
-        result_code = remove_child_entry(path, entry);
-        if (result_code != GM_OK) {
-            break;
-        }
-    }
-
-    closedir(dir);
-    return result_code;
-}
-
-static void remove_temp_dir(const char *path) {
-    if (path == NULL) {
-        return;
-    }
-    (void)remove_tree_recursive(path);
-    (void)rmdir(path);
-}
-
 static int cache_prepare_rebuild(gm_context_t *ctx,
                                  const char *branch __attribute__((unused)),
                                  bool force_full, gm_cache_meta_t *old_meta,
-                                 bool *has_old_cache, char *temp_dir) {
+                                 bool *has_old_cache, gm_tempdir_t *temp_dir) {
     *has_old_cache = false;
     if (!force_full) {
         int load_status = gm_cache_load_meta(ctx, branch, old_meta);
         *has_old_cache = (load_status == GM_OK);
     }
 
-    return create_temp_directory(temp_dir, GM_PATH_MAX);
+    return make_temp_workspace(ctx, temp_dir);
 }
 
 typedef struct {
@@ -361,8 +308,11 @@ static int cache_collect_and_write(gm_context_t *ctx, const char *branch,
                                    gm_edge_map_t *reverse_map,
                                    bool has_old_cache,
                                    const gm_cache_meta_t *old_meta,
-                                   const char *temp_dir,
+                                   const gm_tempdir_t *temp_dir,
                                    uint32_t *total_edges) {
+    if (temp_dir == NULL || temp_dir->path == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
     uint32_t starting_edge_id = has_old_cache ? (uint32_t)old_meta->edge_count : 0U;
     int result_code = cache_collect_edges(ctx, branch, forward_map, reverse_map,
                                           starting_edge_id, total_edges);
@@ -370,7 +320,7 @@ static int cache_collect_and_write(gm_context_t *ctx, const char *branch,
         return result_code;
     }
 
-    return write_bitmaps_to_temp(forward_map, reverse_map, temp_dir,
+    return write_bitmaps_to_temp(forward_map, reverse_map, temp_dir->path,
                                  GM_CACHE_SHARD_BITS);
 }
 
@@ -394,8 +344,12 @@ static int cache_populate_meta(git_repository *repo, const char *branch,
 static int cache_build_commit_and_update(git_repository *repo,
                                          const cache_commit_inputs_t *inputs,
                                          const gm_cache_meta_t *meta) {
+    if (inputs == NULL || inputs->temp_dir == NULL ||
+        inputs->temp_dir->path == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
     git_oid tree_oid;
-    int result_code = build_tree_from_temp(repo, inputs->temp_dir, &tree_oid);
+    int result_code = build_tree_from_temp(repo, inputs->temp_dir->path, &tree_oid);
     if (result_code != GM_OK) {
         return result_code;
     }
@@ -507,11 +461,11 @@ static int cache_update_ref(git_repository *repo, const char *branch,
     return (git_status < 0) ? GM_ERR_UNKNOWN : GM_OK;
 }
 
-static void cache_cleanup(gm_edge_map_t *forward, gm_edge_map_t *reverse,
-                          const char *temp_dir) {
+static void cache_cleanup(gm_context_t *ctx, gm_edge_map_t *forward,
+                          gm_edge_map_t *reverse, const gm_tempdir_t *temp_dir) {
     gm_edge_map_destroy(forward);
     gm_edge_map_destroy(reverse);
-    remove_temp_dir(temp_dir);
+    release_temp_dir(ctx, temp_dir);
 }
 
 int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
@@ -523,7 +477,7 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
     git_repository *repo = (git_repository *)ctx->git_repo;
     gm_edge_map_t *forward_map = NULL;
     gm_edge_map_t *reverse_map = NULL;
-    char temp_dir[GM_PATH_MAX];
+    gm_tempdir_t temp_dir = {0};
     gm_cache_meta_t old_meta = {0};
     gm_cache_meta_t meta = {0};
     bool has_old_cache = false;
@@ -531,14 +485,14 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
     clock_t start_time;
 
     result_code = cache_prepare_rebuild(ctx, branch, force_full, &old_meta,
-                                        &has_old_cache, temp_dir);
+                                        &has_old_cache, &temp_dir);
     if (result_code != GM_OK) {
         return result_code;
     }
 
     result_code = cache_build_edge_map(&forward_map, &reverse_map);
     if (result_code != GM_OK) {
-        remove_temp_dir(temp_dir);
+        cache_cleanup(ctx, forward_map, reverse_map, &temp_dir);
         return result_code;
     }
 
@@ -546,7 +500,7 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
     uint32_t total_edges = 0;
 
     result_code = cache_collect_and_write(ctx, branch, forward_map, reverse_map,
-                                          has_old_cache, &old_meta, temp_dir,
+                                          has_old_cache, &old_meta, &temp_dir,
                                           &total_edges);
     if (result_code != GM_OK) {
         goto cleanup;
@@ -563,11 +517,11 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
 
     cache_commit_inputs_t commit_inputs = {
         .branch = branch,
-        .temp_dir = temp_dir,
+        .temp_dir = &temp_dir,
     };
     result_code = cache_build_commit_and_update(repo, &commit_inputs, &meta);
 
 cleanup:
-    cache_cleanup(forward_map, reverse_map, temp_dir);
+    cache_cleanup(ctx, forward_map, reverse_map, &temp_dir);
     return result_code;
 }

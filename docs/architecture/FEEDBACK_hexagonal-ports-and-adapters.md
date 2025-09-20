@@ -1,3 +1,25 @@
+---
+title: Hexagonal Ports And Adapters Feedback
+description: Feedback on proposed port scaffolding for the hexagonal transition.
+audience: [contributors]
+domain: architecture
+tags: [hexagonal, ports, adapters]
+status: draft
+---
+
+## Table of Contents
+
+- [core/include/gitmind/ports/git_object_port.h](#coreincludegitmimportsgit_object_porth)
+- [core/include/gitmind/ports/git_commit_port.h](#coreincludegitmimportsgit_commit_porth)
+- [core/include/gitmind/ports/fs_temp_port.h](#coreincludegitmindportsfs_temp_porth)
+- [Notes, Rationale, and Gotchas (read this before wiring)](#notes-rationale-and-gotchas-read-this-before-wiring)
+- [Contract-Testing Checklist (fast follow)](#contract-testing-checklist-fast-follow)
+- [core/src/adapters/libgit2/git_object_adapter.h](#coresrcadapterslibgit2git_object_adapterh)
+- [core/src/adapters/libgit2/git_object_adapter.c](#coresrcadapterslibgit2git_object_adapterc)
+- [core/src/adapters/libgit2/git_commit_adapter.c](#coresrcadapterslibgit2git_commit_adapterc)
+- [core/src/adapters/fs/posix_temp_adapter.h](#coresrcadaptersfsposix_temp_adapterh)
+- [core/src/adapters/fs/posix_temp_adapter.c](#coresrcadaptersfsposix_temp_adapterc)
+
 # **core/include/gitmind/ports/git_object_port.h**
 
 ```c
@@ -279,6 +301,12 @@ typedef struct gm_fs_temp_port_vtbl {
 
 ## **Notes, Rationale, and Gotchas (read this before wiring)**
 
+- **Canonicalization is modeful:**
+    Default to `GM_FS_CANON_LOGICAL` (string normalization only). Opt into
+    `GM_FS_CANON_PHYSICAL_EXISTING` when you truly need realpath semantics on an
+    existing path, or `GM_FS_CANON_PHYSICAL_CREATE_OK` when you are about to
+    create the final segment but want the parent resolved. Never assume
+    canonicalization is a security boundary; treat it as a formatting helper.
 - **Why separate `git_object_port` and `git_commit_port`?**
     Keeps write-heavy plumbing (blobs/trees/commit creation) distinct from read/walk operations. This prevents adapters from ballooning and gives you the freedom to fake walkers without implementing tree builders, and vice-versa.
 - **Iterator lifetimes:**

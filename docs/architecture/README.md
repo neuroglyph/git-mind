@@ -3,6 +3,8 @@ title: Hexagonal Architecture Overview
 description: Definitive reference for GitMind's hexagonal architecture boundaries, layers, and migration workflow.
 audience: [contributors]
 status: draft
+domain: architecture
+tags: [hexagonal, overview]
 ---
 
 # Hexagonal Architecture Overview

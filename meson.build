@@ -121,6 +121,7 @@ src = files(
   'core/src/app/cache/cache_rebuild_service.c',
   'core/src/domain/cache/edge_map.c',
   'core/src/adapters/config/env_adapter.c',
+  'core/src/adapters/fs/posix_temp_adapter.c',
   'core/src/ports/env_port.c',
   'core/src/journal/reader.c',
   'core/src/journal/writer.c',
@@ -129,6 +130,7 @@ src = files(
   'core/src/cache/query.c',
   'core/src/cache/tree_builder.c',
   'core/src/cache/tree_size.c',
+  'core/src/fs/path_utils.c',
   'core/src/util/ref.c',
 )
 
@@ -288,6 +290,11 @@ test_cache_edge_map = executable('test_cache_edge_map',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+test_fs_path_utils = executable('test_fs_path_utils',
+  'core/tests/unit/test_fs_path_utils.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_journal_mixed_cbor = executable('test_journal_mixed_cbor',
   'core/tests/unit/test_journal_mixed_cbor.c',
@@ -335,6 +342,12 @@ test_ref_utils = executable('test_ref_utils',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+test_fs_temp_port = executable('test_fs_temp_port',
+  'core/tests/unit/test_fs_temp_port.c',
+  'core/tests/fakes/fs/fake_fs_temp_port.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 
 # Register tests
@@ -366,6 +379,8 @@ test('cache_shard_distribution', test_cache_shard_distribution)
 test('cache_tree_size', test_cache_tree_size)
 test('edge_oid_fallback', test_edge_oid_fallback)
 test('ref_utils', test_ref_utils)
+test('fs_temp_port', test_fs_temp_port)
+test('fs_path_utils', test_fs_path_utils)
 
 # Standalone header compilation checks (public headers)
 header_check_src = 'tools/header_compile.c'
@@ -382,6 +397,7 @@ public_headers = [
   'core/include/gitmind/edge_attributed.h',
   'core/include/gitmind/journal.h',
   'core/include/gitmind/cache.h',
+  'core/include/gitmind/ports/fs_temp_port.h',
   'core/include/gitmind/io/io.h',
   'core/include/gitmind/time/time.h',
   'core/include/gitmind/util/memory.h',
