@@ -217,3 +217,4 @@ ci_logs.zip
 
 # Local test binaries
 test_edge_compile_check
+__pycache__/

@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
-<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 ---
 title: Migration Philosophy
 description: Strict-then-sustainable approach to quality during and after migration.
@@ -9,7 +7,8 @@ tags: [migration, quality]
 status: stable
 last_updated: 2025-09-15
 ---
-
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
+<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 # Migration Philosophy: From Chaos to Excellence
 
 Table of Contents

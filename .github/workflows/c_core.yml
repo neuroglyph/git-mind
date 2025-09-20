@@ -42,18 +42,8 @@ jobs:
       - name: Run E2E tests inside CI Docker image
         run: |
           IMAGE=${GITMIND_CI_IMAGE:-gitmind/ci:clang-20}
-          # Pull with retry and hard-fail after 3 attempts to avoid implicit pulls
-          pulled=0
-          for i in 1 2 3; do
-            if docker pull "$IMAGE"; then
-              pulled=1; break
-            else
-              echo "docker pull failed (attempt $i), retrying in 5s..."; sleep 5
-            fi
-          done
-          if [ "$pulled" -ne 1 ]; then
-            echo "docker pull failed after 3 attempts"; exit 1
-          fi
+          echo "Building CI image $IMAGE from .ci/Dockerfile ..."
+          docker build -t "$IMAGE" --label com.gitmind.project=git-mind -f .ci/Dockerfile .ci
           docker run --rm --label com.gitmind.project=git-mind \
             -u "$(id -u):$(id -g)" \
             -v "$PWD":/workspace -w /workspace \

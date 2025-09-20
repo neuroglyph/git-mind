@@ -6,6 +6,7 @@
 
 #include "gitmind/context.h"
 #include "gitmind/edge.h"
+#include "gitmind/types.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -80,19 +81,64 @@ int gm_hook_process_changed_file(gm_context_t *ctx, git_repository *repo,
  */
 int gm_hook_is_merge_commit(git_repository *repo, bool *is_merge);
 
-/* Backward-compatibility macros (deprecated) */
-#define get_blob_sha gm_hook_get_blob_sha
-#define find_edges_by_source gm_hook_find_edges_by_source
-#define create_augments_edge gm_hook_create_augments_edge
-#define process_changed_file gm_hook_process_changed_file
-#define is_merge_commit gm_hook_is_merge_commit
+/* Backward-compatibility helpers (deprecated) */
+static inline int get_blob_sha(git_repository *repo, const char *commit_ref,
+                               const char *file_path, gm_oid_t *sha_out) {
+    return gm_hook_get_blob_sha(repo, commit_ref, file_path, sha_out);
+}
 
-/* Preferred names (aliases) */
-#define gm_augment_get_blob_sha gm_hook_get_blob_sha
-#define gm_augment_find_edges_by_source gm_hook_find_edges_by_source
-#define gm_augment_create_augments_edge gm_hook_create_augments_edge
-#define gm_augment_process_changed_file gm_hook_process_changed_file
-#define gm_augment_is_merge_commit gm_hook_is_merge_commit
+static inline int find_edges_by_source(gm_context_t *ctx, const gm_oid_t *src_oid,
+                                       gm_edge_t **edges_out, size_t *count_out) {
+    return gm_hook_find_edges_by_source(ctx, src_oid, edges_out, count_out);
+}
+
+static inline int create_augments_edge(gm_context_t *ctx, const gm_oid_t *old_oid,
+                                       const gm_oid_t *new_oid,
+                                       const char *file_path) {
+    return gm_hook_create_augments_edge(ctx, old_oid, new_oid, file_path);
+}
+
+static inline int process_changed_file(gm_context_t *ctx, git_repository *repo,
+                                       const char *file_path) {
+    return gm_hook_process_changed_file(ctx, repo, file_path);
+}
+
+static inline int is_merge_commit(git_repository *repo, bool *is_merge) {
+    return gm_hook_is_merge_commit(repo, is_merge);
+}
+
+/* Preferred aliases */
+static inline int gm_augment_get_blob_sha(git_repository *repo,
+                                          const char *commit_ref,
+                                          const char *file_path,
+                                          gm_oid_t *sha_out) {
+    return gm_hook_get_blob_sha(repo, commit_ref, file_path, sha_out);
+}
+
+static inline int gm_augment_find_edges_by_source(gm_context_t *ctx,
+                                                  const gm_oid_t *src_oid,
+                                                  gm_edge_t **edges_out,
+                                                  size_t *count_out) {
+    return gm_hook_find_edges_by_source(ctx, src_oid, edges_out, count_out);
+}
+
+static inline int gm_augment_create_augments_edge(gm_context_t *ctx,
+                                                  const gm_oid_t *old_oid,
+                                                  const gm_oid_t *new_oid,
+                                                  const char *file_path) {
+    return gm_hook_create_augments_edge(ctx, old_oid, new_oid, file_path);
+}
+
+static inline int gm_augment_process_changed_file(gm_context_t *ctx,
+                                                  git_repository *repo,
+                                                  const char *file_path) {
+    return gm_hook_process_changed_file(ctx, repo, file_path);
+}
+
+static inline int gm_augment_is_merge_commit(git_repository *repo,
+                                             bool *is_merge) {
+    return gm_hook_is_merge_commit(repo, is_merge);
+}
 
 #ifdef __cplusplus
 }

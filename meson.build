@@ -116,6 +116,13 @@ src = files(
   'core/src/edge/edge.c',
   'core/src/edge/attributed.c',
   'core/src/attribution/attribution.c',
+  'core/src/domain/attribution/defaults.c',
+  'core/src/domain/attribution/env_loader.c',
+  'core/src/app/cache/cache_rebuild_service.c',
+  'core/src/domain/cache/edge_map.c',
+  'core/src/adapters/config/env_adapter.c',
+  'core/src/adapters/fs/posix_temp_adapter.c',
+  'core/src/ports/env_port.c',
   'core/src/journal/reader.c',
   'core/src/journal/writer.c',
   'core/src/cache/bitmap.c',
@@ -123,6 +130,7 @@ src = files(
   'core/src/cache/query.c',
   'core/src/cache/tree_builder.c',
   'core/src/cache/tree_size.c',
+  'core/src/fs/path_utils.c',
   'core/src/util/ref.c',
 )
 
@@ -259,6 +267,12 @@ test_edge_attributed_cbor = executable('test_edge_attributed_cbor',
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
+test_attribution_domain = executable('test_attribution_domain',
+  'core/tests/unit/test_attribution_domain.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
 test_edge_equal_semantics = executable('test_edge_equal_semantics',
   'core/tests/unit/test_edge_equal_semantics.c',
   include_directories : inc,
@@ -267,6 +281,17 @@ test_edge_equal_semantics = executable('test_edge_equal_semantics',
 
 test_cache_meta = executable('test_cache_meta',
   'core/tests/unit/test_cache_meta.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_cache_edge_map = executable('test_cache_edge_map',
+  'core/tests/unit/test_cache_edge_map.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+test_fs_path_utils = executable('test_fs_path_utils',
+  'core/tests/unit/test_fs_path_utils.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
@@ -317,6 +342,12 @@ test_ref_utils = executable('test_ref_utils',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+test_fs_temp_port = executable('test_fs_temp_port',
+  'core/tests/unit/test_fs_temp_port.c',
+  'core/tests/fakes/fs/fake_fs_temp_port.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 
 # Register tests
@@ -336,8 +367,10 @@ test('cbor', test_cbor)
 test('edge', test_edge)
 test('edge_cbor_oid', test_edge_cbor_oid)
 test('edge_attributed_cbor', test_edge_attributed_cbor)
+test('attribution_domain', test_attribution_domain)
 test('edge_equal_semantics', test_edge_equal_semantics)
 test('cache_meta', test_cache_meta)
+test('cache_edge_map', test_cache_edge_map)
 test('journal_mixed_cbor', test_journal_mixed_cbor)
 test('cache_query', test_cache_query)
 test('cache_branch_limits', test_cache_branch_limits)
@@ -346,6 +379,8 @@ test('cache_shard_distribution', test_cache_shard_distribution)
 test('cache_tree_size', test_cache_tree_size)
 test('edge_oid_fallback', test_edge_oid_fallback)
 test('ref_utils', test_ref_utils)
+test('fs_temp_port', test_fs_temp_port)
+test('fs_path_utils', test_fs_path_utils)
 
 # Standalone header compilation checks (public headers)
 header_check_src = 'tools/header_compile.c'
@@ -362,6 +397,7 @@ public_headers = [
   'core/include/gitmind/edge_attributed.h',
   'core/include/gitmind/journal.h',
   'core/include/gitmind/cache.h',
+  'core/include/gitmind/ports/fs_temp_port.h',
   'core/include/gitmind/io/io.h',
   'core/include/gitmind/time/time.h',
   'core/include/gitmind/util/memory.h',

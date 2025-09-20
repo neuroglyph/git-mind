@@ -32,7 +32,7 @@ This page lists environment variables that influence git‑mind builds, tests, a
 - `GITMIND_CI_IMAGE`
   - Purpose: Select CI Docker image for local/CI runs that execute builds/tests in a container.
   - Used by: `.github/workflows/c_core.yml`, `tools/ci/ci_local.sh`.
-  - Default: `gitmind/ci:clang-20`.
+  - Default: `gitmind/ci:clang-20` (built locally from `.ci/Dockerfile` when not present).
 
 ## Runtime (CLI)
 
