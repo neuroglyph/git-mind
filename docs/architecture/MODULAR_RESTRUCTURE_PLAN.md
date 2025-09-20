@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
-<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 ---
 title: Modular Architecture Restructure Plan
 description: Plan to evolve toward a modular, library-first system with a single-header API.
@@ -9,7 +7,8 @@ tags: [modular, library, headers]
 status: draft
 last_updated: 2025-09-15
 ---
-
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
+<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 # Modular Architecture Restructure Plan
 
 Table of Contents

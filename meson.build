@@ -116,6 +116,12 @@ src = files(
   'core/src/edge/edge.c',
   'core/src/edge/attributed.c',
   'core/src/attribution/attribution.c',
+  'core/src/domain/attribution/defaults.c',
+  'core/src/domain/attribution/env_loader.c',
+  'core/src/app/cache/cache_rebuild_service.c',
+  'core/src/domain/cache/edge_map.c',
+  'core/src/adapters/config/env_adapter.c',
+  'core/src/ports/env_port.c',
   'core/src/journal/reader.c',
   'core/src/journal/writer.c',
   'core/src/cache/bitmap.c',
@@ -259,6 +265,12 @@ test_edge_attributed_cbor = executable('test_edge_attributed_cbor',
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
+test_attribution_domain = executable('test_attribution_domain',
+  'core/tests/unit/test_attribution_domain.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
 test_edge_equal_semantics = executable('test_edge_equal_semantics',
   'core/tests/unit/test_edge_equal_semantics.c',
   include_directories : inc,
@@ -267,6 +279,12 @@ test_edge_equal_semantics = executable('test_edge_equal_semantics',
 
 test_cache_meta = executable('test_cache_meta',
   'core/tests/unit/test_cache_meta.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_cache_edge_map = executable('test_cache_edge_map',
+  'core/tests/unit/test_cache_edge_map.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
@@ -336,8 +354,10 @@ test('cbor', test_cbor)
 test('edge', test_edge)
 test('edge_cbor_oid', test_edge_cbor_oid)
 test('edge_attributed_cbor', test_edge_attributed_cbor)
+test('attribution_domain', test_attribution_domain)
 test('edge_equal_semantics', test_edge_equal_semantics)
 test('cache_meta', test_cache_meta)
+test('cache_edge_map', test_cache_edge_map)
 test('journal_mixed_cbor', test_journal_mixed_cbor)
 test('cache_query', test_cache_query)
 test('cache_branch_limits', test_cache_branch_limits)
