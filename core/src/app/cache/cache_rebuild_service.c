@@ -39,7 +39,10 @@
 #include "gitmind/util/ref.h"
 
 #define MAX_SHARD_PATH 32
-#define CLOCKS_PER_MS (CLOCKS_PER_SEC / (clock_t)MILLIS_PER_SECOND)
+_Static_assert(CLOCKS_PER_SEC >= MILLIS_PER_SECOND,
+               "CLOCKS_PER_SEC must be >= 1000");
+#define CLOCKS_PER_MS                                                       \
+    ((clock_t)((CLOCKS_PER_SEC + (MILLIS_PER_SECOND - 1)) / MILLIS_PER_SECOND))
 #define CACHE_TEMP_COMPONENT "cache"
 
 static int cache_get_journal_tip(git_repository *repo, const char *branch,

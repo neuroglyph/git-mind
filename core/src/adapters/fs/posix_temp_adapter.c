@@ -413,9 +413,7 @@ static gm_result_void_t remove_tree_impl(const char *path) {
         if (errno == ENOENT) {
             return gm_ok_void();
         }
-        return gm_err_void(GM_ERROR(GM_ERR_IO_FAILED,
-                                    "lstat failed for %s: %s", path,
-                                    strerror(errno)));
+        return errno_to_result("stat", path);
     }
 
     if (!S_ISDIR(st.st_mode)) {

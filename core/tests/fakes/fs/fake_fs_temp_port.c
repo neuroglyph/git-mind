@@ -4,14 +4,13 @@
 #include "core/tests/fakes/fs/fake_fs_temp_port.h"
 
 #include <string.h>
-
+#include <inttypes.h>
 #include "gitmind/error.h"
 #include "gitmind/fs/path_utils.h"
 #include "gitmind/result.h"
 #include "gitmind/security/string.h"
 #include "gitmind/types.h"
 #include "gitmind/util/memory.h"
-
 static bool fake_path_exists(const gm_fake_fs_temp_port_t *fake,
                              const char *path) {
     for (size_t i = 0; i < fake->created_count; ++i) {
@@ -178,13 +177,23 @@ static gm_result_void_t fake_canonicalize(void *self, const char *abs_path_in,
             return gm_err_void(GM_ERROR(GM_ERR_NOT_FOUND,
                                         "fake parent not found"));
         }
+        const char *leaf = normalized;
+        const char *slash = strrchr(normalized, '/');
+        if (slash != NULL && slash[1] != '\0') {
+            leaf = slash + 1;
+        }
+        char leaf_copy[GM_PATH_MAX];
+        if (gm_strcpy_safe(leaf_copy, sizeof(leaf_copy), leaf) != 0) {
+            return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
+                                        "fake canonical basename overflow"));
+        }
         size_t len = strlen(parent);
         if (gm_strcpy_safe(fake->scratch, sizeof(fake->scratch), parent) != 0) {
             return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
                                         "fake canonical path overflow"));
         }
         GM_TRY(gm_fs_path_basename_append(fake->scratch, sizeof(fake->scratch), &len,
-                                          normalized));
+                                          leaf_copy));
         *out_abs_path = fake->scratch;
         return gm_ok_void();
     }
