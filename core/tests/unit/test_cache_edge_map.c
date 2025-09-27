@@ -25,7 +25,7 @@ static void dispose_error(gm_result_void_t result) {
     if (result.u.err != NULL) {
         gm_error_free(result.u.err);
     }
-    assert(!result.ok);
+    assert(result.ok && "unexpected gm_result failure");
 }
 
 typedef struct {

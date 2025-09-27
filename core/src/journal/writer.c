@@ -126,8 +126,13 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
     gm_memset_safe(&lookup_ctx, sizeof(lookup_ctx), 0, sizeof(lookup_ctx));
     gm_result_void_t walk_result = gm_git_repository_port_walk_commits(
         jctx->repo_port, jctx->ref_name, collect_parent_tip, &lookup_ctx);
-    if (!walk_result.ok && walk_result.u.err != NULL) {
-        gm_error_free(walk_result.u.err);
+    if (!walk_result.ok) {
+        int walk_code = GM_ERR_UNKNOWN;
+        if (walk_result.u.err != NULL) {
+            walk_code = walk_result.u.err->code;
+            gm_error_free(walk_result.u.err);
+        }
+        return walk_code;
     }
 
     char *message = NULL;

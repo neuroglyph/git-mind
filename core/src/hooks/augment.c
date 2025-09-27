@@ -117,21 +117,6 @@ int gm_hook_get_blob_sha(const gm_git_repository_port_t *repo_port,
         return GM_ERR_INVALID_ARGUMENT;
     }
 
-    char branch[BUFFER_SIZE_SMALL];
-    gm_result_void_t branch_result =
-        gm_git_repository_port_head_branch(repo_port, branch, sizeof(branch));
-    int branch_rc = hook_result_to_code(branch_result, GM_ERR_NOT_FOUND);
-    if (branch_rc != GM_OK) {
-        return branch_rc;
-    }
-
-    char ref_name[REF_NAME_BUFFER_SIZE];
-    int ref_rc =
-        gm_build_ref(ref_name, sizeof(ref_name), REFS_HEADS_PREFIX, branch);
-    if (ref_rc != GM_OK) {
-        return ref_rc;
-    }
-
     const size_t required_commits = offset + 1U;
     gm_oid_t commit_buffer[GM_AUGMENT_LOOKBACK_LIMIT];
     hook_commit_collect_ctx_t collect_ctx = {
@@ -140,8 +125,24 @@ int gm_hook_get_blob_sha(const gm_git_repository_port_t *repo_port,
         .count = 0U,
     };
 
+    const char *walk_ref = "HEAD";
+    char branch[BUFFER_SIZE_SMALL];
+    char ref_name[REF_NAME_BUFFER_SIZE];
+    gm_result_void_t branch_result =
+        gm_git_repository_port_head_branch(repo_port, branch, sizeof(branch));
+    int branch_rc = hook_result_to_code(branch_result, GM_ERR_NOT_FOUND);
+    if (branch_rc == GM_OK) {
+        int ref_rc = gm_build_ref(ref_name, sizeof(ref_name), REFS_HEADS_PREFIX,
+                                  branch);
+        if (ref_rc == GM_OK) {
+            walk_ref = ref_name;
+        }
+    } else if (branch_rc != GM_ERR_NOT_FOUND) {
+        return branch_rc;
+    }
+
     gm_result_void_t walk_result = gm_git_repository_port_walk_commits(
-        repo_port, ref_name, collect_commit_oid, &collect_ctx);
+        repo_port, walk_ref, collect_commit_oid, &collect_ctx);
     int walk_rc = hook_result_to_code(walk_result, GM_ERR_NOT_FOUND);
     if (walk_rc != GM_OK) {
         return walk_rc;
@@ -298,25 +299,26 @@ int gm_hook_is_merge_commit(const gm_git_repository_port_t *repo_port,
         return GM_ERR_INVALID_ARGUMENT;
     }
 
+    gm_git_reference_tip_t tip;
+    gm_memset_safe(&tip, sizeof(tip), 0, sizeof(tip));
+    const char *ref_to_query = "HEAD";
     char branch[BUFFER_SIZE_SMALL];
+    char ref_name[REF_NAME_BUFFER_SIZE];
     gm_result_void_t branch_result =
         gm_git_repository_port_head_branch(repo_port, branch, sizeof(branch));
     int branch_rc = hook_result_to_code(branch_result, GM_ERR_NOT_FOUND);
-    if (branch_rc != GM_OK) {
+    if (branch_rc == GM_OK) {
+        int ref_rc =
+            gm_build_ref(ref_name, sizeof(ref_name), REFS_HEADS_PREFIX, branch);
+        if (ref_rc == GM_OK) {
+            ref_to_query = ref_name;
+        }
+    } else if (branch_rc != GM_ERR_NOT_FOUND) {
         return branch_rc;
     }
 
-    char ref_name[REF_NAME_BUFFER_SIZE];
-    int ref_rc =
-        gm_build_ref(ref_name, sizeof(ref_name), REFS_HEADS_PREFIX, branch);
-    if (ref_rc != GM_OK) {
-        return ref_rc;
-    }
-
-    gm_git_reference_tip_t tip;
-    gm_memset_safe(&tip, sizeof(tip), 0, sizeof(tip));
     gm_result_void_t tip_result =
-        gm_git_repository_port_reference_tip(repo_port, ref_name, &tip);
+        gm_git_repository_port_reference_tip(repo_port, ref_to_query, &tip);
     int tip_rc = hook_result_to_code(tip_result, GM_ERR_NOT_FOUND);
     if (tip_rc != GM_OK || !tip.has_target) {
         *is_merge = false;

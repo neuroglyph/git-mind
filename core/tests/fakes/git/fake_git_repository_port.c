@@ -555,16 +555,20 @@ static gm_result_void_t fake_build_tree(void *self, const char *dir_path,
         return fake->tree_result;
     }
 
-    if (out_tree_oid != NULL) {
-        if (fake->next_tree_oid.id[0] == 0) {
-            fake->counter += 1U;
-            memset(out_tree_oid, 0, sizeof(*out_tree_oid));
-            out_tree_oid->id[0] = (unsigned char)(fake->counter & 0xFFU);
-            fake->next_tree_oid = *out_tree_oid;
-        } else {
-            *out_tree_oid = fake->next_tree_oid;
-        }
+    if (out_tree_oid == NULL) {
+        return gm_ok_void();
     }
+
+    if (fake->next_tree_oid.id[0] != 0U) {
+        *out_tree_oid = fake->next_tree_oid;
+        gm_memset_safe(&fake->next_tree_oid, sizeof(fake->next_tree_oid), 0,
+                       sizeof(fake->next_tree_oid));
+        return gm_ok_void();
+    }
+
+    fake->counter += 1U;
+    gm_memset_safe(out_tree_oid, sizeof(*out_tree_oid), 0, sizeof(*out_tree_oid));
+    out_tree_oid->id[0] = (unsigned char)(fake->counter & 0xFFU);
 
     return gm_ok_void();
 }
@@ -713,16 +717,22 @@ static gm_result_void_t fake_commit_create(void *self,
         }
     }
 
-    if (out_commit_oid != NULL) {
-        if (fake->next_commit_oid.id[0] == 0) {
-            fake->counter += 1U;
-            memset(out_commit_oid, 0, sizeof(*out_commit_oid));
-            out_commit_oid->id[0] = (unsigned char)((fake->counter >> 1U) & 0xFFU);
-            fake->next_commit_oid = *out_commit_oid;
-        } else {
-            *out_commit_oid = fake->next_commit_oid;
-        }
+    if (out_commit_oid == NULL) {
+        return gm_ok_void();
     }
+
+    if (fake->next_commit_oid.id[0] != 0U) {
+        *out_commit_oid = fake->next_commit_oid;
+        gm_memset_safe(&fake->next_commit_oid, sizeof(fake->next_commit_oid), 0,
+                       sizeof(fake->next_commit_oid));
+        return gm_ok_void();
+    }
+
+    fake->counter += 1U;
+    gm_memset_safe(out_commit_oid, sizeof(*out_commit_oid), 0,
+                   sizeof(*out_commit_oid));
+    out_commit_oid->id[0] =
+        (unsigned char)((fake->counter >> 1U) & 0xFFU);
 
     return gm_ok_void();
 }

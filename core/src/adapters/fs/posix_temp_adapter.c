@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
+#define _GNU_SOURCE
+
 #include "gitmind/adapters/fs/posix_temp_adapter.h"
 
 #include <dirent.h>
@@ -22,8 +24,6 @@
 #include "gitmind/security/string.h"
 #include "gitmind/types.h"
 #include "gitmind/util/memory.h"
-
-extern char *realpath(const char *restrict path, char *restrict resolved_path);
 
 struct gm_posix_fs_state {
     char scratch[GM_PATH_MAX];

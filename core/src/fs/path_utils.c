@@ -3,12 +3,37 @@
 
 #include "gitmind/fs/path_utils.h"
 
+#include <stdbool.h>
 #include <string.h>
 
 #include "gitmind/error.h"
 #include "gitmind/result.h"
 #include "gitmind/types.h"
+#include "gitmind/security/memory.h"
 #include "gitmind/util/memory.h"
+
+static size_t trim_trailing_slashes(char *path) {
+    size_t len = strlen(path);
+    while (len > 1 && path[len - 1] == '/') {
+        path[--len] = '\0';
+    }
+    return len;
+}
+
+static size_t find_last_separator(const char *path) {
+    size_t len = strlen(path);
+    while (len > 0) {
+        if (path[len - 1] == '/') {
+            return len - 1U;
+        }
+        --len;
+    }
+    return SIZE_MAX;
+}
+
+static bool needs_path_separator(const char *base_io, size_t base_len) {
+    return base_len > 0 && base_io[base_len - 1] != '/';
+}
 
 GM_NODISCARD gm_result_void_t gm_fs_path_normalize_logical(const char *input,
                                                            char *output,
@@ -86,7 +111,6 @@ GM_NODISCARD gm_result_void_t gm_fs_path_normalize_logical(const char *input,
             return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
                                         "normalized path exceeds buffer"));
         }
-        // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
         if (gm_memcpy_span(output + dst, output_size - dst, segment, seg_len) != 0) {
             return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
                                         "normalized path exceeds buffer"));
@@ -108,7 +132,6 @@ GM_NODISCARD gm_result_void_t gm_fs_path_normalize_logical(const char *input,
     return gm_ok_void();
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 GM_NODISCARD gm_result_void_t gm_fs_path_dirname(const char *input,
                                                 char *output,
                                                 size_t output_size) {
@@ -120,56 +143,67 @@ GM_NODISCARD gm_result_void_t gm_fs_path_dirname(const char *input,
     char normalized[GM_PATH_MAX];
     GM_TRY(gm_fs_path_normalize_logical(input, normalized, sizeof(normalized)));
 
-    size_t len = strlen(normalized);
-    if (len == 0) {
-        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
-                                    "dirname requires non-empty path"));
-    }
-
-    size_t end = len;
-    while (end > 1 && normalized[end - 1] == '/') {
-        normalized[--end] = '\0';
-    }
+    trim_trailing_slashes(normalized);
 
     if (strcmp(normalized, ".") == 0) {
         if (gm_strcpy_safe(output, output_size, ".") != 0) {
+            gm_memset_safe(output, output_size, 0, output_size);
             return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
                                         "dirname output exceeds buffer"));
         }
         return gm_ok_void();
     }
 
-    size_t idx = end;
-    while (idx > 0 && normalized[idx - 1] != '/') {
-        idx--;
-    }
-
-    if (idx == 0) {
-        if (gm_strcpy_safe(output, output_size, ".") != 0) {
+    if (strcmp(normalized, "/") == 0) {
+        if (gm_strcpy_safe(output, output_size, "/") != 0) {
+            gm_memset_safe(output, output_size, 0, output_size);
             return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
                                         "dirname output exceeds buffer"));
         }
         return gm_ok_void();
     }
 
-    size_t out_len = idx;
-    if (out_len >= output_size) {
+    size_t slash_index = find_last_separator(normalized);
+    const char *result_str = normalized;
+    size_t result_len = 0U;
+
+    if (slash_index == SIZE_MAX) {
+        result_str = ".";
+        result_len = 1U;
+    } else if (slash_index == 0U) {
+        result_str = "/";
+        result_len = 1U;
+    } else {
+        result_len = slash_index;
+    }
+
+    if (result_str != normalized) {
+        if (gm_strcpy_safe(output, output_size, result_str) != 0) {
+            gm_memset_safe(output, output_size, 0, output_size);
+            return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
+                                        "dirname output exceeds buffer"));
+        }
+        return gm_ok_void();
+    }
+
+    if (result_len >= output_size) {
+        gm_memset_safe(output, output_size, 0, output_size);
         return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
                                     "dirname output exceeds buffer"));
     }
 
-    if (gm_memcpy_span(output, output_size, normalized, out_len) != 0) {
+    if (gm_memcpy_span(output, output_size, normalized, result_len) != 0) {
+        gm_memset_safe(output, output_size, 0, output_size);
         return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
                                     "dirname output exceeds buffer"));
     }
-    if (out_len > 1 && output[out_len - 1] == '/') {
-        out_len--;
+    if (result_len > 1U && output[result_len - 1U] == '/') {
+        result_len -= 1U;
     }
-    output[out_len] = '\0';
+    output[result_len] = '\0';
     return gm_ok_void();
 }
 
-// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 GM_NODISCARD gm_result_void_t gm_fs_path_basename_append(char *base_io,
                                                          size_t buffer_size,
                                                          size_t *inout_len,
@@ -194,27 +228,37 @@ GM_NODISCARD gm_result_void_t gm_fs_path_basename_append(char *base_io,
     }
 
     size_t base_len = *inout_len;
-    if (base_len > 0 && base_io[base_len - 1] != '/') {
-        if (base_len + 1 >= buffer_size) {
-            return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
-                                        "basename append exceeds buffer"));
-        }
-        base_io[base_len++] = '/';
+    if (base_len > buffer_size) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "basename append length exceeds buffer"));
     }
 
+    const bool need_sep = needs_path_separator(base_io, base_len);
+    const size_t separator_len = need_sep ? 1U : 0U;
     size_t leaf_len = strlen(leaf);
-    if (base_len + leaf_len >= buffer_size) {
+    const size_t required = base_len + separator_len + leaf_len;
+
+    if (required >= buffer_size ||
+        leaf_len > buffer_size - base_len - separator_len - 1U) {
+        gm_memset_safe(base_io, buffer_size, 0, buffer_size);
+        *inout_len = 0U;
         return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
                                     "basename append exceeds buffer"));
     }
 
-    if (gm_memcpy_span(base_io + base_len, buffer_size - base_len, leaf,
-                       leaf_len) != 0) {
+    size_t cursor = base_len;
+    if (need_sep) {
+        base_io[cursor++] = '/';
+    }
+    if (gm_memcpy_span(base_io + cursor, buffer_size - cursor, leaf, leaf_len) !=
+        0) {
+        gm_memset_safe(base_io, buffer_size, 0, buffer_size);
+        *inout_len = 0U;
         return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
                                     "basename append exceeds buffer"));
     }
-    base_len += leaf_len;
-    base_io[base_len] = '\0';
-    *inout_len = base_len;
+    cursor += leaf_len;
+    base_io[cursor] = '\0';
+    *inout_len = cursor;
     return gm_ok_void();
 }

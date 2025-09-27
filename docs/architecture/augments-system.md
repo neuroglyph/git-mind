@@ -8,6 +8,9 @@ status: draft
 last_updated: 2025-09-27
 ---
 
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
+<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+
 # AUGMENTS System Architecture
 
 Table of Contents

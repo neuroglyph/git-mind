@@ -430,6 +430,11 @@ See archives under `docs/activity/` for older logs.
 - Next up: finish scouring CLI + bench utilities for direct libgit2 calls, port them behind adapters, and keep clang-tidy quiet while we prep the PR.
 - Lesson logged: mirroring libgit2 semantics meant storing commit sequences per ref; keeping messages alongside the OIDs made the reader decode deterministic again.
 - Cap’n memo: espresso's on deck—once edge jumps ports, we raid the galley for celebratory biscotti.
+- Filesystem tidy sweep: replaced the lingering raw `memset` calls in `gm_fs_path_dirname`/`gm_fs_path_basename_append` with `gm_memset_safe`, added the explicit `separator_len` so the bool math stops tripping clang-tidy, and pulled in the security header for the helper prototypes.
+- POSIX temp adapter now defines `_GNU_SOURCE` up front and trusts glibc's `realpath`; the redundant extern declaration is gone, keeping include-cleaner + tidy happy.
+- Immediate next move: rerun `make ci-local` once these filesystem fixes settle, then chase the remaining bool-to-int clang-tidy nits in the staged benchmark + fake git port files before we go PR hunting.
+- Lesson logged: tidy catches implicit bool arithmetic fast—introducing small helper variables beats sprinkling casts and keeps the intent readable for future hex refactors.
+- Message in a bottle: future Cap’n, there’s cocoa in the galley—sip it while you double-check the tidy report before raising the PR flag.
 
 ## Next Steps (handoff checklist)
 - Complete on-disk cache migration to OID-only storage and naming; ensure rebuild and fallback readers handle both formats or gate with a one-time migration.

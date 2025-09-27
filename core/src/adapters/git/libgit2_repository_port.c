@@ -593,62 +593,109 @@ static gm_result_void_t commit_parent_count_impl(
     return gm_ok_void();
 }
 
-/* NOLINTNEXTLINE(misc-no-recursion) */
-static gm_result_void_t tree_size_recursive(git_repository *repo,
-                                            const git_oid *tree_oid,
-                                            uint64_t *total_size) {
-    git_tree *tree = NULL;
-    if (git_tree_lookup(&tree, repo, tree_oid) != 0) {
-        return gm_err_void(
-            GM_ERROR(GM_ERR_UNKNOWN, "unable to lookup tree while sizing"));
+typedef struct gm_tree_stack_item {
+    git_oid oid;
+} gm_tree_stack_item_t;
+
+static gm_result_void_t tree_stack_push(gm_tree_stack_item_t **items,
+                                        size_t *count, size_t *capacity,
+                                        const git_oid *oid) {
+    if (*count == *capacity) {
+        size_t new_capacity = (*capacity == 0U) ? 8U : (*capacity * 2U);
+        gm_tree_stack_item_t *resized =
+            (gm_tree_stack_item_t *)realloc(*items,
+                                            new_capacity * sizeof(**items));
+        if (resized == NULL) {
+            return gm_err_void(
+                GM_ERROR(GM_ERR_OUT_OF_MEMORY, "tree stack allocation failed"));
+        }
+        *items = resized;
+        *capacity = new_capacity;
     }
 
-    git_odb *odb = NULL;
-    if (git_repository_odb(&odb, repo) == 0) {
-        size_t tree_size = 0;
-        git_object_t tree_type = GIT_OBJECT_INVALID;
-        if (git_odb_read_header(&tree_size, &tree_type, odb, tree_oid) == 0) {
-            *total_size += tree_size;
-        }
-        git_odb_free(odb);
-    }
-
-    size_t entry_count = git_tree_entrycount(tree);
-    for (size_t idx = 0; idx < entry_count; ++idx) {
-        const git_tree_entry *entry = git_tree_entry_byindex(tree, idx);
-        if (entry == NULL) {
-            continue;
-        }
-
-        const git_oid *entry_oid = git_tree_entry_id(entry);
-        git_filemode_t mode = git_tree_entry_filemode(entry);
-
-        if (mode == GIT_FILEMODE_TREE) {
-            gm_result_void_t sub_result =
-                tree_size_recursive(repo, entry_oid, total_size);
-            if (!sub_result.ok) {
-                git_tree_free(tree);
-                return sub_result;
-            }
-            continue;
-        }
-
-        if (mode == GIT_FILEMODE_BLOB) {
-            git_odb *blob_odb = NULL;
-            if (git_repository_odb(&blob_odb, repo) == 0) {
-                size_t blob_size = 0;
-                git_object_t blob_type = GIT_OBJECT_INVALID;
-                if (git_odb_read_header(&blob_size, &blob_type, blob_odb,
-                                        entry_oid) == 0) {
-                    *total_size += blob_size;
-                }
-                git_odb_free(blob_odb);
-            }
-        }
-    }
-
-    git_tree_free(tree);
+    (*items)[*count].oid = *oid;
+    *count += 1U;
     return gm_ok_void();
+}
+
+static gm_result_void_t tree_size_iterative(git_repository *repo,
+                                            const git_oid *root_oid,
+                                            uint64_t *total_size) {
+    gm_tree_stack_item_t *stack = NULL;
+    size_t stack_count = 0U;
+    size_t stack_capacity = 0U;
+
+    gm_result_void_t push_result =
+        tree_stack_push(&stack, &stack_count, &stack_capacity, root_oid);
+    if (!push_result.ok) {
+        return push_result;
+    }
+
+    gm_result_void_t result = gm_ok_void();
+
+    while (stack_count > 0U) {
+        git_oid current = stack[--stack_count].oid;
+
+        git_tree *tree = NULL;
+        if (git_tree_lookup(&tree, repo, &current) != 0) {
+            result = gm_err_void(
+                GM_ERROR(GM_ERR_UNKNOWN, "unable to lookup tree while sizing"));
+            break;
+        }
+
+        git_odb *odb = NULL;
+        if (git_repository_odb(&odb, repo) == 0) {
+            size_t tree_size = 0;
+            git_object_t tree_type = GIT_OBJECT_INVALID;
+            if (git_odb_read_header(&tree_size, &tree_type, odb, &current) == 0) {
+                *total_size += tree_size;
+            }
+            git_odb_free(odb);
+        }
+
+        size_t entry_count = git_tree_entrycount(tree);
+        for (size_t idx = 0; idx < entry_count; ++idx) {
+            const git_tree_entry *entry = git_tree_entry_byindex(tree, idx);
+            if (entry == NULL) {
+                continue;
+            }
+
+            const git_oid *entry_oid = git_tree_entry_id(entry);
+            git_filemode_t mode = git_tree_entry_filemode(entry);
+
+            if (mode == GIT_FILEMODE_TREE) {
+                gm_result_void_t push_tree =
+                    tree_stack_push(&stack, &stack_count, &stack_capacity,
+                                    entry_oid);
+                if (!push_tree.ok) {
+                    result = push_tree;
+                    break;
+                }
+                continue;
+            }
+
+            if (mode == GIT_FILEMODE_BLOB) {
+                git_odb *blob_odb = NULL;
+                if (git_repository_odb(&blob_odb, repo) == 0) {
+                    size_t blob_size = 0;
+                    git_object_t blob_type = GIT_OBJECT_INVALID;
+                    if (git_odb_read_header(&blob_size, &blob_type, blob_odb,
+                                             entry_oid) == 0) {
+                        *total_size += blob_size;
+                    }
+                    git_odb_free(blob_odb);
+                }
+            }
+        }
+
+        git_tree_free(tree);
+        if (!result.ok) {
+            break;
+        }
+    }
+
+    free(stack);
+    return result;
 }
 
 static gm_result_void_t commit_tree_size_impl(
@@ -673,7 +720,7 @@ static gm_result_void_t commit_tree_size_impl(
     }
 
     uint64_t total = 0;
-    gm_result_void_t result = tree_size_recursive(state->repo, tree_oid, &total);
+    gm_result_void_t result = tree_size_iterative(state->repo, tree_oid, &total);
     git_commit_free(commit);
 
     if (!result.ok) {
@@ -700,7 +747,8 @@ static gm_result_void_t commit_walk_impl(gm_libgit2_repository_port_state_t *sta
             GM_ERROR(GM_ERR_UNKNOWN, "unable to allocate revwalk"));
     }
 
-    git_revwalk_sorting(walk, GIT_SORT_TIME);
+    git_revwalk_sorting(walk, GIT_SORT_NONE);
+    git_revwalk_simplify_first_parent(walk);
     if (git_revwalk_push_ref(walk, ref_name) != 0) {
         git_revwalk_free(walk);
         return gm_err_void(
