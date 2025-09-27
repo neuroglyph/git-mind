@@ -1,5 +1,5 @@
 ---
-title: Graph LvL-Up Tank
+title: Graph LvL-Up Tank 🛡️🧠
 description: Crash-course to power-level new contributors into graph-native thinking for git-mind.
 audience: [contributors]
 domain: [learning]

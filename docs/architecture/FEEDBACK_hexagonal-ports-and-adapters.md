@@ -20,7 +20,9 @@ status: draft
 - [core/src/adapters/fs/posix_temp_adapter.h](#coresrcadaptersfsposix_temp_adapterh)
 - [core/src/adapters/fs/posix_temp_adapter.c](#coresrcadaptersfsposix_temp_adapterc)
 
-# **core/include/gitmind/ports/git_object_port.h**
+# Hexagonal Ports And Adapters Feedback
+
+## **core/include/gitmind/ports/git_object_port.h**
 
 ```c
 #ifndef GITMIND_PORTS_GIT_OBJECT_PORT_H
