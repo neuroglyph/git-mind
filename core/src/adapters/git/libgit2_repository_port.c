@@ -572,6 +572,27 @@ static gm_result_void_t resolve_blob_at_commit_impl(
     return gm_ok_void();
 }
 
+static gm_result_void_t commit_parent_count_impl(
+    gm_libgit2_repository_port_state_t *state, const gm_oid_t *commit_oid,
+    size_t *out_parent_count) {
+    if (commit_oid == NULL || out_parent_count == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "parent count requires commit and output"));
+    }
+
+    git_commit *commit = NULL;
+    if (git_commit_lookup(&commit, state->repo, commit_oid) != 0) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "commit not found while counting parents"));
+    }
+
+    const unsigned int parent_total = git_commit_parentcount(commit);
+    git_commit_free(commit);
+
+    *out_parent_count = (size_t)parent_total;
+    return gm_ok_void();
+}
+
 /* NOLINTNEXTLINE(misc-no-recursion) */
 static gm_result_void_t tree_size_recursive(git_repository *repo,
                                             const git_oid *tree_oid,
@@ -916,6 +937,13 @@ static gm_result_void_t resolve_blob_at_commit_bridge(
                                        commit_oid, path, out_blob_oid);
 }
 
+static gm_result_void_t commit_parent_count_bridge(void *self,
+                                                   const gm_oid_t *commit_oid,
+                                                   size_t *out_parent_count) {
+    return commit_parent_count_impl((gm_libgit2_repository_port_state_t *)self,
+                                    commit_oid, out_parent_count);
+}
+
 static const gm_git_repository_port_vtbl_t GM_LIBGIT2_REPOSITORY_PORT_VTBL = {
     .repository_path = repository_path_bridge,
     .head_branch = head_branch_bridge,
@@ -931,6 +959,7 @@ static const gm_git_repository_port_vtbl_t GM_LIBGIT2_REPOSITORY_PORT_VTBL = {
     .reference_update = reference_update_bridge,
     .resolve_blob_at_head = resolve_blob_at_head_bridge,
     .resolve_blob_at_commit = resolve_blob_at_commit_bridge,
+    .commit_parent_count = commit_parent_count_bridge,
 };
 
 static void dispose_repository_port(gm_git_repository_port_t *port) {

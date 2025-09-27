@@ -91,6 +91,9 @@ typedef struct gm_git_repository_port_vtbl {
                                                const gm_oid_t *commit_oid,
                                                const char *path,
                                                gm_oid_t *out_blob_oid);
+    gm_result_void_t (*commit_parent_count)(void *self,
+                                            const gm_oid_t *commit_oid,
+                                            size_t *out_parent_count);
 } gm_git_repository_port_vtbl_t;
 
 GM_NODISCARD static inline gm_result_void_t
@@ -258,6 +261,19 @@ GM_NODISCARD static inline gm_result_void_t
     }
     return port->vtbl->resolve_blob_at_commit(port->self, commit_oid, path,
                                               out_blob_oid);
+}
+
+GM_NODISCARD static inline gm_result_void_t
+    gm_git_repository_port_commit_parent_count(
+        const gm_git_repository_port_t *port, const gm_oid_t *commit_oid,
+        size_t *out_parent_count) {
+    if (port == NULL || port->vtbl == NULL ||
+        port->vtbl->commit_parent_count == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_STATE,
+                                    "git repository port missing commit_parent_count"));
+    }
+    return port->vtbl->commit_parent_count(port->self, commit_oid,
+                                           out_parent_count);
 }
 
 #ifdef __cplusplus

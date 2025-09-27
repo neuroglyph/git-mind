@@ -50,6 +50,9 @@ static gm_result_void_t fake_resolve_blob_at_commit(void *self,
                                                     const gm_oid_t *commit_oid,
                                                     const char *path,
                                                     gm_oid_t *out_blob_oid);
+static gm_result_void_t fake_commit_parent_count(void *self,
+                                                 const gm_oid_t *commit_oid,
+                                                 size_t *out_parent_count);
 
 static gm_result_void_t ensure_ref_entry(gm_fake_git_repository_port_t *fake,
                                          const char *ref_name,
@@ -60,6 +63,9 @@ static const gm_fake_git_ref_entry_t *find_ref_entry_const(
 
 static const gm_fake_git_commit_entry_t *find_commit_entry_const(
     const gm_fake_git_repository_port_t *fake, const gm_oid_t *commit_oid);
+
+static gm_fake_git_commit_entry_t *find_commit_entry(
+    gm_fake_git_repository_port_t *fake, const gm_oid_t *commit_oid);
 
 static const gm_git_repository_port_vtbl_t FAKE_GIT_REPOSITORY_PORT_VTBL = {
     .repository_path = fake_repository_path,
@@ -76,6 +82,7 @@ static const gm_git_repository_port_vtbl_t FAKE_GIT_REPOSITORY_PORT_VTBL = {
     .reference_update = fake_reference_update,
     .resolve_blob_at_head = fake_resolve_blob_at_head,
     .resolve_blob_at_commit = fake_resolve_blob_at_commit,
+    .commit_parent_count = fake_commit_parent_count,
 };
 
 static gm_result_void_t ensure_ref_entry(gm_fake_git_repository_port_t *fake,
@@ -152,6 +159,29 @@ static const gm_fake_git_commit_entry_t *find_commit_entry_const(
              ++commit_idx) {
             const gm_fake_git_commit_entry_t *commit =
                 &entry->commits[commit_idx];
+            if (memcmp(commit->oid.id, commit_oid->id, GM_OID_RAWSZ) == 0) {
+                return commit;
+            }
+        }
+    }
+
+    return NULL;
+}
+
+static gm_fake_git_commit_entry_t *find_commit_entry(
+    gm_fake_git_repository_port_t *fake, const gm_oid_t *commit_oid) {
+    if (fake == NULL || commit_oid == NULL) {
+        return NULL;
+    }
+
+    for (size_t idx = 0; idx < GM_FAKE_GIT_MAX_REF_ENTRIES; ++idx) {
+        gm_fake_git_ref_entry_t *entry = &fake->ref_entries[idx];
+        if (!entry->in_use) {
+            continue;
+        }
+        for (size_t commit_idx = 0; commit_idx < entry->commit_count;
+             ++commit_idx) {
+            gm_fake_git_commit_entry_t *commit = &entry->commits[commit_idx];
             if (memcmp(commit->oid.id, commit_oid->id, GM_OID_RAWSZ) == 0) {
                 return commit;
             }
@@ -258,6 +288,7 @@ gm_result_void_t gm_fake_git_repository_port_add_ref_commit(
         &entry->commits[entry->commit_count];
     gm_memset_safe(commit, sizeof(*commit), 0, sizeof(*commit));
     commit->oid = *commit_oid;
+    commit->parent_count = 0U;
 
     if (message != NULL) {
         if (gm_strcpy_safe(commit->message, sizeof(commit->message), message) !=
@@ -362,6 +393,40 @@ gm_result_void_t gm_fake_git_repository_port_add_commit_blob_mapping(
     slot->commit_oid = *commit_oid;
     slot->has_commit = true;
     slot->in_use = true;
+    return gm_ok_void();
+}
+
+gm_result_void_t gm_fake_git_repository_port_set_commit_parents(
+    gm_fake_git_repository_port_t *fake, const gm_oid_t *commit_oid,
+    const gm_oid_t *parents, size_t parent_count) {
+    if (fake == NULL || commit_oid == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "fake commit parents require inputs"));
+    }
+
+    if (parent_count > GM_FAKE_GIT_MAX_PARENTS) {
+        return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
+                                    "fake commit parent list too large"));
+    }
+
+    gm_fake_git_commit_entry_t *commit = find_commit_entry(fake, commit_oid);
+    if (commit == NULL) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "fake commit missing for parent setup"));
+    }
+
+    commit->parent_count = parent_count;
+    if (parent_count > 0U && parents != NULL) {
+        for (size_t idx = 0; idx < parent_count; ++idx) {
+            commit->parents[idx] = parents[idx];
+        }
+    }
+
+    for (size_t idx = parent_count; idx < GM_FAKE_GIT_MAX_PARENTS; ++idx) {
+        gm_memset_safe(&commit->parents[idx], sizeof(commit->parents[idx]), 0,
+                       sizeof(commit->parents[idx]));
+    }
+
     return gm_ok_void();
 }
 
@@ -706,6 +771,20 @@ static gm_result_void_t fake_resolve_blob_at_head(void *self, const char *path,
                                     "fake blob resolve requires inputs"));
     }
 
+    if (fake->tip.has_target) {
+        for (size_t idx = 0; idx < GM_FAKE_GIT_MAX_BLOB_PATHS; ++idx) {
+            gm_fake_git_blob_entry_t *entry = &fake->blob_entries[idx];
+            if (!entry->in_use || !entry->has_commit) {
+                continue;
+            }
+            if (memcmp(entry->commit_oid.id, fake->tip.oid.id, GM_OID_RAWSZ) == 0 &&
+                strcmp(entry->path, path) == 0) {
+                *out_blob_oid = entry->oid;
+                return gm_ok_void();
+            }
+        }
+    }
+
     for (size_t idx = 0; idx < GM_FAKE_GIT_MAX_BLOB_PATHS; ++idx) {
         gm_fake_git_blob_entry_t *entry = &fake->blob_entries[idx];
         if (!entry->in_use || entry->has_commit) {
@@ -759,4 +838,25 @@ static gm_result_void_t fake_resolve_blob_at_commit(void *self,
 
     return gm_err_void(
         GM_ERROR(GM_ERR_NOT_FOUND, "fake blob mapping missing for %s", path));
+}
+
+static gm_result_void_t fake_commit_parent_count(void *self,
+                                                 const gm_oid_t *commit_oid,
+                                                 size_t *out_parent_count) {
+    gm_fake_git_repository_port_t *fake =
+        (gm_fake_git_repository_port_t *)self;
+    if (fake == NULL || commit_oid == NULL || out_parent_count == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "fake parent count requires inputs"));
+    }
+
+    gm_fake_git_commit_entry_t *commit =
+        find_commit_entry(fake, commit_oid);
+    if (commit == NULL) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "fake commit missing for parent count"));
+    }
+
+    *out_parent_count = commit->parent_count;
+    return gm_ok_void();
 }

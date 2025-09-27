@@ -12,8 +12,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include <git2/types.h>
 #ifdef __cplusplus
 extern "C" {
 // keep C linkage open until end
@@ -83,7 +81,8 @@ int gm_hook_process_changed_file(gm_context_t *ctx,
  * @param is_merge  Output: true if merge commit
  * @return          0 on success, error code otherwise
  */
-int gm_hook_is_merge_commit(git_repository *repo, bool *is_merge);
+int gm_hook_is_merge_commit(const gm_git_repository_port_t *repo_port,
+                            bool *is_merge);
 
 /* Backward-compatibility helpers (deprecated) */
 static inline int get_blob_sha(const gm_git_repository_port_t *repo_port,
@@ -109,8 +108,9 @@ static inline int process_changed_file(gm_context_t *ctx,
     return gm_hook_process_changed_file(ctx, repo_port, file_path);
 }
 
-static inline int is_merge_commit(git_repository *repo, bool *is_merge) {
-    return gm_hook_is_merge_commit(repo, is_merge);
+static inline int is_merge_commit(const gm_git_repository_port_t *repo_port,
+                                  bool *is_merge) {
+    return gm_hook_is_merge_commit(repo_port, is_merge);
 }
 
 /* Preferred aliases */
@@ -140,9 +140,9 @@ static inline int gm_augment_process_changed_file(
     return gm_hook_process_changed_file(ctx, repo_port, file_path);
 }
 
-static inline int gm_augment_is_merge_commit(git_repository *repo,
-                                             bool *is_merge) {
-    return gm_hook_is_merge_commit(repo, is_merge);
+static inline int gm_augment_is_merge_commit(
+    const gm_git_repository_port_t *repo_port, bool *is_merge) {
+    return gm_hook_is_merge_commit(repo_port, is_merge);
 }
 
 #ifdef __cplusplus

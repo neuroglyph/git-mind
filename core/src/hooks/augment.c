@@ -7,14 +7,14 @@
 #include <string.h>
 #include <time.h>
 
-#include <git2/commit.h>
-#include <git2/refs.h>
-#include <git2/repository.h>
+#include <git2/oid.h>
 
+#include "gitmind/constants_internal.h"
 #include "gitmind/error.h"
 #include "gitmind/result.h"
 #include "gitmind/util/memory.h"
 #include "gitmind/util/ref.h"
+#include "gitmind/security/memory.h"
 
 /* Note: replace any private header usage with public equivalents when available. */
 
@@ -292,33 +292,46 @@ int gm_hook_process_changed_file(gm_context_t *ctx,
 }
 
 /* Check if this is a merge commit */
-int gm_hook_is_merge_commit(git_repository *repo, bool *is_merge) {
-    git_reference *head_ref = NULL;
-    git_commit *commit = NULL;
-    int error;
-
-    /* Get HEAD */
-    error = git_repository_head(&head_ref, repo);
-    if (error < 0) {
-        return GM_ERR_UNKNOWN;
+int gm_hook_is_merge_commit(const gm_git_repository_port_t *repo_port,
+                            bool *is_merge) {
+    if (repo_port == NULL || is_merge == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
     }
 
-    /* Get commit */
-    git_oid oid;
-    error = git_reference_name_to_id(&oid, repo, "HEAD");
-    git_reference_free(head_ref);
-    if (error < 0) {
-        return GM_ERR_UNKNOWN;
+    char branch[BUFFER_SIZE_SMALL];
+    gm_result_void_t branch_result =
+        gm_git_repository_port_head_branch(repo_port, branch, sizeof(branch));
+    int branch_rc = hook_result_to_code(branch_result, GM_ERR_NOT_FOUND);
+    if (branch_rc != GM_OK) {
+        return branch_rc;
     }
 
-    error = git_commit_lookup(&commit, repo, &oid);
-    if (error < 0) {
-        return GM_ERR_UNKNOWN;
+    char ref_name[REF_NAME_BUFFER_SIZE];
+    int ref_rc =
+        gm_build_ref(ref_name, sizeof(ref_name), REFS_HEADS_PREFIX, branch);
+    if (ref_rc != GM_OK) {
+        return ref_rc;
     }
 
-    /* Check parent count */
-    *is_merge = (git_commit_parentcount(commit) > 1);
+    gm_git_reference_tip_t tip;
+    gm_memset_safe(&tip, sizeof(tip), 0, sizeof(tip));
+    gm_result_void_t tip_result =
+        gm_git_repository_port_reference_tip(repo_port, ref_name, &tip);
+    int tip_rc = hook_result_to_code(tip_result, GM_ERR_NOT_FOUND);
+    if (tip_rc != GM_OK || !tip.has_target) {
+        *is_merge = false;
+        return tip_rc;
+    }
 
-    git_commit_free(commit);
+    size_t parent_total = 0U;
+    gm_result_void_t parent_result = gm_git_repository_port_commit_parent_count(
+        repo_port, &tip.oid, &parent_total);
+    int parent_rc = hook_result_to_code(parent_result, GM_ERR_UNKNOWN);
+    if (parent_rc != GM_OK) {
+        *is_merge = false;
+        return parent_rc;
+    }
+
+    *is_merge = (parent_total > 1U);
     return GM_OK;
 }

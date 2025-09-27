@@ -126,9 +126,10 @@ static int initialize_repository(git_repository **repo, int verbose) {
 }
 
 /* Check if we should process this commit */
-static int should_process_commit(git_repository *repo, int verbose) {
+static int should_process_commit(const gm_git_repository_port_t *repo_port,
+                                 int verbose) {
     bool is_merge = false;
-    int error = is_merge_commit(repo, &is_merge);
+    int error = is_merge_commit(repo_port, &is_merge);
 
     if (error != GM_OK || is_merge) {
         if (verbose && is_merge) {
@@ -189,8 +190,28 @@ int main(int argc, char **argv) {
         return 0; /* Don't fail the commit */
     }
 
+    /* Initialize context */
+    gm_memset_safe(&ctx, sizeof(ctx), 0, sizeof(ctx));
+    void (*repo_port_dispose)(gm_git_repository_port_t *) = NULL;
+    gm_result_void_t port_result =
+        gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,
+                                          &repo_port_dispose, repo);
+    if (!port_result.ok) {
+        if (port_result.u.err != NULL) {
+            gm_error_free(port_result.u.err);
+        }
+        git_repository_free(repo);
+        git_libgit2_shutdown();
+        return 0;
+    }
+    ctx.git_repo_port_dispose = repo_port_dispose;
+
     /* Check if we should process this commit */
-    if (!should_process_commit(repo, verbose)) {
+    if (!should_process_commit(&ctx.git_repo_port, verbose)) {
+        if (ctx.git_repo_port_dispose != NULL) {
+            ctx.git_repo_port_dispose(&ctx.git_repo_port);
+            ctx.git_repo_port_dispose = NULL;
+        }
         git_repository_free(repo);
         git_libgit2_shutdown();
         return 0;
@@ -202,6 +223,10 @@ int main(int argc, char **argv) {
         if (verbose) {
             fprintf(stderr, "Failed to get changed files\n");
         }
+        if (ctx.git_repo_port_dispose != NULL) {
+            ctx.git_repo_port_dispose(&ctx.git_repo_port);
+            ctx.git_repo_port_dispose = NULL;
+        }
         git_repository_free(repo);
         git_libgit2_shutdown();
         return 0;
@@ -209,34 +234,16 @@ int main(int argc, char **argv) {
 
     /* Process files if not too many */
     if (file_count <= MAX_CHANGED_FILES) {
-        /* Initialize context */
-        gm_memset_safe(&ctx, sizeof(ctx), 0, sizeof(ctx));
-        void (*repo_port_dispose)(gm_git_repository_port_t *) = NULL;
-        gm_result_void_t port_result =
-            gm_libgit2_repository_port_create(&ctx.git_repo_port,
-                                              NULL,
-                                              &repo_port_dispose, repo);
-        if (!port_result.ok) {
-            if (port_result.u.err != NULL) {
-                gm_error_free(port_result.u.err);
-            }
-            free_changed_files(changed_files, file_count);
-            git_repository_free(repo);
-            git_libgit2_shutdown();
-            return 0;
-        }
-        ctx.git_repo_port_dispose = repo_port_dispose;
-
         process_all_files(&ctx, &ctx.git_repo_port, changed_files, file_count,
                           verbose);
-
-        if (ctx.git_repo_port_dispose != NULL) {
-            ctx.git_repo_port_dispose(&ctx.git_repo_port);
-            ctx.git_repo_port_dispose = NULL;
-        }
     } else if (verbose) {
         printf("Skipping: %zu files changed (max %d)\n", file_count,
                MAX_CHANGED_FILES);
+    }
+
+    if (ctx.git_repo_port_dispose != NULL) {
+        ctx.git_repo_port_dispose(&ctx.git_repo_port);
+        ctx.git_repo_port_dispose = NULL;
     }
 
     /* Cleanup */

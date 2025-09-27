@@ -13,11 +13,14 @@ extern "C" {
 #define GM_FAKE_GIT_MAX_REF_ENTRIES 8U
 #define GM_FAKE_GIT_MAX_COMMITS_PER_REF 16U
 #define GM_FAKE_GIT_MAX_BLOB_PATHS 32U
+#define GM_FAKE_GIT_MAX_PARENTS 4U
 
 typedef struct gm_fake_git_commit_entry {
     gm_oid_t oid;
     char message[GM_FORMAT_BUFFER_SIZE];
     bool has_message;
+    size_t parent_count;
+    gm_oid_t parents[GM_FAKE_GIT_MAX_PARENTS];
 } gm_fake_git_commit_entry_t;
 
 typedef struct gm_fake_git_ref_entry {
@@ -84,6 +87,10 @@ GM_NODISCARD gm_result_void_t gm_fake_git_repository_port_add_blob_mapping(
 GM_NODISCARD gm_result_void_t gm_fake_git_repository_port_add_commit_blob_mapping(
     gm_fake_git_repository_port_t *fake, const gm_oid_t *commit_oid,
     const char *path, const gm_oid_t *blob_oid);
+
+GM_NODISCARD gm_result_void_t gm_fake_git_repository_port_set_commit_parents(
+    gm_fake_git_repository_port_t *fake, const gm_oid_t *commit_oid,
+    const gm_oid_t *parents, size_t parent_count);
 
 void gm_fake_git_repository_port_set_next_tree(
     gm_fake_git_repository_port_t *fake, const gm_oid_t *oid,
