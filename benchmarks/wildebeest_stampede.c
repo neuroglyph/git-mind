@@ -116,7 +116,7 @@ static void run_stampede(git_repository *repo, const char *branch,
     clock_t start = clock();
 
     gm_cache_result_t scan_result = {0};
-    gm_cache_query_fanout(repo, branch, mufasa_sha, &scan_result);
+    gm_cache_query_fanout(&ctx, branch, mufasa_sha, &scan_result);
 
     clock_t end = clock();
     result->journal_scan_ms = ((double)(end - start) / CLOCKS_PER_SEC) * 1000;
@@ -135,7 +135,7 @@ static void run_stampede(git_repository *repo, const char *branch,
     start = clock();
 
     gm_cache_result_t cache_result = {0};
-    gm_cache_query_fanout(repo, branch, mufasa_sha, &cache_result);
+    gm_cache_query_fanout(&ctx, branch, mufasa_sha, &cache_result);
 
     end = clock();
     result->cache_query_ms = ((double)(end - start) / CLOCKS_PER_SEC) * 1000;
