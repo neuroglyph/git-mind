@@ -140,7 +140,8 @@ static int should_process_commit(git_repository *repo, int verbose) {
 }
 
 /* Process all changed files */
-static void process_all_files(gm_context_t *ctx, git_repository *repo,
+static void process_all_files(gm_context_t *ctx,
+                              const gm_git_repository_port_t *repo_port,
                               char **changed_files, size_t file_count,
                               int verbose) {
     for (size_t i = 0; i < file_count; i++) {
@@ -148,7 +149,7 @@ static void process_all_files(gm_context_t *ctx, git_repository *repo,
             printf("Processing: %s\n", changed_files[i]);
         }
 
-        int error = process_changed_file(ctx, repo, changed_files[i]);
+        int error = process_changed_file(ctx, repo_port, changed_files[i]);
         if (error != GM_OK && verbose) {
             fprintf(stderr, "Failed to process %s: %d\n", changed_files[i],
                     error);
@@ -226,7 +227,8 @@ int main(int argc, char **argv) {
         }
         ctx.git_repo_port_dispose = repo_port_dispose;
 
-        process_all_files(&ctx, repo, changed_files, file_count, verbose);
+        process_all_files(&ctx, &ctx.git_repo_port, changed_files, file_count,
+                          verbose);
 
         if (ctx.git_repo_port_dispose != NULL) {
             ctx.git_repo_port_dispose(&ctx.git_repo_port);

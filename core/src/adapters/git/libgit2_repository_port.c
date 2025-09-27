@@ -537,6 +537,41 @@ static gm_result_void_t resolve_blob_at_head_impl(
     return gm_ok_void();
 }
 
+static gm_result_void_t resolve_blob_at_commit_impl(
+    gm_libgit2_repository_port_state_t *state, const gm_oid_t *commit_oid,
+    const char *path, gm_oid_t *out_blob_oid) {
+    if (commit_oid == NULL || path == NULL || out_blob_oid == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "blob resolve requires commit, path, output"));
+    }
+
+    git_commit *commit = NULL;
+    git_tree *tree = NULL;
+    git_tree_entry *entry = NULL;
+    gm_result_void_t lookup_result =
+        open_blob_entry(state, commit_oid, path, &commit, &tree, &entry);
+    if (!lookup_result.ok) {
+        return lookup_result;
+    }
+
+    const git_oid *blob_oid = git_tree_entry_id(entry);
+    if (blob_oid == NULL) {
+        git_tree_entry_free(entry);
+        git_tree_free(tree);
+        git_commit_free(commit);
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "blob entry missing for %s", path));
+    }
+
+    *out_blob_oid = *blob_oid;
+
+    git_tree_entry_free(entry);
+    git_tree_free(tree);
+    git_commit_free(commit);
+
+    return gm_ok_void();
+}
+
 /* NOLINTNEXTLINE(misc-no-recursion) */
 static gm_result_void_t tree_size_recursive(git_repository *repo,
                                             const git_oid *tree_oid,
@@ -874,6 +909,13 @@ static gm_result_void_t resolve_blob_at_head_bridge(void *self, const char *path
                                      path, out_blob_oid);
 }
 
+static gm_result_void_t resolve_blob_at_commit_bridge(
+    void *self, const gm_oid_t *commit_oid, const char *path,
+    gm_oid_t *out_blob_oid) {
+    return resolve_blob_at_commit_impl((gm_libgit2_repository_port_state_t *)self,
+                                       commit_oid, path, out_blob_oid);
+}
+
 static const gm_git_repository_port_vtbl_t GM_LIBGIT2_REPOSITORY_PORT_VTBL = {
     .repository_path = repository_path_bridge,
     .head_branch = head_branch_bridge,
@@ -888,6 +930,7 @@ static const gm_git_repository_port_vtbl_t GM_LIBGIT2_REPOSITORY_PORT_VTBL = {
     .commit_create = commit_create_bridge,
     .reference_update = reference_update_bridge,
     .resolve_blob_at_head = resolve_blob_at_head_bridge,
+    .resolve_blob_at_commit = resolve_blob_at_commit_bridge,
 };
 
 static void dispose_repository_port(gm_git_repository_port_t *port) {

@@ -30,6 +30,8 @@ typedef struct gm_fake_git_ref_entry {
 typedef struct gm_fake_git_blob_entry {
     char path[GM_PATH_MAX];
     gm_oid_t oid;
+    gm_oid_t commit_oid;
+    bool has_commit;
     bool in_use;
 } gm_fake_git_blob_entry_t;
 
@@ -78,6 +80,10 @@ void gm_fake_git_repository_port_clear_blob_mappings(
 GM_NODISCARD gm_result_void_t gm_fake_git_repository_port_add_blob_mapping(
     gm_fake_git_repository_port_t *fake, const char *path,
     const gm_oid_t *blob_oid);
+
+GM_NODISCARD gm_result_void_t gm_fake_git_repository_port_add_commit_blob_mapping(
+    gm_fake_git_repository_port_t *fake, const gm_oid_t *commit_oid,
+    const char *path, const gm_oid_t *blob_oid);
 
 void gm_fake_git_repository_port_set_next_tree(
     gm_fake_git_repository_port_t *fake, const gm_oid_t *oid,

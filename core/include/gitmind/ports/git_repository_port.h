@@ -87,6 +87,10 @@ typedef struct gm_git_repository_port_vtbl {
                                          const gm_git_reference_update_spec_t *spec);
     gm_result_void_t (*resolve_blob_at_head)(void *self, const char *path,
                                              gm_oid_t *out_blob_oid);
+    gm_result_void_t (*resolve_blob_at_commit)(void *self,
+                                               const gm_oid_t *commit_oid,
+                                               const char *path,
+                                               gm_oid_t *out_blob_oid);
 } gm_git_repository_port_vtbl_t;
 
 GM_NODISCARD static inline gm_result_void_t
@@ -241,6 +245,19 @@ GM_NODISCARD static inline gm_result_void_t
                                     "git repository port missing resolve_blob_at_head"));
     }
     return port->vtbl->resolve_blob_at_head(port->self, path, out_blob_oid);
+}
+
+GM_NODISCARD static inline gm_result_void_t
+    gm_git_repository_port_resolve_blob_at_commit(
+        const gm_git_repository_port_t *port, const gm_oid_t *commit_oid,
+        const char *path, gm_oid_t *out_blob_oid) {
+    if (port == NULL || port->vtbl == NULL ||
+        port->vtbl->resolve_blob_at_commit == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_STATE,
+                                    "git repository port missing resolve_blob_at_commit"));
+    }
+    return port->vtbl->resolve_blob_at_commit(port->self, commit_oid, path,
+                                              out_blob_oid);
 }
 
 #ifdef __cplusplus

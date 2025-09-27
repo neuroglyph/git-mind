@@ -422,7 +422,9 @@ See archives under `docs/activity/` for older logs.
 - Fake git repository port now provides head branch lookup, per-ref commit walks, and commit-message reads via new helpers—tests can enqueue histories instead of skipping those seams.
 - Edge creation (basic + attributed) now resolves blob identities through `gm_git_repository_port`; goodbye `ctx->git_repo`/`git_ops` shims. Legacy SHA arrays are populated from the returned OIDs so the transitional fields stay intact.
 - Post-commit hook now builds a libgit2-backed `gm_git_repository_port` instead of poking `ctx->git_repo`; journal helpers lean solely on ports and clean up the adapter after processing.
-- Hook journey note: fake git port fuels the edge tests; next stop is migrating augment helpers to the same seam so no code depends on raw libgit2 lookups.
+- Hook journey note: fake git port fuels the edge tests; with augment helpers on the seam, the remaining hook work is porting merge detection and retiring the legacy `git_ops` shim.
+- Augment helpers now resolve HEAD/parent blob OIDs through the repository port (new `resolve_blob_at_commit` seam), and the fake git adapter learned commit-scoped blob mapping so tests can assert hook behavior without libgit2.
+- Architecture doc updated (`docs/architecture/augments-system.md`) with the post-commit ➜ repository-port wiring so future hooks keep the seam intact.
 - Next up (today, not tomorrow): hook the journal/cache tests to the upgraded fake, rerun clang-tidy to capture the delta, and start peeling edge modules off `ctx->git_repo`.
 - Lesson logged: mirroring libgit2 semantics meant storing commit sequences per ref; keeping messages alongside the OIDs made the reader decode deterministic again.
 - Cap’n memo: espresso's on deck—once edge jumps ports, we raid the galley for celebratory biscotti.
@@ -435,7 +437,9 @@ See archives under `docs/activity/` for older logs.
 - Stabilize and merge open PRs (#164, #165, #166, #167) after CI green; incorporate CodeRabbit actionable feedback and document any rejections under `docs/code-reviews/rejected-suggestions/`.
 - Add focused tests: journal base64 encode/decode roundtrip, `gm_snprintf` truncation behavior, and OID-based equality/lookup paths in cache and hooks.
 - Silence remaining clang-tidy warnings by fixing short parameter names, pruning redundant includes, and implementing the fake git port’s head/commit-walk seams.
-- Port the augment helpers (`gm_hook_get_blob_sha`, etc.) to consume `gm_git_repository_port_resolve_blob_at_head` so hooks never touch raw libgit2.
+- Finish the hook migration: port `gm_hook_is_merge_commit` + any remaining augment helpers to the repository port and delete `ctx->git_ops`/`ctx->git_repo`.
+- Add unit coverage for the commit-aware fake git port (hook augment tests) to lock in the new blob-resolution paths.
+- Sweep docs for hook references that still mention raw libgit2 usage and point them at the port-based workflow.
 - Sweep for any lingering `ctx->git_repo` or `ctx->git_ops` references and delete the legacy struct once nothing depends on it.
 - Document the new port usage in `docs/architecture/hooks` (or add a note if missing) so future migrations follow the same pattern.
 

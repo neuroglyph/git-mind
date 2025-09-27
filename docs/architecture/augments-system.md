@@ -5,7 +5,7 @@ audience: [developers]
 domain: [architecture]
 tags: [augments, hooks]
 status: draft
-last_updated: 2025-09-15
+last_updated: 2025-09-27
 ---
 
 # AUGMENTS System Architecture
@@ -47,7 +47,8 @@ graph LR
 ```mermaid
 sequenceDiagram
     participant Dev as Developer
-    participant Git as Git
+    participant RepoPort as gm_git_repository_port
+    participant Git as Git (libgit2)
     participant Hook as Post-Commit Hook
     participant GM as git-mind
     
@@ -58,8 +59,12 @@ sequenceDiagram
     Git-->>Hook: README.md, src/main.c
     
     loop For each changed file
-        Hook->>Git: Get old blob SHA (HEAD~1:file)
-        Hook->>Git: Get new blob SHA (HEAD:file)
+    Hook->>RepoPort: resolve_blob_at_commit(HEAD~1, file)
+    RepoPort->>Git: Walk ref + lookup blob
+    RepoPort-->>Hook: old blob OID
+    Hook->>RepoPort: resolve_blob_at_head(file)
+    RepoPort->>Git: Resolve HEAD tree entry
+    RepoPort-->>Hook: new blob OID
         Hook->>GM: Find recent edges with old blob
         GM-->>Hook: Found edge with src=old_blob
         Hook->>GM: Create AUGMENTS edge
@@ -70,6 +75,21 @@ sequenceDiagram
 
 ## Detailed Design
 
+### Repository Port Wiring
+
+The post-commit hook no longer talks to libgit2 directly. Instead it requests
+blob identities through the outbound `gm_git_repository_port` seam:
+
+- `gm_git_repository_port_resolve_blob_at_head()` returns the HEAD blob OID for
+  a path without exposing raw libgit2 handles.
+- `gm_git_repository_port_resolve_blob_at_commit()` locates the parent commit
+  via `walk_commits()` and surfaces the same blob safely for HEAD~N queries.
+- The hook processes changed files by passing the injected port through to
+  `gm_hook_process_changed_file()`, which stays pure and test-double friendly.
+
+This keeps the hook in the application layer while infra details live in the
+libgit2 adapter (production) or fake repository port (tests).
+
 ### 1. Post-Commit Hook Flow
 
 ```mermaid
@@ -79,8 +99,8 @@ flowchart TD
     B -->|No| D[Get changed files]
     
     D --> E[For each file]
-    E --> F[Get old blob SHA<br/>git rev-parse HEAD~1:file]
-    F --> G[Get new blob SHA<br/>git rev-parse HEAD:file]
+    E --> F[Get old blob OID<br/>resolve_blob_at_commit(HEAD~1)]
+    F --> G[Get new blob OID<br/>resolve_blob_at_head]
     
     G --> H{Both SHAs exist?}
     H -->|No| I[Skip - new/deleted file]

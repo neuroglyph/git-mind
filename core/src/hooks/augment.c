@@ -3,9 +3,18 @@
 
 #include "gitmind/hooks/augment.h"
 
+#include <ctype.h>
 #include <string.h>
-#include "gitmind/util/memory.h"
 #include <time.h>
+
+#include <git2/commit.h>
+#include <git2/refs.h>
+#include <git2/repository.h>
+
+#include "gitmind/error.h"
+#include "gitmind/result.h"
+#include "gitmind/util/memory.h"
+#include "gitmind/util/ref.h"
 
 /* Note: replace any private header usage with public equivalents when available. */
 
@@ -22,54 +31,129 @@ int gm_journal_read(gm_context_t *ctx, const char *branch,
                     void *userdata);
 int gm_ulid_generate(char *ulid);
 
-/* Get blob SHA for a file at a specific commit */
-int gm_hook_get_blob_sha(git_repository *repo, const char *commit_ref,
-                 const char *file_path, gm_oid_t *sha_out) {
-    git_object *obj = NULL;
-    git_commit *commit = NULL;
-    git_tree *tree = NULL;
-    git_tree_entry *entry = NULL;
-    int error;
+typedef struct {
+    gm_oid_t *storage;
+    size_t capacity;
+    size_t count;
+} hook_commit_collect_ctx_t;
 
-    /* Resolve commit reference */
-    error = git_revparse_single(&obj, repo, commit_ref);
-    if (error < 0) {
-        return GM_ERR_NOT_FOUND;
+static int hook_result_to_code(gm_result_void_t result, int fallback) {
+    if (result.ok) {
+        return GM_OK;
+    }
+    int code = fallback;
+    if (result.u.err != NULL) {
+        code = result.u.err->code;
+        gm_error_free(result.u.err);
+    }
+    return code;
+}
+
+static bool parse_head_offset(const char *commit_ref, size_t *offset_out) {
+    if (commit_ref == NULL || offset_out == NULL) {
+        return false;
+    }
+    if (strcmp(commit_ref, "HEAD") == 0) {
+        *offset_out = 0U;
+        return true;
+    }
+    const char *prefix = "HEAD~";
+    const size_t prefix_len = strlen(prefix);
+    if (strncmp(commit_ref, prefix, prefix_len) != 0) {
+        return false;
+    }
+    const char *cursor = commit_ref + prefix_len;
+    if (*cursor == '\0') {
+        return false;
     }
 
-    /* Get commit from object */
-    error = git_commit_lookup(&commit, repo, git_object_id(obj));
-    git_object_free(obj);
-    if (error < 0) {
-        return GM_ERR_NOT_FOUND;
+    size_t value = 0U;
+    while (*cursor != '\0') {
+        if (!isdigit((unsigned char)*cursor)) {
+            return false;
+        }
+        value = (value * 10U) + (size_t)(*cursor - '0');
+        cursor++;
     }
 
-    /* Get tree from commit */
-    error = git_commit_tree(&tree, commit);
-    git_commit_free(commit);
-    if (error < 0) {
-        return GM_ERR_NOT_FOUND;
+    *offset_out = value;
+    return true;
+}
+
+static int collect_commit_oid(const gm_oid_t *commit_oid, void *userdata) {
+    hook_commit_collect_ctx_t *ctx = (hook_commit_collect_ctx_t *)userdata;
+    if (ctx == NULL || commit_oid == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
     }
-
-    /* Look up file in tree */
-    error = git_tree_entry_bypath(&entry, tree, file_path);
-    git_tree_free(tree);
-    if (error < 0) {
-        return GM_NOT_FOUND;
+    if (ctx->count < ctx->capacity) {
+        ctx->storage[ctx->count] = *commit_oid;
+        ctx->count += 1U;
     }
-
-    /* Ensure it's a blob (not directory/submodule) */
-    if (git_tree_entry_type(entry) != GIT_OBJECT_BLOB) {
-        git_tree_entry_free(entry);
-        return GM_ERR_NOT_FOUND;
-    }
-
-    /* Copy OID */
-    const git_oid *oid = git_tree_entry_id(entry);
-    *sha_out = *oid;
-
-    git_tree_entry_free(entry);
     return GM_OK;
+}
+
+/* Get blob SHA for a file at a specific commit */
+int gm_hook_get_blob_sha(const gm_git_repository_port_t *repo_port,
+                         const char *commit_ref,
+                         const char *file_path, gm_oid_t *sha_out) {
+    if (repo_port == NULL || commit_ref == NULL || file_path == NULL ||
+        sha_out == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+
+    size_t offset = 0U;
+    if (!parse_head_offset(commit_ref, &offset)) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+
+    if (offset == 0U) {
+        gm_result_void_t head_result =
+            gm_git_repository_port_resolve_blob_at_head(repo_port, file_path,
+                                                        sha_out);
+        return hook_result_to_code(head_result, GM_ERR_NOT_FOUND);
+    }
+
+    if (offset >= GM_AUGMENT_LOOKBACK_LIMIT) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+
+    char branch[BUFFER_SIZE_SMALL];
+    gm_result_void_t branch_result =
+        gm_git_repository_port_head_branch(repo_port, branch, sizeof(branch));
+    int branch_rc = hook_result_to_code(branch_result, GM_ERR_NOT_FOUND);
+    if (branch_rc != GM_OK) {
+        return branch_rc;
+    }
+
+    char ref_name[REF_NAME_BUFFER_SIZE];
+    int ref_rc =
+        gm_build_ref(ref_name, sizeof(ref_name), REFS_HEADS_PREFIX, branch);
+    if (ref_rc != GM_OK) {
+        return ref_rc;
+    }
+
+    const size_t required_commits = offset + 1U;
+    gm_oid_t commit_buffer[GM_AUGMENT_LOOKBACK_LIMIT];
+    hook_commit_collect_ctx_t collect_ctx = {
+        .storage = commit_buffer,
+        .capacity = required_commits,
+        .count = 0U,
+    };
+
+    gm_result_void_t walk_result = gm_git_repository_port_walk_commits(
+        repo_port, ref_name, collect_commit_oid, &collect_ctx);
+    int walk_rc = hook_result_to_code(walk_result, GM_ERR_NOT_FOUND);
+    if (walk_rc != GM_OK) {
+        return walk_rc;
+    }
+
+    if (collect_ctx.count <= offset) {
+        return GM_ERR_NOT_FOUND;
+    }
+
+    gm_result_void_t resolve_result = gm_git_repository_port_resolve_blob_at_commit(
+        repo_port, &collect_ctx.storage[offset], file_path, sha_out);
+    return hook_result_to_code(resolve_result, GM_ERR_NOT_FOUND);
 }
 
 /* Callback structure for edge search */
@@ -165,8 +249,9 @@ int gm_hook_create_augments_edge(gm_context_t *ctx, const gm_oid_t *old_oid,
 }
 
 /* Process a single changed file */
-int gm_hook_process_changed_file(gm_context_t *ctx, git_repository *repo,
-                         const char *file_path) {
+int gm_hook_process_changed_file(gm_context_t *ctx,
+                                 const gm_git_repository_port_t *repo_port,
+                                 const char *file_path) {
     gm_oid_t old_oid;
     gm_oid_t new_oid;
     gm_edge_t *edges = NULL;
@@ -174,14 +259,14 @@ int gm_hook_process_changed_file(gm_context_t *ctx, git_repository *repo,
     int error;
 
     /* Get old blob SHA */
-    error = gm_hook_get_blob_sha(repo, "HEAD~1", file_path, &old_oid);
+    error = gm_hook_get_blob_sha(repo_port, "HEAD~1", file_path, &old_oid);
     if (error != GM_OK) {
         /* File might be new, skip */
         return GM_OK;
     }
 
     /* Get new blob SHA */
-    error = gm_hook_get_blob_sha(repo, "HEAD", file_path, &new_oid);
+    error = gm_hook_get_blob_sha(repo_port, "HEAD", file_path, &new_oid);
     if (error != GM_OK) {
         /* File might be deleted, skip */
         return GM_OK;
