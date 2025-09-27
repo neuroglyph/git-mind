@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "gitmind/constants.h"
 #include "gitmind/error.h"
 #include "gitmind/result.h"
 #include "gitmind/security/memory.h"
@@ -674,6 +675,9 @@ static gm_result_void_t fake_walk_commits(void *self, const char *ref_name,
     for (size_t idx = 0; idx < entry->commit_count; ++idx) {
         const gm_fake_git_commit_entry_t *commit = &entry->commits[idx];
         int cb_result = visit_callback(&commit->oid, userdata);
+        if (cb_result == GM_CALLBACK_STOP) {
+            break;
+        }
         if (cb_result != GM_OK) {
             return gm_err_void(
                 GM_ERROR(cb_result, "fake commit walk callback stop"));
