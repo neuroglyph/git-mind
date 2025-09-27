@@ -80,6 +80,7 @@ recent_developments:
 - 2025-09-19 — Cache rebuild now routes through an app-level service (`core/src/app/cache/cache_rebuild_service.c`) so `builder.c` stays a thin adapter and the One-Thing rule holds.
 - 2025-09-19 — All future temp directory work must flow through a platform-aware filesystem/temp-path service (`~/.gitmind/<repo-id>/…` on every OS). Draft the port + adapters next and stop writing ad-hoc dotfiles in tests.
 - 2025-09-19 — In progress: drafting git object/commit ports + fake adapters so cache rebuilds and tests stop reaching into libgit2 directly.
+- 2025-09-27 — When you add a port capability, stub it in the fake immediately; tests stay fast, and tidy stops tattling.
 
 ## Project Structure & Module Organization
 
@@ -413,6 +414,13 @@ Every outbound port ships with: (a) production adapter, (b) deterministic fake u
 
 See archives under `docs/activity/` for older logs.
 
+### 2025-09-27
+- Routed cache metadata, query, and journal flows through `gm_git_repository_port`; reader/writer now use the adapter for head detection, commit walking, message bodies, and ref updates.
+- Added port surface area (head lookup, commit walk/message helpers, parent-aware commit spec) plus libgit2 adapter support to keep hex seams consistent.
+- Current tidy focus: rename the short `s1`…`s5` path segments, trim include lists in the new port headers, and give the fake git port real head/commit-walk stubs so tests exercise the new hooks.
+- Immediate TODOs: 1) clean up header includes/forward declarations flagged by include-cleaner; 2) rename the short parameter names; 3) flesh out fake git port head + walk + message helpers; 4) migrate remaining edge modules off `ctx->git_repo`.
+- Note to future-us (and especially you, Cap’n ☕): once edge joins the port party we can finally delete `git_ops`—tidy will sleep easier, and so will we.
+
 ## Next Steps (handoff checklist)
 - Complete on-disk cache migration to OID-only storage and naming; ensure rebuild and fallback readers handle both formats or gate with a one-time migration.
 - Extend journal CBOR schema to store OIDs explicitly (not only derivable from legacy fields); update reader/writer and consumers.
@@ -420,6 +428,7 @@ See archives under `docs/activity/` for older logs.
 - Expand attributed edge CBOR to include OIDs alongside legacy fields; update cache/journal consumers accordingly.
 - Stabilize and merge open PRs (#164, #165, #166, #167) after CI green; incorporate CodeRabbit actionable feedback and document any rejections under `docs/code-reviews/rejected-suggestions/`.
 - Add focused tests: journal base64 encode/decode roundtrip, `gm_snprintf` truncation behavior, and OID-based equality/lookup paths in cache and hooks.
+- Silence remaining clang-tidy warnings by fixing short parameter names, pruning redundant includes, and implementing the fake git port’s head/commit-walk seams.
 
 ## Vision Snapshot
 
