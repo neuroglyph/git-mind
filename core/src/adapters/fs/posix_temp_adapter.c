@@ -14,7 +14,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-
+#include <fcntl.h>
 #include "gitmind/constants_internal.h"
 #include "gitmind/error.h"
 #include "gitmind/fs/path_utils.h"
@@ -403,35 +403,57 @@ static bool is_dot_entry(const struct dirent *entry) {
            (strcmp(entry->d_name, "..") == 0);
 }
 
+static gm_result_void_t remove_tree_at(int dirfd, const char *name);
+
 static gm_result_void_t remove_tree_impl(const char *path) {
     if (path == NULL) {
         return gm_ok_void();
     }
+    // Open parent directory
+    int dirfd = AT_FDCWD;
+    // For absolute path, just use AT_FDCWD
+    // For relative, this will also work as AT_FDCWD
+    return remove_tree_at(dirfd, path);
+}
 
+static gm_result_void_t remove_tree_at(int dirfd, const char *name) {
     struct stat st = {0};
-    if (stat(path, &st) != 0) {
+    // Use fstatat to check stat info relative to dirfd
+    if (fstatat(dirfd, name, &st, AT_SYMLINK_NOFOLLOW) != 0) {
         if (errno == ENOENT) {
             return gm_ok_void();
         }
-        return errno_to_result("stat", path);
+        return gm_err_void(GM_ERROR(GM_ERR_IO_FAILED,
+                                    "fstatat failed for %s: %s", name,
+                                    strerror(errno)));
     }
 
     if (!S_ISDIR(st.st_mode)) {
-        if (unlink(path) != 0) {
+        // Unlink regular file or symlink or device, etc.
+        if (unlinkat(dirfd, name, 0) != 0) {
             if (errno == ENOENT) {
                 return gm_ok_void();
             }
             return gm_err_void(
-                GM_ERROR(GM_ERR_IO_FAILED, "unlink failed for %s: %s", path,
+                GM_ERROR(GM_ERR_IO_FAILED, "unlinkat failed for %s: %s", name,
                          strerror(errno)));
         }
         return gm_ok_void();
     }
 
-    DIR *dir = opendir(path);
-    if (dir == NULL) {
+    // Open the directory itself
+    int subdirfd = openat(dirfd, name, O_RDONLY | O_DIRECTORY);
+    if (subdirfd < 0) {
         return gm_err_void(
-            GM_ERROR(GM_ERR_IO_FAILED, "opendir failed for %s: %s", path,
+            GM_ERROR(GM_ERR_IO_FAILED, "openat (directory) failed for %s: %s", name,
+                     strerror(errno)));
+    }
+
+    DIR *dir = fdopendir(subdirfd);
+    if (dir == NULL) {
+        close(subdirfd); // Make sure to close the fd
+        return gm_err_void(
+            GM_ERROR(GM_ERR_IO_FAILED, "fdopendir failed for %s: %s", name,
                      strerror(errno)));
     }
 
@@ -441,27 +463,22 @@ static gm_result_void_t remove_tree_impl(const char *path) {
             continue;
         }
 
-        char child[GM_PATH_MAX];
-        if (gm_snprintf(child, sizeof(child), "%s/%s", path, entry->d_name) < 0) {
-            closedir(dir);
-            return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
-                                        "child path exceeded buffer"));
-        }
-
-        gm_result_void_t child_result = remove_tree_impl(child);
+        // Call recursively with subdirfd as dirfd and entry->d_name
+        gm_result_void_t child_result = remove_tree_at(subdirfd, entry->d_name);
         if (!child_result.ok) {
-            closedir(dir);
+            closedir(dir); // This closes subdirfd as well
             return child_result;
         }
     }
 
-    closedir(dir);
-    if (rmdir(path) != 0) {
+    closedir(dir); // This closes subdirfd
+    // Remove the directory itself. Use unlinkat with AT_REMOVEDIR.
+    if (unlinkat(dirfd, name, AT_REMOVEDIR) != 0) {
         if (errno == ENOENT) {
             return gm_ok_void();
         }
         return gm_err_void(
-            GM_ERROR(GM_ERR_IO_FAILED, "rmdir failed for %s: %s", path,
+            GM_ERROR(GM_ERR_IO_FAILED, "unlinkat (rmdir) failed for %s: %s", name,
                      strerror(errno)));
     }
 
@@ -470,11 +487,9 @@ static gm_result_void_t remove_tree_impl(const char *path) {
 
 static gm_result_void_t join_under_base(gm_posix_fs_state_t *state,
                                         gm_fs_base_t base, gm_repo_id_t repo,
-                                        const char *component1,
-                                        const char *component2,
-                                        const char *component3,
-                                        const char *component4,
-                                        const char *component5,
+                                        const char *s1, const char *s2,
+                                        const char *s3, const char *s4,
+                                        const char *s5,
                                         const char **out_abs_path) {
     if (out_abs_path == NULL) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
@@ -494,8 +509,7 @@ static gm_result_void_t join_under_base(gm_posix_fs_state_t *state,
     GM_TRY(format_repo_component(state, repo, repo_component,
                                  sizeof(repo_component)));
 
-    const char *segments[] = {repo_component, component1, component2,
-                              component3, component4, component5};
+    const char *segments[] = {repo_component, s1, s2, s3, s4, s5};
     GM_TRY(join_segments(state->scratch, sizeof(state->scratch),
                          strlen(state->scratch), segments,
                          sizeof(segments) / sizeof(segments[0])));
@@ -575,15 +589,12 @@ static gm_result_void_t remove_tree_bridge(void *self, const char *abs_path) {
 
 static gm_result_void_t join_under_base_bridge(void *self, gm_fs_base_t base,
                                                gm_repo_id_t repo,
-                                               const char *component1,
-                                               const char *component2,
-                                               const char *component3,
-                                               const char *component4,
-                                               const char *component5,
+                                               const char *s1, const char *s2,
+                                               const char *s3, const char *s4,
+                                               const char *s5,
                                                const char **out_abs_path) {
-    return join_under_base((gm_posix_fs_state_t *)self, base, repo, component1,
-                           component2, component3, component4, component5,
-                           out_abs_path);
+    return join_under_base((gm_posix_fs_state_t *)self, base, repo, s1, s2, s3,
+                           s4, s5, out_abs_path);
 }
 
 static gm_result_void_t canonicalize_bridge(void *self, const char *abs_path_in,
