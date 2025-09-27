@@ -435,6 +435,8 @@ See archives under `docs/activity/` for older logs.
 - Immediate next move: rerun `make ci-local` once these filesystem fixes settle, then chase the remaining bool-to-int clang-tidy nits in the staged benchmark + fake git port files before we go PR hunting.
 - Lesson logged: tidy catches implicit bool arithmetic fast—introducing small helper variables beats sprinkling casts and keeps the intent readable for future hex refactors.
 - Message in a bottle: future Cap’n, there’s cocoa in the galley—sip it while you double-check the tidy report before raising the PR flag.
+- CodeRabbit pass (batch 2): accepted output-zeroing and error-propagation notes—commit creation now clears result OIDs up front, commit message reads null-init outputs, hook blob lookups zero result buffers and distinguish NOT_FOUND from real failures, commit walks honour `GM_CALLBACK_STOP`, and the fake port header owns its std includes.
+- CodeRabbit pass (batch 3): reaffirmed the wildebeest benchmark already routes queries via `gm_oid_t`, clarified detached-HEAD fallback inside `gm_hook_get_blob_sha`, and brought the PR171 review docs in line with the front-matter/TOC guidelines.
 
 ## Next Steps (handoff checklist)
 - Complete on-disk cache migration to OID-only storage and naming; ensure rebuild and fallback readers handle both formats or gate with a one-time migration.

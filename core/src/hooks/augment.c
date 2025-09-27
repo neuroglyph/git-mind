@@ -9,6 +9,7 @@
 
 #include <git2/oid.h>
 
+#include "gitmind/constants.h"
 #include "gitmind/constants_internal.h"
 #include "gitmind/error.h"
 #include "gitmind/result.h"
@@ -88,6 +89,9 @@ static int collect_commit_oid(const gm_oid_t *commit_oid, void *userdata) {
     if (ctx->count < ctx->capacity) {
         ctx->storage[ctx->count] = *commit_oid;
         ctx->count += 1U;
+        if (ctx->count >= ctx->capacity) {
+            return GM_CALLBACK_STOP;
+        }
     }
     return GM_OK;
 }
@@ -100,6 +104,8 @@ int gm_hook_get_blob_sha(const gm_git_repository_port_t *repo_port,
         sha_out == NULL) {
         return GM_ERR_INVALID_ARGUMENT;
     }
+
+    gm_memset_safe(sha_out, sizeof(*sha_out), 0, sizeof(*sha_out));
 
     size_t offset = 0U;
     if (!parse_head_offset(commit_ref, &offset)) {
@@ -139,6 +145,9 @@ int gm_hook_get_blob_sha(const gm_git_repository_port_t *repo_port,
         }
     } else if (branch_rc != GM_ERR_NOT_FOUND) {
         return branch_rc;
+    } else {
+        /* Detached HEAD: fall back to walking the symbolic HEAD reference. */
+        walk_ref = "HEAD";
     }
 
     gm_result_void_t walk_result = gm_git_repository_port_walk_commits(
@@ -261,16 +270,22 @@ int gm_hook_process_changed_file(gm_context_t *ctx,
 
     /* Get old blob SHA */
     error = gm_hook_get_blob_sha(repo_port, "HEAD~1", file_path, &old_oid);
-    if (error != GM_OK) {
+    if (error == GM_ERR_NOT_FOUND) {
         /* File might be new, skip */
         return GM_OK;
+    }
+    if (error != GM_OK) {
+        return error;
     }
 
     /* Get new blob SHA */
     error = gm_hook_get_blob_sha(repo_port, "HEAD", file_path, &new_oid);
-    if (error != GM_OK) {
+    if (error == GM_ERR_NOT_FOUND) {
         /* File might be deleted, skip */
         return GM_OK;
+    }
+    if (error != GM_OK) {
+        return error;
     }
 
     /* Find edges with old blob as source */

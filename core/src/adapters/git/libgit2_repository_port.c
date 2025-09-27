@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <limits.h>
 
+#include "gitmind/constants.h"
 #include "gitmind/error.h"
 #include "gitmind/result.h"
 #include "gitmind/security/memory.h"
@@ -369,6 +370,7 @@ static gm_result_void_t commit_read_message_impl(
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
                                     "commit read message requires inputs"));
     }
+    *out_message = NULL;
 
     git_commit *commit = NULL;
     if (git_commit_lookup(&commit, state->repo, commit_oid) != 0) {
@@ -759,6 +761,9 @@ static gm_result_void_t commit_walk_impl(gm_libgit2_repository_port_state_t *sta
     while (git_revwalk_next(&oid, walk) == 0) {
         int cb_result = visit_callback(&oid, userdata);
         commit_count++;
+        if (cb_result == GM_CALLBACK_STOP) {
+            break;
+        }
         if (cb_result != GM_OK) {
             git_revwalk_free(walk);
             return gm_err_void(GM_ERROR(cb_result, "commit walk callback stop"));
@@ -780,6 +785,8 @@ static gm_result_void_t commit_create_impl(
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
                                     "commit spec missing inputs"));
     }
+    gm_memset_safe(out_commit_oid, sizeof(*out_commit_oid), 0,
+                   sizeof(*out_commit_oid));
 
     git_signature *sig = NULL;
     if (git_signature_default(&sig, state->repo) < 0) {
