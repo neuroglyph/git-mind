@@ -59,6 +59,9 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
     if (ctx == NULL || branch == NULL || meta == NULL) {
         return GM_ERR_INVALID_ARGUMENT;
     }
+
+    gm_memset_safe(meta, sizeof(*meta), 0, sizeof(*meta));
+
     if (ctx->git_repo_port.vtbl == NULL) {
         return GM_ERR_INVALID_STATE;
     }
@@ -96,11 +99,11 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
         }
     }
 
-    gm_memset_safe(meta, sizeof(*meta), 0, sizeof(*meta));
     meta->version = GM_CACHE_VERSION;
     meta->shard_bits = GM_CACHE_SHARD_BITS;
-    (void)gm_strcpy_safe(meta->branch, GM_CACHE_BRANCH_NAME_SIZE, branch);
-    meta->branch[GM_CACHE_BRANCH_NAME_SIZE - 1] = '\0';
+    if (gm_strcpy_safe(meta->branch, GM_CACHE_BRANCH_NAME_SIZE, branch) != GM_OK) {
+        return GM_ERR_BUFFER_TOO_SMALL;
+    }
     meta->journal_tip_time = cache_tip.commit_time;
     meta->cache_tip_oid = cache_tip.oid;
 
@@ -128,8 +131,11 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
         meta->journal_tip_oid[0] = '\0';
     } else {
         meta->journal_tip_oid_bin = journal_tip.oid;
-        (void)gm_strcpy_safe(meta->journal_tip_oid, sizeof(meta->journal_tip_oid),
-                             journal_tip.oid_hex);
+        if (gm_strcpy_safe(meta->journal_tip_oid, sizeof(meta->journal_tip_oid),
+                           journal_tip.oid_hex) != GM_OK) {
+            meta->journal_tip_oid[0] = '\0';
+            return GM_ERR_BUFFER_TOO_SMALL;
+        }
     }
 
     meta->edge_count = 0;
