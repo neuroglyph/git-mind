@@ -417,9 +417,11 @@ See archives under `docs/activity/` for older logs.
 ### 2025-09-27
 - Routed cache metadata, query, and journal flows through `gm_git_repository_port`; reader/writer now use the adapter for head detection, commit walking, message bodies, and ref updates.
 - Added port surface area (head lookup, commit walk/message helpers, parent-aware commit spec) plus libgit2 adapter support to keep hex seams consistent.
-- Current tidy focus: rename the short `s1`…`s5` path segments, trim include lists in the new port headers, and give the fake git port real head/commit-walk stubs so tests exercise the new hooks.
-- Immediate TODOs: 1) clean up header includes/forward declarations flagged by include-cleaner; 2) rename the short parameter names; 3) flesh out fake git port head + walk + message helpers; 4) migrate remaining edge modules off `ctx->git_repo`.
-- Note to future-us (and especially you, Cap’n ☕): once edge joins the port party we can finally delete `git_ops`—tidy will sleep easier, and so will we.
+- Clang-tidy cleanup delivered: renamed the short `s1`…`s5` path segments, refreshed `walk_commits` naming, and forward-declared libgit2 types so include-cleaner stops shouting.
+- Fake git repository port now provides head branch lookup, per-ref commit walks, and commit-message reads via new helpers—tests can enqueue histories instead of skipping those seams.
+- Next up (today, not tomorrow): hook the journal/cache tests to the upgraded fake, rerun clang-tidy to capture the delta, and start peeling edge modules off `ctx->git_repo`.
+- Lesson logged: mirroring libgit2 semantics meant storing commit sequences per ref; keeping messages alongside the OIDs made the reader decode deterministic again.
+- Cap’n memo: espresso's on deck—once edge jumps ports, we raid the galley for celebratory biscotti.
 
 ## Next Steps (handoff checklist)
 - Complete on-disk cache migration to OID-only storage and naming; ensure rebuild and fallback readers handle both formats or gate with a one-time migration.

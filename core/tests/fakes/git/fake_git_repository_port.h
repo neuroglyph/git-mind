@@ -10,6 +10,22 @@
 extern "C" {
 #endif
 
+#define GM_FAKE_GIT_MAX_REF_ENTRIES 8U
+#define GM_FAKE_GIT_MAX_COMMITS_PER_REF 16U
+
+typedef struct gm_fake_git_commit_entry {
+    gm_oid_t oid;
+    char message[GM_FORMAT_BUFFER_SIZE];
+    bool has_message;
+} gm_fake_git_commit_entry_t;
+
+typedef struct gm_fake_git_ref_entry {
+    char ref_name[GM_FORMAT_BUFFER_SIZE];
+    gm_fake_git_commit_entry_t commits[GM_FAKE_GIT_MAX_COMMITS_PER_REF];
+    size_t commit_count;
+    bool in_use;
+} gm_fake_git_ref_entry_t;
+
 typedef struct gm_fake_git_repository_port {
     gm_git_repository_port_t port;
     gm_git_reference_tip_t tip;
@@ -26,6 +42,8 @@ typedef struct gm_fake_git_repository_port {
     char last_update_ref[GM_PATH_MAX];
     char last_update_log[GM_FORMAT_BUFFER_SIZE];
     gm_oid_t last_update_target;
+    char head_branch[GM_FORMAT_BUFFER_SIZE];
+    gm_fake_git_ref_entry_t ref_entries[GM_FAKE_GIT_MAX_REF_ENTRIES];
 } gm_fake_git_repository_port_t;
 
 GM_NODISCARD gm_result_void_t gm_fake_git_repository_port_init(
@@ -35,6 +53,16 @@ void gm_fake_git_repository_port_dispose(gm_fake_git_repository_port_t *fake);
 
 void gm_fake_git_repository_port_set_tip(gm_fake_git_repository_port_t *fake,
                                          const gm_git_reference_tip_t *tip);
+
+GM_NODISCARD gm_result_void_t gm_fake_git_repository_port_set_head_branch(
+    gm_fake_git_repository_port_t *fake, const char *branch_name);
+
+void gm_fake_git_repository_port_clear_ref_commits(
+    gm_fake_git_repository_port_t *fake);
+
+GM_NODISCARD gm_result_void_t gm_fake_git_repository_port_add_ref_commit(
+    gm_fake_git_repository_port_t *fake, const char *ref_name,
+    const gm_oid_t *commit_oid, const char *message);
 
 void gm_fake_git_repository_port_set_next_tree(
     gm_fake_git_repository_port_t *fake, const gm_oid_t *oid,

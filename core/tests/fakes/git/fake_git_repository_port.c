@@ -3,6 +3,7 @@
 
 #include "core/tests/fakes/git/fake_git_repository_port.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "gitmind/error.h"
@@ -38,11 +39,21 @@ static gm_result_void_t fake_commit_read_message(void *self,
                                                  char **out_message);
 static void fake_commit_message_dispose(void *self, char *message);
 static gm_result_void_t fake_walk_commits(void *self, const char *ref_name,
-                                          gm_git_commit_visit_cb cb,
+                                          gm_git_commit_visit_cb visit_callback,
                                           void *userdata);
 static gm_result_void_t fake_commit_tree_size(void *self,
                                               const gm_oid_t *commit_oid,
                                               uint64_t *out_size_bytes);
+
+static gm_result_void_t ensure_ref_entry(gm_fake_git_repository_port_t *fake,
+                                         const char *ref_name,
+                                         gm_fake_git_ref_entry_t **out_entry);
+
+static const gm_fake_git_ref_entry_t *find_ref_entry_const(
+    const gm_fake_git_repository_port_t *fake, const char *ref_name);
+
+static const gm_fake_git_commit_entry_t *find_commit_entry_const(
+    const gm_fake_git_repository_port_t *fake, const gm_oid_t *commit_oid);
 
 static const gm_git_repository_port_vtbl_t FAKE_GIT_REPOSITORY_PORT_VTBL = {
     .repository_path = fake_repository_path,
@@ -58,6 +69,89 @@ static const gm_git_repository_port_vtbl_t FAKE_GIT_REPOSITORY_PORT_VTBL = {
     .commit_create = fake_commit_create,
     .reference_update = fake_reference_update,
 };
+
+static gm_result_void_t ensure_ref_entry(gm_fake_git_repository_port_t *fake,
+                                         const char *ref_name,
+                                         gm_fake_git_ref_entry_t **out_entry) {
+    if (fake == NULL || ref_name == NULL || out_entry == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "fake ref entry requires inputs"));
+    }
+
+    gm_fake_git_ref_entry_t *free_slot = NULL;
+    for (size_t idx = 0; idx < GM_FAKE_GIT_MAX_REF_ENTRIES; ++idx) {
+        gm_fake_git_ref_entry_t *entry = &fake->ref_entries[idx];
+        if (entry->in_use) {
+            if (strcmp(entry->ref_name, ref_name) == 0) {
+                *out_entry = entry;
+                return gm_ok_void();
+            }
+        } else if (free_slot == NULL) {
+            free_slot = entry;
+        }
+    }
+
+    if (free_slot == NULL) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "fake ref storage exhausted"));
+    }
+
+    memset(free_slot, 0, sizeof(*free_slot));
+    if (gm_strcpy_safe(free_slot->ref_name, sizeof(free_slot->ref_name),
+                       ref_name) != GM_OK) {
+        memset(free_slot, 0, sizeof(*free_slot));
+        return gm_err_void(
+            GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "fake ref name exceeds buffer"));
+    }
+
+    free_slot->in_use = true;
+    free_slot->commit_count = 0U;
+    *out_entry = free_slot;
+    return gm_ok_void();
+}
+
+static const gm_fake_git_ref_entry_t *find_ref_entry_const(
+    const gm_fake_git_repository_port_t *fake, const char *ref_name) {
+    if (fake == NULL || ref_name == NULL) {
+        return NULL;
+    }
+
+    for (size_t idx = 0; idx < GM_FAKE_GIT_MAX_REF_ENTRIES; ++idx) {
+        const gm_fake_git_ref_entry_t *entry = &fake->ref_entries[idx];
+        if (!entry->in_use) {
+            continue;
+        }
+        if (strcmp(entry->ref_name, ref_name) == 0) {
+            return entry;
+        }
+    }
+
+    return NULL;
+}
+
+static const gm_fake_git_commit_entry_t *find_commit_entry_const(
+    const gm_fake_git_repository_port_t *fake, const gm_oid_t *commit_oid) {
+    if (fake == NULL || commit_oid == NULL) {
+        return NULL;
+    }
+
+    for (size_t idx = 0; idx < GM_FAKE_GIT_MAX_REF_ENTRIES; ++idx) {
+        const gm_fake_git_ref_entry_t *entry = &fake->ref_entries[idx];
+        if (!entry->in_use) {
+            continue;
+        }
+        for (size_t commit_idx = 0; commit_idx < entry->commit_count;
+             ++commit_idx) {
+            const gm_fake_git_commit_entry_t *commit =
+                &entry->commits[commit_idx];
+            if (memcmp(commit->oid.id, commit_oid->id, GM_OID_RAWSZ) == 0) {
+                return commit;
+            }
+        }
+    }
+
+    return NULL;
+}
 
 gm_result_void_t gm_fake_git_repository_port_init(
     gm_fake_git_repository_port_t *fake, const char *gitdir,
@@ -109,6 +203,66 @@ void gm_fake_git_repository_port_set_tip(gm_fake_git_repository_port_t *fake,
         return;
     }
     fake->tip = *tip;
+}
+
+gm_result_void_t gm_fake_git_repository_port_set_head_branch(
+    gm_fake_git_repository_port_t *fake, const char *branch_name) {
+    if (fake == NULL || branch_name == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "fake head branch requires inputs"));
+    }
+
+    if (gm_strcpy_safe(fake->head_branch, sizeof(fake->head_branch),
+                       branch_name) != GM_OK) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "fake head branch too long"));
+    }
+
+    return gm_ok_void();
+}
+
+void gm_fake_git_repository_port_clear_ref_commits(
+    gm_fake_git_repository_port_t *fake) {
+    if (fake == NULL) {
+        return;
+    }
+    gm_memset_safe(fake->ref_entries, sizeof(fake->ref_entries), 0,
+                   sizeof(fake->ref_entries));
+}
+
+gm_result_void_t gm_fake_git_repository_port_add_ref_commit(
+    gm_fake_git_repository_port_t *fake, const char *ref_name,
+    const gm_oid_t *commit_oid, const char *message) {
+    if (fake == NULL || ref_name == NULL || commit_oid == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "fake add ref commit requires inputs"));
+    }
+
+    gm_fake_git_ref_entry_t *entry = NULL;
+    GM_TRY(ensure_ref_entry(fake, ref_name, &entry));
+
+    if (entry->commit_count >= GM_FAKE_GIT_MAX_COMMITS_PER_REF) {
+        return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
+                                    "fake commit list full"));
+    }
+
+    gm_fake_git_commit_entry_t *commit =
+        &entry->commits[entry->commit_count];
+    gm_memset_safe(commit, sizeof(*commit), 0, sizeof(*commit));
+    commit->oid = *commit_oid;
+
+    if (message != NULL) {
+        if (gm_strcpy_safe(commit->message, sizeof(commit->message), message) !=
+            GM_OK) {
+            gm_memset_safe(commit, sizeof(*commit), 0, sizeof(*commit));
+            return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
+                                        "fake commit message too long"));
+        }
+        commit->has_message = true;
+    }
+
+    entry->commit_count += 1U;
+    return gm_ok_void();
 }
 
 void gm_fake_git_repository_port_set_next_tree(
@@ -207,11 +361,24 @@ static gm_result_void_t fake_repository_path(void *self,
 
 static gm_result_void_t fake_head_branch(void *self, char *out_name,
                                          size_t out_name_size) {
-    (void)self;
-    (void)out_name;
-    (void)out_name_size;
-    return gm_err_void(GM_ERROR(GM_ERR_NOT_IMPLEMENTED,
-                                "fake head branch not implemented"));
+    gm_fake_git_repository_port_t *fake =
+        (gm_fake_git_repository_port_t *)self;
+    if (fake == NULL || out_name == NULL || out_name_size == 0U) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "fake head branch requires buffers"));
+    }
+
+    if (fake->head_branch[0] == '\0') {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "fake head branch unset"));
+    }
+
+    if (gm_strcpy_safe(out_name, out_name_size, fake->head_branch) != GM_OK) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "fake head branch too long"));
+    }
+
+    return gm_ok_void();
 }
 
 static gm_result_void_t fake_build_tree(void *self, const char *dir_path,
@@ -285,15 +452,32 @@ static gm_result_void_t fake_commit_read_blob(void *self,
 static gm_result_void_t fake_commit_read_message(void *self,
                                                  const gm_oid_t *commit_oid,
                                                  char **out_message) {
-    (void)self;
-    (void)commit_oid;
-    if (out_message == NULL) {
+    gm_fake_git_repository_port_t *fake =
+        (gm_fake_git_repository_port_t *)self;
+    if (fake == NULL || commit_oid == NULL || out_message == NULL) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
-                                    "fake commit message requires output"));
+                                    "fake commit message requires inputs"));
     }
-    *out_message = NULL;
-    return gm_err_void(GM_ERROR(GM_ERR_NOT_IMPLEMENTED,
-                                "fake commit read message not implemented"));
+
+    const gm_fake_git_commit_entry_t *commit =
+        find_commit_entry_const(fake, commit_oid);
+    if (commit == NULL || !commit->has_message) {
+        *out_message = NULL;
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "fake commit message unavailable"));
+    }
+
+    const size_t message_len = strlen(commit->message);
+    char *copy = (char *)malloc(message_len + 1U);
+    if (copy == NULL) {
+        *out_message = NULL;
+        return gm_err_void(
+            GM_ERROR(GM_ERR_OUT_OF_MEMORY, "allocating fake commit message"));
+    }
+
+    memcpy(copy, commit->message, message_len + 1U);
+    *out_message = copy;
+    return gm_ok_void();
 }
 
 static void fake_commit_message_dispose(void *self, char *message) {
@@ -302,14 +486,32 @@ static void fake_commit_message_dispose(void *self, char *message) {
 }
 
 static gm_result_void_t fake_walk_commits(void *self, const char *ref_name,
-                                          gm_git_commit_visit_cb cb,
+                                          gm_git_commit_visit_cb visit_callback,
                                           void *userdata) {
-    (void)self;
-    (void)ref_name;
-    (void)cb;
-    (void)userdata;
-    return gm_err_void(GM_ERROR(GM_ERR_NOT_IMPLEMENTED,
-                                "fake walk commits not implemented"));
+    gm_fake_git_repository_port_t *fake =
+        (gm_fake_git_repository_port_t *)self;
+    if (fake == NULL || ref_name == NULL || visit_callback == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "fake commit walk requires inputs"));
+    }
+
+    const gm_fake_git_ref_entry_t *entry =
+        find_ref_entry_const(fake, ref_name);
+    if (entry == NULL || entry->commit_count == 0U) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "fake commit walk has no commits"));
+    }
+
+    for (size_t idx = 0; idx < entry->commit_count; ++idx) {
+        const gm_fake_git_commit_entry_t *commit = &entry->commits[idx];
+        int cb_result = visit_callback(&commit->oid, userdata);
+        if (cb_result != GM_OK) {
+            return gm_err_void(
+                GM_ERROR(cb_result, "fake commit walk callback stop"));
+        }
+    }
+
+    return gm_ok_void();
 }
 
 static gm_result_void_t fake_commit_tree_size(void *self,

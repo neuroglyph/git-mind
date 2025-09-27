@@ -111,9 +111,12 @@ static gm_result_void_t fake_remove_tree(void *self, const char *abs_path) {
 }
 
 static gm_result_void_t fake_path_join(void *self, gm_fs_base_t base,
-                                       gm_repo_id_t repo, const char *s1,
-                                       const char *s2, const char *s3,
-                                       const char *s4, const char *s5,
+                                       gm_repo_id_t repo,
+                                       const char *component1,
+                                       const char *component2,
+                                       const char *component3,
+                                       const char *component4,
+                                       const char *component5,
                                        const char **out_abs_path) {
     gm_fake_fs_temp_port_t *fake = (gm_fake_fs_temp_port_t *)self;
     const char *root = (base == GM_FS_BASE_TEMP) ? fake->temp_root : fake->state_root;
@@ -133,7 +136,8 @@ static gm_result_void_t fake_path_join(void *self, gm_fs_base_t base,
     GM_TRY(gm_fs_path_basename_append(fake->scratch, sizeof(fake->scratch), &len,
                                       repo_segment));
 
-    const char *segments[] = {s1, s2, s3, s4, s5};
+    const char *segments[] = {component1, component2, component3, component4,
+                              component5};
     for (size_t idx = 0; idx < sizeof(segments) / sizeof(segments[0]); ++idx) {
         const char *seg = segments[idx];
         if (seg == NULL || seg[0] == '\0') {

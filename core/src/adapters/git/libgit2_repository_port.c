@@ -554,9 +554,9 @@ static gm_result_void_t commit_tree_size_impl(
 
 static gm_result_void_t commit_walk_impl(gm_libgit2_repository_port_state_t *state,
                                          const char *ref_name,
-                                         gm_git_commit_visit_cb cb,
+                                         gm_git_commit_visit_cb visit_callback,
                                          void *userdata) {
-    if (ref_name == NULL || cb == NULL) {
+    if (ref_name == NULL || visit_callback == NULL) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
                                     "commit walk requires ref and callback"));
     }
@@ -577,7 +577,7 @@ static gm_result_void_t commit_walk_impl(gm_libgit2_repository_port_state_t *sta
 
     git_oid oid;
     while (git_revwalk_next(&oid, walk) == 0) {
-        int cb_result = cb(&oid, userdata);
+        int cb_result = visit_callback(&oid, userdata);
         commit_count++;
         if (cb_result != GM_OK) {
             git_revwalk_free(walk);
@@ -781,10 +781,10 @@ static gm_result_void_t commit_tree_size_bridge(void *self,
 }
 
 static gm_result_void_t walk_commits_bridge(void *self, const char *ref_name,
-                                            gm_git_commit_visit_cb cb,
+                                            gm_git_commit_visit_cb visit_callback,
                                             void *userdata) {
     return commit_walk_impl((gm_libgit2_repository_port_state_t *)self, ref_name,
-                            cb, userdata);
+                            visit_callback, userdata);
 }
 
 static gm_result_void_t reference_update_bridge(

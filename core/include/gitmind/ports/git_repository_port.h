@@ -76,7 +76,8 @@ typedef struct gm_git_repository_port_vtbl {
                                             char **out_message);
     void (*commit_message_dispose)(void *self, char *message);
     gm_result_void_t (*walk_commits)(void *self, const char *ref_name,
-                                     gm_git_commit_visit_cb cb, void *userdata);
+                                     gm_git_commit_visit_cb visit_callback,
+                                     void *userdata);
     gm_result_void_t (*commit_tree_size)(void *self, const gm_oid_t *commit_oid,
                                          uint64_t *out_size_bytes);
     gm_result_void_t (*commit_create)(void *self,
@@ -183,14 +184,15 @@ static inline void gm_git_repository_port_commit_message_dispose(
 GM_NODISCARD static inline gm_result_void_t
     gm_git_repository_port_walk_commits(const gm_git_repository_port_t *port,
                                         const char *ref_name,
-                                        gm_git_commit_visit_cb cb,
+                                        gm_git_commit_visit_cb visit_callback,
                                         void *userdata) {
     if (port == NULL || port->vtbl == NULL ||
         port->vtbl->walk_commits == NULL) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_STATE,
                                     "git repository port missing walk_commits"));
     }
-    return port->vtbl->walk_commits(port->self, ref_name, cb, userdata);
+    return port->vtbl->walk_commits(port->self, ref_name, visit_callback,
+                                    userdata);
 }
 
 GM_NODISCARD static inline gm_result_void_t

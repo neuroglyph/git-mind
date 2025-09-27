@@ -470,9 +470,11 @@ static gm_result_void_t remove_tree_impl(const char *path) {
 
 static gm_result_void_t join_under_base(gm_posix_fs_state_t *state,
                                         gm_fs_base_t base, gm_repo_id_t repo,
-                                        const char *s1, const char *s2,
-                                        const char *s3, const char *s4,
-                                        const char *s5,
+                                        const char *component1,
+                                        const char *component2,
+                                        const char *component3,
+                                        const char *component4,
+                                        const char *component5,
                                         const char **out_abs_path) {
     if (out_abs_path == NULL) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
@@ -492,7 +494,8 @@ static gm_result_void_t join_under_base(gm_posix_fs_state_t *state,
     GM_TRY(format_repo_component(state, repo, repo_component,
                                  sizeof(repo_component)));
 
-    const char *segments[] = {repo_component, s1, s2, s3, s4, s5};
+    const char *segments[] = {repo_component, component1, component2,
+                              component3, component4, component5};
     GM_TRY(join_segments(state->scratch, sizeof(state->scratch),
                          strlen(state->scratch), segments,
                          sizeof(segments) / sizeof(segments[0])));
@@ -572,12 +575,15 @@ static gm_result_void_t remove_tree_bridge(void *self, const char *abs_path) {
 
 static gm_result_void_t join_under_base_bridge(void *self, gm_fs_base_t base,
                                                gm_repo_id_t repo,
-                                               const char *s1, const char *s2,
-                                               const char *s3, const char *s4,
-                                               const char *s5,
+                                               const char *component1,
+                                               const char *component2,
+                                               const char *component3,
+                                               const char *component4,
+                                               const char *component5,
                                                const char **out_abs_path) {
-    return join_under_base((gm_posix_fs_state_t *)self, base, repo, s1, s2, s3,
-                           s4, s5, out_abs_path);
+    return join_under_base((gm_posix_fs_state_t *)self, base, repo, component1,
+                           component2, component3, component4, component5,
+                           out_abs_path);
 }
 
 static gm_result_void_t canonicalize_bridge(void *self, const char *abs_path_in,
