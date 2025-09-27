@@ -12,12 +12,6 @@
 #include "gitmind/security/memory.h"
 
 #include <git2/types.h>
-#include <git2/repository.h>
-#include <git2/oid.h>
-#include <git2/commit.h>
-#include <git2/tree.h>
-#include <git2/refs.h>
-#include <git2/signature.h>
 #include <sodium/utils.h>
 
 #include <stdio.h>
@@ -36,8 +30,8 @@
 
 /* Journal writer context */
 typedef struct {
-    git_repository *repo;
-    git_oid empty_tree_oid;
+    gm_git_repository_port_t *repo_port;
+    gm_oid_t empty_tree_oid;
     char ref_name[REF_NAME_BUFFER_SIZE];
 } journal_ctx_t;
 
@@ -50,7 +44,10 @@ typedef struct {
 /* Initialize journal context */
 static int journal_init(journal_ctx_t *jctx, gm_context_t *ctx,
                         const char *branch) {
-    jctx->repo = (git_repository *)ctx->git_repo;
+    if (ctx->git_repo_port.vtbl == NULL) {
+        return GM_ERR_INVALID_STATE;
+    }
+    jctx->repo_port = &ctx->git_repo_port;
 
     /* Parse empty tree OID */
     if (git_oid_fromstr(&jctx->empty_tree_oid, EMPTY_TREE_SHA) < 0) {
@@ -68,35 +65,16 @@ static int journal_init(journal_ctx_t *jctx, gm_context_t *ctx,
 }
 
 /* Get current branch name */
-static int get_current_branch(git_repository *repo, char *branch_name,
+static int get_current_branch(gm_git_repository_port_t *port, char *branch_name,
                               size_t len) {
-    git_reference *head = NULL;
-    const char *name;
-    int error;
-
-    /* Get HEAD reference */
-    error = git_repository_head(&head, repo);
-    if (error < 0) {
+    gm_result_void_t result =
+        gm_git_repository_port_head_branch(port, branch_name, len);
+    if (!result.ok) {
+        if (result.u.err != NULL) {
+            gm_error_free(result.u.err);
+        }
         return GM_ERR_UNKNOWN;
     }
-
-    /* Get branch name */
-    name = git_reference_shorthand(head);
-    if (!name) {
-        git_reference_free(head);
-        return GM_ERR_UNKNOWN;
-    }
-
-    /* Copy branch name */
-    size_t name_len = strlen(name);
-    if (name_len >= len) {
-        git_reference_free(head);
-        return GM_ERR_BUFFER_TOO_SMALL;
-    }
-    gm_memcpy_safe(branch_name, len, name, name_len);
-    branch_name[name_len] = '\0';
-
-    git_reference_free(head);
     return GM_OK;
 }
 
@@ -230,7 +208,7 @@ static int resolve_branch_name(gm_context_t *ctx, char *branch,
         return GM_OK;
     }
 
-    return get_current_branch(ctx->git_repo, branch, branch_len);
+    return get_current_branch(&ctx->git_repo_port, branch, branch_len);
 }
 
 static int flush_journal_batch(journal_ctx_t *jctx, const uint8_t *buffer,
