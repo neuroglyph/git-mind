@@ -348,15 +348,42 @@ gm_result_void_t gm_edge_encode_cbor(const gm_edge_t *edge, uint8_t *buffer,
         return result;
     }
     /* Write preferred OID fields using raw bytes */
-    const uint8_t *src_raw = (const uint8_t *)edge->src_oid.id;
-    const uint8_t *tgt_raw = (const uint8_t *)edge->tgt_oid.id;
-    if (src_raw == NULL) src_raw = edge->src_sha; /* fallback */
-    if (tgt_raw == NULL) tgt_raw = edge->tgt_sha; /* fallback */
-    result = write_cbor_bytes(GM_CBOR_KEY_SRC_OID, buffer, available, &offset, src_raw, GM_OID_RAWSZ);
+    uint8_t src_oid_bytes[GM_OID_RAWSZ] = {0};
+    uint8_t tgt_oid_bytes[GM_OID_RAWSZ] = {0};
+
+    if (!git_oid_is_zero(&edge->src_oid)) {
+        (void)gm_memcpy_span(src_oid_bytes, sizeof(src_oid_bytes), edge->src_oid.id,
+                             GM_OID_RAWSZ);
+    } else {
+        size_t copy_len = GM_SHA1_SIZE < GM_OID_RAWSZ ? GM_SHA1_SIZE : GM_OID_RAWSZ;
+        (void)gm_memcpy_span(src_oid_bytes, sizeof(src_oid_bytes), edge->src_sha,
+                             copy_len);
+        if (copy_len < GM_OID_RAWSZ) {
+            gm_memset_safe(src_oid_bytes + copy_len, GM_OID_RAWSZ - copy_len, 0,
+                           GM_OID_RAWSZ - copy_len);
+        }
+    }
+
+    if (!git_oid_is_zero(&edge->tgt_oid)) {
+        (void)gm_memcpy_span(tgt_oid_bytes, sizeof(tgt_oid_bytes), edge->tgt_oid.id,
+                             GM_OID_RAWSZ);
+    } else {
+        size_t copy_len = GM_SHA1_SIZE < GM_OID_RAWSZ ? GM_SHA1_SIZE : GM_OID_RAWSZ;
+        (void)gm_memcpy_span(tgt_oid_bytes, sizeof(tgt_oid_bytes), edge->tgt_sha,
+                             copy_len);
+        if (copy_len < GM_OID_RAWSZ) {
+            gm_memset_safe(tgt_oid_bytes + copy_len, GM_OID_RAWSZ - copy_len, 0,
+                           GM_OID_RAWSZ - copy_len);
+        }
+    }
+
+    result = write_cbor_bytes(GM_CBOR_KEY_SRC_OID, buffer, available, &offset,
+                              src_oid_bytes, GM_OID_RAWSZ);
     if (!result.ok) {
         return result;
     }
-    result = write_cbor_bytes(GM_CBOR_KEY_TGT_OID, buffer, available, &offset, tgt_raw, GM_OID_RAWSZ);
+    result = write_cbor_bytes(GM_CBOR_KEY_TGT_OID, buffer, available, &offset,
+                              tgt_oid_bytes, GM_OID_RAWSZ);
     if (!result.ok) {
         return result;
     }

@@ -46,24 +46,24 @@ static int grow_files_array(char ***files, size_t *capacity) {
 }
 
 /* Read single file from git diff output */
-static int read_file_entry(char **files, size_t *count, size_t *capacity,
+static int read_file_entry(char ***files, size_t *count, size_t *capacity,
                            char *line, ssize_t len) {
     /* Remove newline */
-    if (line[len - 1] == '\n') {
+    if (len > 0 && line[len - 1] == '\n') {
         line[len - 1] = '\0';
     }
 
     /* Grow array if needed */
     if (*count >= *capacity) {
-        int error = grow_files_array(&files, capacity);
+        int error = grow_files_array(files, capacity);
         if (error != GM_OK) {
             return error;
         }
     }
 
     /* Copy file path */
-    files[*count] = strdup(line);
-    if (!files[*count]) {
+    (*files)[*count] = strdup(line);
+    if (!(*files)[*count]) {
         return GM_NO_MEMORY;
     }
 
@@ -96,7 +96,7 @@ static int get_changed_files(char ***files_out, size_t *count_out) {
 
     /* Read each file */
     while ((read = getline(&line, &len, fp)) != -1) {
-        error = read_file_entry(files, &count, &capacity, line, read);
+        error = read_file_entry(&files, &count, &capacity, line, read);
         if (error != GM_OK) {
             free_files_array(files, count);
             free(line);

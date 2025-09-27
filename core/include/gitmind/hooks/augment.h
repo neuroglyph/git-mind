@@ -77,7 +77,7 @@ int gm_hook_process_changed_file(gm_context_t *ctx,
 
 /* Check if this is a merge commit
  *
- * @param repo      Git repository
+ * @param repo_port Repository port adapter
  * @param is_merge  Output: true if merge commit
  * @return          0 on success, error code otherwise
  */

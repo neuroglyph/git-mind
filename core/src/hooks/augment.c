@@ -237,6 +237,7 @@ int gm_hook_find_edges_by_source(gm_context_t *ctx, const gm_oid_t *src_oid,
 int gm_hook_create_augments_edge(gm_context_t *ctx, const gm_oid_t *old_oid,
                          const gm_oid_t *new_oid, const char *file_path) {
     gm_edge_t edge;
+    gm_memset_safe(&edge, sizeof(edge), 0, sizeof(edge));
 
     /* Initialize edge */
     edge.src_oid = *old_oid;
@@ -246,13 +247,20 @@ int gm_hook_create_augments_edge(gm_context_t *ctx, const gm_oid_t *old_oid,
     edge.timestamp = (uint64_t)time(NULL);
 
     /* Set paths (both same for AUGMENTS); fail on truncation */
-    if (gm_strcpy_safe(edge.src_path, GM_PATH_MAX, file_path) == -1 ||
-        gm_strcpy_safe(edge.tgt_path, GM_PATH_MAX, file_path) == -1) {
-        return GM_ERR_BUFFER_TOO_SMALL;
+    int rc_src = gm_strcpy_safe(edge.src_path, GM_PATH_MAX, file_path);
+    int rc_tgt = gm_strcpy_safe(edge.tgt_path, GM_PATH_MAX, file_path);
+    if (rc_src != GM_OK || rc_tgt != GM_OK) {
+        gm_memset_safe(edge.src_path, sizeof edge.src_path, 0, sizeof edge.src_path);
+        gm_memset_safe(edge.tgt_path, sizeof edge.tgt_path, 0, sizeof edge.tgt_path);
+        return (rc_src != GM_OK) ? rc_src : rc_tgt;
     }
 
     /* Generate ULID */
-    gm_ulid_generate(edge.ulid);
+    int ulid_rc = gm_ulid_generate(edge.ulid);
+    if (ulid_rc != GM_OK) {
+        gm_memset_safe(edge.ulid, sizeof edge.ulid, 0, sizeof edge.ulid);
+        return ulid_rc;
+    }
 
     /* Append to journal */
     return gm_journal_append(ctx, &edge, 1);
