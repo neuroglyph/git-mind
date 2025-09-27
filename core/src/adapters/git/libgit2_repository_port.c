@@ -479,15 +479,21 @@ static gm_result_void_t commit_read_blob_impl(
         memcpy(buffer, raw, size);
     }
 
-    *out_data = buffer;
-    *out_size = size;
-
     git_blob_free(blob);
     git_tree_entry_free(entry);
     git_tree_free(tree);
     git_commit_free(commit);
 
+    *out_data = buffer;
+    *out_size = size;
+
     return gm_ok_void();
+}
+
+static void commit_blob_dispose_impl(void *self, uint8_t *data, size_t size) {
+    (void)self;
+    (void)size;
+    free(data);
 }
 
 static gm_result_void_t resolve_blob_at_head_impl(
@@ -1006,6 +1012,7 @@ static const gm_git_repository_port_vtbl_t GM_LIBGIT2_REPOSITORY_PORT_VTBL = {
     .reference_tip = reference_tip_bridge,
     .reference_glob_latest = reference_glob_latest_bridge,
     .commit_read_blob = commit_read_blob_bridge,
+    .blob_dispose = commit_blob_dispose_impl,
     .commit_read_message = commit_read_message_bridge,
     .commit_message_dispose = commit_message_dispose_bridge,
     .walk_commits = walk_commits_bridge,

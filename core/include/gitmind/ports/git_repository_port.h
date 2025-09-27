@@ -71,6 +71,7 @@ typedef struct gm_git_repository_port_vtbl {
     gm_result_void_t (*commit_read_blob)(void *self, const gm_oid_t *commit_oid,
                                          const char *path, uint8_t **out_data,
                                          size_t *out_size);
+    void (*blob_dispose)(void *self, uint8_t *data, size_t size);
     gm_result_void_t (*commit_read_message)(void *self,
                                             const gm_oid_t *commit_oid,
                                             char **out_message);
@@ -188,6 +189,19 @@ static inline void gm_git_repository_port_commit_message_dispose(
         return;
     }
     port->vtbl->commit_message_dispose(port->self, message);
+}
+
+static inline void gm_git_repository_port_blob_dispose(
+    const gm_git_repository_port_t *port, uint8_t *data, size_t size) {
+    if (data == NULL) {
+        return;
+    }
+    if (port == NULL || port->vtbl == NULL || port->vtbl->blob_dispose == NULL) {
+        (void)size;
+        free(data);
+        return;
+    }
+    port->vtbl->blob_dispose(port->self, data, size);
 }
 
 GM_NODISCARD static inline gm_result_void_t
