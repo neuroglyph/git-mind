@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "gitmind/error.h"
 #include "gitmind/result.h"
@@ -45,6 +46,8 @@ typedef struct {
     bool force;
 } gm_git_reference_update_spec_t;
 
+typedef int (*gm_git_commit_visit_cb)(const gm_oid_t *commit_oid, void *userdata);
+
 typedef struct gm_git_repository_port_vtbl gm_git_repository_port_vtbl_t;
 typedef struct gm_git_repository_port {
     const gm_git_repository_port_vtbl_t *vtbl;
@@ -55,6 +58,8 @@ typedef struct gm_git_repository_port_vtbl {
     gm_result_void_t (*repository_path)(void *self,
                                         gm_git_repository_path_kind_t kind,
                                         char *out_buffer, size_t buffer_size);
+    gm_result_void_t (*head_branch)(void *self, char *out_name,
+                                    size_t out_name_size);
     gm_result_void_t (*build_tree_from_directory)(void *self, const char *dir_path,
                                                   gm_oid_t *out_tree_oid);
     gm_result_void_t (*reference_tip)(void *self, const char *ref_name,
@@ -64,6 +69,12 @@ typedef struct gm_git_repository_port_vtbl {
     gm_result_void_t (*commit_read_blob)(void *self, const gm_oid_t *commit_oid,
                                          const char *path, uint8_t **out_data,
                                          size_t *out_size);
+    gm_result_void_t (*commit_read_message)(void *self,
+                                            const gm_oid_t *commit_oid,
+                                            char **out_message);
+    void (*commit_message_dispose)(void *self, char *message);
+    gm_result_void_t (*walk_commits)(void *self, const char *ref_name,
+                                     gm_git_commit_visit_cb cb, void *userdata);
     gm_result_void_t (*commit_tree_size)(void *self, const gm_oid_t *commit_oid,
                                          uint64_t *out_size_bytes);
     gm_result_void_t (*commit_create)(void *self,
@@ -83,6 +94,16 @@ GM_NODISCARD static inline gm_result_void_t
                                     "git repository port missing repository_path"));
     }
     return port->vtbl->repository_path(port->self, kind, out_buffer, buffer_size);
+}
+
+GM_NODISCARD static inline gm_result_void_t
+    gm_git_repository_port_head_branch(const gm_git_repository_port_t *port,
+                                       char *out_name, size_t out_name_size) {
+    if (port == NULL || port->vtbl == NULL || port->vtbl->head_branch == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_STATE,
+                                    "git repository port missing head_branch"));
+    }
+    return port->vtbl->head_branch(port->self, out_name, out_name_size);
 }
 
 GM_NODISCARD static inline gm_result_void_t
@@ -133,6 +154,41 @@ GM_NODISCARD static inline gm_result_void_t
     }
     return port->vtbl->commit_read_blob(port->self, commit_oid, path, out_data,
                                         out_size);
+}
+
+GM_NODISCARD static inline gm_result_void_t
+    gm_git_repository_port_commit_read_message(
+        const gm_git_repository_port_t *port, const gm_oid_t *commit_oid,
+        char **out_message) {
+    if (port == NULL || port->vtbl == NULL ||
+        port->vtbl->commit_read_message == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_STATE,
+                                    "git repository port missing commit_read_message"));
+    }
+    return port->vtbl->commit_read_message(port->self, commit_oid, out_message);
+}
+
+static inline void gm_git_repository_port_commit_message_dispose(
+    const gm_git_repository_port_t *port, char *message) {
+    if (port == NULL || port->vtbl == NULL ||
+        port->vtbl->commit_message_dispose == NULL) {
+        free(message);
+        return;
+    }
+    port->vtbl->commit_message_dispose(port->self, message);
+}
+
+GM_NODISCARD static inline gm_result_void_t
+    gm_git_repository_port_walk_commits(const gm_git_repository_port_t *port,
+                                        const char *ref_name,
+                                        gm_git_commit_visit_cb cb,
+                                        void *userdata) {
+    if (port == NULL || port->vtbl == NULL ||
+        port->vtbl->walk_commits == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_STATE,
+                                    "git repository port missing walk_commits"));
+    }
+    return port->vtbl->walk_commits(port->self, ref_name, cb, userdata);
 }
 
 GM_NODISCARD static inline gm_result_void_t

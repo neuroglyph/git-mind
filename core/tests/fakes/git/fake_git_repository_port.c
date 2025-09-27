@@ -15,6 +15,8 @@ static gm_result_void_t fake_repository_path(void *self,
                                              gm_git_repository_path_kind_t kind,
                                              char *out_buffer,
                                              size_t buffer_size);
+static gm_result_void_t fake_head_branch(void *self, char *out_name,
+                                         size_t out_name_size);
 static gm_result_void_t fake_build_tree(void *self, const char *dir_path,
                                         gm_oid_t *out_tree_oid);
 static gm_result_void_t fake_reference_tip(void *self, const char *ref_name,
@@ -31,16 +33,27 @@ static gm_result_void_t fake_commit_read_blob(void *self,
                                               const char *path,
                                               uint8_t **out_data,
                                               size_t *out_size);
+static gm_result_void_t fake_commit_read_message(void *self,
+                                                 const gm_oid_t *commit_oid,
+                                                 char **out_message);
+static void fake_commit_message_dispose(void *self, char *message);
+static gm_result_void_t fake_walk_commits(void *self, const char *ref_name,
+                                          gm_git_commit_visit_cb cb,
+                                          void *userdata);
 static gm_result_void_t fake_commit_tree_size(void *self,
                                               const gm_oid_t *commit_oid,
                                               uint64_t *out_size_bytes);
 
 static const gm_git_repository_port_vtbl_t FAKE_GIT_REPOSITORY_PORT_VTBL = {
     .repository_path = fake_repository_path,
+    .head_branch = fake_head_branch,
     .build_tree_from_directory = fake_build_tree,
     .reference_tip = fake_reference_tip,
     .reference_glob_latest = fake_reference_glob_latest,
     .commit_read_blob = fake_commit_read_blob,
+    .commit_read_message = fake_commit_read_message,
+    .commit_message_dispose = fake_commit_message_dispose,
+    .walk_commits = fake_walk_commits,
     .commit_tree_size = fake_commit_tree_size,
     .commit_create = fake_commit_create,
     .reference_update = fake_reference_update,
@@ -192,6 +205,15 @@ static gm_result_void_t fake_repository_path(void *self,
     return gm_ok_void();
 }
 
+static gm_result_void_t fake_head_branch(void *self, char *out_name,
+                                         size_t out_name_size) {
+    (void)self;
+    (void)out_name;
+    (void)out_name_size;
+    return gm_err_void(GM_ERROR(GM_ERR_NOT_IMPLEMENTED,
+                                "fake head branch not implemented"));
+}
+
 static gm_result_void_t fake_build_tree(void *self, const char *dir_path,
                                         gm_oid_t *out_tree_oid) {
     gm_fake_git_repository_port_t *fake =
@@ -258,6 +280,36 @@ static gm_result_void_t fake_commit_read_blob(void *self,
     *out_data = NULL;
     *out_size = 0;
     return gm_ok_void();
+}
+
+static gm_result_void_t fake_commit_read_message(void *self,
+                                                 const gm_oid_t *commit_oid,
+                                                 char **out_message) {
+    (void)self;
+    (void)commit_oid;
+    if (out_message == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "fake commit message requires output"));
+    }
+    *out_message = NULL;
+    return gm_err_void(GM_ERROR(GM_ERR_NOT_IMPLEMENTED,
+                                "fake commit read message not implemented"));
+}
+
+static void fake_commit_message_dispose(void *self, char *message) {
+    (void)self;
+    free(message);
+}
+
+static gm_result_void_t fake_walk_commits(void *self, const char *ref_name,
+                                          gm_git_commit_visit_cb cb,
+                                          void *userdata) {
+    (void)self;
+    (void)ref_name;
+    (void)cb;
+    (void)userdata;
+    return gm_err_void(GM_ERROR(GM_ERR_NOT_IMPLEMENTED,
+                                "fake walk commits not implemented"));
 }
 
 static gm_result_void_t fake_commit_tree_size(void *self,

@@ -16,6 +16,7 @@
 #include <git2/oid.h>
 #include <git2/refs.h>
 #include <git2/repository.h>
+#include <git2/revwalk.h>
 #include <git2/signature.h>
 #include <git2/tree.h>
 #include <stdbool.h>
@@ -66,6 +67,36 @@ static gm_result_void_t repository_path_impl(gm_libgit2_repository_port_state_t 
     if (gm_strcpy_safe(out_buffer, buffer_size, source) != GM_OK) {
         return gm_err_void(
             GM_ERROR(GM_ERR_PATH_TOO_LONG, "repository path exceeds buffer"));
+    }
+
+    return gm_ok_void();
+}
+
+static gm_result_void_t head_branch_impl(gm_libgit2_repository_port_state_t *state,
+                                         char *out_name, size_t out_name_size) {
+    if (out_name == NULL || out_name_size == 0U) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "head branch requires buffer"));
+    }
+
+    git_reference *head = NULL;
+    if (git_repository_head(&head, state->repo) != 0) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "failed to resolve repository head"));
+    }
+
+    const char *name = git_reference_shorthand(head);
+    if (name == NULL) {
+        git_reference_free(head);
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "head reference lacks shorthand"));
+    }
+
+    int copy_status = gm_strcpy_safe(out_name, out_name_size, name);
+    git_reference_free(head);
+    if (copy_status != GM_OK) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_PATH_TOO_LONG, "head branch name exceeds buffer"));
     }
 
     return gm_ok_void();
@@ -330,6 +361,38 @@ static gm_result_void_t reference_glob_latest_impl(
     return gm_ok_void();
 }
 
+static gm_result_void_t commit_read_message_impl(
+    gm_libgit2_repository_port_state_t *state, const gm_oid_t *commit_oid,
+    char **out_message) {
+    if (commit_oid == NULL || out_message == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "commit read message requires inputs"));
+    }
+
+    git_commit *commit = NULL;
+    if (git_commit_lookup(&commit, state->repo, commit_oid) != 0) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "commit not found while reading message"));
+    }
+
+    const char *message = git_commit_message_raw(commit);
+    if (message == NULL) {
+        git_commit_free(commit);
+        return gm_err_void(
+            GM_ERROR(GM_ERR_INVALID_FORMAT, "commit message missing"));
+    }
+
+    char *copy = strdup(message);
+    git_commit_free(commit);
+    if (copy == NULL) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_OUT_OF_MEMORY, "allocating commit message copy failed"));
+    }
+
+    *out_message = copy;
+    return gm_ok_void();
+}
+
 static gm_result_void_t commit_read_blob_impl(
     gm_libgit2_repository_port_state_t *state, const gm_oid_t *commit_oid,
     const char *path, uint8_t **out_data, size_t *out_size) {
@@ -488,6 +551,46 @@ static gm_result_void_t commit_tree_size_impl(
     return gm_ok_void();
 }
 
+static gm_result_void_t commit_walk_impl(gm_libgit2_repository_port_state_t *state,
+                                         const char *ref_name,
+                                         gm_git_commit_visit_cb cb,
+                                         void *userdata) {
+    if (ref_name == NULL || cb == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "commit walk requires ref and callback"));
+    }
+
+    git_revwalk *walk = NULL;
+    int commit_count = 0;
+    if (git_revwalk_new(&walk, state->repo) != 0) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_UNKNOWN, "unable to allocate revwalk"));
+    }
+
+    git_revwalk_sorting(walk, GIT_SORT_TIME);
+    if (git_revwalk_push_ref(walk, ref_name) != 0) {
+        git_revwalk_free(walk);
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "unable to push ref %s", ref_name));
+    }
+
+    git_oid oid;
+    while (git_revwalk_next(&oid, walk) == 0) {
+        int cb_result = cb(&oid, userdata);
+        commit_count++;
+        if (cb_result != GM_OK) {
+            git_revwalk_free(walk);
+            return gm_err_void(GM_ERROR(cb_result, "commit walk callback stop"));
+        }
+    }
+
+    git_revwalk_free(walk);
+    if (commit_count == 0) {
+        return gm_err_void(GM_ERROR(GM_ERR_NOT_FOUND, "no commits for ref"));
+    }
+    return gm_ok_void();
+}
+
 static gm_result_void_t commit_create_impl(
     gm_libgit2_repository_port_state_t *state, const gm_git_commit_spec_t *spec,
     gm_oid_t *out_commit_oid) {
@@ -571,6 +674,12 @@ static gm_result_void_t repository_path_bridge(
                                 out_buffer, buffer_size);
 }
 
+static gm_result_void_t head_branch_bridge(void *self, char *out_name,
+                                           size_t out_name_size) {
+    return head_branch_impl((gm_libgit2_repository_port_state_t *)self, out_name,
+                            out_name_size);
+}
+
 static gm_result_void_t build_tree_from_directory_bridge(void *self,
                                                          const char *dir_path,
                                                          gm_oid_t *out_tree_oid) {
@@ -606,11 +715,29 @@ static gm_result_void_t commit_read_blob_bridge(void *self,
                                  commit_oid, path, out_data, out_size);
 }
 
+static gm_result_void_t commit_read_message_bridge(
+    void *self, const gm_oid_t *commit_oid, char **out_message) {
+    return commit_read_message_impl((gm_libgit2_repository_port_state_t *)self,
+                                    commit_oid, out_message);
+}
+
+static void commit_message_dispose_bridge(void *self, char *message) {
+    (void)self;
+    free(message);
+}
+
 static gm_result_void_t commit_tree_size_bridge(void *self,
                                                 const gm_oid_t *commit_oid,
                                                 uint64_t *out_size_bytes) {
     return commit_tree_size_impl((gm_libgit2_repository_port_state_t *)self,
                                  commit_oid, out_size_bytes);
+}
+
+static gm_result_void_t walk_commits_bridge(void *self, const char *ref_name,
+                                            gm_git_commit_visit_cb cb,
+                                            void *userdata) {
+    return commit_walk_impl((gm_libgit2_repository_port_state_t *)self, ref_name,
+                            cb, userdata);
 }
 
 static gm_result_void_t reference_update_bridge(
@@ -620,10 +747,14 @@ static gm_result_void_t reference_update_bridge(
 
 static const gm_git_repository_port_vtbl_t GM_LIBGIT2_REPOSITORY_PORT_VTBL = {
     .repository_path = repository_path_bridge,
+    .head_branch = head_branch_bridge,
     .build_tree_from_directory = build_tree_from_directory_bridge,
     .reference_tip = reference_tip_bridge,
     .reference_glob_latest = reference_glob_latest_bridge,
     .commit_read_blob = commit_read_blob_bridge,
+    .commit_read_message = commit_read_message_bridge,
+    .commit_message_dispose = commit_message_dispose_bridge,
+    .walk_commits = walk_commits_bridge,
     .commit_tree_size = commit_tree_size_bridge,
     .commit_create = commit_create_bridge,
     .reference_update = reference_update_bridge,
