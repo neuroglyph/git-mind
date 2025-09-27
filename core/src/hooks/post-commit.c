@@ -9,6 +9,8 @@
 
 #include "../../include/gitmind/constants_internal.h"
 #include "augment.h"
+#include "gitmind/adapters/git/libgit2_repository_port.h"
+#include "gitmind/error.h"
 #include <gitmind/security/memory.h>
 
 /* Array management constants */
@@ -16,32 +18,10 @@
 #define ARRAY_GROWTH_FACTOR 2
 
 /* External functions we need */
-int journal_create_commit(git_repository *repo, const char *ref,
-                          const void *data, size_t len);
 int gm_journal_read(gm_context_t *ctx, const char *branch,
                     int (*callback)(const gm_edge_t *edge, void *userdata),
                     void *userdata);
 int gm_ulid_generate(char *ulid);
-
-/* Default git operations for context */
-static int resolve_blob(void *repo, const char *path, uint8_t *sha) {
-    return get_blob_sha((git_repository *)repo, "HEAD", path, sha);
-}
-
-static int create_commit(void *repo, const char *ref, const void *data,
-                         size_t len) {
-    return journal_create_commit((git_repository *)repo, ref, data, len);
-}
-
-static int read_commits(void *repo, const char *ref, void *callback,
-                        void *userdata) {
-    /* Not used in hook */
-    (void)repo;
-    (void)ref;
-    (void)callback;
-    (void)userdata;
-    return GM_OK;
-}
 
 /* Get list of changed files from git */
 /* Free files array on error */
@@ -230,12 +210,28 @@ int main(int argc, char **argv) {
     if (file_count <= MAX_CHANGED_FILES) {
         /* Initialize context */
         gm_memset_safe(&ctx, sizeof(ctx), 0, sizeof(ctx));
-        ctx.git_ops.resolve_blob = resolve_blob;
-        ctx.git_ops.create_commit = create_commit;
-        ctx.git_ops.read_commits = read_commits;
-        ctx.git_repo = repo;
+        void (*repo_port_dispose)(gm_git_repository_port_t *) = NULL;
+        gm_result_void_t port_result =
+            gm_libgit2_repository_port_create(&ctx.git_repo_port,
+                                              NULL,
+                                              &repo_port_dispose, repo);
+        if (!port_result.ok) {
+            if (port_result.u.err != NULL) {
+                gm_error_free(port_result.u.err);
+            }
+            free_changed_files(changed_files, file_count);
+            git_repository_free(repo);
+            git_libgit2_shutdown();
+            return 0;
+        }
+        ctx.git_repo_port_dispose = repo_port_dispose;
 
         process_all_files(&ctx, repo, changed_files, file_count, verbose);
+
+        if (ctx.git_repo_port_dispose != NULL) {
+            ctx.git_repo_port_dispose(&ctx.git_repo_port);
+            ctx.git_repo_port_dispose = NULL;
+        }
     } else if (verbose) {
         printf("Skipping: %zu files changed (max %d)\n", file_count,
                MAX_CHANGED_FILES);

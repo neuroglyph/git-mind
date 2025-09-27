@@ -86,7 +86,11 @@ GM_NODISCARD gm_result_void_t gm_fs_path_normalize_logical(const char *input,
             return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
                                         "normalized path exceeds buffer"));
         }
-        memcpy(output + dst, segment, seg_len);
+        // NOLINTNEXTLINE(clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling)
+        if (gm_memcpy_span(output + dst, output_size - dst, segment, seg_len) != 0) {
+            return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
+                                        "normalized path exceeds buffer"));
+        }
         dst += seg_len;
     }
 
@@ -104,9 +108,10 @@ GM_NODISCARD gm_result_void_t gm_fs_path_normalize_logical(const char *input,
     return gm_ok_void();
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 GM_NODISCARD gm_result_void_t gm_fs_path_dirname(const char *input,
-                                                 char *output,
-                                                 size_t output_size) {
+                                                char *output,
+                                                size_t output_size) {
     if (input == NULL || output == NULL || output_size == 0U) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
                                     "dirname requires buffers"));
@@ -164,6 +169,7 @@ GM_NODISCARD gm_result_void_t gm_fs_path_dirname(const char *input,
     return gm_ok_void();
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 GM_NODISCARD gm_result_void_t gm_fs_path_basename_append(char *base_io,
                                                          size_t buffer_size,
                                                          size_t *inout_len,

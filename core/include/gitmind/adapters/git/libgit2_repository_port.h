@@ -5,12 +5,13 @@
 #define GITMIND_ADAPTERS_GIT_LIBGIT2_REPOSITORY_PORT_H
 
 #include "gitmind/ports/git_repository_port.h"
+#include "gitmind/result.h"
+
+#include <git2/types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct git_repository git_repository;
 
 typedef struct gm_libgit2_repository_port_state
     gm_libgit2_repository_port_state_t;

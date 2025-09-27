@@ -2,6 +2,8 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind/journal.h"
+#include "gitmind/ports/git_repository_port.h"
+#include "gitmind/result.h"
 #include "gitmind/types.h"
 #include "gitmind/context.h"
 #include "gitmind/cbor/constants_cbor.h"

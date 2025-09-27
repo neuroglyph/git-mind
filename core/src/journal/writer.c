@@ -4,6 +4,7 @@
 #include "gitmind/journal.h"
 #include "gitmind/types.h"
 #include "gitmind/context.h"
+#include "gitmind/ports/git_repository_port.h"
 #include "gitmind/cbor/constants_cbor.h"
 #include "gitmind/error.h"
 #include "gitmind/result.h"
@@ -11,7 +12,7 @@
 #include "gitmind/edge_attributed.h"
 #include "gitmind/security/memory.h"
 
-#include <git2/types.h>
+#include <git2/oid.h>
 #include <sodium/utils.h>
 
 #include <stdio.h>
@@ -121,7 +122,8 @@ static int collect_parent_tip(const gm_oid_t *commit_oid, void *userdata) {
 /* Create journal commit */
 static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
                                  size_t cbor_len, git_oid *commit_oid) {
-    parent_lookup_ctx_t lookup_ctx = {0};
+    parent_lookup_ctx_t lookup_ctx;
+    gm_memset_safe(&lookup_ctx, sizeof(lookup_ctx), 0, sizeof(lookup_ctx));
     gm_result_void_t walk_result = gm_git_repository_port_walk_commits(
         jctx->repo_port, jctx->ref_name, collect_parent_tip, &lookup_ctx);
     if (!walk_result.ok && walk_result.u.err != NULL) {
@@ -134,11 +136,18 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
         return message_rc;
     }
 
+    const gm_oid_t *parent_list = NULL;
+    size_t parent_count = 0U;
+    if (lookup_ctx.found) {
+        parent_list = &lookup_ctx.tip.oid;
+        parent_count = 1U;
+    }
+
     gm_git_commit_spec_t spec = {
         .tree_oid = &jctx->empty_tree_oid,
         .message = message,
-        .parents = lookup_ctx.found ? &lookup_ctx.tip.oid : NULL,
-        .parent_count = lookup_ctx.found ? 1 : 0,
+        .parents = parent_list,
+        .parent_count = parent_count,
     };
 
     gm_result_void_t commit_result =
