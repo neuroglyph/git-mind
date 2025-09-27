@@ -101,7 +101,6 @@ int main(void) {
     ensure_branch_with_commit(repo, valid_branch);
 
     gm_context_t ctx = {0};
-    ctx.git_repo = repo;
 
     gm_result_void_t repo_port_result =
         gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,

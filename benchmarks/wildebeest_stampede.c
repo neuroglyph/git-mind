@@ -86,8 +86,7 @@ static void run_stampede(git_repository *repo, const char *branch,
 
     /* Add to journal */
     printf("Releasing the herd into the journal...\n");
-    gm_context_t ctx = {0};
-    ctx.git_repo = repo;
+    gm_context_t ctx = (gm_context_t){0};
 
     gm_result_void_t repo_port_result =
         gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,

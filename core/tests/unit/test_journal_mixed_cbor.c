@@ -73,7 +73,7 @@ int main(void) {
     /* Concatenate */
     uint8_t payload[1024]; memcpy(payload, buf1, len1); memcpy(payload + len1, buf2, len2);
 
-    gm_context_t ctx = {0}; ctx.git_repo = repo;
+    gm_context_t ctx = {0};
     gm_result_void_t repo_port_result =
         gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,
                                           &ctx.git_repo_port_dispose, repo);

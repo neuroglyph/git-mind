@@ -55,7 +55,6 @@ int main(void) {
     make_temp_ref(repo, "refs/gitmind/cache/test/12345");
 
     gm_context_t ctx = {0};
-    ctx.git_repo = repo;
 
     gm_result_void_t repo_port_result =
         gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,
