@@ -49,120 +49,95 @@ static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
     prefix[chars] = '\0';
 }
 
-/* Load cache metadata from commit message */
-/* Helper to find legacy timestamped cache refs: refs/gitmind/cache/<branch>/<ts> */
-static int find_legacy_cache_ref(git_repository *repo, const char *branch, git_oid *out_oid, uint64_t *out_time) {
-    char pattern[REF_NAME_BUFFER_SIZE + 8];
-    {
-        int rn = gm_snprintf(pattern, sizeof(pattern), "%s%s/*", GM_CACHE_REF_PREFIX, branch);
-        if (rn < 0 || (size_t)rn >= sizeof(pattern)) {
-            return GM_ERR_NOT_FOUND;
-        }
+static int unwrap_result_code(gm_result_void_t result) {
+    if (result.ok) {
+        return GM_OK;
     }
-    git_reference *best_ref = NULL;
-    git_reference *ref = NULL;
-    git_reference_iterator *iter = NULL;
-    int rc = git_reference_iterator_glob_new(&iter, repo, pattern);
-    if (rc < 0) return GM_ERR_NOT_FOUND;
-
-    uint64_t best_time = 0;
-    while (git_reference_next(&ref, iter) == 0) {
-        const char *name = git_reference_name(ref);
-        git_oid oid;
-        if (git_reference_name_to_id(&oid, repo, name) == 0) {
-            git_commit *c = NULL;
-            if (git_commit_lookup(&c, repo, &oid) == 0) {
-                git_time_t t = git_commit_time(c);
-                if ((uint64_t)t > best_time) {
-                    best_time = (uint64_t)t;
-                    if (best_ref) git_reference_free(best_ref);
-                    best_ref = ref; /* take ownership */
-                    ref = NULL;     /* prevent double free */
-                    *out_oid = oid;
-                }
-                git_commit_free(c);
-            }
-        }
-        if (ref) git_reference_free(ref);
-        ref = NULL;
+    int code = GM_ERR_UNKNOWN;
+    if (result.u.err != NULL) {
+        code = result.u.err->code;
+        gm_error_free(result.u.err);
     }
-    git_reference_iterator_free(iter);
-    if (ref) git_reference_free(ref);
-    if (!best_ref) return GM_ERR_NOT_FOUND;
-    if (out_time) *out_time = best_time;
-    git_reference_free(best_ref);
-    return GM_OK;
+    return code;
 }
 
 int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *meta) {
-    if (!ctx || !ctx->git_repo || !branch || !meta) return GM_ERR_INVALID_ARGUMENT;
-    git_repository *repo = (git_repository *)ctx->git_repo;
-    git_reference *ref = NULL;
-    git_commit *commit = NULL;
-    char ref_name[REF_NAME_BUFFER_SIZE];
-    int rc;
+    if (ctx == NULL || branch == NULL || meta == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    if (ctx->git_repo_port.vtbl == NULL) {
+        return GM_ERR_INVALID_STATE;
+    }
 
-    /* Build cache ref name and resolve */
+    char ref_name[REF_NAME_BUFFER_SIZE];
     {
         int brc = gm_build_ref(ref_name, sizeof(ref_name), GM_CACHE_REF_PREFIX, branch);
         if (brc != GM_OK) {
             return brc;
         }
     }
-    rc = git_reference_lookup(&ref, repo, ref_name);
-    git_oid oid;
-    if (rc == 0) {
-        rc = git_reference_name_to_id(&oid, repo, ref_name);
-        git_reference_free(ref);
-        if (rc < 0) return GM_ERR_NOT_FOUND;
-    } else {
-        /* Fallback: look for legacy timestamped refs */
-        uint64_t ts = 0;
-        rc = find_legacy_cache_ref(repo, branch, &oid, &ts);
-        if (rc != GM_OK) return GM_ERR_NOT_FOUND;
+
+    gm_git_reference_tip_t cache_tip = {0};
+    int rc = unwrap_result_code(gm_git_repository_port_reference_tip(
+        &ctx->git_repo_port, ref_name, &cache_tip));
+    if (rc != GM_OK) {
+        return rc;
     }
 
-    rc = git_commit_lookup(&commit, repo, &oid);
-    if (rc < 0) {
-        return GM_ERR_UNKNOWN;
+    if (!cache_tip.has_target) {
+        char pattern[REF_NAME_BUFFER_SIZE + 8];
+        int rn = gm_snprintf(pattern, sizeof(pattern), "%s%s/*", GM_CACHE_REF_PREFIX,
+                              branch);
+        if (rn < 0 || (size_t)rn >= sizeof(pattern)) {
+            return GM_ERR_NOT_FOUND;
+        }
+
+        rc = unwrap_result_code(gm_git_repository_port_reference_glob_latest(
+            &ctx->git_repo_port, pattern, &cache_tip));
+        if (rc != GM_OK) {
+            return rc;
+        }
+        if (!cache_tip.has_target) {
+            return GM_ERR_NOT_FOUND;
+        }
     }
 
-    /* Synthesize metadata from repo state (no binary commit message parsing) */
-    gm_memset_safe(meta, sizeof *meta, 0, sizeof *meta);
+    gm_memset_safe(meta, sizeof(*meta), 0, sizeof(*meta));
     meta->version = GM_CACHE_VERSION;
     meta->shard_bits = GM_CACHE_SHARD_BITS;
     (void)gm_strcpy_safe(meta->branch, GM_CACHE_BRANCH_NAME_SIZE, branch);
     meta->branch[GM_CACHE_BRANCH_NAME_SIZE - 1] = '\0';
-    meta->journal_tip_time = (uint64_t)git_commit_time(commit);
-    git_commit_free(commit);
+    meta->journal_tip_time = cache_tip.commit_time;
+    meta->cache_tip_oid = cache_tip.oid;
 
-    /* Resolve current journal tip OID for branch */
-    git_reference *journal_ref = NULL;
     char journal_ref_name[REF_NAME_BUFFER_SIZE];
     {
         int brc = gm_build_ref(journal_ref_name, sizeof(journal_ref_name),
                                GITMIND_EDGES_REF_PREFIX, branch);
         if (brc != GM_OK) {
-            gm_memset_safe(&meta->journal_tip_oid_bin, sizeof(meta->journal_tip_oid_bin), 0, sizeof(meta->journal_tip_oid_bin));
+            gm_memset_safe(&meta->journal_tip_oid_bin,
+                           sizeof(meta->journal_tip_oid_bin), 0,
+                           sizeof(meta->journal_tip_oid_bin));
             meta->journal_tip_oid[0] = '\0';
+            meta->edge_count = 0;
+            meta->build_time_ms = 0;
+            return GM_OK;
         }
-    }
-    if (git_reference_lookup(&journal_ref, repo, journal_ref_name) == 0) {
-        const git_oid *tip_oid = git_reference_target(journal_ref);
-        if (tip_oid) {
-            meta->journal_tip_oid_bin = *tip_oid;
-            git_oid_tostr(meta->journal_tip_oid, sizeof(meta->journal_tip_oid), tip_oid);
-        } else {
-            gm_memset_safe(&meta->journal_tip_oid_bin, sizeof(meta->journal_tip_oid_bin), 0, sizeof(meta->journal_tip_oid_bin));
-            meta->journal_tip_oid[0] = '\0';
-        }
-        git_reference_free(journal_ref);
-    } else {
-        gm_memset_safe(&meta->journal_tip_oid_bin, sizeof(meta->journal_tip_oid_bin), 0, sizeof(meta->journal_tip_oid_bin));
-        meta->journal_tip_oid[0] = '\0';
     }
 
-    /* edge_count and build_time_ms unavailable without dedicated storage */
+    gm_git_reference_tip_t journal_tip = {0};
+    rc = unwrap_result_code(gm_git_repository_port_reference_tip(
+        &ctx->git_repo_port, journal_ref_name, &journal_tip));
+    if (rc != GM_OK || !journal_tip.has_target) {
+        gm_memset_safe(&meta->journal_tip_oid_bin, sizeof(meta->journal_tip_oid_bin), 0,
+                       sizeof(meta->journal_tip_oid_bin));
+        meta->journal_tip_oid[0] = '\0';
+    } else {
+        meta->journal_tip_oid_bin = journal_tip.oid;
+        (void)gm_strcpy_safe(meta->journal_tip_oid, sizeof(meta->journal_tip_oid),
+                             journal_tip.oid_hex);
+    }
+
     meta->edge_count = 0;
     meta->build_time_ms = 0;
     return GM_OK;
@@ -170,12 +145,13 @@ int gm_cache_load_meta(gm_context_t *ctx, const char *branch, gm_cache_meta_t *m
 
 /* Check if cache is stale */
 bool gm_cache_is_stale(gm_context_t *ctx, const char *branch) {
-    gm_cache_meta_t meta;
-    git_repository *repo = (git_repository *)ctx->git_repo;
+    if (ctx == NULL || branch == NULL || ctx->git_repo_port.vtbl == NULL) {
+        return true;
+    }
 
-    /* Try to load cache metadata */
+    gm_cache_meta_t meta;
     if (gm_cache_load_meta(ctx, branch, &meta) != GM_OK) {
-        return true; /* No cache = stale */
+        return true;
     }
 
     /* Check age */
@@ -185,7 +161,6 @@ bool gm_cache_is_stale(gm_context_t *ctx, const char *branch) {
     }
 
     /* Check if journal has new commits since cache was built */
-    git_reference *journal_ref = NULL;
     char journal_ref_name[REF_NAME_BUFFER_SIZE];
     {
         int brc = gm_build_ref(journal_ref_name, sizeof(journal_ref_name),
@@ -194,45 +169,38 @@ bool gm_cache_is_stale(gm_context_t *ctx, const char *branch) {
             return true; /* treat as stale if we can't build ref safely */
         }
     }
-
-    if (git_reference_lookup(&journal_ref, repo, journal_ref_name) == 0) {
-        const git_oid *current_tip = git_reference_target(journal_ref);
-        if (current_tip) {
-            /* Compare with cached tip OID (binary first) */
-            if (!git_oid_is_zero(&meta.journal_tip_oid_bin)) {
-                if (git_oid_cmp(current_tip, &meta.journal_tip_oid_bin) != 0) {
-                    git_reference_free(journal_ref);
-                    return true;
-                }
-            } else if (meta.journal_tip_oid[0] != '\0') {
-                git_oid cached_tip;
-                if (git_oid_fromstr(&cached_tip, meta.journal_tip_oid) == 0) {
-                    if (git_oid_cmp(current_tip, &cached_tip) != 0) {
-                        git_reference_free(journal_ref);
-                        return true;
-                    }
-                }
-            } else {
-                /* No previous tip known */
-                git_reference_free(journal_ref);
-                return true;
-            }
-        }
-        git_reference_free(journal_ref);
+    gm_git_reference_tip_t current_tip = {0};
+    int rc = unwrap_result_code(gm_git_repository_port_reference_tip(
+        &ctx->git_repo_port, journal_ref_name, &current_tip));
+    if (rc != GM_OK || !current_tip.has_target) {
+        return true;
     }
 
-    return false;
+    bool have_binary = (memcmp(&meta.journal_tip_oid_bin, &(const gm_oid_t){0},
+                               sizeof(gm_oid_t)) != 0);
+    if (have_binary) {
+        return git_oid_cmp(&current_tip.oid, &meta.journal_tip_oid_bin) != 0;
+    }
+
+    if (meta.journal_tip_oid[0] != '\0') {
+        git_oid cached_tip = {0};
+        if (git_oid_fromstr(&cached_tip, meta.journal_tip_oid) != 0) {
+            return true;
+        }
+        return git_oid_cmp(&current_tip.oid, &cached_tip) != 0;
+    }
+
+    return true; /* No previous tip known */
 }
 
 /* Load bitmap from cache tree */
-static int load_bitmap_from_cache(git_repository *repo, git_tree *tree,
+static int load_bitmap_from_cache(const gm_git_repository_port_t *port,
+                                  const gm_oid_t *cache_commit_oid,
                                   const uint8_t *sha, const char *suffix,
                                   roaring_bitmap_t **bitmap) {
     char prefix[SHA_PREFIX_BUFFER_SIZE];
     char sha_hex[SHA_HEX_SIZE];
     char path[CACHE_PATH_BUFFER_SIZE];
-    git_tree_entry *entry = NULL;
-    git_blob *blob = NULL;
     int rc;
 
     /* Get shard prefix */
@@ -254,22 +222,16 @@ static int load_bitmap_from_cache(git_repository *repo, git_tree *tree,
     }
 
     /* Look up tree entry */
-    rc = git_tree_entry_bypath(&entry, tree, path);
-    if (rc < 0)
-        return GM_ERR_NOT_FOUND;
+    uint8_t *blob_data = NULL;
+    size_t blob_size = 0;
+    rc = unwrap_result_code(gm_git_repository_port_commit_read_blob(
+        port, cache_commit_oid, path, &blob_data, &blob_size));
+    if (rc != GM_OK) {
+        return rc;
+    }
 
-    /* Get blob */
-    rc = git_blob_lookup(&blob, repo, git_tree_entry_id(entry));
-    git_tree_entry_free(entry);
-    if (rc < 0)
-        return GM_ERR_UNKNOWN;
-
-    /* Deserialize bitmap */
-    const void *data = git_blob_rawcontent(blob);
-    size_t size = git_blob_rawsize(blob);
-
-    rc = gm_bitmap_deserialize(data, size, bitmap);
-    git_blob_free(blob);
+    rc = gm_bitmap_deserialize(blob_data, blob_size, bitmap);
+    free(blob_data);
 
     return rc;
 }
@@ -317,53 +279,26 @@ static int journal_scan_callback_generic(const gm_edge_t *edge,
 }
 
 /* Try to query from cache */
-static int try_cache_query(git_repository *repo, const char *branch,
+static int try_cache_query(gm_context_t *ctx, const char *branch,
                            const uint8_t *sha, const char *index_type,
                            gm_cache_result_t *result) {
-    git_commit *cache_commit = NULL;
-    git_tree *cache_tree = NULL;
     roaring_bitmap_t *bitmap = NULL;
-    git_oid cache_oid;
-    char ref_name[REF_NAME_BUFFER_SIZE];
     int rc;
 
     /* Try to load cache metadata */
     gm_cache_meta_t meta;
-    gm_context_t ctx = {0};
-    ctx.git_repo = repo;
-    rc = gm_cache_load_meta(&ctx, branch, &meta);
+    rc = gm_cache_load_meta(ctx, branch, &meta);
     if (rc != GM_OK) {
         return rc;
     }
 
-    /* Get cache commit */
-    {
-        int brc = gm_build_ref(ref_name, sizeof(ref_name), GM_CACHE_REF_PREFIX, branch);
-        if (brc != GM_OK) {
-            return brc;
-        }
-    }
-    rc = git_reference_name_to_id(&cache_oid, repo, ref_name);
-    if (rc < 0) {
+    if (memcmp(&meta.cache_tip_oid, &(const gm_oid_t){0}, sizeof(gm_oid_t)) == 0) {
         return GM_ERR_NOT_FOUND;
     }
 
-    rc = git_commit_lookup(&cache_commit, repo, &cache_oid);
-    if (rc < 0) {
-        return GM_ERR_UNKNOWN;
-    }
-
-    /* Get cache tree */
-    rc = git_commit_tree(&cache_tree, cache_commit);
-    if (rc < 0) {
-        git_commit_free(cache_commit);
-        return GM_ERR_UNKNOWN;
-    }
-
     /* Load bitmap for this SHA */
-    rc = load_bitmap_from_cache(repo, cache_tree, sha, index_type, &bitmap);
-    git_tree_free(cache_tree);
-    git_commit_free(cache_commit);
+    rc = load_bitmap_from_cache(&ctx->git_repo_port, &meta.cache_tip_oid, sha,
+                                index_type, &bitmap);
 
     if (rc != GM_OK) {
         return rc;
@@ -422,38 +357,36 @@ static int fallback_journal_scan(gm_context_t *ctx, const char *branch,
 }
 
 /* Generic cache query function */
-static int cache_query_generic(git_repository *repo, const char *branch,
+static int cache_query_generic(gm_context_t *ctx, const char *branch,
                                const uint8_t *sha, const char *index_type,
                                int check_source, gm_cache_result_t *result) {
-    gm_context_t ctx = {0};
     int rc;
 
     /* Initialize result */
     gm_memset_safe(result, sizeof(gm_cache_result_t), 0, sizeof(gm_cache_result_t));
-    ctx.git_repo = repo;
 
     /* Try cache first */
-    rc = try_cache_query(repo, branch, sha, index_type, result);
+    rc = try_cache_query(ctx, branch, sha, index_type, result);
     if (rc == GM_OK) {
         return GM_OK;
     }
 
     /* Fall back to journal scan */
-    return fallback_journal_scan(&ctx, branch, sha, check_source, result);
+    return fallback_journal_scan(ctx, branch, sha, check_source, result);
 }
 
 /* Query edges by source SHA (forward index) */
 int gm_cache_query_fanout(gm_context_t *ctx, const char *branch,
                           const gm_oid_t *src_oid, gm_cache_result_t *result) {
-    git_repository *repo = (git_repository *)ctx->git_repo;
-    return cache_query_generic(repo, branch, (const uint8_t *)src_oid->id, "forward", 1, result);
+    return cache_query_generic(ctx, branch, (const uint8_t *)src_oid->id,
+                               "forward", 1, result);
 }
 
 /* Query edges by target SHA (reverse index) */
 int gm_cache_query_fanin(gm_context_t *ctx, const char *branch,
                          const gm_oid_t *tgt_oid, gm_cache_result_t *result) {
-    git_repository *repo = (git_repository *)ctx->git_repo;
-    return cache_query_generic(repo, branch, (const uint8_t *)tgt_oid->id, "reverse", 0, result);
+    return cache_query_generic(ctx, branch, (const uint8_t *)tgt_oid->id,
+                               "reverse", 0, result);
 }
 
 /* Free cache result */

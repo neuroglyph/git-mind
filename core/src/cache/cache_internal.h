@@ -13,7 +13,4 @@
 int gm_cache_calculate_size(git_repository *repo, const git_oid *tree_oid,
                             uint64_t *size_bytes);
 
-int gm_build_tree_from_directory(git_repository *repo, const char *dir_path,
-                                 git_oid *tree_oid);
-
 #endif /* GITMIND_CACHE_INTERNAL_H */

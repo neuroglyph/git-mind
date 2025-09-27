@@ -10,6 +10,8 @@
 #include "gitmind/cache.h"
 #include "gitmind/context.h"
 #include "gitmind/error.h"
+#include "gitmind/result.h"
+#include "gitmind/adapters/git/libgit2_repository_port.h"
 
 static void make_temp_ref(git_repository *repo, const char *legacy_refname) {
     git_treebuilder *tb = NULL;
@@ -54,11 +56,19 @@ int main(void) {
 
     gm_context_t ctx = {0};
     ctx.git_repo = repo;
+
+    gm_result_void_t repo_port_result =
+        gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,
+                                          &ctx.git_repo_port_dispose, repo);
+    assert(repo_port_result.ok);
     gm_cache_meta_t meta;
     rc = gm_cache_load_meta(&ctx, "test", &meta);
     assert(rc == GM_OK);
     assert(strcmp(meta.branch, "test") == 0);
 
+    if (ctx.git_repo_port_dispose != NULL) {
+        ctx.git_repo_port_dispose(&ctx.git_repo_port);
+    }
     git_repository_free(repo);
     git_libgit2_shutdown();
     printf("OK\n");

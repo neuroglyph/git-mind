@@ -11,6 +11,7 @@
 /* Keep time ops local here to preserve stable test interfaces */
 
 #include "gitmind/ports/fs_temp_port.h"
+#include "gitmind/ports/git_repository_port.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,6 +49,9 @@ typedef struct gm_context {
     /* Ports */
     gm_fs_temp_port_t fs_temp_port;
     void (*fs_temp_port_dispose)(gm_fs_temp_port_t *port);
+
+    gm_git_repository_port_t git_repo_port;
+    void (*git_repo_port_dispose)(gm_git_repository_port_t *port);
 } gm_context_t;
 
 #ifdef __cplusplus

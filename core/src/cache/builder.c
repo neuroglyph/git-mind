@@ -7,11 +7,11 @@
 #include "gitmind/error.h"
 
 int gm_cache_rebuild(gm_context_t *ctx, const char *branch, bool force_full) {
-    if (ctx == NULL || ctx->git_repo == NULL || branch == NULL) {
+    if (ctx == NULL || branch == NULL) {
         return GM_ERR_INVALID_ARGUMENT;
     }
 
-    if (ctx->fs_temp_port.vtbl == NULL) {
+    if (ctx->fs_temp_port.vtbl == NULL || ctx->git_repo_port.vtbl == NULL) {
         return GM_ERR_INVALID_STATE;
     }
 

@@ -128,10 +128,10 @@ src = files(
   'core/src/cache/bitmap.c',
   'core/src/cache/builder.c',
   'core/src/cache/query.c',
-  'core/src/cache/tree_builder.c',
   'core/src/cache/tree_size.c',
   'core/src/fs/path_utils.c',
   'core/src/util/ref.c',
+  'core/src/adapters/git/libgit2_repository_port.c',
 )
 
 # Include directories

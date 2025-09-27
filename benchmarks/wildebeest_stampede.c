@@ -21,6 +21,7 @@
 
 #include "../include/gitmind.h"
 #include "gitmind/adapters/fs/posix_temp_adapter.h"
+#include "gitmind/adapters/git/libgit2_repository_port.h"
 #include "gitmind/result.h"
 
 #define WILDEBEEST_COUNT 100000 /* Start with 100K edges */
@@ -88,6 +89,14 @@ static void run_stampede(git_repository *repo, const char *branch,
     gm_context_t ctx = {0};
     ctx.git_repo = repo;
 
+    gm_result_void_t repo_port_result =
+        gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,
+                                          &ctx.git_repo_port_dispose, repo);
+    if (!repo_port_result.ok) {
+        fprintf(stderr, "failed to create git repository port\n");
+        exit(EXIT_FAILURE);
+    }
+
     gm_result_void_t fs_result =
         gm_posix_fs_temp_port_create(&ctx.fs_temp_port, NULL,
                                      &ctx.fs_temp_port_dispose);
@@ -142,6 +151,9 @@ static void run_stampede(git_repository *repo, const char *branch,
 
     if (ctx.fs_temp_port_dispose != NULL) {
         ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
+    }
+    if (ctx.git_repo_port_dispose != NULL) {
+        ctx.git_repo_port_dispose(&ctx.git_repo_port);
     }
     free(herd);
 }

@@ -3,14 +3,7 @@
 
 #include "gitmind/cache/internal/rebuild_service.h"
 
-#include <git2/buffer.h>
-#include <git2/commit.h>
-#include <git2/odb.h>
 #include <git2/oid.h>
-#include <git2/refs.h>
-#include <git2/repository.h>
-#include <git2/signature.h>
-#include <git2/tree.h>
 
 #include <limits.h>
 #include <stdbool.h>
@@ -22,7 +15,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../../cache/cache_internal.h"
 #include "gitmind/cache.h"
 #include "gitmind/cache/bitmap.h"
 #include "gitmind/cache/internal/edge_map.h"
@@ -31,6 +23,7 @@
 #include "gitmind/edge.h"
 #include "gitmind/error.h"
 #include "gitmind/journal.h"
+#include "gitmind/ports/git_repository_port.h"
 #include "gitmind/ports/fs_temp_port.h"
 #include "gitmind/result.h"
 #include "gitmind/security/memory.h"
@@ -45,12 +38,14 @@ _Static_assert(CLOCKS_PER_SEC >= MILLIS_PER_SECOND,
     ((clock_t)((CLOCKS_PER_SEC + (MILLIS_PER_SECOND - 1)) / MILLIS_PER_SECOND))
 #define CACHE_TEMP_COMPONENT "cache"
 
-static int cache_get_journal_tip(git_repository *repo, const char *branch,
-                                 gm_cache_meta_t *meta);
-static int cache_create_commit(git_repository *repo, const git_oid *tree_oid,
-                               const gm_cache_meta_t *meta, git_oid *commit_oid);
-static int cache_update_ref(git_repository *repo, const char *branch,
-                            const git_oid *commit_oid);
+static int cache_get_journal_tip(const gm_git_repository_port_t *port,
+                                 const char *branch, gm_cache_meta_t *meta);
+static int cache_create_commit(const gm_git_repository_port_t *port,
+                               const gm_oid_t *tree_oid,
+                               const gm_cache_meta_t *meta,
+                               gm_oid_t *commit_oid);
+static int cache_update_ref(const gm_git_repository_port_t *port,
+                            const char *branch, const gm_oid_t *commit_oid);
 
 static int unwrap_result(gm_result_void_t result) {
     if (result.ok) {
@@ -66,22 +61,24 @@ static int unwrap_result(gm_result_void_t result) {
 }
 
 static int compute_repo_id(gm_context_t *ctx, gm_repo_id_t *repo_id) {
-    if (ctx == NULL || repo_id == NULL || ctx->git_repo == NULL) {
+    if (ctx == NULL || repo_id == NULL) {
         return GM_ERR_INVALID_ARGUMENT;
     }
-    if (ctx->fs_temp_port.vtbl == NULL) {
+    if (ctx->fs_temp_port.vtbl == NULL || ctx->git_repo_port.vtbl == NULL) {
         return GM_ERR_INVALID_STATE;
     }
 
-    git_repository *repo = (git_repository *)ctx->git_repo;
-    const char *repo_path = git_repository_path(repo);
-    if (repo_path == NULL) {
-        return GM_ERR_INVALID_STATE;
+    char repo_path[GM_PATH_MAX];
+    int code = unwrap_result(gm_git_repository_port_repository_path(
+        &ctx->git_repo_port, GM_GIT_REPOSITORY_PATH_GITDIR, repo_path,
+        sizeof(repo_path)));
+    if (code != GM_OK) {
+        return code;
     }
 
     const char *canonical = NULL;
     gm_fs_canon_opts_t canon_opts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
-    int code = unwrap_result(gm_fs_temp_port_canonicalize_ex(
+    code = unwrap_result(gm_fs_temp_port_canonicalize_ex(
         &ctx->fs_temp_port, repo_path, canon_opts, &canonical));
     if (code != GM_OK) {
         return code;
@@ -246,9 +243,13 @@ static int cache_build_edge_map(gm_edge_map_t **forward_map,
     return GM_OK;
 }
 
-static int build_tree_from_temp(git_repository *repo, const char *temp_dir,
-                                git_oid *tree_oid) {
-    return gm_build_tree_from_directory(repo, temp_dir, tree_oid);
+static int build_tree_from_temp(const gm_git_repository_port_t *port,
+                                const char *temp_dir, gm_oid_t *tree_oid) {
+    if (port == NULL || port->vtbl == NULL) {
+        return GM_ERR_INVALID_STATE;
+    }
+    return unwrap_result(gm_git_repository_port_build_tree_from_directory(
+        port, temp_dir, tree_oid));
 }
 
 static int cache_prepare_rebuild(gm_context_t *ctx,
@@ -327,7 +328,8 @@ static int cache_collect_and_write(gm_context_t *ctx, const char *branch,
                                  GM_CACHE_SHARD_BITS);
 }
 
-static int cache_populate_meta(git_repository *repo, const char *branch,
+static int cache_populate_meta(const gm_git_repository_port_t *port,
+                               const char *branch,
                                const cache_meta_inputs_t *inputs,
                                gm_cache_meta_t *meta) {
     meta->journal_tip_time = (uint64_t)time(NULL);
@@ -341,34 +343,35 @@ static int cache_populate_meta(git_repository *repo, const char *branch,
     }
     (void)gm_strcpy_safe(meta->branch, GM_CACHE_BRANCH_NAME_SIZE, branch);
 
-    return cache_get_journal_tip(repo, branch, meta);
+    return cache_get_journal_tip(port, branch, meta);
 }
 
-static int cache_build_commit_and_update(git_repository *repo,
+static int cache_build_commit_and_update(const gm_git_repository_port_t *port,
                                          const cache_commit_inputs_t *inputs,
                                          const gm_cache_meta_t *meta) {
     if (inputs == NULL || inputs->temp_dir == NULL ||
         inputs->temp_dir->path == NULL) {
         return GM_ERR_INVALID_ARGUMENT;
     }
-    git_oid tree_oid;
-    int result_code = build_tree_from_temp(repo, inputs->temp_dir->path, &tree_oid);
+    gm_oid_t tree_oid;
+    int result_code =
+        build_tree_from_temp(port, inputs->temp_dir->path, &tree_oid);
     if (result_code != GM_OK) {
         return result_code;
     }
 
-    git_oid commit_oid;
-    result_code = cache_create_commit(repo, &tree_oid, meta, &commit_oid);
+    gm_oid_t commit_oid;
+    result_code = cache_create_commit(port, &tree_oid, meta, &commit_oid);
     if (result_code != GM_OK) {
         return result_code;
     }
 
-    return cache_update_ref(repo, inputs->branch, &commit_oid);
+    return cache_update_ref(port, inputs->branch, &commit_oid);
 }
 
-static int cache_get_journal_tip(git_repository *repo, const char *branch,
+static int cache_get_journal_tip(const gm_git_repository_port_t *port,
+                                 const char *branch,
                                  gm_cache_meta_t *meta) {
-    git_reference *journal_ref = NULL;
     char journal_ref_name[REF_NAME_BUFFER_SIZE];
     {
         int brc = gm_build_ref(journal_ref_name, sizeof(journal_ref_name),
@@ -377,74 +380,49 @@ static int cache_get_journal_tip(git_repository *repo, const char *branch,
             return brc;
         }
     }
-
-    if (git_reference_lookup(&journal_ref, repo, journal_ref_name) == 0) {
-        const git_oid *tip_oid = git_reference_target(journal_ref);
-        if (tip_oid) {
-            git_oid_tostr(meta->journal_tip_oid, sizeof(meta->journal_tip_oid),
-                          tip_oid);
-            meta->journal_tip_oid_bin = *tip_oid;
-
-            git_commit *tip_commit = NULL;
-            if (git_commit_lookup(&tip_commit, repo, tip_oid) == 0) {
-                meta->journal_tip_time = (uint64_t)git_commit_time(tip_commit);
-                git_commit_free(tip_commit);
-            }
-        }
-        git_reference_free(journal_ref);
-    } else {
-        meta->journal_tip_oid[0] = '\0';
-        gm_memset_safe(&meta->journal_tip_oid_bin, sizeof(meta->journal_tip_oid_bin), 0,
-                       sizeof(meta->journal_tip_oid_bin));
+    gm_git_reference_tip_t tip = {0};
+    int tip_status = unwrap_result(
+        gm_git_repository_port_reference_tip(port, journal_ref_name, &tip));
+    if (tip_status != GM_OK) {
+        return tip_status;
     }
 
+    if (!tip.has_target) {
+        meta->journal_tip_oid[0] = '\0';
+        gm_memset_safe(&meta->journal_tip_oid_bin,
+                       sizeof(meta->journal_tip_oid_bin), 0,
+                       sizeof(meta->journal_tip_oid_bin));
+        return GM_OK;
+    }
+
+    if (gm_strcpy_safe(meta->journal_tip_oid, sizeof(meta->journal_tip_oid),
+                       tip.oid_hex) != GM_OK) {
+        return GM_ERR_PATH_TOO_LONG;
+    }
+    meta->journal_tip_oid_bin = tip.oid;
+    meta->journal_tip_time = tip.commit_time;
     return GM_OK;
 }
 
-static int cache_create_commit(git_repository *repo, const git_oid *tree_oid,
+static int cache_create_commit(const gm_git_repository_port_t *port,
+                               const gm_oid_t *tree_oid,
                                const gm_cache_meta_t *meta __attribute__((unused)),
-                               git_oid *commit_oid) {
-    git_signature *sig = NULL;
-    git_tree *tree = NULL;
-    git_odb *odb = NULL;
-    int git_status = 0;
-
-    git_status = git_signature_default(&sig, repo);
-    if (git_status < 0) {
-        return GM_ERR_UNKNOWN;
+                               gm_oid_t *commit_oid) {
+    if (port == NULL || port->vtbl == NULL) {
+        return GM_ERR_INVALID_STATE;
     }
 
-    git_status = git_tree_lookup(&tree, repo, tree_oid);
-    if (git_status < 0) {
-        git_signature_free(sig);
-        return GM_ERR_UNKNOWN;
-    }
+    gm_git_commit_spec_t spec = {
+        .tree_oid = tree_oid,
+        .message = "Cache metadata",
+    };
 
-    git_buf commit_buf = {0};
-    git_status = git_commit_create_buffer(&commit_buf, repo, sig, sig,
-                                          NULL,
-                                          "Cache metadata",
-                                          tree, 0, NULL);
-
-    if (git_status == 0) {
-        git_status = git_repository_odb(&odb, repo);
-        if (git_status == 0) {
-            git_status =
-                git_odb_write(commit_oid, odb, commit_buf.ptr, commit_buf.size,
-                              GIT_OBJECT_COMMIT);
-            git_odb_free(odb);
-        }
-        git_buf_dispose(&commit_buf);
-    }
-
-    git_tree_free(tree);
-    git_signature_free(sig);
-
-    return (git_status < 0) ? GM_ERR_UNKNOWN : GM_OK;
+    return unwrap_result(
+        gm_git_repository_port_commit_create(port, &spec, commit_oid));
 }
 
-static int cache_update_ref(git_repository *repo, const char *branch,
-                            const git_oid *commit_oid) {
+static int cache_update_ref(const gm_git_repository_port_t *port,
+                            const char *branch, const gm_oid_t *commit_oid) {
     char ref_name[REF_NAME_BUFFER_SIZE];
     {
         int ref_status =
@@ -454,14 +432,15 @@ static int cache_update_ref(git_repository *repo, const char *branch,
         }
     }
 
-    git_reference *ref = NULL;
-    int git_status = git_reference_create(&ref, repo, ref_name, commit_oid, 1,
-                                          "Cache rebuild");
-    if (ref != NULL) {
-        git_reference_free(ref);
-    }
+    gm_git_reference_update_spec_t update_spec = {
+        .ref_name = ref_name,
+        .target_oid = commit_oid,
+        .log_message = "Cache rebuild",
+        .force = true,
+    };
 
-    return (git_status < 0) ? GM_ERR_UNKNOWN : GM_OK;
+    return unwrap_result(
+        gm_git_repository_port_reference_update(port, &update_spec));
 }
 
 static void cache_cleanup(gm_context_t *ctx, gm_edge_map_t *forward,
@@ -473,11 +452,13 @@ static void cache_cleanup(gm_context_t *ctx, gm_edge_map_t *forward,
 
 int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
                              bool force_full) {
-    if (ctx == NULL || ctx->git_repo == NULL) {
+    if (ctx == NULL || branch == NULL) {
         return GM_ERR_INVALID_ARGUMENT;
     }
+    if (ctx->fs_temp_port.vtbl == NULL || ctx->git_repo_port.vtbl == NULL) {
+        return GM_ERR_INVALID_STATE;
+    }
 
-    git_repository *repo = (git_repository *)ctx->git_repo;
     gm_edge_map_t *forward_map = NULL;
     gm_edge_map_t *reverse_map = NULL;
     gm_tempdir_t temp_dir = {0};
@@ -513,7 +494,8 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
         .total_edges = total_edges,
         .start_time = start_time,
     };
-    result_code = cache_populate_meta(repo, branch, &meta_inputs, &meta);
+    result_code =
+        cache_populate_meta(&ctx->git_repo_port, branch, &meta_inputs, &meta);
     if (result_code != GM_OK) {
         goto cleanup;
     }
@@ -522,7 +504,8 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
         .branch = branch,
         .temp_dir = &temp_dir,
     };
-    result_code = cache_build_commit_and_update(repo, &commit_inputs, &meta);
+    result_code = cache_build_commit_and_update(&ctx->git_repo_port,
+                                                &commit_inputs, &meta);
 
 cleanup:
     cache_cleanup(ctx, forward_map, reverse_map, &temp_dir);
