@@ -6,7 +6,6 @@
 
 #include <stddef.h>
 
-#include "gitmind/error.h"
 #include "gitmind/result.h"
 
 #ifdef __cplusplus

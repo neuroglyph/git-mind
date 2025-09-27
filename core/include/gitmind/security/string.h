@@ -71,7 +71,7 @@ int gm_vsnprintf(char *str, size_t size, const char *format, va_list args) {
 }
 
 /* Safe snprintf wrapper that suppresses security warnings */
-static int gm_snprintf(char *str, size_t size, const char *format, ...) {
+static inline int gm_snprintf(char *str, size_t size, const char *format, ...) {
     va_list args;
     va_start(args, format);
     int result = gm_vsnprintf(str, size, format, args);

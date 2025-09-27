@@ -2,6 +2,9 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind/ports/env_port.h"
+#include "gitmind/error.h"
+#include "gitmind/result.h"
+#include <stddef.h>
 
 GM_NODISCARD gm_result_bool_t gm_env_get(const gm_env_port_t *port, const char *key,
                                          char *buffer, size_t buffer_size) {

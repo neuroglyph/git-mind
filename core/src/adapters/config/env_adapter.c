@@ -2,6 +2,7 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind/ports/env_port.h"
+#include "gitmind/error.h"
 
 #include <stdlib.h>
 

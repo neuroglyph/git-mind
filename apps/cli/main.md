@@ -96,7 +96,9 @@ Future: Specific codes for different failures.
 ```c
 git_libgit2_init();  // Global init
 git_repository_open(&repo, ".");  // Find .git
-ctx.git_repo = repo;
+cli->repo = repo;    // CLI runtime owns the raw handle
+gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,
+                                   &ctx.git_repo_port_dispose, repo);
 ctx.log_fn = gm_log_default;
 ```
 
@@ -104,8 +106,8 @@ Clean sequence:
 
 1. Initialize libgit2 once
 2. Open repository in current dir
-3. Set up function pointers
-4. Pass context everywhere
+3. Move the raw handle into the CLI runtime for cleanup
+4. Build injectable ports and pass the pure context everywhere
 
 ### Cleanup
 

@@ -12,6 +12,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "core/tests/fakes/git/fake_git_repository_port.h"
+
 /* Test constants */
 #define BUFFER_SIZE 1024
 
@@ -34,43 +36,43 @@ static int mock_clock_gettime(int clk_id, struct timespec *ts) {
 
 static gm_time_ops_t test_time_ops = {.clock_gettime = mock_clock_gettime};
 
-/* Mock git operations for testing */
-static int mock_resolve_blob_called = 0;
-static int mock_resolve_blob(void *repo, const char *path, uint8_t *sha) {
-    (void)repo; /* Suppress unused parameter warning */
-    mock_resolve_blob_called++;
-    
-    /* Return deterministic SHAs based on path */
-    if (strcmp(path, "src/a.c") == 0) {
-        memset(sha, 0xAA, GM_SHA1_SIZE);
-        return 0;
-    } else if (strcmp(path, "src/b.c") == 0) {
-        memset(sha, 0xBB, GM_SHA1_SIZE);
-        return 0;
-    }
-    
-    return -1; /* Not found */
-}
-
 /* Test edge creation with valid inputs */
 static void test_edge_create_success(void) {
     printf("test_edge_create_success... ");
-    
+    gm_fake_git_repository_port_t fake_port;
+    gm_result_void_t init_result =
+        gm_fake_git_repository_port_init(&fake_port, NULL, NULL);
+    assert(init_result.ok);
+    assert(gm_fake_git_repository_port_set_head_branch(&fake_port,
+                                                       "refs/heads/main")
+               .ok);
+    gm_fake_git_repository_port_clear_blob_mappings(&fake_port);
+
+    gm_oid_t src_oid = {0};
+    memset(src_oid.id, 0xAA, GM_OID_RAWSZ);
+    assert(gm_fake_git_repository_port_add_blob_mapping(&fake_port, "src/a.c",
+                                                        &src_oid)
+               .ok);
+
+    gm_oid_t tgt_oid = {0};
+    memset(tgt_oid.id, 0xBB, GM_OID_RAWSZ);
+    assert(gm_fake_git_repository_port_add_blob_mapping(&fake_port, "src/b.c",
+                                                        &tgt_oid)
+               .ok);
+
     gm_context_t ctx = {
         .time_ops = &test_time_ops,
-        .git_ops = {.resolve_blob = mock_resolve_blob},
-        .git_repo = NULL /* Mock doesn't need real repo */
+        .git_repo_port = fake_port.port,
     };
-    
+
     mock_time_called = 0;
-    mock_resolve_blob_called = 0;
-    
-    gm_result_edge_t result = gm_edge_create(&ctx, "src/a.c", "src/b.c", GM_REL_DEPENDS_ON);
-    
+
+    gm_result_edge_t result = gm_edge_create(&ctx, "src/a.c", "src/b.c",
+                                             GM_REL_DEPENDS_ON);
+
     assert(result.ok);
     assert(mock_time_called == 1);
-    assert(mock_resolve_blob_called == 2);
-    
+
     gm_edge_t edge = result.u.val;
     assert(strcmp(edge.src_path, "src/a.c") == 0);
     assert(strcmp(edge.tgt_path, "src/b.c") == 0);
@@ -87,6 +89,7 @@ static void test_edge_create_success(void) {
     assert(memcmp(edge.src_sha, expected_src, GM_SHA1_SIZE) == 0);
     assert(memcmp(edge.tgt_sha, expected_tgt, GM_SHA1_SIZE) == 0);
     
+    gm_fake_git_repository_port_dispose(&fake_port);
     printf("OK\n");
 }
 
@@ -96,8 +99,6 @@ static void test_edge_create_invalid_args(void) {
     
     gm_context_t ctx = {
         .time_ops = &test_time_ops,
-        .git_ops = {.resolve_blob = mock_resolve_blob},
-        .git_repo = NULL
     };
     
     /* NULL context */

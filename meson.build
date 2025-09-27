@@ -128,10 +128,10 @@ src = files(
   'core/src/cache/bitmap.c',
   'core/src/cache/builder.c',
   'core/src/cache/query.c',
-  'core/src/cache/tree_builder.c',
-  'core/src/cache/tree_size.c',
   'core/src/fs/path_utils.c',
   'core/src/util/ref.c',
+  'core/src/adapters/git/libgit2_repository_port.c',
+  'core/src/hooks/augment.c',
 )
 
 # Include directories
@@ -250,7 +250,15 @@ test_cbor = executable('test_cbor',
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_edge = executable('test_edge',
-  'core/tests/unit/test_edge.c',
+  ['core/tests/unit/test_edge.c',
+   'core/tests/fakes/git/fake_git_repository_port.c'],
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_hook_augment = executable('test_hook_augment',
+  ['core/tests/unit/test_hook_augment.c',
+   'core/tests/fakes/git/fake_git_repository_port.c'],
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
@@ -365,6 +373,7 @@ test('io', test_io)
 test('time', test_time)
 test('cbor', test_cbor)
 test('edge', test_edge)
+test('hook_augment', test_hook_augment)
 test('edge_cbor_oid', test_edge_cbor_oid)
 test('edge_attributed_cbor', test_edge_attributed_cbor)
 test('attribution_domain', test_attribution_domain)

@@ -62,9 +62,11 @@ typedef struct gm_fs_temp_port_vtbl {
     gm_result_void_t (*remove_tree)(void *self, const char *abs_path);
     gm_result_void_t (*path_join_under_base)(void *self, gm_fs_base_t base,
                                              gm_repo_id_t repo,
-                                             const char *s1, const char *s2,
-                                             const char *s3, const char *s4,
-                                             const char *s5,
+                                             const char *component1,
+                                             const char *component2,
+                                             const char *component3,
+                                             const char *component4,
+                                             const char *component5,
                                              const char **out_abs_path);
     gm_result_void_t (*canonicalize_ex)(void *self, const char *abs_path_in,
                                         gm_fs_canon_opts_t opts,
@@ -107,16 +109,18 @@ GM_NODISCARD static inline gm_result_void_t
 
 GM_NODISCARD static inline gm_result_void_t
     gm_fs_temp_port_path_join(const gm_fs_temp_port_t *port, gm_fs_base_t base,
-                              gm_repo_id_t repo, const char *s1,
-                              const char *s2, const char *s3, const char *s4,
-                              const char *s5, const char **out_abs_path) {
+                              gm_repo_id_t repo, const char *component1,
+                              const char *component2, const char *component3,
+                              const char *component4, const char *component5,
+                              const char **out_abs_path) {
     if (port == NULL || port->vtbl == NULL ||
         port->vtbl->path_join_under_base == NULL) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_STATE,
                                     "filesystem port missing path_join"));
     }
-    return port->vtbl->path_join_under_base(port->self, base, repo, s1, s2, s3,
-                                            s4, s5, out_abs_path);
+    return port->vtbl->path_join_under_base(port->self, base, repo, component1,
+                                            component2, component3, component4,
+                                            component5, out_abs_path);
 }
 
 GM_NODISCARD static inline gm_result_void_t
