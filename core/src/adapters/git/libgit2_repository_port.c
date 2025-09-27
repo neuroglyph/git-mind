@@ -397,6 +397,97 @@ static gm_result_void_t commit_read_blob_impl(
     return gm_ok_void();
 }
 
+/* NOLINTNEXTLINE(misc-no-recursion) */
+static gm_result_void_t tree_size_recursive(git_repository *repo,
+                                            const git_oid *tree_oid,
+                                            uint64_t *total_size) {
+    git_tree *tree = NULL;
+    if (git_tree_lookup(&tree, repo, tree_oid) != 0) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_UNKNOWN, "unable to lookup tree while sizing"));
+    }
+
+    git_odb *odb = NULL;
+    if (git_repository_odb(&odb, repo) == 0) {
+        size_t tree_size = 0;
+        git_object_t tree_type = GIT_OBJECT_INVALID;
+        if (git_odb_read_header(&tree_size, &tree_type, odb, tree_oid) == 0) {
+            *total_size += tree_size;
+        }
+        git_odb_free(odb);
+    }
+
+    size_t entry_count = git_tree_entrycount(tree);
+    for (size_t idx = 0; idx < entry_count; ++idx) {
+        const git_tree_entry *entry = git_tree_entry_byindex(tree, idx);
+        if (entry == NULL) {
+            continue;
+        }
+
+        const git_oid *entry_oid = git_tree_entry_id(entry);
+        git_filemode_t mode = git_tree_entry_filemode(entry);
+
+        if (mode == GIT_FILEMODE_TREE) {
+            gm_result_void_t sub_result =
+                tree_size_recursive(repo, entry_oid, total_size);
+            if (!sub_result.ok) {
+                git_tree_free(tree);
+                return sub_result;
+            }
+            continue;
+        }
+
+        if (mode == GIT_FILEMODE_BLOB) {
+            git_odb *blob_odb = NULL;
+            if (git_repository_odb(&blob_odb, repo) == 0) {
+                size_t blob_size = 0;
+                git_object_t blob_type = GIT_OBJECT_INVALID;
+                if (git_odb_read_header(&blob_size, &blob_type, blob_odb,
+                                        entry_oid) == 0) {
+                    *total_size += blob_size;
+                }
+                git_odb_free(blob_odb);
+            }
+        }
+    }
+
+    git_tree_free(tree);
+    return gm_ok_void();
+}
+
+static gm_result_void_t commit_tree_size_impl(
+    gm_libgit2_repository_port_state_t *state, const gm_oid_t *commit_oid,
+    uint64_t *out_size_bytes) {
+    if (commit_oid == NULL || out_size_bytes == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "commit tree size requires inputs"));
+    }
+
+    git_commit *commit = NULL;
+    if (git_commit_lookup(&commit, state->repo, commit_oid) != 0) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "commit not found while sizing"));
+    }
+
+    const git_oid *tree_oid = git_commit_tree_id(commit);
+    if (tree_oid == NULL) {
+        git_commit_free(commit);
+        return gm_err_void(
+            GM_ERROR(GM_ERR_UNKNOWN, "commit missing tree while sizing"));
+    }
+
+    uint64_t total = 0;
+    gm_result_void_t result = tree_size_recursive(state->repo, tree_oid, &total);
+    git_commit_free(commit);
+
+    if (!result.ok) {
+        return result;
+    }
+
+    *out_size_bytes = total;
+    return gm_ok_void();
+}
+
 static gm_result_void_t commit_create_impl(
     gm_libgit2_repository_port_state_t *state, const gm_git_commit_spec_t *spec,
     gm_oid_t *out_commit_oid) {
@@ -515,6 +606,13 @@ static gm_result_void_t commit_read_blob_bridge(void *self,
                                  commit_oid, path, out_data, out_size);
 }
 
+static gm_result_void_t commit_tree_size_bridge(void *self,
+                                                const gm_oid_t *commit_oid,
+                                                uint64_t *out_size_bytes) {
+    return commit_tree_size_impl((gm_libgit2_repository_port_state_t *)self,
+                                 commit_oid, out_size_bytes);
+}
+
 static gm_result_void_t reference_update_bridge(
     void *self, const gm_git_reference_update_spec_t *spec) {
     return reference_update_impl((gm_libgit2_repository_port_state_t *)self, spec);
@@ -526,6 +624,7 @@ static const gm_git_repository_port_vtbl_t GM_LIBGIT2_REPOSITORY_PORT_VTBL = {
     .reference_tip = reference_tip_bridge,
     .reference_glob_latest = reference_glob_latest_bridge,
     .commit_read_blob = commit_read_blob_bridge,
+    .commit_tree_size = commit_tree_size_bridge,
     .commit_create = commit_create_bridge,
     .reference_update = reference_update_bridge,
 };

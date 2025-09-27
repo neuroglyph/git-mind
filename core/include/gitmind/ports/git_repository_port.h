@@ -64,6 +64,8 @@ typedef struct gm_git_repository_port_vtbl {
     gm_result_void_t (*commit_read_blob)(void *self, const gm_oid_t *commit_oid,
                                          const char *path, uint8_t **out_data,
                                          size_t *out_size);
+    gm_result_void_t (*commit_tree_size)(void *self, const gm_oid_t *commit_oid,
+                                         uint64_t *out_size_bytes);
     gm_result_void_t (*commit_create)(void *self,
                                       const gm_git_commit_spec_t *spec,
                                       gm_oid_t *out_commit_oid);
@@ -131,6 +133,18 @@ GM_NODISCARD static inline gm_result_void_t
     }
     return port->vtbl->commit_read_blob(port->self, commit_oid, path, out_data,
                                         out_size);
+}
+
+GM_NODISCARD static inline gm_result_void_t
+    gm_git_repository_port_commit_tree_size(const gm_git_repository_port_t *port,
+                                            const gm_oid_t *commit_oid,
+                                            uint64_t *out_size_bytes) {
+    if (port == NULL || port->vtbl == NULL ||
+        port->vtbl->commit_tree_size == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_STATE,
+                                    "git repository port missing commit_tree_size"));
+    }
+    return port->vtbl->commit_tree_size(port->self, commit_oid, out_size_bytes);
 }
 
 GM_NODISCARD static inline gm_result_void_t

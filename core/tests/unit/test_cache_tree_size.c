@@ -8,9 +8,7 @@
 #include <git2.h>
 
 #include "gitmind/error.h"
-
-int gm_cache_calculate_size(git_repository *repo, const git_oid *tree_oid,
-                            uint64_t *size_bytes);
+#include "gitmind/adapters/git/libgit2_repository_port.h"
 
 static size_t object_size(git_repository *repo, const git_oid *oid) {
     git_odb *odb = NULL;
@@ -72,9 +70,32 @@ int main(void) {
     git_treebuilder_free(tb);
     assert(rc == 0);
 
+    git_tree *root_tree = NULL;
+    rc = git_tree_lookup(&root_tree, repo, &root_tree_oid);
+    assert(rc == 0 && root_tree != NULL);
+
+    git_signature *sig = NULL;
+    rc = git_signature_now(&sig, "tester", "tester@example.com");
+    assert(rc == 0);
+
+    git_oid commit_oid;
+    rc = git_commit_create(&commit_oid, repo, NULL, sig, sig, NULL,
+                           "tree-size", root_tree, 0, NULL);
+    git_signature_free(sig);
+    git_tree_free(root_tree);
+    assert(rc == 0);
+
+    gm_git_repository_port_t port = {0};
+    gm_libgit2_repository_port_state_t *state = NULL;
+    void (*dispose)(gm_git_repository_port_t *) = NULL;
+    gm_result_void_t port_result =
+        gm_libgit2_repository_port_create(&port, &state, &dispose, repo);
+    assert(port_result.ok);
+
     uint64_t total = 0;
-    rc = gm_cache_calculate_size(repo, &root_tree_oid, &total);
-    assert(rc == GM_OK);
+    gm_result_void_t size_result = gm_git_repository_port_commit_tree_size(
+        &port, &commit_oid, &total);
+    assert(size_result.ok);
 
     size_t expected = 0;
     expected += object_size(repo, &root_tree_oid);
@@ -84,6 +105,9 @@ int main(void) {
 
     assert(total == (uint64_t)expected);
 
+    if (dispose != NULL) {
+        dispose(&port);
+    }
     git_repository_free(repo);
     git_libgit2_shutdown();
     printf("OK\n");

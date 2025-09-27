@@ -120,8 +120,8 @@ GM_NODISCARD int gm_cache_stats(gm_context_t *ctx, const char *branch, uint64_t 
  */
 void gm_cache_result_free(gm_cache_result_t *result);
 
-/* Internal functions have been moved to a private header to avoid exposing
- * non-public API via umbrella headers. See core/src/cache/cache_internal.h. */
+/* Internal helpers now live behind the git repository port to keep libgit2
+ * details out of umbrella headers. */
 
 #ifdef __cplusplus
 }

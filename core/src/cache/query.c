@@ -8,16 +8,10 @@
 #include <time.h>
 #include <roaring/roaring.h>
 
-#include <git2/repository.h>
-#include <git2/refs.h>
-#include <git2/commit.h>
 #include <git2/oid.h>
-#include <git2/tree.h>
-#include <git2/blob.h>
 
 #include "gitmind/cache.h"
 #include "gitmind/cache/bitmap.h"
-#include "cache_internal.h"
 #include "gitmind/constants.h"
 #include "gitmind/context.h"
 #include "gitmind/error.h"
@@ -398,13 +392,17 @@ void gm_cache_result_free(gm_cache_result_t *result) {
     }
 }
 
-/* Internal helpers declared in cache_internal.h */
-
 /* Get cache statistics */
 int gm_cache_stats(gm_context_t *ctx, const char *branch,
                    uint64_t *edge_count, uint64_t *cache_size_bytes) {
+    if (ctx == NULL || branch == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    if (ctx->git_repo_port.vtbl == NULL) {
+        return GM_ERR_INVALID_STATE;
+    }
+
     gm_cache_meta_t meta;
-    git_repository *repo = (git_repository *)ctx->git_repo;
     int rc = gm_cache_load_meta(ctx, branch, &meta);
     if (rc != GM_OK) {
         return rc;
@@ -415,33 +413,15 @@ int gm_cache_stats(gm_context_t *ctx, const char *branch,
     }
 
     if (cache_size_bytes) {
-        /* Calculate actual cache size from tree */
-        char ref_name[REF_NAME_BUFFER_SIZE];
-        {
-            int rn = gm_snprintf(ref_name, sizeof(ref_name), "%s%s", GM_CACHE_REF_PREFIX, branch);
-            if (rn < 0 || (size_t)rn >= sizeof(ref_name)) {
-                /* fall back to estimate below */
-                rc = -1;
+        if (memcmp(&meta.cache_tip_oid, &(const gm_oid_t){0}, sizeof(gm_oid_t)) != 0) {
+            rc = unwrap_result_code(gm_git_repository_port_commit_tree_size(
+                &ctx->git_repo_port, &meta.cache_tip_oid, cache_size_bytes));
+            if (rc != GM_OK) {
+                *cache_size_bytes =
+                    meta.edge_count * CACHE_SIZE_ESTIMATE_PER_EDGE;
             }
-        }
-
-        git_oid cache_oid;
-        rc = git_reference_name_to_id(&cache_oid, repo, ref_name);
-        if (rc == 0) {
-            git_commit *commit = NULL;
-            rc = git_commit_lookup(&commit, repo, &cache_oid);
-            if (rc == 0) {
-                const git_oid *tree_oid = git_commit_tree_id(commit);
-                gm_cache_calculate_size(repo, tree_oid, cache_size_bytes);
-                git_commit_free(commit);
-            }
-        }
-
-        /* Fall back to estimate if calculation fails */
-        if (rc < 0) {
-            *cache_size_bytes =
-                meta.edge_count *
-                CACHE_SIZE_ESTIMATE_PER_EDGE; /* Rough estimate */
+        } else {
+            *cache_size_bytes = meta.edge_count * CACHE_SIZE_ESTIMATE_PER_EDGE;
         }
     }
 

@@ -31,6 +31,9 @@ static gm_result_void_t fake_commit_read_blob(void *self,
                                               const char *path,
                                               uint8_t **out_data,
                                               size_t *out_size);
+static gm_result_void_t fake_commit_tree_size(void *self,
+                                              const gm_oid_t *commit_oid,
+                                              uint64_t *out_size_bytes);
 
 static const gm_git_repository_port_vtbl_t FAKE_GIT_REPOSITORY_PORT_VTBL = {
     .repository_path = fake_repository_path,
@@ -38,6 +41,7 @@ static const gm_git_repository_port_vtbl_t FAKE_GIT_REPOSITORY_PORT_VTBL = {
     .reference_tip = fake_reference_tip,
     .reference_glob_latest = fake_reference_glob_latest,
     .commit_read_blob = fake_commit_read_blob,
+    .commit_tree_size = fake_commit_tree_size,
     .commit_create = fake_commit_create,
     .reference_update = fake_reference_update,
 };
@@ -253,6 +257,19 @@ static gm_result_void_t fake_commit_read_blob(void *self,
     }
     *out_data = NULL;
     *out_size = 0;
+    return gm_ok_void();
+}
+
+static gm_result_void_t fake_commit_tree_size(void *self,
+                                              const gm_oid_t *commit_oid,
+                                              uint64_t *out_size_bytes) {
+    (void)self;
+    (void)commit_oid;
+    if (out_size_bytes == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "fake tree size requires output"));
+    }
+    *out_size_bytes = 0;
     return gm_ok_void();
 }
 
