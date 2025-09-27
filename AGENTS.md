@@ -419,6 +419,7 @@ See archives under `docs/activity/` for older logs.
 - Added port surface area (head lookup, commit walk/message helpers, parent-aware commit spec) plus libgit2 adapter support to keep hex seams consistent.
 - Clang-tidy cleanup delivered: renamed the short `s1`…`s5` path segments, refreshed `walk_commits` naming, and forward-declared libgit2 types so include-cleaner stops shouting.
 - Fake git repository port now provides head branch lookup, per-ref commit walks, and commit-message reads via new helpers—tests can enqueue histories instead of skipping those seams.
+- Edge creation (basic + attributed) now resolves blob identities through `gm_git_repository_port`; goodbye `ctx->git_repo`/`git_ops` shims. Legacy SHA arrays are populated from the returned OIDs so the transitional fields stay intact.
 - Next up (today, not tomorrow): hook the journal/cache tests to the upgraded fake, rerun clang-tidy to capture the delta, and start peeling edge modules off `ctx->git_repo`.
 - Lesson logged: mirroring libgit2 semantics meant storing commit sequences per ref; keeping messages alongside the OIDs made the reader decode deterministic again.
 - Cap’n memo: espresso's on deck—once edge jumps ports, we raid the galley for celebratory biscotti.

@@ -12,6 +12,7 @@ extern "C" {
 
 #define GM_FAKE_GIT_MAX_REF_ENTRIES 8U
 #define GM_FAKE_GIT_MAX_COMMITS_PER_REF 16U
+#define GM_FAKE_GIT_MAX_BLOB_PATHS 32U
 
 typedef struct gm_fake_git_commit_entry {
     gm_oid_t oid;
@@ -25,6 +26,12 @@ typedef struct gm_fake_git_ref_entry {
     size_t commit_count;
     bool in_use;
 } gm_fake_git_ref_entry_t;
+
+typedef struct gm_fake_git_blob_entry {
+    char path[GM_PATH_MAX];
+    gm_oid_t oid;
+    bool in_use;
+} gm_fake_git_blob_entry_t;
 
 typedef struct gm_fake_git_repository_port {
     gm_git_repository_port_t port;
@@ -44,6 +51,7 @@ typedef struct gm_fake_git_repository_port {
     gm_oid_t last_update_target;
     char head_branch[GM_FORMAT_BUFFER_SIZE];
     gm_fake_git_ref_entry_t ref_entries[GM_FAKE_GIT_MAX_REF_ENTRIES];
+    gm_fake_git_blob_entry_t blob_entries[GM_FAKE_GIT_MAX_BLOB_PATHS];
 } gm_fake_git_repository_port_t;
 
 GM_NODISCARD gm_result_void_t gm_fake_git_repository_port_init(
@@ -63,6 +71,13 @@ void gm_fake_git_repository_port_clear_ref_commits(
 GM_NODISCARD gm_result_void_t gm_fake_git_repository_port_add_ref_commit(
     gm_fake_git_repository_port_t *fake, const char *ref_name,
     const gm_oid_t *commit_oid, const char *message);
+
+void gm_fake_git_repository_port_clear_blob_mappings(
+    gm_fake_git_repository_port_t *fake);
+
+GM_NODISCARD gm_result_void_t gm_fake_git_repository_port_add_blob_mapping(
+    gm_fake_git_repository_port_t *fake, const char *path,
+    const gm_oid_t *blob_oid);
 
 void gm_fake_git_repository_port_set_next_tree(
     gm_fake_git_repository_port_t *fake, const gm_oid_t *oid,

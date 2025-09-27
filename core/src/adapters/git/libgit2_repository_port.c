@@ -394,19 +394,20 @@ static gm_result_void_t commit_read_message_impl(
     return gm_ok_void();
 }
 
-static gm_result_void_t commit_read_blob_impl(
+static gm_result_void_t open_blob_entry(
     gm_libgit2_repository_port_state_t *state, const gm_oid_t *commit_oid,
-    const char *path, uint8_t **out_data, size_t *out_size) {
-    if (commit_oid == NULL || path == NULL || out_data == NULL ||
-        out_size == NULL) {
+    const char *path, git_commit **out_commit, git_tree **out_tree,
+    git_tree_entry **out_entry) {
+    if (commit_oid == NULL || path == NULL || out_commit == NULL ||
+        out_tree == NULL || out_entry == NULL) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
-                                    "commit read blob requires inputs"));
+                                    "blob lookup requires inputs"));
     }
 
     git_commit *commit = NULL;
     if (git_commit_lookup(&commit, state->repo, commit_oid) != 0) {
         return gm_err_void(
-            GM_ERROR(GM_ERR_NOT_FOUND, "commit not found for blob read"));
+            GM_ERROR(GM_ERR_NOT_FOUND, "commit not found for blob lookup"));
     }
 
     git_tree *tree = NULL;
@@ -424,8 +425,34 @@ static gm_result_void_t commit_read_blob_impl(
             GM_ERROR(GM_ERR_NOT_FOUND, "path %s not found in commit", path));
     }
 
+    *out_commit = commit;
+    *out_tree = tree;
+    *out_entry = entry;
+    return gm_ok_void();
+}
+
+static gm_result_void_t commit_read_blob_impl(
+    gm_libgit2_repository_port_state_t *state, const gm_oid_t *commit_oid,
+    const char *path, uint8_t **out_data, size_t *out_size) {
+    if (commit_oid == NULL || path == NULL || out_data == NULL ||
+        out_size == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "commit read blob requires inputs"));
+    }
+
+    git_commit *commit = NULL;
+    git_tree *tree = NULL;
+    git_tree_entry *entry = NULL;
+    gm_result_void_t lookup_result =
+        open_blob_entry(state, commit_oid, path, &commit, &tree, &entry);
+    if (!lookup_result.ok) {
+        return lookup_result;
+    }
+
     git_blob *blob = NULL;
-    if (git_blob_lookup(&blob, state->repo, git_tree_entry_id(entry)) != 0) {
+    const git_oid *blob_oid = git_tree_entry_id(entry);
+    if (blob_oid == NULL ||
+        git_blob_lookup(&blob, state->repo, blob_oid) != 0) {
         git_tree_entry_free(entry);
         git_tree_free(tree);
         git_commit_free(commit);
@@ -454,6 +481,55 @@ static gm_result_void_t commit_read_blob_impl(
     *out_size = size;
 
     git_blob_free(blob);
+    git_tree_entry_free(entry);
+    git_tree_free(tree);
+    git_commit_free(commit);
+
+    return gm_ok_void();
+}
+
+static gm_result_void_t resolve_blob_at_head_impl(
+    gm_libgit2_repository_port_state_t *state, const char *path,
+    gm_oid_t *out_blob_oid) {
+    if (path == NULL || out_blob_oid == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "blob resolve requires path and output"));
+    }
+
+    git_reference *head = NULL;
+    if (git_repository_head(&head, state->repo) != 0) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "unable to resolve repository HEAD"));
+    }
+
+    const git_oid *head_oid = git_reference_target(head);
+    if (head_oid == NULL) {
+        git_reference_free(head);
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "repository HEAD has no target"));
+    }
+
+    git_commit *commit = NULL;
+    git_tree *tree = NULL;
+    git_tree_entry *entry = NULL;
+    gm_result_void_t lookup_result =
+        open_blob_entry(state, head_oid, path, &commit, &tree, &entry);
+    git_reference_free(head);
+    if (!lookup_result.ok) {
+        return lookup_result;
+    }
+
+    const git_oid *blob_oid = git_tree_entry_id(entry);
+    if (blob_oid == NULL) {
+        git_tree_entry_free(entry);
+        git_tree_free(tree);
+        git_commit_free(commit);
+        return gm_err_void(
+            GM_ERROR(GM_ERR_NOT_FOUND, "blob entry missing for %s", path));
+    }
+
+    *out_blob_oid = *blob_oid;
+
     git_tree_entry_free(entry);
     git_tree_free(tree);
     git_commit_free(commit);
@@ -792,6 +868,12 @@ static gm_result_void_t reference_update_bridge(
     return reference_update_impl((gm_libgit2_repository_port_state_t *)self, spec);
 }
 
+static gm_result_void_t resolve_blob_at_head_bridge(void *self, const char *path,
+                                                    gm_oid_t *out_blob_oid) {
+    return resolve_blob_at_head_impl((gm_libgit2_repository_port_state_t *)self,
+                                     path, out_blob_oid);
+}
+
 static const gm_git_repository_port_vtbl_t GM_LIBGIT2_REPOSITORY_PORT_VTBL = {
     .repository_path = repository_path_bridge,
     .head_branch = head_branch_bridge,
@@ -805,6 +887,7 @@ static const gm_git_repository_port_vtbl_t GM_LIBGIT2_REPOSITORY_PORT_VTBL = {
     .commit_tree_size = commit_tree_size_bridge,
     .commit_create = commit_create_bridge,
     .reference_update = reference_update_bridge,
+    .resolve_blob_at_head = resolve_blob_at_head_bridge,
 };
 
 static void dispose_repository_port(gm_git_repository_port_t *port) {

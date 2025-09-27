@@ -249,7 +249,8 @@ test_cbor = executable('test_cbor',
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_edge = executable('test_edge',
-  'core/tests/unit/test_edge.c',
+  ['core/tests/unit/test_edge.c',
+   'core/tests/fakes/git/fake_git_repository_port.c'],
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])

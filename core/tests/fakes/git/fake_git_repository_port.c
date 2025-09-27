@@ -44,6 +44,8 @@ static gm_result_void_t fake_walk_commits(void *self, const char *ref_name,
 static gm_result_void_t fake_commit_tree_size(void *self,
                                               const gm_oid_t *commit_oid,
                                               uint64_t *out_size_bytes);
+static gm_result_void_t fake_resolve_blob_at_head(void *self, const char *path,
+                                                  gm_oid_t *out_blob_oid);
 
 static gm_result_void_t ensure_ref_entry(gm_fake_git_repository_port_t *fake,
                                          const char *ref_name,
@@ -68,6 +70,7 @@ static const gm_git_repository_port_vtbl_t FAKE_GIT_REPOSITORY_PORT_VTBL = {
     .commit_tree_size = fake_commit_tree_size,
     .commit_create = fake_commit_create,
     .reference_update = fake_reference_update,
+    .resolve_blob_at_head = fake_resolve_blob_at_head,
 };
 
 static gm_result_void_t ensure_ref_entry(gm_fake_git_repository_port_t *fake,
@@ -262,6 +265,53 @@ gm_result_void_t gm_fake_git_repository_port_add_ref_commit(
     }
 
     entry->commit_count += 1U;
+    return gm_ok_void();
+}
+
+void gm_fake_git_repository_port_clear_blob_mappings(
+    gm_fake_git_repository_port_t *fake) {
+    if (fake == NULL) {
+        return;
+    }
+    gm_memset_safe(fake->blob_entries, sizeof(fake->blob_entries), 0,
+                   sizeof(fake->blob_entries));
+}
+
+gm_result_void_t gm_fake_git_repository_port_add_blob_mapping(
+    gm_fake_git_repository_port_t *fake, const char *path,
+    const gm_oid_t *blob_oid) {
+    if (fake == NULL || path == NULL || blob_oid == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "fake blob mapping requires inputs"));
+    }
+
+    gm_fake_git_blob_entry_t *slot = NULL;
+    for (size_t idx = 0; idx < GM_FAKE_GIT_MAX_BLOB_PATHS; ++idx) {
+        gm_fake_git_blob_entry_t *entry = &fake->blob_entries[idx];
+        if (entry->in_use) {
+            if (strcmp(entry->path, path) == 0) {
+                slot = entry;
+                break;
+            }
+        } else if (slot == NULL) {
+            slot = entry;
+        }
+    }
+
+    if (slot == NULL) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "fake blob mapping full"));
+    }
+
+    gm_memset_safe(slot, sizeof(*slot), 0, sizeof(*slot));
+    if (gm_strcpy_safe(slot->path, sizeof(slot->path), path) != GM_OK) {
+        gm_memset_safe(slot, sizeof(*slot), 0, sizeof(*slot));
+        return gm_err_void(
+            GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "fake blob path too long"));
+    }
+
+    slot->oid = *blob_oid;
+    slot->in_use = true;
     return gm_ok_void();
 }
 
@@ -595,4 +645,28 @@ static gm_result_void_t fake_reference_update(
     }
 
     return gm_ok_void();
+}
+
+static gm_result_void_t fake_resolve_blob_at_head(void *self, const char *path,
+                                                  gm_oid_t *out_blob_oid) {
+    gm_fake_git_repository_port_t *fake =
+        (gm_fake_git_repository_port_t *)self;
+    if (fake == NULL || path == NULL || out_blob_oid == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "fake blob resolve requires inputs"));
+    }
+
+    for (size_t idx = 0; idx < GM_FAKE_GIT_MAX_BLOB_PATHS; ++idx) {
+        gm_fake_git_blob_entry_t *entry = &fake->blob_entries[idx];
+        if (!entry->in_use) {
+            continue;
+        }
+        if (strcmp(entry->path, path) == 0) {
+            *out_blob_oid = entry->oid;
+            return gm_ok_void();
+        }
+    }
+
+    return gm_err_void(
+        GM_ERROR(GM_ERR_NOT_FOUND, "fake blob mapping missing for %s", path));
 }
