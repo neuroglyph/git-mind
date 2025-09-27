@@ -212,7 +212,6 @@ int main(int argc, char **argv) {
             ctx.git_repo_port_dispose(&ctx.git_repo_port);
             ctx.git_repo_port_dispose = NULL;
         }
-        git_repository_free(repo);
         git_libgit2_shutdown();
         return 0;
     }
@@ -227,7 +226,6 @@ int main(int argc, char **argv) {
             ctx.git_repo_port_dispose(&ctx.git_repo_port);
             ctx.git_repo_port_dispose = NULL;
         }
-        git_repository_free(repo);
         git_libgit2_shutdown();
         return 0;
     }
@@ -248,7 +246,6 @@ int main(int argc, char **argv) {
 
     /* Cleanup */
     free_changed_files(changed_files, file_count);
-    git_repository_free(repo);
     git_libgit2_shutdown();
 
     return 0; /* Never fail the commit */

@@ -1024,6 +1024,10 @@ static void dispose_repository_port(gm_git_repository_port_t *port) {
 
     gm_libgit2_repository_port_state_t *state =
         (gm_libgit2_repository_port_state_t *)port->self;
+    if (state->repo != NULL) {
+        git_repository_free(state->repo);
+        state->repo = NULL;
+    }
     port->self = NULL;
     port->vtbl = NULL;
     free(state);

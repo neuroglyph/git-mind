@@ -219,7 +219,6 @@ int main(int argc, char **argv) {
            "🦁\n\n");
 
     /* Cleanup */
-    git_repository_free(repo);
     git_libgit2_shutdown();
 
     /* Remove temp dir */

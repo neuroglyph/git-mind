@@ -89,8 +89,6 @@ int main(void) {
 
     if (ctx.git_repo_port_dispose != NULL) {
         ctx.git_repo_port_dispose(&ctx.git_repo_port);
-    } else {
-        git_repository_free(repo);
     }
     git_libgit2_shutdown();
     printf("OK\n");

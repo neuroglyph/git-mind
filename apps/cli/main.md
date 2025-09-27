@@ -96,7 +96,6 @@ Future: Specific codes for different failures.
 ```c
 git_libgit2_init();  // Global init
 git_repository_open(&repo, ".");  // Find .git
-cli->repo = repo;    // CLI runtime owns the raw handle
 gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,
                                    &ctx.git_repo_port_dispose, repo);
 ctx.log_fn = gm_log_default;
@@ -112,13 +111,13 @@ Clean sequence:
 ### Cleanup
 
 ```c
-git_repository_free(repo);
+ctx.git_repo_port_dispose(&ctx.git_repo_port);
 git_libgit2_shutdown();
 ```
 
 RAII-style cleanup:
 
-- Always free repository
+- Always invoke the port disposer
 - Shutdown libgit2 last
 - No resource leaks
 
