@@ -37,6 +37,8 @@ typedef struct {
 typedef struct {
     const gm_oid_t *tree_oid;
     const char *message;
+    const gm_oid_t *parents;
+    size_t parent_count;
 } gm_git_commit_spec_t;
 
 typedef struct {

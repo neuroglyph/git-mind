@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include "gitmind/error.h"
 #include "gitmind/result.h"
@@ -613,9 +614,55 @@ static gm_result_void_t commit_create_impl(
             GM_ERROR(GM_ERR_UNKNOWN, "unable to look up commit tree"));
     }
 
+    const git_commit **parents = NULL;
+    unsigned int parent_count = 0U;
+    if (spec->parent_count > 0U) {
+        if (spec->parents == NULL) {
+            git_tree_free(tree);
+            git_signature_free(sig);
+            return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                        "parent array missing"));
+        }
+        if (spec->parent_count > UINT_MAX) {
+            git_tree_free(tree);
+            git_signature_free(sig);
+            return gm_err_void(
+                GM_ERROR(GM_ERR_INVALID_ARGUMENT, "too many parents"));
+        }
+        parent_count = (unsigned int)spec->parent_count;
+        parents = calloc(parent_count, sizeof(*parents));
+        if (parents == NULL) {
+            git_tree_free(tree);
+            git_signature_free(sig);
+            return gm_err_void(
+                GM_ERROR(GM_ERR_OUT_OF_MEMORY, "allocating parent list failed"));
+        }
+        for (unsigned int i = 0; i < parent_count; ++i) {
+            git_commit *parent_commit = NULL;
+            if (git_commit_lookup(&parent_commit, state->repo,
+                                  &spec->parents[i]) != 0) {
+                for (unsigned int j = 0; j < i; ++j) {
+                    git_commit_free((git_commit *)parents[j]);
+                }
+                free((void *)parents);
+                git_tree_free(tree);
+                git_signature_free(sig);
+                return gm_err_void(
+                    GM_ERROR(GM_ERR_NOT_FOUND, "parent commit missing"));
+            }
+            parents[i] = parent_commit;
+        }
+    }
+
     git_buf buffer = {0};
     int git_status = git_commit_create_buffer(&buffer, state->repo, sig, sig, NULL,
-                                              spec->message, tree, 0, NULL);
+                                              spec->message, tree, parent_count,
+                                              parents);
+    for (unsigned int i = 0; i < parent_count; ++i) {
+        git_commit_free((git_commit *)parents[i]);
+    }
+    free((void *)parents);
+
     if (git_status < 0) {
         git_tree_free(tree);
         git_signature_free(sig);

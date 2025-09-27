@@ -78,37 +78,6 @@ static int get_current_branch(gm_git_repository_port_t *port, char *branch_name,
     return GM_OK;
 }
 
-static int try_load_parent_commit(journal_ctx_t *jctx, git_commit **parent_out) {
-    git_reference *ref = NULL;
-    git_commit *local_parent = NULL;
-    git_oid parent_oid;
-    int lookup_rc = git_reference_lookup(&ref, jctx->repo, jctx->ref_name);
-    if (lookup_rc != 0) {
-        *parent_out = NULL;
-        return GM_OK;
-    }
-
-    int name_to_id_rc =
-        git_reference_name_to_id(&parent_oid, jctx->repo, jctx->ref_name);
-    if (name_to_id_rc == 0) {
-        name_to_id_rc =
-            git_commit_lookup(&local_parent, jctx->repo, &parent_oid);
-    }
-
-    git_reference_free(ref);
-
-    if (name_to_id_rc != 0) {
-        if (local_parent != NULL) {
-            git_commit_free(local_parent);
-        }
-        *parent_out = NULL;
-        return GM_OK;
-    }
-
-    *parent_out = local_parent;
-    return GM_OK;
-}
-
 static int encode_cbor_message(const uint8_t *cbor_data, size_t cbor_len,
                                char **message_out, size_t *message_len_out) {
     const int variant = sodium_base64_VARIANT_ORIGINAL;
@@ -130,59 +99,59 @@ static int encode_cbor_message(const uint8_t *cbor_data, size_t cbor_len,
     return GM_OK;
 }
 
+typedef struct {
+    gm_git_reference_tip_t tip;
+    bool found;
+} parent_lookup_ctx_t;
+
+static int collect_parent_tip(const gm_oid_t *commit_oid, void *userdata) {
+    parent_lookup_ctx_t *ctx = (parent_lookup_ctx_t *)userdata;
+    if (ctx == NULL || commit_oid == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    if (!ctx->found) {
+        ctx->found = true;
+        ctx->tip.has_target = true;
+        ctx->tip.oid = *commit_oid;
+        git_oid_tostr(ctx->tip.oid_hex, sizeof(ctx->tip.oid_hex), commit_oid);
+    }
+    return GM_OK;
+}
+
 /* Create journal commit */
 static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
                                  size_t cbor_len, git_oid *commit_oid) {
-    git_signature *signature = NULL;
-    git_tree *tree = NULL;
-    git_commit *parent = NULL;
-    const git_commit *parent_commits[PARENT_COMMITS_MAX] = {0};
-    size_t parent_count = 0U;
+    parent_lookup_ctx_t lookup_ctx = {0};
+    gm_result_void_t walk_result = gm_git_repository_port_walk_commits(
+        jctx->repo_port, jctx->ref_name, collect_parent_tip, &lookup_ctx);
+    if (!walk_result.ok && walk_result.u.err != NULL) {
+        gm_error_free(walk_result.u.err);
+    }
+
     char *message = NULL;
-    int signature_rc = git_signature_default(&signature, jctx->repo);
-    if (signature_rc < 0) {
-        return GM_ERR_UNKNOWN;
-    }
-
-    int tree_rc = git_tree_lookup(&tree, jctx->repo, &jctx->empty_tree_oid);
-    if (tree_rc < 0) {
-        git_signature_free(signature);
-        return GM_ERR_UNKNOWN;
-    }
-
-    if (try_load_parent_commit(jctx, &parent) != GM_OK) {
-        git_tree_free(tree);
-        git_signature_free(signature);
-        return GM_ERR_UNKNOWN;
-    }
-    if (parent != NULL) {
-        parent_commits[0] = parent;
-        parent_count = PARENT_COMMITS_MAX;
-    }
-
     int message_rc = encode_cbor_message(cbor_data, cbor_len, &message, NULL);
     if (message_rc != GM_OK) {
-        if (parent != NULL) {
-            git_commit_free(parent);
-        }
-        git_tree_free(tree);
-        git_signature_free(signature);
         return message_rc;
     }
 
-    int commit_rc = git_commit_create(commit_oid, jctx->repo, jctx->ref_name,
-                                      signature, signature, COMMIT_ENCODING,
-                                      message, tree, parent_count,
-                                      parent_commits);
+    gm_git_commit_spec_t spec = {
+        .tree_oid = &jctx->empty_tree_oid,
+        .message = message,
+        .parents = lookup_ctx.found ? &lookup_ctx.tip.oid : NULL,
+        .parent_count = lookup_ctx.found ? 1 : 0,
+    };
 
+    gm_result_void_t commit_result =
+        gm_git_repository_port_commit_create(jctx->repo_port, &spec, commit_oid);
     free(message);
-    if (parent != NULL) {
-        git_commit_free(parent);
+    if (!commit_result.ok) {
+        if (commit_result.u.err != NULL) {
+            gm_error_free(commit_result.u.err);
+        }
+        return GM_ERR_UNKNOWN;
     }
-    git_tree_free(tree);
-    git_signature_free(signature);
 
-    return (commit_rc < 0) ? GM_ERR_UNKNOWN : GM_OK;
+    return GM_OK;
 }
 
 /* Generic journal append function */
@@ -213,8 +182,28 @@ static int resolve_branch_name(gm_context_t *ctx, char *branch,
 
 static int flush_journal_batch(journal_ctx_t *jctx, const uint8_t *buffer,
                                size_t length) {
-    git_oid commit_oid;
-    return create_journal_commit(jctx, buffer, length, &commit_oid);
+    gm_oid_t commit_oid;
+    int commit_rc = create_journal_commit(jctx, buffer, length, &commit_oid);
+    if (commit_rc != GM_OK) {
+        return commit_rc;
+    }
+
+    gm_git_reference_update_spec_t spec = {
+        .ref_name = jctx->ref_name,
+        .target_oid = &commit_oid,
+        .log_message = "Journal append",
+        .force = true,
+    };
+    gm_result_void_t update_result = gm_git_repository_port_reference_update(
+        jctx->repo_port, &spec);
+    if (!update_result.ok) {
+        if (update_result.u.err != NULL) {
+            gm_error_free(update_result.u.err);
+        }
+        return GM_ERR_UNKNOWN;
+    }
+
+    return GM_OK;
 }
 
 static bool should_flush_buffer(size_t offset) {
@@ -346,10 +335,10 @@ int gm_journal_append_attributed(gm_context_t *ctx,
 int gm_journal_create_commit(gm_context_t *ctx, const char *ref,
                           const void *data, size_t len) {
     journal_ctx_t jctx;
-    git_oid commit_oid;
+    gm_oid_t commit_oid;
 
     /* Initialize context */
-    jctx.repo = (git_repository *)ctx->git_repo;
+    jctx.repo_port = &ctx->git_repo_port;
 
     /* Parse empty tree OID */
     if (git_oid_fromstr(&jctx.empty_tree_oid, EMPTY_TREE_SHA) < 0) {
