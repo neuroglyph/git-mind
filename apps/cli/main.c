@@ -193,6 +193,7 @@ static int init_context(gm_context_t *ctx, gm_output_level_t level,
             gm_error_free(repo_port_result.u.err);
         }
         git_repository_free(repo);
+        git_libgit2_shutdown();
         return code;
     }
 
@@ -209,6 +210,7 @@ static int init_context(gm_context_t *ctx, gm_output_level_t level,
             ctx->git_repo_port_dispose(&ctx->git_repo_port);
             ctx->git_repo_port_dispose = NULL;
         }
+        git_libgit2_shutdown();
         return code;
     }
 
@@ -223,6 +225,7 @@ static int init_context(gm_context_t *ctx, gm_output_level_t level,
             ctx->git_repo_port_dispose(&ctx->git_repo_port);
             ctx->git_repo_port_dispose = NULL;
         }
+        git_libgit2_shutdown();
         return GM_ERR_OUT_OF_MEMORY;
     }
 
