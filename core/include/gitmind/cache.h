@@ -48,8 +48,8 @@ typedef struct {
     uint32_t shard_bits;       /**< Number of bits for sharding */
     uint32_t version;          /**< Cache format version */
     char branch[GM_CACHE_BRANCH_NAME_SIZE];           /**< Branch name (may be truncated if too long) */
-    gm_oid_t journal_tip_oid_bin; /**< OID of last processed journal commit (preferred). Added at struct tail to preserve ABI layout. */
-    gm_oid_t cache_tip_oid;        /**< OID of cache commit for this branch. */
+    gm_oid_t journal_tip_oid_bin; /**< OID of last processed journal commit (preferred). */
+    gm_oid_t cache_tip_oid;       /**< OID of cache commit for this branch. Added at struct tail to preserve ABI layout. */
 } gm_cache_meta_t;
 
 /**

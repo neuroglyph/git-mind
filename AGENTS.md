@@ -438,6 +438,19 @@ See archives under `docs/activity/` for older logs.
 - CodeRabbit pass (batch 2): accepted output-zeroing and error-propagation notes—commit creation now clears result OIDs up front, commit message reads null-init outputs, hook blob lookups zero result buffers and distinguish NOT_FOUND from real failures, commit walks honour `GM_CALLBACK_STOP`, and the fake port header owns its std includes.
 - CodeRabbit pass (batch 3): reaffirmed the wildebeest benchmark already routes queries via `gm_oid_t`, clarified detached-HEAD fallback inside `gm_hook_get_blob_sha`, and brought the PR171 review docs in line with the front-matter/TOC guidelines.
 
+### 2025-09-28
+- Hardened port usage: journal writer now bubbles explicit commit/ref update codes and retries fast-forward only once; cache rebuild composes a parent-aware commit spec and refuses non-fast-forward updates; libgit2 adapter enforces ancestry checks via `git_graph_descendant_of`.
+- Filesystem polish: `gm_fs_path_normalize_logical`/`basename_append` zero outputs on failure paths, guard short buffers, and cap segment arrays; posix temp adapter wraps `_GNU_SOURCE` in an `#ifndef` so clang stays quiet.
+- Fake git port + tests updated to use `gm_memset_safe`/`gm_strcpy_safe`, keeping parity with production safety helpers.
+- CI status: `make ci-local` passes after the fast-forward guard, cache parent wiring, and path-utils fixes (clang-tidy clean).
+- Outstanding follow-ups for future-me:
+  * Extract the duplicated `resolve_blob_identity` helper (edge + edge_attributed) into a shared utility so we maintain one implementation.
+  * Replace remaining `git_oid_tostr` usage with a core-level `gm_oid_to_hex` helper and drop the remaining direct libgit2 includes in cache/query paths.
+  * Sweep for any lingering `fprintf` debug traces before shipping.
+  * Run CodeRabbit worksheet checker again after touching docs to ensure no new “Decision:” gaps.
+- Today’s continuation: pulled the trigger on that list—extracted `gm_edge_resolve_blob_identity` into `core/src/edge/internal/blob_identity.c`, introduced `gm_bytes_to_hex`/`gm_oid_to_hex`, and refactored cache rebuild/query to drop `git_oid_fmt/tostr`; `make ci-local` is green and `tools/review/check_worksheets.py docs/code-reviews/PR171/*.md` still flags the known undecided sections (see console), so next slot should be worksheet triage + CodeRabbit replies.
+- Quick-start when you return: rerun `make ci-local` if you touch the cache/journal surface, then tackle the shared blob helper → oid hex helper chain; once that’s in place, prep the PR summary referencing the fast-forward protections.
+
 ## Next Steps (handoff checklist)
 - Complete on-disk cache migration to OID-only storage and naming; ensure rebuild and fallback readers handle both formats or gate with a one-time migration.
 - Extend journal CBOR schema to store OIDs explicitly (not only derivable from legacy fields); update reader/writer and consumers.

@@ -115,6 +115,7 @@ src = files(
   'core/src/utf8/validate.c',
   'core/src/edge/edge.c',
   'core/src/edge/attributed.c',
+  'core/src/edge/internal/blob_identity.c',
   'core/src/attribution/attribution.c',
   'core/src/domain/attribution/defaults.c',
   'core/src/domain/attribution/env_loader.c',
@@ -130,6 +131,7 @@ src = files(
   'core/src/cache/query.c',
   'core/src/fs/path_utils.c',
   'core/src/util/ref.c',
+  'core/src/util/oid.c',
   'core/src/adapters/git/libgit2_repository_port.c',
   'core/src/hooks/augment.c',
 )
