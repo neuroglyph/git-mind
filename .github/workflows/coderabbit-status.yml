@@ -1,0 +1,27 @@
+name: CodeRabbit Status
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  coderabbit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Check unresolved CodeRabbit threads
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 tools/review/check_coderabbit_threads.py \
+            --owner "${GITHUB_REPOSITORY%%/*}" \
+            --repo "${GITHUB_REPOSITORY##*/}" \
+            --pr ${{ github.event.number }}
