@@ -1,5 +1,5 @@
 ---
-title: 5add14fcdabafff59a99ea484d691140afdb68c3.md
+title: Code Review Feedback
 description: Preserved review artifacts and rationale.
 audience: [contributors]
 domain: [quality]
@@ -8,6 +8,10 @@ status: archive
 ---
 
 # Code Review Feedback
+
+## Table of Contents
+- [Code Review Feedback](#code-review-feedback)
+- [CODE REVIEW FEEDBACK](#code-review-feedback-1)
 
 | Date | Agent | SHA | Branch | PR |
 |------|-------|-----|--------|----|
@@ -79,7 +83,8 @@ ensure callers still know to provide non-null pointers.
 
 _Meta_: https://github.com/neuroglyph/git-mind/pull/172#discussion_r2385101775
 
-{response}
+> [!note]- **Accepted**
+> Added the overflow guard in `gm_bytes_to_hex`, matching the recommended bounds check before computing `required`.
 
 ### core/src/util/oid.c:38 — coderabbitai[bot]
 
@@ -156,7 +161,8 @@ existing out_size check and proceed with the hex conversion.
 
 _Meta_: https://github.com/neuroglyph/git-mind/pull/172#discussion_r2385101784
 
-{response}
+> [!note]- **Accepted**
+> Updated the seeded doc so its title mirrors the H1 and inserted the required table of contents section.
 
 ### docs/code-reviews/PR172/203f4e3539b1d8fc73b641e94b0a420f2e592a14.md:18 — coderabbitai[bot]
 
@@ -188,7 +194,8 @@ H1 so the document follows the docs/** guidelines.
 
 _Meta_: https://github.com/neuroglyph/git-mind/pull/172#discussion_r2385101790
 
-{response}
+> [!note]- **Acknowledged**
+> Copy that — waiting for CodeRabbit to finish processing the refreshed score.
 
 ### General comment — coderabbitai[bot]
 
@@ -326,4 +333,5 @@ Thanks for using CodeRabbit! It's free for OSS, and your support helps us grow. 
 
 _Meta_: https://github.com/neuroglyph/git-mind/pull/172#issuecomment-3342580469
 
-{response}
+> [!note]- **Acknowledged**
+> Awaiting CodeRabbit's re-run on the latest changes.

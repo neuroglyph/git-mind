@@ -3,6 +3,7 @@
 
 #include "gitmind/util/oid.h"
 
+#include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -21,6 +22,11 @@ GM_NODISCARD int gm_bytes_to_hex(const uint8_t *bytes, size_t len,
         if (out != NULL && out_size > 0U) {
             gm_memset_safe(out, out_size, 0, out_size);
         }
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+
+    if (len > (SIZE_MAX - 1U) / 2U) {
+        gm_memset_safe(out, out_size, 0, out_size);
         return GM_ERR_INVALID_ARGUMENT;
     }
 
