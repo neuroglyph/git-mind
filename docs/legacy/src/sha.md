@@ -8,7 +8,7 @@ status: archive
 last_updated: 2025-09-17
 ---
 
-# SHA Resolution Utilities
+# Legacy Notes — SHA Resolution Utilities
 
 ## Purpose
 

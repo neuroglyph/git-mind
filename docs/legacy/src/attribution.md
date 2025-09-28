@@ -8,7 +8,7 @@ status: archive
 last_updated: 2025-09-17
 ---
 
-# Attribution System
+# Legacy Notes — Attribution System
 
 The attribution system tracks who (human or AI) created each semantic edge, enabling collaborative knowledge building between humans and AI systems.
 

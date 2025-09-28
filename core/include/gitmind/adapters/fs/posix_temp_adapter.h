@@ -5,6 +5,7 @@
 #define GITMIND_ADAPTERS_FS_POSIX_TEMP_ADAPTER_H
 
 #include "gitmind/ports/fs_temp_port.h"
+#include "gitmind/result.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -38,7 +38,7 @@ def main():
     for p in base.rglob('*.md'):
         # Skip templates and rejected suggestions folder
         pp = str(p)
-        if '/templates/' in pp or '/rejected-suggestions/' in pp:
+        if '/templates/' in pp or '/rejected-suggestions/' in pp or '/code-reviews/' in pp or '/legacy/' in pp:
             continue
         text = p.read_text(encoding='utf-8')
         fm = parse_front_matter(text)
@@ -55,4 +55,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

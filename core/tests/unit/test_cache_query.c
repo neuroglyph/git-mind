@@ -16,6 +16,7 @@
 #include "gitmind/types.h"
 
 #include "gitmind/adapters/fs/posix_temp_adapter.h"
+#include "gitmind/adapters/git/libgit2_repository_port.h"
 
 static void ensure_branch_with_commit(git_repository *repo, const char *branch) {
     git_treebuilder *tb = NULL;
@@ -70,7 +71,12 @@ int main(void) {
     ensure_branch_with_commit(repo, "testq");
 
     gm_context_t ctx = {0};
-    ctx.git_repo = repo;
+
+    gm_result_void_t repo_port_result =
+        gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,
+                                          &ctx.git_repo_port_dispose, repo);
+    assert(repo_port_result.ok);
+    assert(ctx.git_repo_port.vtbl != NULL);
 
     gm_result_void_t fs_result =
         gm_posix_fs_temp_port_create(&ctx.fs_temp_port, NULL,
@@ -108,10 +114,16 @@ int main(void) {
     assert(r2.count >= 1);
     gm_cache_result_free(&r2);
 
+    git_repository *saved_repo = repo;
     if (ctx.fs_temp_port_dispose != NULL) {
         ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
     }
+    if (ctx.git_repo_port_dispose != NULL) {
+        ctx.git_repo_port_dispose(&ctx.git_repo_port);
+    }
+    assert(repo == saved_repo);
     git_repository_free(repo);
+    repo = NULL;
     git_libgit2_shutdown();
     printf("OK\n");
     return 0;

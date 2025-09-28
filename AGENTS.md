@@ -80,6 +80,8 @@ recent_developments:
 - 2025-09-19 — Cache rebuild now routes through an app-level service (`core/src/app/cache/cache_rebuild_service.c`) so `builder.c` stays a thin adapter and the One-Thing rule holds.
 - 2025-09-19 — All future temp directory work must flow through a platform-aware filesystem/temp-path service (`~/.gitmind/<repo-id>/…` on every OS). Draft the port + adapters next and stop writing ad-hoc dotfiles in tests.
 - 2025-09-19 — In progress: drafting git object/commit ports + fake adapters so cache rebuilds and tests stop reaching into libgit2 directly.
+- 2025-09-27 — When swapping hooks over to ports, wire the adapter once per run and dispose it as soon as the loop ends; the seam stays clean and tests don't need real repos.
+- 2025-09-27 — When you add a port capability, stub it in the fake immediately; tests stay fast, and tidy stops tattling.
 
 ## Project Structure & Module Organization
 
@@ -413,6 +415,29 @@ Every outbound port ships with: (a) production adapter, (b) deterministic fake u
 
 See archives under `docs/activity/` for older logs.
 
+### 2025-09-27
+- Routed cache metadata, query, and journal flows through `gm_git_repository_port`; reader/writer now use the adapter for head detection, commit walking, message bodies, and ref updates.
+- Added port surface area (head lookup, commit walk/message helpers, parent-aware commit spec) plus libgit2 adapter support to keep hex seams consistent.
+- Clang-tidy cleanup delivered: renamed the short `s1`…`s5` path segments, refreshed `walk_commits` naming, and forward-declared libgit2 types so include-cleaner stops shouting.
+- Fake git repository port now provides head branch lookup, per-ref commit walks, and commit-message reads via new helpers—tests can enqueue histories instead of skipping those seams.
+- Edge creation (basic + attributed) now resolves blob identities through `gm_git_repository_port`; goodbye `ctx->git_repo`/`git_ops` shims. Legacy SHA arrays are populated from the returned OIDs so the transitional fields stay intact.
+- Post-commit hook now builds a libgit2-backed `gm_git_repository_port` instead of poking `ctx->git_repo`; journal helpers lean solely on ports and clean up the adapter after processing.
+- Hook journey note: fake git port fuels the edge tests; with augment helpers on the seam, the remaining hook work is porting merge detection and retiring the legacy `git_ops` shim.
+- Augment helpers now resolve HEAD/parent blob OIDs through the repository port (new `resolve_blob_at_commit` seam), and the fake git adapter learned commit-scoped blob mapping so tests can assert hook behavior without libgit2.
+- Architecture doc updated (`docs/architecture/augments-system.md`) with the post-commit ➜ repository-port wiring so future hooks keep the seam intact.
+- Merge detection runs through the port too: added `commit_parent_count`, rewired the post-commit hook to create/dispose the port up front, and landed a `test_hook_augment` suite that exercises HEAD/parent blob lookups and merge detection via the fake adapter.
+- `gm_context_t` is now strictly port-based—dropped the legacy `git_ops`/`git_repo` shim, handed raw libgit2 ownership to the CLI runtime, refreshed cache/journal tests, and kept the new shape green with `make ci-local`.
+- Next up: finish scouring CLI + bench utilities for direct libgit2 calls, port them behind adapters, and keep clang-tidy quiet while we prep the PR.
+- Lesson logged: mirroring libgit2 semantics meant storing commit sequences per ref; keeping messages alongside the OIDs made the reader decode deterministic again.
+- Cap’n memo: espresso's on deck—once edge jumps ports, we raid the galley for celebratory biscotti.
+- Filesystem tidy sweep: replaced the lingering raw `memset` calls in `gm_fs_path_dirname`/`gm_fs_path_basename_append` with `gm_memset_safe`, added the explicit `separator_len` so the bool math stops tripping clang-tidy, and pulled in the security header for the helper prototypes.
+- POSIX temp adapter now defines `_GNU_SOURCE` up front and trusts glibc's `realpath`; the redundant extern declaration is gone, keeping include-cleaner + tidy happy.
+- Immediate next move: rerun `make ci-local` once these filesystem fixes settle, then chase the remaining bool-to-int clang-tidy nits in the staged benchmark + fake git port files before we go PR hunting.
+- Lesson logged: tidy catches implicit bool arithmetic fast—introducing small helper variables beats sprinkling casts and keeps the intent readable for future hex refactors.
+- Message in a bottle: future Cap’n, there’s cocoa in the galley—sip it while you double-check the tidy report before raising the PR flag.
+- CodeRabbit pass (batch 2): accepted output-zeroing and error-propagation notes—commit creation now clears result OIDs up front, commit message reads null-init outputs, hook blob lookups zero result buffers and distinguish NOT_FOUND from real failures, commit walks honour `GM_CALLBACK_STOP`, and the fake port header owns its std includes.
+- CodeRabbit pass (batch 3): reaffirmed the wildebeest benchmark already routes queries via `gm_oid_t`, clarified detached-HEAD fallback inside `gm_hook_get_blob_sha`, and brought the PR171 review docs in line with the front-matter/TOC guidelines.
+
 ## Next Steps (handoff checklist)
 - Complete on-disk cache migration to OID-only storage and naming; ensure rebuild and fallback readers handle both formats or gate with a one-time migration.
 - Extend journal CBOR schema to store OIDs explicitly (not only derivable from legacy fields); update reader/writer and consumers.
@@ -420,6 +445,11 @@ See archives under `docs/activity/` for older logs.
 - Expand attributed edge CBOR to include OIDs alongside legacy fields; update cache/journal consumers accordingly.
 - Stabilize and merge open PRs (#164, #165, #166, #167) after CI green; incorporate CodeRabbit actionable feedback and document any rejections under `docs/code-reviews/rejected-suggestions/`.
 - Add focused tests: journal base64 encode/decode roundtrip, `gm_snprintf` truncation behavior, and OID-based equality/lookup paths in cache and hooks.
+- Silence remaining clang-tidy warnings by fixing short parameter names, pruning redundant includes, and implementing the fake git port’s head/commit-walk seams.
+- Audit other hook helpers (diff runner, env) for direct libgit2 usage and port them; parallel update CLI hook installer if needed.
+- Expand docs beyond AUGMENTS (e.g., hooks install guide) to reference the repository port seam instead of raw libgit2 handles.
+- Sweep for off-the-path libgit2 usage (`gm_cache_query_fanout`, benchmarks) and line up follow-up ports before cutting the PR.
+- Document the port-based hook wiring in the broader docs set (install guide, CLI walkthrough) so the CLI/runtime split stays obvious.
 
 ## Vision Snapshot
 

@@ -8,6 +8,7 @@
 #include "cli_runtime.h"
 
 #include "gitmind/adapters/fs/posix_temp_adapter.h"
+#include "gitmind/adapters/git/libgit2_repository_port.h"
 
 #include "gitmind/constants_internal.h"
 
@@ -181,7 +182,21 @@ static int init_context(gm_context_t *ctx, gm_output_level_t level,
 
     /* Set up core context */
     memset(ctx, 0, sizeof(gm_context_t));
-    ctx->git_repo = repo;
+
+    gm_result_void_t repo_port_result =
+        gm_libgit2_repository_port_create(&ctx->git_repo_port, NULL,
+                                          &ctx->git_repo_port_dispose, repo);
+    if (!repo_port_result.ok) {
+        int code = GM_ERR_UNKNOWN;
+        if (repo_port_result.u.err != NULL) {
+            code = repo_port_result.u.err->code;
+            gm_error_free(repo_port_result.u.err);
+        }
+        git_repository_free(repo);
+        git_libgit2_shutdown();
+        return code;
+    }
+    ctx->user_data = repo;
 
     gm_result_void_t fs_port_result =
         gm_posix_fs_temp_port_create(&ctx->fs_temp_port, NULL,
@@ -192,14 +207,34 @@ static int init_context(gm_context_t *ctx, gm_output_level_t level,
             code = fs_port_result.u.err->code;
             gm_error_free(fs_port_result.u.err);
         }
-        git_repository_free(repo);
+        if (ctx->git_repo_port_dispose != NULL) {
+            ctx->git_repo_port_dispose(&ctx->git_repo_port);
+            ctx->git_repo_port_dispose = NULL;
+        }
+        if (ctx->user_data != NULL) {
+            git_repository_free((git_repository *)ctx->user_data);
+            ctx->user_data = NULL;
+        }
+        git_libgit2_shutdown();
         return code;
     }
-    
+
     /* Create CLI output context (separate from core context) */
     cli->out = gm_output_create(level, format);
     if (!cli->out) {
-        git_repository_free(repo);
+        if (ctx->fs_temp_port_dispose != NULL) {
+            ctx->fs_temp_port_dispose(&ctx->fs_temp_port);
+            ctx->fs_temp_port_dispose = NULL;
+        }
+        if (ctx->git_repo_port_dispose != NULL) {
+            ctx->git_repo_port_dispose(&ctx->git_repo_port);
+            ctx->git_repo_port_dispose = NULL;
+        }
+        if (ctx->user_data != NULL) {
+            git_repository_free((git_repository *)ctx->user_data);
+            ctx->user_data = NULL;
+        }
+        git_libgit2_shutdown();
         return GM_ERR_OUT_OF_MEMORY;
     }
 
@@ -216,8 +251,13 @@ static void cleanup_context(gm_context_t *ctx, gm_cli_ctx_t *cli) {
         ctx->fs_temp_port_dispose(&ctx->fs_temp_port);
         ctx->fs_temp_port_dispose = NULL;
     }
-    if (ctx->git_repo) {
-        git_repository_free((git_repository *)ctx->git_repo);
+    if (ctx->git_repo_port_dispose != NULL) {
+        ctx->git_repo_port_dispose(&ctx->git_repo_port);
+        ctx->git_repo_port_dispose = NULL;
+    }
+    if (ctx->user_data != NULL) {
+        git_repository_free((git_repository *)ctx->user_data);
+        ctx->user_data = NULL;
     }
     git_libgit2_shutdown();
 }

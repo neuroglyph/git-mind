@@ -1,8 +1,6 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#include <git2.h>
-
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -33,17 +31,21 @@ static int gm_parse_cache_rebuild_args(gm_cli_ctx_t *cli, int argc, char **argv,
 }
 
 /* Get current branch name */
-static int gm_get_current_branch(git_repository *repo, const char **branch,
+static int gm_get_current_branch(const gm_git_repository_port_t *repo_port,
+                                 char *branch_buffer, size_t buffer_size,
+                                 const char **branch_out,
                                  gm_output_t *output) {
-    git_reference *head = NULL;
-    int rc = git_repository_head(&head, repo);
-    if (rc < 0) {
+    gm_result_void_t result = gm_git_repository_port_head_branch(
+        repo_port, branch_buffer, buffer_size);
+    if (!result.ok) {
+        if (result.u.err != NULL) {
+            gm_error_free(result.u.err);
+        }
         gm_output_error(output, GM_ERROR_GET_BRANCH "\n");
         return GM_ERR_INVALID_ARGUMENT;
     }
 
-    *branch = git_reference_shorthand(head);
-    git_reference_free(head);
+    *branch_out = branch_buffer;
     return GM_OK;
 }
 
@@ -121,9 +123,12 @@ int gm_cmd_cache_rebuild(gm_context_t *ctx, gm_cli_ctx_t *cli, int argc, char **
         return rc;
     }
 
+    char branch_storage[BUFFER_SIZE_SMALL];
+
     /* Get current branch if not specified */
     if (!branch) {
-        rc = gm_get_current_branch(ctx->git_repo, &branch, cli->out);
+        rc = gm_get_current_branch(&ctx->git_repo_port, branch_storage,
+                                   sizeof(branch_storage), &branch, cli->out);
         if (rc != GM_OK) {
             return rc;
         }

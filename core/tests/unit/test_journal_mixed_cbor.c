@@ -13,6 +13,10 @@
 #include "gitmind/error.h"
 #include "gitmind/edge_attributed.h"
 #include "gitmind/types.h"
+#include "gitmind/context.h"
+#include "gitmind/result.h"
+#include "gitmind/util/memory.h"
+#include "gitmind/adapters/git/libgit2_repository_port.h"
 
 typedef struct {
     size_t count;
@@ -68,9 +72,16 @@ int main(void) {
     uint8_t buf2[512]; size_t len2 = sizeof buf2; assert(gm_edge_attributed_encode_cbor(&ae, buf2, &len2).ok);
 
     /* Concatenate */
-    uint8_t payload[1024]; memcpy(payload, buf1, len1); memcpy(payload + len1, buf2, len2);
+    uint8_t payload[1024];
+    assert(len1 + len2 <= sizeof payload);
+    assert(gm_memcpy_span(payload, sizeof payload, buf1, len1) == GM_OK);
+    assert(gm_memcpy_span(payload + len1, sizeof payload - len1, buf2, len2) == GM_OK);
 
-    gm_context_t ctx = {0}; ctx.git_repo = repo;
+    gm_context_t ctx = {0};
+    gm_result_void_t repo_port_result =
+        gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,
+                                          &ctx.git_repo_port_dispose, repo);
+    assert(repo_port_result.ok);
     rc = gm_journal_create_commit(&ctx, "refs/gitmind/edges/test", payload, len1 + len2);
     assert(rc == GM_OK);
 
@@ -80,6 +91,9 @@ int main(void) {
     rc = gm_journal_read_attributed(&ctx, "test", count_attr_cb, &cattr);
     assert(rc == GM_OK && cattr.count >= 1);
 
+    if (ctx.git_repo_port_dispose != NULL) {
+        ctx.git_repo_port_dispose(&ctx.git_repo_port);
+    }
     git_repository_free(repo);
     git_libgit2_shutdown();
     printf("OK\n");

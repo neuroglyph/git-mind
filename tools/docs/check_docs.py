@@ -10,7 +10,7 @@ from typing import List, Tuple
 LINK_PATTERN = re.compile(r"!?\[([^\]]+)\]\(([^)]+)\)")
 
 
-SKIP_DIRS = {'.git', '.legacy', '.trash'}
+SKIP_DIRS = {'.git', '.legacy', '.trash', 'code-reviews', 'legacy'}
 
 
 REQUIRE_TOC_PREFIXES = (

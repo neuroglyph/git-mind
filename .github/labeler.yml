@@ -1,4 +1,0 @@
-docs-only:
-  - changed-files:
-      - any-glob-to-any-file: ['docs/**', 'README.md', 'AGENTS.md', 'CONTRIBUTING.md']
-

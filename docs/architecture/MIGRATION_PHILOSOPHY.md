@@ -1,5 +1,5 @@
 ---
-title: Migration Philosophy
+title: Migration Philosophy: From Chaos to Excellence
 description: Strict-then-sustainable approach to quality during and after migration.
 audience: [developers]
 domain: [architecture]

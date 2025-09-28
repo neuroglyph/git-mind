@@ -21,6 +21,7 @@
 
 #include "../include/gitmind.h"
 #include "gitmind/adapters/fs/posix_temp_adapter.h"
+#include "gitmind/adapters/git/libgit2_repository_port.h"
 #include "gitmind/result.h"
 
 #define WILDEBEEST_COUNT 100000 /* Start with 100K edges */
@@ -59,9 +60,9 @@ static void run_stampede(git_repository *repo, const char *branch,
     printf("Creating wildebeest edges...\n");
     gm_edge_t *herd = malloc(wildebeest_count * sizeof(gm_edge_t));
 
-    /* Mufasa's SHA (he's at the center of it all) */
-    uint8_t mufasa_sha[GM_SHA1_SIZE];
-    generate_wildebeest_sha(mufasa_sha);
+    /* Mufasa's identity (he's at the center of it all) */
+    gm_oid_t mufasa_oid = {0};
+    generate_wildebeest_sha(mufasa_oid.id);
 
     /* Generate the herd */
     for (int i = 0; i < wildebeest_count; i++) {
@@ -70,9 +71,9 @@ static void run_stampede(git_repository *repo, const char *branch,
         /* Half run TO Mufasa, half run FROM */
         if (i % 2 == 0) {
             generate_wildebeest_sha(beast->src_sha);
-            memcpy(beast->tgt_sha, mufasa_sha, GM_SHA1_SIZE);
+            memcpy(beast->tgt_sha, mufasa_oid.id, GM_SHA1_SIZE);
         } else {
-            memcpy(beast->src_sha, mufasa_sha, GM_SHA1_SIZE);
+            memcpy(beast->src_sha, mufasa_oid.id, GM_SHA1_SIZE);
             generate_wildebeest_sha(beast->tgt_sha);
         }
 
@@ -85,8 +86,15 @@ static void run_stampede(git_repository *repo, const char *branch,
 
     /* Add to journal */
     printf("Releasing the herd into the journal...\n");
-    gm_context_t ctx = {0};
-    ctx.git_repo = repo;
+    gm_context_t ctx = (gm_context_t){0};
+
+    gm_result_void_t repo_port_result =
+        gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,
+                                          &ctx.git_repo_port_dispose, repo);
+    if (!repo_port_result.ok) {
+        fprintf(stderr, "failed to create git repository port\n");
+        exit(EXIT_FAILURE);
+    }
 
     gm_result_void_t fs_result =
         gm_posix_fs_temp_port_create(&ctx.fs_temp_port, NULL,
@@ -108,7 +116,7 @@ static void run_stampede(git_repository *repo, const char *branch,
     clock_t start = clock();
 
     gm_cache_result_t scan_result = {0};
-    gm_cache_query_fanout(repo, branch, mufasa_sha, &scan_result);
+    gm_cache_query_fanout(&ctx, branch, &mufasa_oid, &scan_result);
 
     clock_t end = clock();
     result->journal_scan_ms = ((double)(end - start) / CLOCKS_PER_SEC) * 1000;
@@ -127,7 +135,7 @@ static void run_stampede(git_repository *repo, const char *branch,
     start = clock();
 
     gm_cache_result_t cache_result = {0};
-    gm_cache_query_fanout(repo, branch, mufasa_sha, &cache_result);
+    gm_cache_query_fanout(&ctx, branch, &mufasa_oid, &cache_result);
 
     end = clock();
     result->cache_query_ms = ((double)(end - start) / CLOCKS_PER_SEC) * 1000;
@@ -143,6 +151,10 @@ static void run_stampede(git_repository *repo, const char *branch,
     if (ctx.fs_temp_port_dispose != NULL) {
         ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
     }
+    if (ctx.git_repo_port_dispose != NULL) {
+        ctx.git_repo_port_dispose(&ctx.git_repo_port);
+    }
+    git_repository_free(repo);
     free(herd);
 }
 
@@ -208,7 +220,6 @@ int main(int argc, char **argv) {
            "🦁\n\n");
 
     /* Cleanup */
-    git_repository_free(repo);
     git_libgit2_shutdown();
 
     /* Remove temp dir */

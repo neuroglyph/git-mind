@@ -52,19 +52,33 @@ static void edge_init_defaults(gm_edge_t *edge) {
 /**
  * Resolve SHA for a path using context operations
  */
-static gm_result_void_t resolve_sha(gm_context_t *ctx, const char *path,
-                                    uint8_t *sha) {
-    if (!ctx || !ctx->git_ops.resolve_blob) {
-        return gm_err_void(GM_ERROR(GM_ERR_NOT_IMPLEMENTED,
-                                    "Git operations not available"));
+static gm_result_void_t resolve_blob_identity(gm_context_t *ctx, const char *path,
+                                              gm_oid_t *out_oid,
+                                              uint8_t *legacy_sha) {
+    if (ctx == NULL || path == NULL || out_oid == NULL || legacy_sha == NULL) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_INVALID_ARGUMENT, "blob resolve requires inputs"));
     }
-    
-    int result = ctx->git_ops.resolve_blob(ctx->git_repo, path, sha);
-    if (result != 0) {
-        return gm_err_void(GM_ERROR(GM_ERR_NOT_FOUND,
-                                    "Failed to resolve blob SHA"));
+    if (ctx->git_repo_port.vtbl == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_STATE,
+                                    "git repository port unavailable"));
     }
-    
+
+    gm_result_void_t port_result = gm_git_repository_port_resolve_blob_at_head(
+        &ctx->git_repo_port, path, out_oid);
+    if (!port_result.ok) {
+        return port_result;
+    }
+
+    const size_t copy_len = (GM_OID_RAWSZ < GM_SHA1_SIZE) ? GM_OID_RAWSZ : GM_SHA1_SIZE;
+    if (gm_memcpy_span(legacy_sha, GM_SHA1_SIZE, out_oid->id, copy_len) != 0) {
+        return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
+                                    "legacy SHA buffer too small"));
+    }
+    if (copy_len < GM_SHA1_SIZE) {
+        memset(legacy_sha + copy_len, 0, GM_SHA1_SIZE - copy_len);
+    }
+
     return gm_ok_void();
 }
 
@@ -94,18 +108,18 @@ gm_result_edge_t gm_edge_create(gm_context_t *ctx, const char *src_path,
     edge_init_defaults(&edge);
     
     /* Resolve source SHA */
-    gm_result_void_t src_result = resolve_sha(ctx, src_path, edge.src_sha);
+    gm_result_void_t src_result =
+        resolve_blob_identity(ctx, src_path, &edge.src_oid, edge.src_sha);
     if (!src_result.ok) {
         return (gm_result_edge_t){.ok = false, .u.err = src_result.u.err};
     }
-    git_oid_fromraw(&edge.src_oid, edge.src_sha);
     
     /* Resolve target SHA */
-    gm_result_void_t tgt_result = resolve_sha(ctx, tgt_path, edge.tgt_sha);
+    gm_result_void_t tgt_result =
+        resolve_blob_identity(ctx, tgt_path, &edge.tgt_oid, edge.tgt_sha);
     if (!tgt_result.ok) {
         return (gm_result_edge_t){.ok = false, .u.err = tgt_result.u.err};
     }
-    git_oid_fromraw(&edge.tgt_oid, edge.tgt_sha);
     
     /* Set fields */
     (void)gm_strcpy_safe(edge.src_path, GM_PATH_MAX, src_path);
@@ -334,15 +348,42 @@ gm_result_void_t gm_edge_encode_cbor(const gm_edge_t *edge, uint8_t *buffer,
         return result;
     }
     /* Write preferred OID fields using raw bytes */
-    const uint8_t *src_raw = (const uint8_t *)edge->src_oid.id;
-    const uint8_t *tgt_raw = (const uint8_t *)edge->tgt_oid.id;
-    if (src_raw == NULL) src_raw = edge->src_sha; /* fallback */
-    if (tgt_raw == NULL) tgt_raw = edge->tgt_sha; /* fallback */
-    result = write_cbor_bytes(GM_CBOR_KEY_SRC_OID, buffer, available, &offset, src_raw, GM_OID_RAWSZ);
+    uint8_t src_oid_bytes[GM_OID_RAWSZ] = {0};
+    uint8_t tgt_oid_bytes[GM_OID_RAWSZ] = {0};
+
+    if (!git_oid_is_zero(&edge->src_oid)) {
+        (void)gm_memcpy_span(src_oid_bytes, sizeof(src_oid_bytes), edge->src_oid.id,
+                             GM_OID_RAWSZ);
+    } else {
+        size_t copy_len = GM_SHA1_SIZE < GM_OID_RAWSZ ? GM_SHA1_SIZE : GM_OID_RAWSZ;
+        (void)gm_memcpy_span(src_oid_bytes, sizeof(src_oid_bytes), edge->src_sha,
+                             copy_len);
+        if (copy_len < GM_OID_RAWSZ) {
+            gm_memset_safe(src_oid_bytes + copy_len, GM_OID_RAWSZ - copy_len, 0,
+                           GM_OID_RAWSZ - copy_len);
+        }
+    }
+
+    if (!git_oid_is_zero(&edge->tgt_oid)) {
+        (void)gm_memcpy_span(tgt_oid_bytes, sizeof(tgt_oid_bytes), edge->tgt_oid.id,
+                             GM_OID_RAWSZ);
+    } else {
+        size_t copy_len = GM_SHA1_SIZE < GM_OID_RAWSZ ? GM_SHA1_SIZE : GM_OID_RAWSZ;
+        (void)gm_memcpy_span(tgt_oid_bytes, sizeof(tgt_oid_bytes), edge->tgt_sha,
+                             copy_len);
+        if (copy_len < GM_OID_RAWSZ) {
+            gm_memset_safe(tgt_oid_bytes + copy_len, GM_OID_RAWSZ - copy_len, 0,
+                           GM_OID_RAWSZ - copy_len);
+        }
+    }
+
+    result = write_cbor_bytes(GM_CBOR_KEY_SRC_OID, buffer, available, &offset,
+                              src_oid_bytes, GM_OID_RAWSZ);
     if (!result.ok) {
         return result;
     }
-    result = write_cbor_bytes(GM_CBOR_KEY_TGT_OID, buffer, available, &offset, tgt_raw, GM_OID_RAWSZ);
+    result = write_cbor_bytes(GM_CBOR_KEY_TGT_OID, buffer, available, &offset,
+                              tgt_oid_bytes, GM_OID_RAWSZ);
     if (!result.ok) {
         return result;
     }

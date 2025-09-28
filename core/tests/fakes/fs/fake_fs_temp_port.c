@@ -4,14 +4,13 @@
 #include "core/tests/fakes/fs/fake_fs_temp_port.h"
 
 #include <string.h>
-
+#include <inttypes.h>
 #include "gitmind/error.h"
 #include "gitmind/fs/path_utils.h"
 #include "gitmind/result.h"
 #include "gitmind/security/string.h"
 #include "gitmind/types.h"
 #include "gitmind/util/memory.h"
-
 static bool fake_path_exists(const gm_fake_fs_temp_port_t *fake,
                              const char *path) {
     for (size_t i = 0; i < fake->created_count; ++i) {
@@ -112,9 +111,12 @@ static gm_result_void_t fake_remove_tree(void *self, const char *abs_path) {
 }
 
 static gm_result_void_t fake_path_join(void *self, gm_fs_base_t base,
-                                       gm_repo_id_t repo, const char *s1,
-                                       const char *s2, const char *s3,
-                                       const char *s4, const char *s5,
+                                       gm_repo_id_t repo,
+                                       const char *component1,
+                                       const char *component2,
+                                       const char *component3,
+                                       const char *component4,
+                                       const char *component5,
                                        const char **out_abs_path) {
     gm_fake_fs_temp_port_t *fake = (gm_fake_fs_temp_port_t *)self;
     const char *root = (base == GM_FS_BASE_TEMP) ? fake->temp_root : fake->state_root;
@@ -134,7 +136,8 @@ static gm_result_void_t fake_path_join(void *self, gm_fs_base_t base,
     GM_TRY(gm_fs_path_basename_append(fake->scratch, sizeof(fake->scratch), &len,
                                       repo_segment));
 
-    const char *segments[] = {s1, s2, s3, s4, s5};
+    const char *segments[] = {component1, component2, component3, component4,
+                              component5};
     for (size_t idx = 0; idx < sizeof(segments) / sizeof(segments[0]); ++idx) {
         const char *seg = segments[idx];
         if (seg == NULL || seg[0] == '\0') {
@@ -172,11 +175,25 @@ static gm_result_void_t fake_canonicalize(void *self, const char *abs_path_in,
         char normalized[GM_PATH_MAX];
         GM_TRY(gm_fs_path_normalize_logical(abs_path_in, normalized,
                                             sizeof(normalized)));
+        if (normalized[0] != '/') {
+            return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                        "create-ok canonicalize requires absolute path"));
+        }
         char parent[GM_PATH_MAX];
         GM_TRY(gm_fs_path_dirname(normalized, parent, sizeof(parent)));
         if (!fake_path_exists(fake, parent)) {
             return gm_err_void(GM_ERROR(GM_ERR_NOT_FOUND,
                                         "fake parent not found"));
+        }
+        const char *leaf = normalized;
+        const char *slash = strrchr(normalized, '/');
+        if (slash != NULL && slash[1] != '\0') {
+            leaf = slash + 1;
+        }
+        char leaf_copy[GM_PATH_MAX];
+        if (gm_strcpy_safe(leaf_copy, sizeof(leaf_copy), leaf) != 0) {
+            return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
+                                        "fake canonical basename overflow"));
         }
         size_t len = strlen(parent);
         if (gm_strcpy_safe(fake->scratch, sizeof(fake->scratch), parent) != 0) {
@@ -184,7 +201,7 @@ static gm_result_void_t fake_canonicalize(void *self, const char *abs_path_in,
                                         "fake canonical path overflow"));
         }
         GM_TRY(gm_fs_path_basename_append(fake->scratch, sizeof(fake->scratch), &len,
-                                          normalized));
+                                          leaf_copy));
         *out_abs_path = fake->scratch;
         return gm_ok_void();
     }

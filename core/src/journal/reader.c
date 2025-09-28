@@ -2,6 +2,8 @@
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
 #include "gitmind/journal.h"
+#include "gitmind/ports/git_repository_port.h"
+#include "gitmind/result.h"
 #include "gitmind/types.h"
 #include "gitmind/context.h"
 #include "gitmind/cbor/constants_cbor.h"
@@ -14,13 +16,6 @@
 #include "gitmind/security/string.h"
 #include "gitmind/util/memory.h"
 #include "gitmind/util/ref.h"
-
-#include <git2/commit.h>
-#include <git2/oid.h>
-#include <git2/refs.h>
-#include <git2/repository.h>
-#include <git2/revwalk.h>
-#include <git2/types.h>
 
 #include <sodium/utils.h>
 
@@ -67,7 +62,7 @@ typedef int (*edge_attr_callback_fn)(const gm_edge_attributed_t *, void *);
 /* Generic reader context */
 typedef struct {
     gm_context_t *gm_ctx;
-    git_repository *repo;
+    gm_git_repository_port_t *repo_port;
     edge_callback_fn edge_callback;
     edge_attr_callback_fn edge_attr_callback;
     void *userdata;
@@ -203,10 +198,9 @@ static int process_regular_edge(const uint8_t *cbor_data, size_t remaining,
 }
 
 /* Process a single commit - generic version */
-static int decode_commit_message(const git_commit *commit,
+static int decode_commit_message(const char *raw_message,
                                  uint8_t *decoded_message,
                                  size_t *decoded_length) {
-    const char *raw_message = git_commit_message_raw(commit);
     if (raw_message == NULL) {
         return GM_ERR_INVALID_FORMAT;
     }
@@ -223,42 +217,33 @@ static int decode_commit_message(const git_commit *commit,
     return GM_OK;
 }
 
-static int resolve_branch(git_repository *repo, const char *requested_branch,
-                          char *buffer, size_t buffer_len,
-                          const char **resolved_branch) {
+static int resolve_branch(gm_git_repository_port_t *port,
+                          const char *requested_branch, char *buffer,
+                          size_t buffer_len, const char **resolved_branch) {
     if (requested_branch != NULL) {
         *resolved_branch = requested_branch;
         return GM_OK;
     }
 
-    git_reference *head = NULL;
-    int error = git_repository_head(&head, repo);
-    if (error < 0) {
-        return GM_ERR_INVALID_FORMAT;
+    gm_result_void_t head_result = gm_git_repository_port_head_branch(
+        port, buffer, buffer_len);
+    if (!head_result.ok) {
+        int code = GM_ERR_INVALID_FORMAT;
+        if (head_result.u.err != NULL) {
+            code = head_result.u.err->code;
+            gm_error_free(head_result.u.err);
+        }
+        return code;
     }
 
-    const char *name = git_reference_shorthand(head);
-    if (name == NULL) {
-        git_reference_free(head);
-        return GM_ERR_INVALID_FORMAT;
-    }
-
-    size_t name_len = strlen(name);
-    if (name_len >= buffer_len) {
-        name_len = buffer_len - 1U;
-    }
-    gm_memcpy_safe(buffer, buffer_len, name, name_len);
-    buffer[name_len] = '\0';
     *resolved_branch = buffer;
-
-    git_reference_free(head);
     return GM_OK;
 }
 
-static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
+static int process_commit_generic(const char *raw_message, reader_ctx_t *rctx) {
     uint8_t decoded[MAX_CBOR_SIZE];
     size_t message_len = 0;
-    int decode_status = decode_commit_message(commit, decoded, &message_len);
+    int decode_status = decode_commit_message(raw_message, decoded, &message_len);
     if (decode_status != GM_OK) {
         return decode_status;
     }
@@ -298,57 +283,40 @@ static int process_commit_generic(git_commit *commit, reader_ctx_t *rctx) {
 }
 
 /* Walk journal commits - generic version */
+static int walk_commit_callback(const gm_oid_t *commit_oid, void *userdata) {
+    reader_ctx_t *rctx = (reader_ctx_t *)userdata;
+    if (rctx == NULL || commit_oid == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+
+    char *message = NULL;
+    gm_result_void_t message_result = gm_git_repository_port_commit_read_message(
+        rctx->repo_port, commit_oid, &message);
+    if (!message_result.ok) {
+        int code = GM_ERR_INVALID_FORMAT;
+        if (message_result.u.err != NULL) {
+            code = message_result.u.err->code;
+            gm_error_free(message_result.u.err);
+        }
+        return code;
+    }
+
+    int process_status = process_commit_generic(message, rctx);
+    gm_git_repository_port_commit_message_dispose(rctx->repo_port, message);
+    return process_status;
+}
+
 static int walk_journal_generic(reader_ctx_t *rctx, const char *ref_name) {
-    git_revwalk *walker = NULL;
-    git_oid oid;
-    int error;
-
-    /* Create revision walker */
-    error = git_revwalk_new(&walker, rctx->repo);
-    if (error < 0) {
-        return GM_ERR_INVALID_FORMAT;
-    }
-
-    /* Set sorting to time order */
-    git_revwalk_sorting(walker, GIT_SORT_TIME);
-
-    /* Push the ref to start walking from */
-    error = git_revwalk_push_ref(walker, ref_name);
-    if (error < 0) {
-        git_revwalk_free(walker);
-        return GM_ERR_NOT_FOUND;
-    }
-
-    /* Walk commits */
-    int commit_count = 0;
-    while (git_revwalk_next(&oid, walker) == 0) {
-        git_commit *commit = NULL;
-        commit_count++;
-
-        /* Lookup commit */
-        error = git_commit_lookup(&commit, rctx->repo, &oid);
-        if (error < 0) {
-            continue;
+    gm_result_void_t walk_result = gm_git_repository_port_walk_commits(
+        rctx->repo_port, ref_name, walk_commit_callback, rctx);
+    if (!walk_result.ok) {
+        int code = GM_ERR_UNKNOWN;
+        if (walk_result.u.err != NULL) {
+            code = walk_result.u.err->code;
+            gm_error_free(walk_result.u.err);
         }
-
-        /* Process commit */
-        int result = process_commit_generic(commit, rctx);
-        git_commit_free(commit);
-
-        if (result != GM_OK) {
-            /* User callback requested stop or error */
-            git_revwalk_free(walker);
-            return result;
-        }
+        return code;
     }
-
-    /* If no commits found, return NOT_FOUND */
-    if (commit_count == 0) {
-        git_revwalk_free(walker);
-        return GM_ERR_NOT_FOUND;
-    }
-
-    git_revwalk_free(walker);
     return GM_OK;
 }
 
@@ -364,6 +332,9 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
     if (ctx == NULL) {
         return GM_ERR_INVALID_ARGUMENT;
     }
+    if (ctx->git_repo_port.vtbl == NULL) {
+        return GM_ERR_INVALID_STATE;
+    }
     if (is_attributed) {
         if (attr_cb == NULL) {
             return GM_ERR_INVALID_ARGUMENT;
@@ -374,14 +345,14 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
 
     /* Initialize reader context */
     rctx.gm_ctx = ctx;
-    rctx.repo = (git_repository *)ctx->git_repo;
+    rctx.repo_port = &ctx->git_repo_port;
     rctx.edge_callback = edge_cb;
     rctx.edge_attr_callback = attr_cb;
     rctx.userdata = userdata;
     rctx.is_attributed = is_attributed;
 
     const char *resolved_branch = branch;
-    int branch_rc = resolve_branch(rctx.repo, branch, current_branch,
+    int branch_rc = resolve_branch(rctx.repo_port, branch, current_branch,
                                    sizeof(current_branch), &resolved_branch);
     if (branch_rc != GM_OK) {
         return branch_rc;

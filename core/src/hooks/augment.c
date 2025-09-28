@@ -3,9 +3,19 @@
 
 #include "gitmind/hooks/augment.h"
 
+#include <ctype.h>
 #include <string.h>
-#include "gitmind/util/memory.h"
 #include <time.h>
+
+#include <git2/oid.h>
+
+#include "gitmind/constants.h"
+#include "gitmind/constants_internal.h"
+#include "gitmind/error.h"
+#include "gitmind/result.h"
+#include "gitmind/util/memory.h"
+#include "gitmind/util/ref.h"
+#include "gitmind/security/memory.h"
 
 /* Note: replace any private header usage with public equivalents when available. */
 
@@ -22,54 +32,138 @@ int gm_journal_read(gm_context_t *ctx, const char *branch,
                     void *userdata);
 int gm_ulid_generate(char *ulid);
 
-/* Get blob SHA for a file at a specific commit */
-int gm_hook_get_blob_sha(git_repository *repo, const char *commit_ref,
-                 const char *file_path, gm_oid_t *sha_out) {
-    git_object *obj = NULL;
-    git_commit *commit = NULL;
-    git_tree *tree = NULL;
-    git_tree_entry *entry = NULL;
-    int error;
+typedef struct {
+    gm_oid_t *storage;
+    size_t capacity;
+    size_t count;
+} hook_commit_collect_ctx_t;
 
-    /* Resolve commit reference */
-    error = git_revparse_single(&obj, repo, commit_ref);
-    if (error < 0) {
-        return GM_ERR_NOT_FOUND;
+static int hook_result_to_code(gm_result_void_t result, int fallback) {
+    if (result.ok) {
+        return GM_OK;
+    }
+    int code = fallback;
+    if (result.u.err != NULL) {
+        code = result.u.err->code;
+        gm_error_free(result.u.err);
+    }
+    return code;
+}
+
+static bool parse_head_offset(const char *commit_ref, size_t *offset_out) {
+    if (commit_ref == NULL || offset_out == NULL) {
+        return false;
+    }
+    if (strcmp(commit_ref, "HEAD") == 0) {
+        *offset_out = 0U;
+        return true;
+    }
+    const char *prefix = "HEAD~";
+    const size_t prefix_len = strlen(prefix);
+    if (strncmp(commit_ref, prefix, prefix_len) != 0) {
+        return false;
+    }
+    const char *cursor = commit_ref + prefix_len;
+    if (*cursor == '\0') {
+        return false;
     }
 
-    /* Get commit from object */
-    error = git_commit_lookup(&commit, repo, git_object_id(obj));
-    git_object_free(obj);
-    if (error < 0) {
-        return GM_ERR_NOT_FOUND;
+    size_t value = 0U;
+    while (*cursor != '\0') {
+        if (!isdigit((unsigned char)*cursor)) {
+            return false;
+        }
+        value = (value * 10U) + (size_t)(*cursor - '0');
+        cursor++;
     }
 
-    /* Get tree from commit */
-    error = git_commit_tree(&tree, commit);
-    git_commit_free(commit);
-    if (error < 0) {
-        return GM_ERR_NOT_FOUND;
+    *offset_out = value;
+    return true;
+}
+
+static int collect_commit_oid(const gm_oid_t *commit_oid, void *userdata) {
+    hook_commit_collect_ctx_t *ctx = (hook_commit_collect_ctx_t *)userdata;
+    if (ctx == NULL || commit_oid == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
     }
-
-    /* Look up file in tree */
-    error = git_tree_entry_bypath(&entry, tree, file_path);
-    git_tree_free(tree);
-    if (error < 0) {
-        return GM_NOT_FOUND;
+    if (ctx->count < ctx->capacity) {
+        ctx->storage[ctx->count] = *commit_oid;
+        ctx->count += 1U;
+        if (ctx->count >= ctx->capacity) {
+            return GM_CALLBACK_STOP;
+        }
     }
-
-    /* Ensure it's a blob (not directory/submodule) */
-    if (git_tree_entry_type(entry) != GIT_OBJECT_BLOB) {
-        git_tree_entry_free(entry);
-        return GM_ERR_NOT_FOUND;
-    }
-
-    /* Copy OID */
-    const git_oid *oid = git_tree_entry_id(entry);
-    *sha_out = *oid;
-
-    git_tree_entry_free(entry);
     return GM_OK;
+}
+
+/* Get blob SHA for a file at a specific commit */
+int gm_hook_get_blob_sha(const gm_git_repository_port_t *repo_port,
+                         const char *commit_ref,
+                         const char *file_path, gm_oid_t *sha_out) {
+    if (repo_port == NULL || commit_ref == NULL || file_path == NULL ||
+        sha_out == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+
+    gm_memset_safe(sha_out, sizeof(*sha_out), 0, sizeof(*sha_out));
+
+    size_t offset = 0U;
+    if (!parse_head_offset(commit_ref, &offset)) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+
+    if (offset == 0U) {
+        gm_result_void_t head_result =
+            gm_git_repository_port_resolve_blob_at_head(repo_port, file_path,
+                                                        sha_out);
+        return hook_result_to_code(head_result, GM_ERR_NOT_FOUND);
+    }
+
+    if (offset >= GM_AUGMENT_LOOKBACK_LIMIT) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+
+    const size_t required_commits = offset + 1U;
+    gm_oid_t commit_buffer[GM_AUGMENT_LOOKBACK_LIMIT];
+    hook_commit_collect_ctx_t collect_ctx = {
+        .storage = commit_buffer,
+        .capacity = required_commits,
+        .count = 0U,
+    };
+
+    const char *walk_ref = "HEAD";
+    char branch[BUFFER_SIZE_SMALL];
+    char ref_name[REF_NAME_BUFFER_SIZE];
+    gm_result_void_t branch_result =
+        gm_git_repository_port_head_branch(repo_port, branch, sizeof(branch));
+    int branch_rc = hook_result_to_code(branch_result, GM_ERR_NOT_FOUND);
+    if (branch_rc == GM_OK) {
+        int ref_rc = gm_build_ref(ref_name, sizeof(ref_name), REFS_HEADS_PREFIX,
+                                  branch);
+        if (ref_rc == GM_OK) {
+            walk_ref = ref_name;
+        }
+    } else if (branch_rc != GM_ERR_NOT_FOUND) {
+        return branch_rc;
+    } else {
+        /* Detached HEAD: fall back to walking the symbolic HEAD reference. */
+        walk_ref = "HEAD";
+    }
+
+    gm_result_void_t walk_result = gm_git_repository_port_walk_commits(
+        repo_port, walk_ref, collect_commit_oid, &collect_ctx);
+    int walk_rc = hook_result_to_code(walk_result, GM_ERR_NOT_FOUND);
+    if (walk_rc != GM_OK) {
+        return walk_rc;
+    }
+
+    if (collect_ctx.count <= offset) {
+        return GM_ERR_NOT_FOUND;
+    }
+
+    gm_result_void_t resolve_result = gm_git_repository_port_resolve_blob_at_commit(
+        repo_port, &collect_ctx.storage[offset], file_path, sha_out);
+    return hook_result_to_code(resolve_result, GM_ERR_NOT_FOUND);
 }
 
 /* Callback structure for edge search */
@@ -143,6 +237,7 @@ int gm_hook_find_edges_by_source(gm_context_t *ctx, const gm_oid_t *src_oid,
 int gm_hook_create_augments_edge(gm_context_t *ctx, const gm_oid_t *old_oid,
                          const gm_oid_t *new_oid, const char *file_path) {
     gm_edge_t edge;
+    gm_memset_safe(&edge, sizeof(edge), 0, sizeof(edge));
 
     /* Initialize edge */
     edge.src_oid = *old_oid;
@@ -152,21 +247,29 @@ int gm_hook_create_augments_edge(gm_context_t *ctx, const gm_oid_t *old_oid,
     edge.timestamp = (uint64_t)time(NULL);
 
     /* Set paths (both same for AUGMENTS); fail on truncation */
-    if (gm_strcpy_safe(edge.src_path, GM_PATH_MAX, file_path) == -1 ||
-        gm_strcpy_safe(edge.tgt_path, GM_PATH_MAX, file_path) == -1) {
-        return GM_ERR_BUFFER_TOO_SMALL;
+    int rc_src = gm_strcpy_safe(edge.src_path, GM_PATH_MAX, file_path);
+    int rc_tgt = gm_strcpy_safe(edge.tgt_path, GM_PATH_MAX, file_path);
+    if (rc_src != GM_OK || rc_tgt != GM_OK) {
+        gm_memset_safe(edge.src_path, sizeof edge.src_path, 0, sizeof edge.src_path);
+        gm_memset_safe(edge.tgt_path, sizeof edge.tgt_path, 0, sizeof edge.tgt_path);
+        return (rc_src != GM_OK) ? rc_src : rc_tgt;
     }
 
     /* Generate ULID */
-    gm_ulid_generate(edge.ulid);
+    int ulid_rc = gm_ulid_generate(edge.ulid);
+    if (ulid_rc != GM_OK) {
+        gm_memset_safe(edge.ulid, sizeof edge.ulid, 0, sizeof edge.ulid);
+        return ulid_rc;
+    }
 
     /* Append to journal */
     return gm_journal_append(ctx, &edge, 1);
 }
 
 /* Process a single changed file */
-int gm_hook_process_changed_file(gm_context_t *ctx, git_repository *repo,
-                         const char *file_path) {
+int gm_hook_process_changed_file(gm_context_t *ctx,
+                                 const gm_git_repository_port_t *repo_port,
+                                 const char *file_path) {
     gm_oid_t old_oid;
     gm_oid_t new_oid;
     gm_edge_t *edges = NULL;
@@ -174,17 +277,23 @@ int gm_hook_process_changed_file(gm_context_t *ctx, git_repository *repo,
     int error;
 
     /* Get old blob SHA */
-    error = gm_hook_get_blob_sha(repo, "HEAD~1", file_path, &old_oid);
-    if (error != GM_OK) {
+    error = gm_hook_get_blob_sha(repo_port, "HEAD~1", file_path, &old_oid);
+    if (error == GM_ERR_NOT_FOUND) {
         /* File might be new, skip */
         return GM_OK;
     }
+    if (error != GM_OK) {
+        return error;
+    }
 
     /* Get new blob SHA */
-    error = gm_hook_get_blob_sha(repo, "HEAD", file_path, &new_oid);
-    if (error != GM_OK) {
+    error = gm_hook_get_blob_sha(repo_port, "HEAD", file_path, &new_oid);
+    if (error == GM_ERR_NOT_FOUND) {
         /* File might be deleted, skip */
         return GM_OK;
+    }
+    if (error != GM_OK) {
+        return error;
     }
 
     /* Find edges with old blob as source */
@@ -207,33 +316,47 @@ int gm_hook_process_changed_file(gm_context_t *ctx, git_repository *repo,
 }
 
 /* Check if this is a merge commit */
-int gm_hook_is_merge_commit(git_repository *repo, bool *is_merge) {
-    git_reference *head_ref = NULL;
-    git_commit *commit = NULL;
-    int error;
-
-    /* Get HEAD */
-    error = git_repository_head(&head_ref, repo);
-    if (error < 0) {
-        return GM_ERR_UNKNOWN;
+int gm_hook_is_merge_commit(const gm_git_repository_port_t *repo_port,
+                            bool *is_merge) {
+    if (repo_port == NULL || is_merge == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
     }
 
-    /* Get commit */
-    git_oid oid;
-    error = git_reference_name_to_id(&oid, repo, "HEAD");
-    git_reference_free(head_ref);
-    if (error < 0) {
-        return GM_ERR_UNKNOWN;
+    gm_git_reference_tip_t tip;
+    gm_memset_safe(&tip, sizeof(tip), 0, sizeof(tip));
+    const char *ref_to_query = "HEAD";
+    char branch[BUFFER_SIZE_SMALL];
+    char ref_name[REF_NAME_BUFFER_SIZE];
+    gm_result_void_t branch_result =
+        gm_git_repository_port_head_branch(repo_port, branch, sizeof(branch));
+    int branch_rc = hook_result_to_code(branch_result, GM_ERR_NOT_FOUND);
+    if (branch_rc == GM_OK) {
+        int ref_rc =
+            gm_build_ref(ref_name, sizeof(ref_name), REFS_HEADS_PREFIX, branch);
+        if (ref_rc == GM_OK) {
+            ref_to_query = ref_name;
+        }
+    } else if (branch_rc != GM_ERR_NOT_FOUND) {
+        return branch_rc;
     }
 
-    error = git_commit_lookup(&commit, repo, &oid);
-    if (error < 0) {
-        return GM_ERR_UNKNOWN;
+    gm_result_void_t tip_result =
+        gm_git_repository_port_reference_tip(repo_port, ref_to_query, &tip);
+    int tip_rc = hook_result_to_code(tip_result, GM_ERR_NOT_FOUND);
+    if (tip_rc != GM_OK || !tip.has_target) {
+        *is_merge = false;
+        return tip_rc;
     }
 
-    /* Check parent count */
-    *is_merge = (git_commit_parentcount(commit) > 1);
+    size_t parent_total = 0U;
+    gm_result_void_t parent_result = gm_git_repository_port_commit_parent_count(
+        repo_port, &tip.oid, &parent_total);
+    int parent_rc = hook_result_to_code(parent_result, GM_ERR_UNKNOWN);
+    if (parent_rc != GM_OK) {
+        *is_merge = false;
+        return parent_rc;
+    }
 
-    git_commit_free(commit);
+    *is_merge = (parent_total > 1U);
     return GM_OK;
 }

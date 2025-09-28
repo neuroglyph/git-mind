@@ -30,7 +30,7 @@ app/CLI → gm_cache_rebuild(ctx, branch, force_full)
          gm_cache_rebuild_execute(ctx, …)
 ```
 
-- Validates that `ctx`, `ctx->git_repo`, and `branch` are non-null.
+- Validates that `ctx`, `ctx->git_repo_port`, and `branch` are non-null.
 - Returns `GM_ERR_INVALID_ARGUMENT` early when validation fails.
 - Delegates all other work to the service (`core/src/app/cache/cache_rebuild_service.c`).
 
