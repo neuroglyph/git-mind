@@ -8,8 +8,6 @@
 #include <time.h>
 #include <roaring/roaring.h>
 
-#include <git2/oid.h>
-
 #include "gitmind/cache.h"
 #include "gitmind/cache/bitmap.h"
 #include "gitmind/constants.h"
@@ -28,6 +26,60 @@
 #define SHA_PREFIX_BUFFER_SIZE 16  /* Buffer for SHA prefix */
 #define CACHE_PATH_BUFFER_SIZE 128 /* Buffer for cache paths */
 #define INITIAL_EDGE_CAPACITY 100  /* Initial allocation for edge arrays */
+
+static int gm_hex_to_raw(const char *hex, uint8_t *out_raw, size_t raw_size);
+
+static int gm_hex_value(char c) {
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    }
+    c = (char)(c | 0x20); /* lowercase */
+    if (c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
+    }
+    return -1;
+}
+
+static void gm_raw_to_hex(const uint8_t *raw,
+                          char out_hex[GM_OID_HEX_CHARS + 1]) {
+    static const char kHexDigits[] = "0123456789abcdef";
+    for (size_t i = 0; i < GM_OID_RAWSZ; ++i) {
+        unsigned byte = raw[i];
+        out_hex[i * 2] = kHexDigits[(byte >> 4) & 0xF];
+        out_hex[i * 2 + 1] = kHexDigits[byte & 0xF];
+    }
+    out_hex[GM_OID_HEX_CHARS] = '\0';
+}
+
+static int gm_hex_to_raw(const char *hex, uint8_t *out_raw, size_t raw_size) {
+    if (hex == NULL || out_raw == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    size_t len = strlen(hex);
+    if (len != raw_size * 2) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    for (size_t i = 0; i < raw_size; ++i) {
+        int hi = gm_hex_value(hex[i * 2]);
+        int lo = gm_hex_value(hex[i * 2 + 1]);
+        if (hi < 0 || lo < 0) {
+            return GM_ERR_INVALID_ARGUMENT;
+        }
+        out_raw[i] = (uint8_t)((hi << 4) | lo);
+    }
+    return GM_OK;
+}
+
+static int gm_hex_to_oid(const char *hex, gm_oid_t *oid) {
+    if (oid == NULL) {
+        return GM_ERR_INVALID_ARGUMENT;
+    }
+    return gm_hex_to_raw(hex, oid->id, GM_OID_RAWSZ);
+}
+
+static bool gm_oid_equal(const gm_oid_t *a, const gm_oid_t *b) {
+    return a != NULL && b != NULL && memcmp(a->id, b->id, GM_OID_RAWSZ) == 0;
+}
 
 /* Get SHA prefix for sharding */
 static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
@@ -179,15 +231,15 @@ bool gm_cache_is_stale(gm_context_t *ctx, const char *branch) {
     bool have_binary = (memcmp(&meta.journal_tip_oid_bin, &(const gm_oid_t){0},
                                sizeof(gm_oid_t)) != 0);
     if (have_binary) {
-        return git_oid_cmp(&current_tip.oid, &meta.journal_tip_oid_bin) != 0;
+        return !gm_oid_equal(&current_tip.oid, &meta.journal_tip_oid_bin);
     }
 
     if (meta.journal_tip_oid[0] != '\0') {
-        git_oid cached_tip = {0};
-        if (git_oid_fromstr(&cached_tip, meta.journal_tip_oid) != 0) {
+        gm_oid_t cached_tip;
+        if (gm_hex_to_oid(meta.journal_tip_oid, &cached_tip) != GM_OK) {
             return true;
         }
-        return git_oid_cmp(&current_tip.oid, &cached_tip) != 0;
+        return !gm_oid_equal(&current_tip.oid, &cached_tip);
     }
 
     return true; /* No previous tip known */
@@ -206,12 +258,8 @@ static int load_bitmap_from_cache(const gm_git_repository_port_t *port,
     /* Get shard prefix */
     get_sha_prefix(sha, prefix, GM_CACHE_SHARD_BITS);
 
-    /* Convert SHA to hex using libgit2 */
-    {
-        git_oid tmp;
-        git_oid_fromraw(&tmp, sha);
-        git_oid_tostr(sha_hex, sizeof sha_hex, &tmp);
-    }
+    /* Convert SHA to hex */
+    gm_raw_to_hex(sha, sha_hex);
 
     /* Build path: prefix/sha.suffix */
     {

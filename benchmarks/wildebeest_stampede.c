@@ -154,6 +154,7 @@ static void run_stampede(git_repository *repo, const char *branch,
     if (ctx.git_repo_port_dispose != NULL) {
         ctx.git_repo_port_dispose(&ctx.git_repo_port);
     }
+    git_repository_free(repo);
     free(herd);
 }
 

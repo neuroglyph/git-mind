@@ -175,6 +175,10 @@ static gm_result_void_t fake_canonicalize(void *self, const char *abs_path_in,
         char normalized[GM_PATH_MAX];
         GM_TRY(gm_fs_path_normalize_logical(abs_path_in, normalized,
                                             sizeof(normalized)));
+        if (normalized[0] != '/') {
+            return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                        "create-ok canonicalize requires absolute path"));
+        }
         char parent[GM_PATH_MAX];
         GM_TRY(gm_fs_path_dirname(normalized, parent, sizeof(parent)));
         if (!fake_path_exists(fake, parent)) {

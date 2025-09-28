@@ -10,6 +10,7 @@
 #include "gitmind/result.h"
 #include "gitmind/types.h"
 #include "gitmind/attribution.h"
+#include "gitmind/util/memory.h"
 #include <stdint.h>
 #include "gitmind/security/memory.h"
 #include <assert.h>

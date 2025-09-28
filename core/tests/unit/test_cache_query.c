@@ -76,6 +76,7 @@ int main(void) {
         gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,
                                           &ctx.git_repo_port_dispose, repo);
     assert(repo_port_result.ok);
+    assert(ctx.git_repo_port.vtbl != NULL);
 
     gm_result_void_t fs_result =
         gm_posix_fs_temp_port_create(&ctx.fs_temp_port, NULL,
@@ -113,12 +114,16 @@ int main(void) {
     assert(r2.count >= 1);
     gm_cache_result_free(&r2);
 
+    git_repository *saved_repo = repo;
     if (ctx.fs_temp_port_dispose != NULL) {
         ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
     }
     if (ctx.git_repo_port_dispose != NULL) {
         ctx.git_repo_port_dispose(&ctx.git_repo_port);
     }
+    assert(repo == saved_repo);
+    git_repository_free(repo);
+    repo = NULL;
     git_libgit2_shutdown();
     printf("OK\n");
     return 0;

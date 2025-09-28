@@ -108,6 +108,7 @@ int main(void) {
     if (dispose != NULL) {
         dispose(&port);
     }
+    git_repository_free(repo);
     git_libgit2_shutdown();
     printf("OK\n");
     return 0;

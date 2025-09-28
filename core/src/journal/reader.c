@@ -228,10 +228,12 @@ static int resolve_branch(gm_git_repository_port_t *port,
     gm_result_void_t head_result = gm_git_repository_port_head_branch(
         port, buffer, buffer_len);
     if (!head_result.ok) {
+        int code = GM_ERR_INVALID_FORMAT;
         if (head_result.u.err != NULL) {
+            code = head_result.u.err->code;
             gm_error_free(head_result.u.err);
         }
-        return GM_ERR_INVALID_FORMAT;
+        return code;
     }
 
     *resolved_branch = buffer;
@@ -291,10 +293,12 @@ static int walk_commit_callback(const gm_oid_t *commit_oid, void *userdata) {
     gm_result_void_t message_result = gm_git_repository_port_commit_read_message(
         rctx->repo_port, commit_oid, &message);
     if (!message_result.ok) {
+        int code = GM_ERR_INVALID_FORMAT;
         if (message_result.u.err != NULL) {
+            code = message_result.u.err->code;
             gm_error_free(message_result.u.err);
         }
-        return GM_ERR_INVALID_FORMAT;
+        return code;
     }
 
     int process_status = process_commit_generic(message, rctx);
