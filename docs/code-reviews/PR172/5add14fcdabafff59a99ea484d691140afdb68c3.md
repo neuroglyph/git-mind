@@ -194,7 +194,7 @@ H1 so the document follows the docs/** guidelines.
 
 _Meta_: https://github.com/neuroglyph/git-mind/pull/172#discussion_r2385101790
 
-> [!note]- **Acknowledged**
+> [!note]- **Accepted**
 > Copy that — waiting for CodeRabbit to finish processing the refreshed score.
 
 ### General comment — coderabbitai[bot]
@@ -333,5 +333,5 @@ Thanks for using CodeRabbit! It's free for OSS, and your support helps us grow. 
 
 _Meta_: https://github.com/neuroglyph/git-mind/pull/172#issuecomment-3342580469
 
-> [!note]- **Acknowledged**
+> [!note]- **Accepted**
 > Awaiting CodeRabbit's re-run on the latest changes.
