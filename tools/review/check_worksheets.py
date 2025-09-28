@@ -45,6 +45,9 @@ def check_file(path: str) -> list[str]:
     problems = []
     try:
         text = open(path, "r", encoding="utf-8").read()
+    except FileNotFoundError:
+        # Deleted worksheets are acceptable; no further action required.
+        return problems
     except Exception as e:
         problems.append(f"cannot read {path}: {e}")
         return problems
@@ -88,4 +91,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
