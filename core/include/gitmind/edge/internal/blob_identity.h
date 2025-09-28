@@ -4,6 +4,8 @@
 #ifndef GITMIND_EDGE_INTERNAL_BLOB_IDENTITY_H
 #define GITMIND_EDGE_INTERNAL_BLOB_IDENTITY_H
 
+#include <stdint.h>
+
 #include "gitmind/context.h"
 #include "gitmind/result.h"
 #include "gitmind/types.h"

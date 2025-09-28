@@ -449,6 +449,7 @@ See archives under `docs/activity/` for older logs.
   * Sweep for any lingering `fprintf` debug traces before shipping.
   * Run CodeRabbit worksheet checker again after touching docs to ensure no new “Decision:” gaps.
 - Today’s continuation: pulled the trigger on that list—extracted `gm_edge_resolve_blob_identity` into `core/src/edge/internal/blob_identity.c`, introduced `gm_bytes_to_hex`/`gm_oid_to_hex`, and refactored cache rebuild/query to drop `git_oid_fmt/tostr`; `make ci-local` is green and `tools/review/check_worksheets.py docs/code-reviews/PR171/*.md` still flags the known undecided sections (see console), so next slot should be worksheet triage + CodeRabbit replies.
+- Follow-up (same day): cleaned up CodeRabbit’s fake-port feedback—fake commit/update paths now surface `gm_strcpy_safe` truncations, the shared OID helpers carry project-compliant naming/includes, and the deleted worksheet directory is ready for a fresh seed if we decide to log post-merge notes.
 - Quick-start when you return: rerun `make ci-local` if you touch the cache/journal surface, then tackle the shared blob helper → oid hex helper chain; once that’s in place, prep the PR summary referencing the fast-forward protections.
 
 ## Next Steps (handoff checklist)

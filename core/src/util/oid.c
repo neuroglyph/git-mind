@@ -3,10 +3,17 @@
 
 #include "gitmind/util/oid.h"
 
-#include "gitmind/error.h"
-#include "gitmind/security/memory.h"
+#include <stddef.h>
+#include <stdint.h>
 
-static const char kHexDigits[] = "0123456789abcdef";
+#include "gitmind/error.h"
+#include "gitmind/result.h"
+#include "gitmind/security/memory.h"
+#include "gitmind/types.h"
+
+static const char KHexDigits[] = "0123456789abcdef";
+static const uint8_t KNibbleMask = 0x0FU;
+static const unsigned KNibbleBits = 4U;
 
 GM_NODISCARD int gm_bytes_to_hex(const uint8_t *bytes, size_t len,
                                  char *out, size_t out_size) {
@@ -25,8 +32,8 @@ GM_NODISCARD int gm_bytes_to_hex(const uint8_t *bytes, size_t len,
 
     for (size_t i = 0; i < len; ++i) {
         unsigned byte = bytes[i];
-        out[i * 2U] = kHexDigits[(byte >> 4U) & 0x0FU];
-        out[(i * 2U) + 1U] = kHexDigits[byte & 0x0FU];
+        out[i * 2U] = KHexDigits[(byte >> KNibbleBits) & KNibbleMask];
+        out[(i * 2U) + 1U] = KHexDigits[byte & KNibbleMask];
     }
     out[len * 2U] = '\0';
     return GM_OK;
