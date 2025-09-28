@@ -159,10 +159,12 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
         gm_git_repository_port_commit_create(jctx->repo_port, &spec, commit_oid);
     free(message);
     if (!commit_result.ok) {
+        int commit_code = GM_ERR_UNKNOWN;
         if (commit_result.u.err != NULL) {
+            commit_code = commit_result.u.err->code;
             gm_error_free(commit_result.u.err);
         }
-        return GM_ERR_UNKNOWN;
+        return commit_code;
     }
 
     return GM_OK;
@@ -196,28 +198,39 @@ static int resolve_branch_name(gm_context_t *ctx, char *branch,
 
 static int flush_journal_batch(journal_ctx_t *jctx, const uint8_t *buffer,
                                size_t length) {
-    gm_oid_t commit_oid;
-    int commit_rc = create_journal_commit(jctx, buffer, length, &commit_oid);
-    if (commit_rc != GM_OK) {
-        return commit_rc;
-    }
+    for (int attempt = 0; attempt < 2; ++attempt) {
+        gm_oid_t commit_oid;
+        int commit_rc = create_journal_commit(jctx, buffer, length, &commit_oid);
+        if (commit_rc != GM_OK) {
+            return commit_rc;
+        }
 
-    gm_git_reference_update_spec_t spec = {
-        .ref_name = jctx->ref_name,
-        .target_oid = &commit_oid,
-        .log_message = "Journal append",
-        .force = true,
-    };
-    gm_result_void_t update_result = gm_git_repository_port_reference_update(
-        jctx->repo_port, &spec);
-    if (!update_result.ok) {
+        gm_git_reference_update_spec_t spec = {
+            .ref_name = jctx->ref_name,
+            .target_oid = &commit_oid,
+            .log_message = "Journal append",
+            .force = false,
+        };
+        gm_result_void_t update_result = gm_git_repository_port_reference_update(
+            jctx->repo_port, &spec);
+        if (update_result.ok) {
+            return GM_OK;
+        }
+
+        int update_code = GM_ERR_UNKNOWN;
         if (update_result.u.err != NULL) {
+            update_code = update_result.u.err->code;
             gm_error_free(update_result.u.err);
         }
-        return GM_ERR_UNKNOWN;
+
+        if (update_code == GM_ERR_ALREADY_EXISTS && attempt == 0) {
+            /* Reference moved forward; recompute parents and try once more. */
+            continue;
+        }
+        return update_code;
     }
 
-    return GM_OK;
+    return GM_ERR_UNKNOWN;
 }
 
 static bool should_flush_buffer(size_t offset) {

@@ -12,6 +12,8 @@
 #include <errno.h>
 #include <git2/blob.h>
 #include <git2/commit.h>
+#include <git2/errors.h>
+#include <git2/graph.h>
 #include <git2/odb.h>
 #include <git2/oid.h>
 #include <git2/refs.h>
@@ -891,15 +893,61 @@ static gm_result_void_t reference_update_impl(
                                     "reference update spec missing inputs"));
     }
 
-    git_reference *ref = NULL;
-    int git_status = git_reference_create(&ref, state->repo, spec->ref_name,
-                                          spec->target_oid, spec->force,
-                                          spec->log_message);
-    if (ref != NULL) {
-        git_reference_free(ref);
+    git_reference *existing = NULL;
+    int lookup_status =
+        git_reference_lookup(&existing, state->repo, spec->ref_name);
+    if (lookup_status == GIT_ENOTFOUND) {
+        git_reference *created = NULL;
+        int create_status = git_reference_create(&created, state->repo,
+                                                 spec->ref_name, spec->target_oid,
+                                                 false, spec->log_message);
+        if (created != NULL) {
+            git_reference_free(created);
+        }
+        if (create_status < 0) {
+            return gm_err_void(GM_ERROR(GM_ERR_UNKNOWN,
+                                        "failed to create reference %s", spec->ref_name));
+        }
+        return gm_ok_void();
     }
 
-    if (git_status < 0) {
+    if (lookup_status < 0) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_UNKNOWN, "unable to lookup reference %s", spec->ref_name));
+    }
+
+    const git_oid *current_target = git_reference_target(existing);
+    if (current_target == NULL) {
+        git_reference_free(existing);
+        return gm_err_void(
+            GM_ERROR(GM_ERR_UNKNOWN, "reference %s missing target", spec->ref_name));
+    }
+
+    if (!git_oid_equal(current_target, spec->target_oid)) {
+        int descendant = git_graph_descendant_of(state->repo, spec->target_oid,
+                                                current_target);
+        if (descendant < 0) {
+            git_reference_free(existing);
+            return gm_err_void(GM_ERROR(GM_ERR_UNKNOWN,
+                                        "failed to check ancestry for %s", spec->ref_name));
+        }
+        if (descendant == 0) {
+            git_reference_free(existing);
+            return gm_err_void(GM_ERROR(GM_ERR_ALREADY_EXISTS,
+                                        "non-fast-forward update rejected for %s",
+                                        spec->ref_name));
+        }
+    }
+
+    git_reference *updated = NULL;
+    int set_status = git_reference_set_target(&updated, existing, spec->target_oid,
+                                              spec->log_message);
+    git_reference_free(existing);
+    if (updated != NULL) {
+        git_reference_free(updated);
+    }
+
+    if (set_status < 0) {
         return gm_err_void(
             GM_ERROR(GM_ERR_UNKNOWN, "failed to update reference %s", spec->ref_name));
     }

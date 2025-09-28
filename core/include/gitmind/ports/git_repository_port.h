@@ -185,7 +185,6 @@ static inline void gm_git_repository_port_commit_message_dispose(
     const gm_git_repository_port_t *port, char *message) {
     if (port == NULL || port->vtbl == NULL ||
         port->vtbl->commit_message_dispose == NULL) {
-        free(message);
         return;
     }
     port->vtbl->commit_message_dispose(port->self, message);

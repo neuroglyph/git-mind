@@ -293,12 +293,22 @@ GM_NODISCARD gm_result_void_t gm_fs_path_normalize_logical(const char *input,
                                                            char *output,
                                                            size_t output_size) {
     if (input == NULL || output == NULL || output_size == 0U) {
+        if (output != NULL && output_size > 0U) {
+            gm_memset_safe(output, output_size, 0, output_size);
+        }
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
                                     "logical normalize requires buffers"));
     }
 
+    if (output_size < 2U) {
+        gm_memset_safe(output, output_size, 0, output_size);
+        return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
+                                    "normalized path requires at least 2 bytes"));
+    }
+
     char scratch[GM_PATH_MAX];
     if (gm_strcpy_safe(scratch, sizeof(scratch), input) != 0) {
+        gm_memset_safe(output, output_size, 0, output_size);
         return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
                                     "path exceeds buffer"));
     }
@@ -322,6 +332,9 @@ GM_NODISCARD gm_result_void_t gm_fs_path_dirname(const char *input,
                                                  char *output,
                                                  size_t output_size) {
     if (input == NULL || output == NULL || output_size == 0U) {
+        if (output != NULL && output_size > 0U) {
+            gm_memset_safe(output, output_size, 0, output_size);
+        }
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
                                     "dirname requires buffers"));
     }

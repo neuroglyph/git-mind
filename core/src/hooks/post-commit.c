@@ -169,6 +169,13 @@ static void free_changed_files(char **changed_files, size_t file_count) {
     free(changed_files);
 }
 
+static void dispose_repo_port(gm_context_t *ctx) {
+    if (ctx->git_repo_port_dispose != NULL) {
+        ctx->git_repo_port_dispose(&ctx->git_repo_port);
+        ctx->git_repo_port_dispose = NULL;
+    }
+}
+
 /* Main hook entry point */
 int main(int argc, char **argv) {
     git_repository *repo = NULL;
@@ -208,10 +215,7 @@ int main(int argc, char **argv) {
 
     /* Check if we should process this commit */
     if (!should_process_commit(&ctx.git_repo_port, verbose)) {
-        if (ctx.git_repo_port_dispose != NULL) {
-            ctx.git_repo_port_dispose(&ctx.git_repo_port);
-            ctx.git_repo_port_dispose = NULL;
-        }
+        dispose_repo_port(&ctx);
         if (repo != NULL) {
             git_repository_free(repo);
             repo = NULL;
@@ -226,10 +230,7 @@ int main(int argc, char **argv) {
         if (verbose) {
             fprintf(stderr, "Failed to get changed files\n");
         }
-        if (ctx.git_repo_port_dispose != NULL) {
-            ctx.git_repo_port_dispose(&ctx.git_repo_port);
-            ctx.git_repo_port_dispose = NULL;
-        }
+        dispose_repo_port(&ctx);
         if (repo != NULL) {
             git_repository_free(repo);
             repo = NULL;
@@ -247,10 +248,7 @@ int main(int argc, char **argv) {
                MAX_CHANGED_FILES);
     }
 
-    if (ctx.git_repo_port_dispose != NULL) {
-        ctx.git_repo_port_dispose(&ctx.git_repo_port);
-        ctx.git_repo_port_dispose = NULL;
-    }
+    dispose_repo_port(&ctx);
 
     /* Cleanup */
     free_changed_files(changed_files, file_count);

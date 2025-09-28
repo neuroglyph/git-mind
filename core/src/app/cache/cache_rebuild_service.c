@@ -39,6 +39,7 @@
 static int cache_get_journal_tip(const gm_git_repository_port_t *port,
                                  const char *branch, gm_cache_meta_t *meta);
 static int cache_create_commit(const gm_git_repository_port_t *port,
+                               const gm_oid_t *parent_oid,
                                const gm_oid_t *tree_oid,
                                const gm_cache_meta_t *meta,
                                gm_oid_t *commit_oid);
@@ -339,7 +340,10 @@ static int cache_populate_meta(const gm_git_repository_port_t *port,
     if (strlen(branch) >= GM_CACHE_BRANCH_NAME_SIZE) {
         return GM_ERR_INVALID_ARGUMENT;
     }
-    (void)gm_strcpy_safe(meta->branch, GM_CACHE_BRANCH_NAME_SIZE, branch);
+    if (gm_strcpy_safe(meta->branch, GM_CACHE_BRANCH_NAME_SIZE, branch) != GM_OK) {
+        gm_memset_safe(meta->branch, sizeof(meta->branch), 0, sizeof(meta->branch));
+        return GM_ERR_BUFFER_TOO_SMALL;
+    }
 
     return cache_get_journal_tip(port, branch, meta);
 }
@@ -358,8 +362,27 @@ static int cache_build_commit_and_update(const gm_git_repository_port_t *port,
         return result_code;
     }
 
+    char ref_name[REF_NAME_BUFFER_SIZE];
+    {
+        int ref_status =
+            gm_build_ref(ref_name, sizeof(ref_name), GM_CACHE_REF_PREFIX, inputs->branch);
+        if (ref_status != GM_OK) {
+            return ref_status;
+        }
+    }
+
+    gm_git_reference_tip_t cache_tip = {0};
+    int tip_status = unwrap_result(
+        gm_git_repository_port_reference_tip(port, ref_name, &cache_tip));
+    if (tip_status != GM_OK && tip_status != GM_ERR_NOT_FOUND) {
+        return tip_status;
+    }
+
+    const gm_oid_t *parent_oid =
+        (tip_status == GM_OK && cache_tip.has_target) ? &cache_tip.oid : NULL;
+
     gm_oid_t commit_oid;
-    result_code = cache_create_commit(port, &tree_oid, meta, &commit_oid);
+    result_code = cache_create_commit(port, parent_oid, &tree_oid, meta, &commit_oid);
     if (result_code != GM_OK) {
         return result_code;
     }
@@ -403,6 +426,7 @@ static int cache_get_journal_tip(const gm_git_repository_port_t *port,
 }
 
 static int cache_create_commit(const gm_git_repository_port_t *port,
+                               const gm_oid_t *parent_oid,
                                const gm_oid_t *tree_oid,
                                const gm_cache_meta_t *meta __attribute__((unused)),
                                gm_oid_t *commit_oid) {
@@ -413,6 +437,8 @@ static int cache_create_commit(const gm_git_repository_port_t *port,
     gm_git_commit_spec_t spec = {
         .tree_oid = tree_oid,
         .message = "Cache metadata",
+        .parents = parent_oid,
+        .parent_count = (parent_oid != NULL) ? 1U : 0U,
     };
 
     return unwrap_result(
@@ -434,11 +460,21 @@ static int cache_update_ref(const gm_git_repository_port_t *port,
         .ref_name = ref_name,
         .target_oid = commit_oid,
         .log_message = "Cache rebuild",
-        .force = true,
+        .force = false,
     };
 
-    return unwrap_result(
-        gm_git_repository_port_reference_update(port, &update_spec));
+    gm_result_void_t update_result =
+        gm_git_repository_port_reference_update(port, &update_spec);
+    if (!update_result.ok) {
+        int update_code = GM_ERR_UNKNOWN;
+        if (update_result.u.err != NULL) {
+            update_code = update_result.u.err->code;
+            gm_error_free(update_result.u.err);
+        }
+        return update_code;
+    }
+
+    return GM_OK;
 }
 
 static void cache_cleanup(gm_context_t *ctx, gm_edge_map_t *forward,

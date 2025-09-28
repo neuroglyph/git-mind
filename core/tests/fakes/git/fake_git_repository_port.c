@@ -112,10 +112,10 @@ static gm_result_void_t ensure_ref_entry(gm_fake_git_repository_port_t *fake,
             GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "fake ref storage exhausted"));
     }
 
-    memset(free_slot, 0, sizeof(*free_slot));
+    gm_memset_safe(free_slot, sizeof(*free_slot), 0, sizeof(*free_slot));
     if (gm_strcpy_safe(free_slot->ref_name, sizeof(free_slot->ref_name),
                        ref_name) != GM_OK) {
-        memset(free_slot, 0, sizeof(*free_slot));
+        gm_memset_safe(free_slot, sizeof(*free_slot), 0, sizeof(*free_slot));
         return gm_err_void(
             GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "fake ref name exceeds buffer"));
     }
@@ -200,7 +200,7 @@ gm_result_void_t gm_fake_git_repository_port_init(
                                     "fake repository port requires storage"));
     }
 
-    memset(fake, 0, sizeof(*fake));
+    gm_memset_safe(fake, sizeof(*fake), 0, sizeof(*fake));
     fake->port.vtbl = &FAKE_GIT_REPOSITORY_PORT_VTBL;
     fake->port.self = fake;
     fake->tree_result = gm_ok_void();
@@ -645,7 +645,7 @@ static gm_result_void_t fake_commit_read_message(void *self,
             GM_ERROR(GM_ERR_OUT_OF_MEMORY, "allocating fake commit message"));
     }
 
-    memcpy(copy, commit->message, message_len + 1U);
+    gm_strcpy_safe(copy, message_len + 1U, commit->message);
     *out_message = copy;
     return gm_ok_void();
 }
