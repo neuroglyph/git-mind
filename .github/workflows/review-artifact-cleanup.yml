@@ -21,8 +21,8 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.name "gitmind-bot"
-          git config user.email "bot@gitmind.local"
+          git config user.name "P.R. PhiedBach"
+          git config user.email "phiedbach@bikeshed.dungeon"
 
       - name: Remove review artifacts
         run: |
@@ -40,7 +40,7 @@ jobs:
             echo "No review artifacts to delete; skipping commit."
             exit 0
           fi
-          git commit -m "chore: remove review worksheets for PR #${{ github.event.pull_request.number }}"
+          git commit -m "coda(PR#${{ github.event.pull_request.number }}): archive rehearsal notes"
 
       - name: Push cleanup commit
         run: |
