@@ -7,6 +7,8 @@
 
 #include "gitmind/edge.h"
 #include "gitmind/types.h"
+#include "gitmind/util/oid.h"
+#include "gitmind/error.h"
 
 /* Simple test for OID-first CBOR encode/decode */
 int main(void) {
@@ -26,8 +28,8 @@ int main(void) {
     /* Set preferred OIDs */
     uint8_t src_raw[GM_OID_RAWSZ]; memset(src_raw, 0xAA, sizeof src_raw);
     uint8_t tgt_raw[GM_OID_RAWSZ]; memset(tgt_raw, 0xBB, sizeof tgt_raw);
-    git_oid_fromraw(&e.src_oid, src_raw);
-    git_oid_fromraw(&e.tgt_oid, tgt_raw);
+    assert(gm_oid_from_raw(&e.src_oid, src_raw, sizeof src_raw) == GM_OK);
+    assert(gm_oid_from_raw(&e.tgt_oid, tgt_raw, sizeof tgt_raw) == GM_OK);
 
     uint8_t buf[1024];
     size_t len = sizeof buf;
@@ -40,8 +42,8 @@ int main(void) {
     gm_edge_t d = dec.u.val;
 
     /* OIDs must carry through */
-    assert(git_oid_cmp(&d.src_oid, &e.src_oid) == 0);
-    assert(git_oid_cmp(&d.tgt_oid, &e.tgt_oid) == 0);
+    assert(gm_oid_equal(&d.src_oid, &e.src_oid));
+    assert(gm_oid_equal(&d.tgt_oid, &e.tgt_oid));
 
     /* Equality must use OID-first */
     assert(gm_edge_equal(&e, &d));
@@ -49,4 +51,3 @@ int main(void) {
     printf("OK\n");
     return 0;
 }
-

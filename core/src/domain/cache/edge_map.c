@@ -8,6 +8,7 @@
 
 #include "gitmind/error.h"
 #include "gitmind/util/memory.h"
+#include "gitmind/util/oid.h"
 
 struct gm_edge_map_entry {
     gm_oid_t oid;
@@ -125,7 +126,7 @@ gm_result_void_t gm_edge_map_add(gm_edge_map_t *map, const gm_oid_t *oid,
     size_t bucket_index = gm_edge_map_hash(oid, map->bucket_count);
     struct gm_edge_map_entry *entry = map->buckets[bucket_index];
     while (entry != NULL) {
-        if (git_oid_cmp(&entry->oid, oid) == 0) {
+        if (gm_oid_equal(&entry->oid, oid)) {
             gm_bitmap_add(entry->bitmap, edge_id);
             return gm_ok_void();
         }

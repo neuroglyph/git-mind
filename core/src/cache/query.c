@@ -28,49 +28,6 @@
 #define CACHE_PATH_BUFFER_SIZE 128 /* Buffer for cache paths */
 #define INITIAL_EDGE_CAPACITY 100  /* Initial allocation for edge arrays */
 
-static int gm_hex_to_raw(const char *hex, uint8_t *out_raw, size_t raw_size);
-
-static int gm_hex_value(char c) {
-    if (c >= '0' && c <= '9') {
-        return c - '0';
-    }
-    c = (char)(c | 0x20); /* lowercase */
-    if (c >= 'a' && c <= 'f') {
-        return c - 'a' + 10;
-    }
-    return -1;
-}
-
-static int gm_hex_to_raw(const char *hex, uint8_t *out_raw, size_t raw_size) {
-    if (hex == NULL || out_raw == NULL) {
-        return GM_ERR_INVALID_ARGUMENT;
-    }
-    size_t len = strlen(hex);
-    if (len != raw_size * 2) {
-        return GM_ERR_INVALID_ARGUMENT;
-    }
-    for (size_t i = 0; i < raw_size; ++i) {
-        int hi = gm_hex_value(hex[i * 2]);
-        int lo = gm_hex_value(hex[i * 2 + 1]);
-        if (hi < 0 || lo < 0) {
-            return GM_ERR_INVALID_ARGUMENT;
-        }
-        out_raw[i] = (uint8_t)((hi << 4) | lo);
-    }
-    return GM_OK;
-}
-
-static int gm_hex_to_oid(const char *hex, gm_oid_t *oid) {
-    if (oid == NULL) {
-        return GM_ERR_INVALID_ARGUMENT;
-    }
-    return gm_hex_to_raw(hex, oid->id, GM_OID_RAWSZ);
-}
-
-static bool gm_oid_equal(const gm_oid_t *a, const gm_oid_t *b) {
-    return a != NULL && b != NULL && memcmp(a->id, b->id, GM_OID_RAWSZ) == 0;
-}
-
 /* Get SHA prefix for sharding */
 static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
     int chars = (bits + 3) / BITS_PER_HEX_CHAR; /* Round up to hex chars */
@@ -203,6 +160,7 @@ bool gm_cache_is_stale(gm_context_t *ctx, const char *branch) {
     }
 
     gm_cache_meta_t meta;
+    gm_memset_safe(&meta, sizeof(meta), 0, sizeof(meta));
     if (gm_cache_load_meta(ctx, branch, &meta) != GM_OK) {
         return true;
     }
@@ -229,15 +187,13 @@ bool gm_cache_is_stale(gm_context_t *ctx, const char *branch) {
         return true;
     }
 
-    bool have_binary = (memcmp(&meta.journal_tip_oid_bin, &(const gm_oid_t){0},
-                               sizeof(gm_oid_t)) != 0);
-    if (have_binary) {
+    if (!gm_oid_is_zero(&meta.journal_tip_oid_bin)) {
         return !gm_oid_equal(&current_tip.oid, &meta.journal_tip_oid_bin);
     }
 
     if (meta.journal_tip_oid[0] != '\0') {
         gm_oid_t cached_tip;
-        if (gm_hex_to_oid(meta.journal_tip_oid, &cached_tip) != GM_OK) {
+        if (gm_oid_from_hex(&cached_tip, meta.journal_tip_oid) != GM_OK) {
             return true;
         }
         return !gm_oid_equal(&current_tip.oid, &cached_tip);
@@ -343,7 +299,7 @@ static int try_cache_query(gm_context_t *ctx, const char *branch,
         return rc;
     }
 
-    if (memcmp(&meta.cache_tip_oid, &(const gm_oid_t){0}, sizeof(gm_oid_t)) == 0) {
+    if (gm_oid_is_zero(&meta.cache_tip_oid)) {
         return GM_ERR_NOT_FOUND;
     }
 
@@ -470,7 +426,7 @@ int gm_cache_stats(gm_context_t *ctx, const char *branch,
     }
 
     if (cache_size_bytes) {
-        if (memcmp(&meta.cache_tip_oid, &(const gm_oid_t){0}, sizeof(gm_oid_t)) != 0) {
+        if (!gm_oid_is_zero(&meta.cache_tip_oid)) {
             rc = unwrap_result_code(gm_git_repository_port_commit_tree_size(
                 &ctx->git_repo_port, &meta.cache_tip_oid, cache_size_bytes));
             if (rc != GM_OK) {

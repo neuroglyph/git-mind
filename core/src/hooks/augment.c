@@ -13,6 +13,7 @@
 #include "gitmind/result.h"
 #include "gitmind/util/memory.h"
 #include "gitmind/util/ref.h"
+#include "gitmind/util/oid.h"
 #include "gitmind/security/memory.h"
 
 /* Note: replace any private header usage with public equivalents when available. */
@@ -184,7 +185,7 @@ static int edge_search_callback(const gm_edge_t *edge, void *userdata) {
     }
 
     /* Check if source matches (OID compare) */
-    if (git_oid_cmp(&edge->src_oid, ctx->target_oid) == 0) {
+    if (gm_oid_equal(&edge->src_oid, ctx->target_oid)) {
         /* Grow array if needed */
         if (ctx->count >= ctx->capacity) {
             size_t new_capacity = ctx->capacity * ARRAY_GROWTH_FACTOR;

@@ -6,15 +6,13 @@
 #include <assert.h>
 #include <stddef.h>
 
-#include <git2/oid.h>
-
 #include "gitmind/cache/bitmap.h"
 #include "gitmind/error.h"
+#include "gitmind/util/oid.h"
 
 static gm_oid_t make_oid(const char *hex) {
     gm_oid_t oid = {{0}};
-    int status = git_oid_fromstr(&oid, hex);
-    assert(status == 0);
+    assert(gm_oid_from_hex(&oid, hex) == GM_OK);
     return oid;
 }
 
@@ -38,7 +36,7 @@ static int visit_and_collect(const gm_oid_t *oid, const roaring_bitmap_t *bitmap
                              void *userdata) {
     visit_ctx_t *ctx = (visit_ctx_t *)userdata;
     for (size_t index = 0; index < 2; ++index) {
-        if (git_oid_cmp(&ctx->expected[index], oid) == 0) {
+        if (gm_oid_equal(&ctx->expected[index], oid)) {
             ctx->counts[index] = (uint32_t)gm_bitmap_count(bitmap);
             ++ctx->seen;
             return GM_OK;

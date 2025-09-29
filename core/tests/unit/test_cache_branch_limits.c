@@ -15,6 +15,7 @@
 #include "gitmind/journal.h"
 #include "gitmind/result.h"
 #include "gitmind/types.h"
+#include "gitmind/util/oid.h"
 #include "gitmind/types/ulid.h"
 
 #include "gitmind/adapters/fs/posix_temp_adapter.h"
@@ -73,8 +74,8 @@ static void append_dummy_edge(gm_context_t *ctx) {
     memset(src_raw, 0x11, sizeof src_raw);
     memset(tgt_raw, 0x22, sizeof tgt_raw);
 
-    git_oid_fromraw(&edge.src_oid, src_raw);
-    git_oid_fromraw(&edge.tgt_oid, tgt_raw);
+    assert(gm_oid_from_raw(&edge.src_oid, src_raw, sizeof src_raw) == GM_OK);
+    assert(gm_oid_from_raw(&edge.tgt_oid, tgt_raw, sizeof tgt_raw) == GM_OK);
 
     edge.rel_type = GM_REL_IMPLEMENTS;
     edge.confidence = 0x3C00;

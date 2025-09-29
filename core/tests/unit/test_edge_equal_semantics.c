@@ -7,6 +7,8 @@
 
 #include "gitmind/edge.h"
 #include "gitmind/types.h"
+#include "gitmind/util/oid.h"
+#include "gitmind/error.h"
 
 static void test_equal_with_oids(void) {
     printf("test_equal_with_oids... ");
@@ -16,12 +18,12 @@ static void test_equal_with_oids(void) {
     memset(a.src_sha, 0x11, GM_SHA1_SIZE);
     memset(b.src_sha, 0x22, GM_SHA1_SIZE);
     uint8_t raw[GM_OID_RAWSZ]; memset(raw, 0xAA, sizeof raw);
-    git_oid_fromraw(&a.src_oid, raw);
-    git_oid_fromraw(&b.src_oid, raw);
+    assert(gm_oid_from_raw(&a.src_oid, raw, sizeof raw) == GM_OK);
+    assert(gm_oid_from_raw(&b.src_oid, raw, sizeof raw) == GM_OK);
     memset(a.tgt_sha, 0x33, GM_SHA1_SIZE);
     memset(b.tgt_sha, 0x44, GM_SHA1_SIZE);
-    git_oid_fromraw(&a.tgt_oid, raw);
-    git_oid_fromraw(&b.tgt_oid, raw);
+    assert(gm_oid_from_raw(&a.tgt_oid, raw, sizeof raw) == GM_OK);
+    assert(gm_oid_from_raw(&b.tgt_oid, raw, sizeof raw) == GM_OK);
     assert(gm_edge_equal(&a, &b));
     printf("OK\n");
 }
@@ -49,4 +51,3 @@ int main(void) {
     printf("\nAll Edge Equality Semantics Tests Passed! ✅\n");
     return 0;
 }
-

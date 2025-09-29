@@ -11,6 +11,7 @@
 #include "gitmind/types.h"
 #include "gitmind/attribution.h"
 #include "gitmind/util/memory.h"
+#include "gitmind/util/oid.h"
 #include "gitmind/edge/internal/blob_identity.h"
 #include <stdint.h>
 #include "gitmind/security/memory.h"
@@ -237,11 +238,25 @@ static int decode_attr_ex_impl(const uint8_t *buffer, size_t len,
             gm_result_void_t rr = gm_cbor_read_text(buffer, &offset, len, out.ulid, GM_ULID_SIZE + 1);
             if (!rr.ok) return GM_ERR_INVALID_FORMAT; break; }
         case GM_CBOR_KEY_SRC_OID: {
-            uint8_t raw[GM_OID_RAWSZ]; gm_result_void_t rr = gm_cbor_read_bytes(buffer, &offset, len, raw, GM_OID_RAWSZ);
-            if (!rr.ok) return GM_ERR_INVALID_FORMAT; git_oid_fromraw(&out.src_oid, raw); break; }
+            uint8_t raw[GM_OID_RAWSZ];
+            gm_result_void_t rr =
+                gm_cbor_read_bytes(buffer, &offset, len, raw, GM_OID_RAWSZ);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT;
+            if (gm_oid_from_raw(&out.src_oid, raw, GM_OID_RAWSZ) != GM_OK) {
+                return GM_ERR_INVALID_FORMAT;
+            }
+            break;
+        }
         case GM_CBOR_KEY_TGT_OID: {
-            uint8_t raw[GM_OID_RAWSZ]; gm_result_void_t rr = gm_cbor_read_bytes(buffer, &offset, len, raw, GM_OID_RAWSZ);
-            if (!rr.ok) return GM_ERR_INVALID_FORMAT; git_oid_fromraw(&out.tgt_oid, raw); break; }
+            uint8_t raw[GM_OID_RAWSZ];
+            gm_result_void_t rr =
+                gm_cbor_read_bytes(buffer, &offset, len, raw, GM_OID_RAWSZ);
+            if (!rr.ok) return GM_ERR_INVALID_FORMAT;
+            if (gm_oid_from_raw(&out.tgt_oid, raw, GM_OID_RAWSZ) != GM_OK) {
+                return GM_ERR_INVALID_FORMAT;
+            }
+            break;
+        }
         case GM_CBOR_KEY_SOURCE_TYPE: {
             gm_result_uint64_t rr = gm_cbor_read_uint(buffer, &offset, len);
             if (!rr.ok) return GM_ERR_INVALID_FORMAT; out.attribution.source_type = (gm_source_type_t)rr.u.val; break; }
@@ -262,8 +277,12 @@ static int decode_attr_ex_impl(const uint8_t *buffer, size_t len,
         }
     }
 
-    if (git_oid_is_zero(&out.src_oid)) git_oid_fromraw(&out.src_oid, out.src_sha);
-    if (git_oid_is_zero(&out.tgt_oid)) git_oid_fromraw(&out.tgt_oid, out.tgt_sha);
+    if (gm_oid_is_zero(&out.src_oid)) {
+        (void)gm_oid_from_raw(&out.src_oid, out.src_sha, GM_OID_RAWSZ);
+    }
+    if (gm_oid_is_zero(&out.tgt_oid)) {
+        (void)gm_oid_from_raw(&out.tgt_oid, out.tgt_sha, GM_OID_RAWSZ);
+    }
 
     *e = out; *consumed = offset; return GM_OK;
 }

@@ -16,6 +16,7 @@
 #include "gitmind/context.h"
 #include "gitmind/result.h"
 #include "gitmind/util/memory.h"
+#include "gitmind/util/oid.h"
 #include "gitmind/adapters/git/libgit2_repository_port.h"
 
 typedef struct {
@@ -56,14 +57,16 @@ int main(void) {
     e.rel_type = GM_REL_IMPLEMENTS; e.confidence = 0x3C00; e.timestamp = 7;
     uint8_t rawA[GM_OID_RAWSZ]; memset(rawA, 0xCC, sizeof rawA);
     uint8_t rawB[GM_OID_RAWSZ]; memset(rawB, 0xDD, sizeof rawB);
-    git_oid_fromraw(&e.src_oid, rawA); git_oid_fromraw(&e.tgt_oid, rawB);
+    assert(gm_oid_from_raw(&e.src_oid, rawA, sizeof rawA) == GM_OK);
+    assert(gm_oid_from_raw(&e.tgt_oid, rawB, sizeof rawB) == GM_OK);
     gm_result_ulid_t u = gm_ulid_generate(e.ulid); assert(u.ok);
     uint8_t buf1[512]; size_t len1 = sizeof buf1; assert(gm_edge_encode_cbor(&e, buf1, &len1).ok);
 
     gm_edge_attributed_t ae = {0};
     strcpy(ae.src_path, "docs/A.md"); strcpy(ae.tgt_path, "src/C.c");
     ae.rel_type = GM_REL_REFERENCES; ae.confidence = 0x1C00; ae.timestamp = 8;
-    git_oid_fromraw(&ae.src_oid, rawA); git_oid_fromraw(&ae.tgt_oid, rawB);
+    assert(gm_oid_from_raw(&ae.src_oid, rawA, sizeof rawA) == GM_OK);
+    assert(gm_oid_from_raw(&ae.tgt_oid, rawB, sizeof rawB) == GM_OK);
     ae.attribution.source_type = GM_SOURCE_AI_CLAUDE;
     strcpy(ae.attribution.author, "claude@local");
     strcpy(ae.attribution.session_id, "s1");
