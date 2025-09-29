@@ -16,6 +16,7 @@
 #include "gitmind/types.h"
 #include "gitmind/util/oid.h"
 #include "gitmind/security/string.h"
+#include "gitmind/util/memory.h"
 
 #include "gitmind/adapters/fs/posix_temp_adapter.h"
 #include "gitmind/adapters/git/libgit2_repository_port.h"
@@ -87,17 +88,26 @@ int main(void) {
     assert(fs_result.ok);
 
     /* Create two edges A->B and A->C */
-    gm_edge_t edges[2]; memset(edges, 0, sizeof edges);
+    gm_edge_t edges[2];
+    memset(edges, 0, sizeof edges);
     uint8_t A[GM_OID_RAWSZ], B[GM_OID_RAWSZ], C[GM_OID_RAWSZ];
     memset(A, 0x11, sizeof A); memset(B, 0x22, sizeof B); memset(C, 0x33, sizeof C);
     assert(gm_oid_from_raw(&edges[0].src_oid, A, sizeof A) == GM_OK);
     assert(gm_oid_from_raw(&edges[0].tgt_oid, B, sizeof B) == GM_OK);
-    edges[0].rel_type = GM_REL_IMPLEMENTS; edges[0].confidence = 0x3C00; strcpy(edges[0].src_path, "A"); strcpy(edges[0].tgt_path, "B");
-    (void)gm_ulid_generate(edges[0].ulid);
+    edges[0].rel_type = GM_REL_IMPLEMENTS;
+    edges[0].confidence = 0x3C00;
+    assert(gm_strcpy_safe(edges[0].src_path, sizeof edges[0].src_path, "A") == GM_OK);
+    assert(gm_strcpy_safe(edges[0].tgt_path, sizeof edges[0].tgt_path, "B") == GM_OK);
+    gm_result_ulid_t ulr0 = gm_ulid_generate(edges[0].ulid);
+    assert(ulr0.ok);
     assert(gm_oid_from_raw(&edges[1].src_oid, A, sizeof A) == GM_OK);
     assert(gm_oid_from_raw(&edges[1].tgt_oid, C, sizeof C) == GM_OK);
-    edges[1].rel_type = GM_REL_IMPLEMENTS; edges[1].confidence = 0x3C00; strcpy(edges[1].src_path, "A"); strcpy(edges[1].tgt_path, "C");
-    (void)gm_ulid_generate(edges[1].ulid);
+    edges[1].rel_type = GM_REL_IMPLEMENTS;
+    edges[1].confidence = 0x3C00;
+    assert(gm_strcpy_safe(edges[1].src_path, sizeof edges[1].src_path, "A") == GM_OK);
+    assert(gm_strcpy_safe(edges[1].tgt_path, sizeof edges[1].tgt_path, "C") == GM_OK);
+    gm_result_ulid_t ulr1 = gm_ulid_generate(edges[1].ulid);
+    assert(ulr1.ok);
 
     rc = gm_journal_append(&ctx, edges, 2);
     assert(rc == GM_OK);

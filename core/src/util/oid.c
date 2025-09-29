@@ -81,7 +81,7 @@ GM_NODISCARD bool gm_oid_equal(const gm_oid_t *lhs, const gm_oid_t *rhs) {
 
 GM_NODISCARD bool gm_oid_is_zero(const gm_oid_t *oid) {
     if (oid == NULL) {
-        return true;
+        return false;
     }
     for (size_t index = 0; index < GM_OID_RAWSZ; ++index) {
         if (oid->id[index] != 0U) {

@@ -49,8 +49,8 @@ GM_NODISCARD bool gm_oid_equal(const gm_oid_t *lhs, const gm_oid_t *rhs);
 /**
  * Determine whether an OID is the all-zero sentinel.
  *
- * @param oid  OID to inspect (may be NULL)
- * @return true when every byte is zero or the pointer is NULL
+ * @param oid  OID to inspect; NULL is treated as invalid / not zero
+ * @return true when every byte is zero; false otherwise (including NULL)
  */
 GM_NODISCARD bool gm_oid_is_zero(const gm_oid_t *oid);
 
