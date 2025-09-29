@@ -4,6 +4,7 @@
 #include "gitmind/hooks/augment.h"
 
 #include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -181,7 +182,7 @@ static int edge_search_callback(const gm_edge_t *edge, void *userdata) {
     /* Limit lookback */
     ctx->scanned++;
     if (ctx->scanned > LOOKBACK_LIMIT) {
-        return 1; /* Stop iteration */
+        return GM_CALLBACK_STOP; /* Stop iteration */
     }
 
     /* Check if source matches (OID compare) */
@@ -202,7 +203,7 @@ static int edge_search_callback(const gm_edge_t *edge, void *userdata) {
         ctx->edges[ctx->count++] = *edge;
     }
 
-    return 0; /* Continue */
+    return GM_OK; /* Continue */
 }
 
 /* Find recent edges with given source blob */
@@ -222,7 +223,7 @@ int gm_hook_find_edges_by_source(gm_context_t *ctx, const gm_oid_t *src_oid,
     /* Walk journal looking for edges */
     int error = gm_journal_read(ctx, NULL, edge_search_callback, &search_ctx);
 
-    if (error < 0 && error != 1) { /* 1 means we stopped early */
+    if (error != GM_OK && error != GM_CALLBACK_STOP) { /* stopped early */
         free(search_ctx.edges);
         return error;
     }

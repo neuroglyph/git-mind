@@ -7,6 +7,7 @@
 
 #include "gitmind/edge.h"
 #include "gitmind/util/oid.h"
+#include "gitmind/util/memory.h"
 #include "gitmind/error.h"
 
 int main(void) {
@@ -20,8 +21,10 @@ int main(void) {
     memset(b.src_sha, 0x11, GM_SHA1_SIZE);
     memset(b.tgt_sha, 0x22, GM_SHA1_SIZE);
     a.rel_type = b.rel_type = GM_REL_REFERENCES;
-    strcpy(a.src_path, "A"); strcpy(a.tgt_path, "B");
-    strcpy(b.src_path, "A"); strcpy(b.tgt_path, "B");
+    assert(gm_strcpy_safe(a.src_path, sizeof a.src_path, "A") == GM_OK);
+    assert(gm_strcpy_safe(a.tgt_path, sizeof a.tgt_path, "B") == GM_OK);
+    assert(gm_strcpy_safe(b.src_path, sizeof b.src_path, "A") == GM_OK);
+    assert(gm_strcpy_safe(b.tgt_path, sizeof b.tgt_path, "B") == GM_OK);
 
     /* With zero OIDs and identical legacy bytes, edges should be equal */
     assert(gm_edge_equal(&a, &b));

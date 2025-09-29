@@ -167,7 +167,12 @@ bool gm_cache_is_stale(gm_context_t *ctx, const char *branch) {
 
     /* Check age */
     time_t now = time(NULL);
-    if ((uint64_t)now - meta.journal_tip_time > CACHE_MAX_AGE_SECONDS) {
+    if (now <= 0) {
+        return true;
+    }
+    uint64_t now_u = (uint64_t)now;
+    if (now_u > meta.journal_tip_time &&
+        (now_u - meta.journal_tip_time) > CACHE_MAX_AGE_SECONDS) {
         return true;
     }
 

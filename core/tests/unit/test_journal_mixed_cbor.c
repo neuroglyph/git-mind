@@ -53,7 +53,8 @@ int main(void) {
 
     /* Build mixed CBOR payload: one basic, one attributed */
     gm_edge_t e = {0};
-    strcpy(e.src_path, "src/A.c"); strcpy(e.tgt_path, "src/B.c");
+    assert(gm_strcpy_safe(e.src_path, sizeof e.src_path, "src/A.c") == GM_OK);
+    assert(gm_strcpy_safe(e.tgt_path, sizeof e.tgt_path, "src/B.c") == GM_OK);
     e.rel_type = GM_REL_IMPLEMENTS; e.confidence = 0x3C00; e.timestamp = 7;
     uint8_t rawA[GM_OID_RAWSZ]; memset(rawA, 0xCC, sizeof rawA);
     uint8_t rawB[GM_OID_RAWSZ]; memset(rawB, 0xDD, sizeof rawB);
@@ -63,13 +64,18 @@ int main(void) {
     uint8_t buf1[512]; size_t len1 = sizeof buf1; assert(gm_edge_encode_cbor(&e, buf1, &len1).ok);
 
     gm_edge_attributed_t ae = {0};
-    strcpy(ae.src_path, "docs/A.md"); strcpy(ae.tgt_path, "src/C.c");
+    assert(gm_strcpy_safe(ae.src_path, sizeof ae.src_path,
+                          "docs/A.md") == GM_OK);
+    assert(gm_strcpy_safe(ae.tgt_path, sizeof ae.tgt_path,
+                          "src/C.c") == GM_OK);
     ae.rel_type = GM_REL_REFERENCES; ae.confidence = 0x1C00; ae.timestamp = 8;
     assert(gm_oid_from_raw(&ae.src_oid, rawA, sizeof rawA) == GM_OK);
     assert(gm_oid_from_raw(&ae.tgt_oid, rawB, sizeof rawB) == GM_OK);
     ae.attribution.source_type = GM_SOURCE_AI_CLAUDE;
-    strcpy(ae.attribution.author, "claude@local");
-    strcpy(ae.attribution.session_id, "s1");
+    assert(gm_strcpy_safe(ae.attribution.author, sizeof ae.attribution.author,
+                          "claude@local") == GM_OK);
+    assert(gm_strcpy_safe(ae.attribution.session_id,
+                          sizeof ae.attribution.session_id, "s1") == GM_OK);
     ae.lane = GM_LANE_ANALYSIS;
     u = gm_ulid_generate(ae.ulid); assert(u.ok);
     uint8_t buf2[512]; size_t len2 = sizeof buf2; assert(gm_edge_attributed_encode_cbor(&ae, buf2, &len2).ok);

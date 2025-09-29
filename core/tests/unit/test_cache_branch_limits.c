@@ -11,6 +11,7 @@
 #include "gitmind/cache.h"
 #include "gitmind/context.h"
 #include "gitmind/edge.h"
+#include "gitmind/util/memory.h"
 #include "gitmind/error.h"
 #include "gitmind/journal.h"
 #include "gitmind/result.h"
@@ -79,8 +80,8 @@ static void append_dummy_edge(gm_context_t *ctx) {
 
     edge.rel_type = GM_REL_IMPLEMENTS;
     edge.confidence = 0x3C00;
-    strcpy(edge.src_path, "A");
-    strcpy(edge.tgt_path, "B");
+    assert(gm_strcpy_safe(edge.src_path, sizeof edge.src_path, "A") == GM_OK);
+    assert(gm_strcpy_safe(edge.tgt_path, sizeof edge.tgt_path, "B") == GM_OK);
     (void)gm_ulid_generate(edge.ulid);
 
     int rc = gm_journal_append(ctx, &edge, 1);

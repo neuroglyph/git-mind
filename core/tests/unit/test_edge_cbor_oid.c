@@ -8,6 +8,7 @@
 #include "gitmind/edge.h"
 #include "gitmind/types.h"
 #include "gitmind/util/oid.h"
+#include "gitmind/util/memory.h"
 #include "gitmind/error.h"
 
 /* Simple test for OID-first CBOR encode/decode */
@@ -30,6 +31,10 @@ int main(void) {
     uint8_t tgt_raw[GM_OID_RAWSZ]; memset(tgt_raw, 0xBB, sizeof tgt_raw);
     assert(gm_oid_from_raw(&e.src_oid, src_raw, sizeof src_raw) == GM_OK);
     assert(gm_oid_from_raw(&e.tgt_oid, tgt_raw, sizeof tgt_raw) == GM_OK);
+    assert(gm_strcpy_safe(e.src_path, sizeof e.src_path, "src/A.c") == GM_OK);
+    assert(gm_strcpy_safe(e.tgt_path, sizeof e.tgt_path, "src/B.c") == GM_OK);
+    assert(gm_strcpy_safe(e.ulid, sizeof e.ulid,
+                          "01ARZ3NDEKTSV4RRFFQ69G5FAV") == GM_OK);
 
     uint8_t buf[1024];
     size_t len = sizeof buf;

@@ -15,6 +15,7 @@
 #include "gitmind/edge.h"
 #include "gitmind/types.h"
 #include "gitmind/util/oid.h"
+#include "gitmind/security/string.h"
 
 #include "gitmind/adapters/fs/posix_temp_adapter.h"
 #include "gitmind/adapters/git/libgit2_repository_port.h"
@@ -35,7 +36,8 @@ static void ensure_branch_with_commit(git_repository *repo, const char *branch) 
     assert(rc == 0);
 
     char refname[128];
-    snprintf(refname, sizeof refname, "refs/heads/%s", branch);
+    int wn = gm_snprintf(refname, sizeof refname, "refs/heads/%s", branch);
+    assert(wn >= 0 && (size_t)wn < sizeof refname);
 
     /* Create a commit object and then a direct ref to it */
     rc = git_commit_create_from_ids(&commit_oid, repo, NULL, sig, sig, NULL,

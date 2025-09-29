@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sodium.h>
+#include <stdlib.h>
 
 #include "gitmind/security/string.h"
 #include "gitmind/edge.h"

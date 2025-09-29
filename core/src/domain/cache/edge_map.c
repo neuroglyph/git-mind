@@ -82,6 +82,11 @@ gm_result_void_t gm_edge_map_create(size_t bucket_count, gm_edge_map_t **out_map
             GM_ERROR(GM_ERR_INVALID_ARGUMENT, "edge map output pointer required"));
     }
 
+    if (bucket_count == 0U) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "edge map bucket count must be > 0"));
+    }
+
     gm_edge_map_t *map = calloc(1, sizeof(gm_edge_map_t));
     if (map == NULL) {
         return gm_err_void(GM_ERROR(GM_ERR_OUT_OF_MEMORY, "edge map alloc failed"));
