@@ -41,11 +41,11 @@ The install-hooks command sets up a post-commit hook that automatically creates 
 
 ## THE CIRCLE OF CHANGE
 
-When you edit a file that has semantic links, those links point to a specific version (blob SHA). After your edit, the old links become outdated. The AUGMENTS system preserves the connection by creating evolution edges:
+When you edit a file that has semantic links, those links point to a specific version (blob object ID, or OID). After your edit, the old links become outdated. The AUGMENTS system preserves the connection by creating evolution edges:
 
 ```
-Before edit:  design.md ──implements──> main.c (SHA: abc123)
-After edit:   design.md ──implements──> main.c (SHA: def456)
+Before edit:  design.md ──implements──> main.c (OID: abc123)
+After edit:   design.md ──implements──> main.c (OID: def456)
               main.c:abc123 ──AUGMENTS──> main.c:def456
 ```
 
@@ -121,7 +121,7 @@ fi
 After every commit, the hook:
 
 1. Gets the list of modified files
-2. For each file, finds its old blob SHA (before commit)
+2. For each file, finds its old blob OID (before commit)
 3. Searches recent edges (last 200) for links to that blob
 4. Creates AUGMENTS edges from old blob to new blob
 5. Updates the semantic graph silently in the background
@@ -195,8 +195,8 @@ AUGMENTS edges have a special format:
 
 ```
 {
-  src_sha: "abc123...",  // Old blob SHA
-  tgt_sha: "def456...",  // New blob SHA  
+  src_oid: "abc123...",  // Old blob object ID
+  tgt_oid: "def456...",  // New blob object ID  
   rel_type: "AUGMENTS",
   confidence: 1.0,
   src_path: "core/src/old.c", // For readability

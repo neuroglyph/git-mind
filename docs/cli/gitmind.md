@@ -111,13 +111,13 @@ Every semantic link is stored as a Git commit in refs/gitmind/edges/<branch>. Th
 For repositories with thousands of connections, git-mind builds Roaring Bitmap indices:
 
 - O(log N) query performance
-- Sharded by SHA prefix
+- Sharded by object ID (OID) prefix — CLI output may still label these as “SHA” for compatibility
 - Stored in refs/gitmind/cache/<branch>
 - Rebuilt on demand
 
 ### The Evolution System (AUGMENTS)
 
-When files change, their blob SHAs change. The AUGMENTS system:
+When files change, their blob object IDs (OIDs) change. The AUGMENTS system:
 
 - Tracks file evolution automatically
 - Preserves connections through changes
@@ -188,7 +188,7 @@ $ git add core/src/parser.c && git commit -m "Optimize parser"
 # The connections followed the change!
 $ git mind list --from core/src/parser.c
 core/src/parser.c ──implements──> docs/parser-design.md
-# (connection automatically updated to new blob SHA)
+# (connection automatically updated to the new blob OID; CLI labels remain “SHA”)
 ```
 
 ### Performance at Scale

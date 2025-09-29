@@ -5,7 +5,7 @@ audience: [developers]
 domain: [architecture, project]
 tags: [architecture, journal, cache, oid, engineering]
 status: stable
-last_updated: 2025-09-15
+last_updated: 2025-09-29
 ---
 
 # Technical Overview
@@ -16,7 +16,8 @@ This page orients engineers to the core implementation and points to deeper docs
 
 - Journal‑first storage: semantic edges are CBOR commits under `refs/gitmind/edges/<branch>`.
 - Rebuildable cache: high‑performance Roaring Bitmap cache under `refs/gitmind/cache/<branch>`.
-- OID‑first APIs: new interfaces use `gm_oid_t` (`git_oid`) and compare via `git_oid_cmp`.
+- OID‑first APIs: new interfaces use `gm_oid_t` and compare via `gm_oid_equal`,
+  falling back to SHA hex only when a binary OID is unavailable.
 - Append‑only semantics: edges form an OR‑Set via ULIDs; merges resolve predictably.
 
 See `docs/architecture/` for full write‑ups:
@@ -55,7 +56,7 @@ Header guards lint: `meson run -C build lint_header_guards`
 
 - Complete OID‑only on‑disk cache migration and readers.
 - Extend CBOR schema to store OIDs explicitly.
-- Add focused tests: CBOR base64 round‑trip, `gm_snprintf` truncation, OID equality paths.
+- Add focused tests: CBOR base64 round‑trip and `gm_snprintf` truncation paths.
 
 ## Engineering Principles
 
@@ -67,13 +68,17 @@ Header guards lint: `meson run -C build lint_header_guards`
 
 See also: `docs/architecture/MIGRATION_PHILOSOPHY.md`.
 
-## Recent Changes (2025‑09‑15)
+## Recent Changes (2025‑09‑29)
 
+- Cache/journal strict equality guardrails: regression tests now assert binary
+  OIDs are compared via `gm_oid_equal` before falling back to SHA hex in both
+  the cache staleness check and journal CBOR decoder paths.
 - OID‑first cache metadata: added binary `journal_tip_oid_bin`; hex string retained for porcelain only.
 - Ref building standardized via `gm_build_ref` with branch validation; all refs use `GITMIND_EDGES_REF_PREFIX`.
 - Unsafe libc calls replaced in core with safe wrappers (`gm_memset_safe`, `gm_memcpy_span`, `gm_strcpy_safe`, `gm_snprintf`).
 - OID formatting/prefixing now uses libgit2 (`git_oid_fmt`, `git_oid_tostr`).
 - Hashing: improved internal OID hash mixing for more resilient distribution.
 - Result constructors annotated `[[nodiscard]]`; more API annotations added in cache/journal/CBOR headers.
-- New tests: ref utils, OID fallback equality, cache shard distribution.
+- New tests: ref utils, OID fallback equality, cache shard distribution,
+  cache/journal strict equality regressions.
 - CBOR debug flag: `GITMIND_CBOR_DEBUG=1` enables decode tracing in the journal reader.

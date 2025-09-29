@@ -91,7 +91,7 @@ $ git mind list
 - `dot` - Graphviz DOT format
 
 `--show-sha`
-: Display blob SHAs (default: hide)
+: Display blob object IDs (OIDs). The flag name retains the legacy “SHA” label.
 
 `--show-augments`
 : Include AUGMENTS evolution edges
@@ -269,7 +269,7 @@ dot -Tpng graph.dot -o graph.png
 Metadata may include:
 
 - `(confidence: 0.8)` - Less than certain connections
-- `(SHA: abc123)` - When --show-sha is used
+- `(OID: abc123)` - Shown when `--show-sha` is used (legacy flag name)
 - `(AUGMENTED)` - When file has evolved
 
 ### Following AUGMENTS

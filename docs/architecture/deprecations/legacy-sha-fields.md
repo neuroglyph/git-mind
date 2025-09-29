@@ -5,7 +5,7 @@ audience: [developers]
 domain: [architecture]
 tags: [deprecation, oid]
 status: planned
-last_updated: 2025-09-15
+last_updated: 2025-09-29
 ---
 
 # Deprecation Notice: Legacy SHA-1 Byte Arrays in Edges
@@ -44,7 +44,8 @@ We have migrated all encode/decode, cache, hooks, and equality semantics to be O
 ## Migration Plan
 
 1. Grace period: continue to write OID fields and (for backward compatibility) read legacy fields in decoders when OIDs are absent.
-2. Consumers should use `gm_oid_t` (`git_oid`) exclusively and compare via `git_oid_cmp`.
+2. Consumers should use `gm_oid_t` exclusively and compare via `gm_oid_equal`,
+   falling back to legacy SHA bytes only when a binary OID is unavailable.
 3. After one minor release, remove `src_sha`/`tgt_sha` from public structs and drop legacy CBOR keys from writers (readers may retain legacy acceptance for another cycle if needed).
 
 ## Action Items
@@ -55,4 +56,7 @@ We have migrated all encode/decode, cache, hooks, and equality semantics to be O
 
 ## Compatibility
 
-Journal and cache already use OID‑first encoding and compare semantics. Decoders backfill OIDs from legacy bytes, so older commits remain readable throughout the grace period.
+Journal and cache already use OID‑first encoding and compare semantics. Decoders
+backfill OIDs from legacy bytes, and regression tests (2025‑09‑29) cover both
+the cache staleness checks and journal readers to ensure binary OIDs stay the
+source of truth while legacy SHA data remains readable during the grace period.

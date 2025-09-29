@@ -137,11 +137,11 @@ Minimum Viable Product
 
 <a id="gmmvpt001"></a>
 - [ ] (GM.MVP.T001) Finalize strict equality
-> [!INFO]- (1/4) ⣿⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀ — Step-by-step plan · 25%
+> [!INFO]- (4/4) ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿ — Step-by-step plan · 100%
 > - [x] Audit equality helpers in cache and journal to ensure OID-first comparisons never fall back when OIDs exist.
-> - [ ] Add regression tests covering mixed OID/string paths across cache and journal utilities.
-> - [ ] Update `docs/TECHNICAL.md` and any relevant ADRs to document strict equality behavior.
-> - [ ] Sweep references to legacy SHA fallbacks in docs and CLI examples.
+> - [x] Add regression tests covering mixed OID/string paths across cache and journal utilities.
+> - [x] Update `docs/TECHNICAL.md` and any relevant ADRs to document strict equality behavior.
+> - [x] Sweep references to legacy SHA fallbacks in docs and CLI examples.
 > [!NOTE]- Dependencies
 > - (none)
 
