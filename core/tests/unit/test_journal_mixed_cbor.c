@@ -29,6 +29,16 @@ typedef struct {
     gm_edge_attributed_t last;
 } attr_ctx_t;
 
+/**
+ * Capture a basic edge into a basic_ctx_t by copying the provided edge and
+ * incrementing the context's count.
+ *
+ * @param edge Pointer to the basic edge to capture.
+ * @param ud   Pointer to a basic_ctx_t where the edge will be stored (last)
+ *             and the count incremented.
+ * @returns `GM_OK` on success, `GM_ERR_INVALID_ARGUMENT` if `edge` or `ud` is NULL,
+ *          or another `GM_*` error code propagated from the copy operation.
+ */
 static int capture_basic_cb(const gm_edge_t *edge, void *ud) {
     if (edge == NULL || ud == NULL) {
         return GM_ERR_INVALID_ARGUMENT;
@@ -43,6 +53,13 @@ static int capture_basic_cb(const gm_edge_t *edge, void *ud) {
     return GM_OK;
 }
 
+/**
+ * Capture an attributed edge by copying it into the provided context and incrementing the count.
+ *
+ * @param edge Pointer to the attributed edge to capture; must not be NULL.
+ * @param ud Pointer to an attr_ctx_t that will receive the captured edge and have its count incremented; must not be NULL.
+ * @returns `GM_OK` on success, `GM_ERR_INVALID_ARGUMENT` if `edge` or `ud` is NULL, or an error code returned from the underlying copy operation. 
+ */
 static int capture_attr_cb(const gm_edge_attributed_t *edge, void *ud) {
     if (edge == NULL || ud == NULL) {
         return GM_ERR_INVALID_ARGUMENT;
@@ -57,6 +74,13 @@ static int capture_attr_cb(const gm_edge_attributed_t *edge, void *ud) {
     return GM_OK;
 }
 
+/**
+ * Run the mixed-CBOR journal integration test: create a temporary Git repository,
+ * write a commit containing one basic and one attributed CBOR-encoded edge payload,
+ * read them back, and verify their source/target OIDs match the generated values.
+ *
+ * @returns `0` on success, non-zero on failure.
+ */
 int main(void) {
     printf("test_journal_mixed_cbor... ");
     git_libgit2_init();
