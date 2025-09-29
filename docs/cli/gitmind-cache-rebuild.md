@@ -48,10 +48,10 @@ Your semantic links live as CBOR-encoded Git commits in `refs/gitmind/edges/<bra
 
 The cache creates two Roaring Bitmap indices:
 
-- __Forward index__: source SHA → edge IDs (who depends on this?)
-- __Reverse index__: target SHA → edge IDs (what does this depend on?)
+- __Forward index__: source object ID (OID) → edge IDs (who depends on this?)
+- __Reverse index__: target OID → edge IDs (what does this depend on?)
 
-These are stored as Git tree objects under `refs/gitmind/cache/<branch>`, sharded into 256 buckets using the first byte of each SHA.
+These are stored as Git tree objects under `refs/gitmind/cache/<branch>`, sharded into 256 buckets using the first byte of each OID. The CLI and on-disk layout may still refer to these prefixes as “SHA” while the tooling finishes renaming.
 
 ### The Magic: Roaring Bitmaps
 
@@ -139,7 +139,7 @@ The cache automatically detects when it's stale by comparing the journal tip wit
 refs/gitmind/cache/main
 └── tree
     ├── meta.json           # Cache metadata
-    ├── 00/                 # SHA prefix shard
+    ├── 00/                 # OID prefix shard
     │   ├── 00a1b2c3.forward
     │   └── 00a1b2c3.reverse
     ├── 01/

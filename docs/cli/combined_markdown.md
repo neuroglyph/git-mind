@@ -140,10 +140,10 @@ Your semantic links live as CBOR-encoded Git commits in `refs/gitmind/edges/<bra
 
 The cache creates two Roaring Bitmap indices:
 
-- __Forward index__: source SHA → edge IDs (who depends on this?)
-- __Reverse index__: target SHA → edge IDs (what does this depend on?)
+- __Forward index__: source object ID (OID) → edge IDs (who depends on this?)
+- __Reverse index__: target OID → edge IDs (what does this depend on?)
 
-These are stored as Git tree objects under `refs/gitmind/cache/<branch>`, sharded into 256 buckets using the first byte of each SHA.
+These are stored as Git tree objects under `refs/gitmind/cache/<branch>`, sharded into 256 buckets using the first byte of each OID. Legacy CLI output may still print “SHA” while the rename settles.
 
 ### The Magic: Roaring Bitmaps
 
@@ -231,7 +231,7 @@ The cache automatically detects when it's stale by comparing the journal tip wit
 refs/gitmind/cache/main
 └── tree
     ├── meta.json           # Cache metadata
-    ├── 00/                 # SHA prefix shard
+    ├── 00/                 # OID prefix shard
     │   ├── 00a1b2c3.forward
     │   └── 00a1b2c3.reverse
     ├── 01/
@@ -315,11 +315,11 @@ The install-hooks command sets up a post-commit hook that automatically creates 
 
 ## THE CIRCLE OF CHANGE
 
-When you edit a file that has semantic links, those links point to a specific version (blob SHA). After your edit, the old links become outdated. The AUGMENTS system preserves the connection by creating evolution edges:
+When you edit a file that has semantic links, those links point to a specific version (blob object ID, or OID). After your edit, the old links become outdated. The AUGMENTS system preserves the connection by creating evolution edges:
 
 ```
-Before edit:  design.md ──implements──> main.c (SHA: abc123)
-After edit:   design.md ──implements──> main.c (SHA: def456)
+Before edit:  design.md ──implements──> main.c (OID: abc123)
+After edit:   design.md ──implements──> main.c (OID: def456)
               main.c:abc123 ──AUGMENTS──> main.c:def456
 ```
 
@@ -395,7 +395,7 @@ fi
 After every commit, the hook:
 
 1. Gets the list of modified files
-2. For each file, finds its old blob SHA (before commit)
+2. For each file, finds its old blob OID (before commit)
 3. Searches recent edges (last 200) for links to that blob
 4. Creates AUGMENTS edges from old blob to new blob
 5. Updates the semantic graph silently in the background
@@ -469,8 +469,8 @@ AUGMENTS edges have a special format:
 
 ```
 {
-  src_sha: "abc123...",  // Old blob SHA
-  tgt_sha: "def456...",  // New blob SHA  
+  src_oid: "abc123...",  // Old blob object ID
+  tgt_oid: "def456...",  // New blob object ID  
   rel_type: "AUGMENTS",
   confidence: 1.0,
   src_path: "core/src/old.c", // For readability
@@ -656,11 +656,11 @@ Each link is stored as a Git commit in `refs/gitmind/edges/<branch>`. The commit
 
 ### Content Addressing
 
-Links connect specific versions of files using their blob SHAs:
+Links connect specific versions of files using their blob object IDs (OIDs):
 
 ```
-source_sha: 8a9f3b2c...  # SHA of design.md's content
-target_sha: 7c4d5e6f...  # SHA of parser.c's content
+source_oid: 8a9f3b2c...  # Object ID of design.md's content
+target_oid: 7c4d5e6f...  # Object ID of parser.c's content
 ```
 
 This means links point to exact versions. When files change, the AUGMENTS system (see `git-mind-install-hooks(1)`) tracks their evolution.
@@ -879,7 +879,7 @@ $ git mind list
 - `dot` - Graphviz DOT format
 
 `--show-sha`
-: Display blob SHAs (default: hide)
+: Display blob object IDs (OIDs). Flag name keeps the legacy “SHA” label.
 
 `--show-augments`
 : Include AUGMENTS evolution edges
@@ -1057,7 +1057,7 @@ dot -Tpng graph.dot -o graph.png
 Metadata may include:
 
 - `(confidence: 0.8)` - Less than certain connections
-- `(SHA: abc123)` - When --show-sha is used
+- `(OID: abc123)` - Shown when `--show-sha` is used (legacy flag name)
 - `(AUGMENTED)` - When file has evolved
 
 ### Following AUGMENTS
@@ -1256,13 +1256,13 @@ Every semantic link is stored as a Git commit in refs/gitmind/edges/<branch>. Th
 For repositories with thousands of connections, git-mind builds Roaring Bitmap indices:
 
 - O(log N) query performance
-- Sharded by SHA prefix
+- Sharded by object ID (OID) prefix — CLI output may still say “SHA”
 - Stored in refs/gitmind/cache/<branch>
 - Rebuilt on demand
 
 ### The Evolution System (AUGMENTS)
 
-When files change, their blob SHAs change. The AUGMENTS system:
+When files change, their blob object IDs change. The AUGMENTS system:
 
 - Tracks file evolution automatically
 - Preserves connections through changes
@@ -1333,7 +1333,7 @@ $ git add core/src/parser.c && git commit -m "Optimize parser"
 # The connections followed the change!
 $ git mind list --from core/src/parser.c
 core/src/parser.c ──implements──> docs/parser-design.md
-# (connection automatically updated to new blob SHA)
+# (connection automatically updated to the new blob OID; CLI labels remain “SHA”)
 ```
 
 ### Performance at Scale

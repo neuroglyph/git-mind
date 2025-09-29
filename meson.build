@@ -318,6 +318,12 @@ test_cache_query = executable('test_cache_query',
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
+test_cache_strict_equality = executable('test_cache_strict_equality',
+  'core/tests/unit/test_cache_strict_equality.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
 test_cache_branch_limits = executable('test_cache_branch_limits',
   'core/tests/unit/test_cache_branch_limits.c',
   include_directories : inc,
@@ -384,6 +390,7 @@ test('cache_meta', test_cache_meta)
 test('cache_edge_map', test_cache_edge_map)
 test('journal_mixed_cbor', test_journal_mixed_cbor)
 test('cache_query', test_cache_query)
+test('cache_strict_equality', test_cache_strict_equality)
 test('cache_branch_limits', test_cache_branch_limits)
 test('journal_safety', test_journal_safety)
 test('cache_shard_distribution', test_cache_shard_distribution)

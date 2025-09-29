@@ -153,14 +153,14 @@ Each link is stored as a Git commit in `refs/gitmind/edges/<branch>`. The commit
 
 ### Content Addressing
 
-Links connect specific versions of files using their blob SHAs:
+Links connect specific versions of files using their Git object IDs (OIDs):
 
 ```
-source_sha: 8a9f3b2c...  # SHA of design.md's content
-target_sha: 7c4d5e6f...  # SHA of parser.c's content
+source_oid: 8a9f3b2c...  # Object ID of design.md's content
+target_oid: 7c4d5e6f...  # Object ID of parser.c's content
 ```
 
-This means links point to exact versions. When files change, the AUGMENTS system (see `git-mind-install-hooks(1)`) tracks their evolution.
+This means links point to exact versions. The CLI still exposes flags such as `--show-sha`; those names linger for compatibility but surface the same OID values. When files change, the AUGMENTS system (see `git-mind-install-hooks(1)`) tracks their evolution.
 
 ### Branch Isolation
 

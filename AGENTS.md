@@ -415,6 +415,14 @@ Every outbound port ships with: (a) production adapter, (b) deterministic fake u
 
 See archives under `docs/activity/` for older logs.
 
+### 2025-09-29
+- Merged PR #173 after tightening the remaining safe-string usage and OID helper semantics; rebased on `origin/main` and created `feat/next-hex-task` for the follow-up work.
+- Problems solved today: CodeRabbit’s final cache-query/string-safety nits and the lingering `gm_oid_is_zero` ambiguity.
+- Problems still open: regression tests + docs for strict equality (GM.MVP.T001), and the outstanding libgit2 call sites lingering in CLI/bench helpers.
+- Immediate next moves: scope the equality regression tests/doc updates and queue the next hex slice on the new branch.
+- Unscheduled-but-important: worksheet automation cleanup and the CLI safety test expansion still need dedicated time before month end.
+- Context reminder: capture major decisions in the ledger/worksheet quickly—we’re pushing the context window, so keep notes concise.
+
 ### 2025-09-27
 - Routed cache metadata, query, and journal flows through `gm_git_repository_port`; reader/writer now use the adapter for head detection, commit walking, message bodies, and ref updates.
 - Added port surface area (head lookup, commit walk/message helpers, parent-aware commit spec) plus libgit2 adapter support to keep hex seams consistent.
