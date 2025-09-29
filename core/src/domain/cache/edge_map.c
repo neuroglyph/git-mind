@@ -3,8 +3,6 @@
 
 #include "gitmind/cache/internal/edge_map.h"
 
-#include <git2/oid.h>
-
 #include <stdint.h>
 #include <stdlib.h>
 

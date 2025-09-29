@@ -11,8 +11,7 @@
 #include "gitmind/edge.h"
 #include "gitmind/edge_attributed.h"
 #include "gitmind/security/memory.h"
-
-#include <git2/oid.h>
+#include "gitmind/util/oid.h"
 #include <sodium/utils.h>
 
 #include <stdio.h>
@@ -114,7 +113,11 @@ static int collect_parent_tip(const gm_oid_t *commit_oid, void *userdata) {
         ctx->found = true;
         ctx->tip.has_target = true;
         ctx->tip.oid = *commit_oid;
-        git_oid_tostr(ctx->tip.oid_hex, sizeof(ctx->tip.oid_hex), commit_oid);
+        if (gm_oid_to_hex(commit_oid, ctx->tip.oid_hex,
+                          sizeof(ctx->tip.oid_hex)) != GM_OK) {
+            gm_memset_safe(ctx->tip.oid_hex, sizeof(ctx->tip.oid_hex), 0,
+                           sizeof(ctx->tip.oid_hex));
+        }
     }
     return GM_OK;
 }

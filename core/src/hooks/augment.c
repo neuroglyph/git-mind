@@ -7,8 +7,6 @@
 #include <string.h>
 #include <time.h>
 
-#include <git2/oid.h>
-
 #include "gitmind/constants.h"
 #include "gitmind/constants_internal.h"
 #include "gitmind/error.h"
