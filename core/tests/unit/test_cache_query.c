@@ -14,6 +14,9 @@
 #include "gitmind/result.h"
 #include "gitmind/edge.h"
 #include "gitmind/types.h"
+#include "gitmind/util/oid.h"
+#include "gitmind/security/string.h"
+#include "gitmind/util/memory.h"
 
 #include "gitmind/adapters/fs/posix_temp_adapter.h"
 #include "gitmind/adapters/git/libgit2_repository_port.h"
@@ -34,7 +37,8 @@ static void ensure_branch_with_commit(git_repository *repo, const char *branch) 
     assert(rc == 0);
 
     char refname[128];
-    snprintf(refname, sizeof refname, "refs/heads/%s", branch);
+    int wn = gm_snprintf(refname, sizeof refname, "refs/heads/%s", branch);
+    assert(wn >= 0 && (size_t)wn < sizeof refname);
 
     /* Create a commit object and then a direct ref to it */
     rc = git_commit_create_from_ids(&commit_oid, repo, NULL, sig, sig, NULL,
@@ -84,15 +88,26 @@ int main(void) {
     assert(fs_result.ok);
 
     /* Create two edges A->B and A->C */
-    gm_edge_t edges[2]; memset(edges, 0, sizeof edges);
+    gm_edge_t edges[2];
+    memset(edges, 0, sizeof edges);
     uint8_t A[GM_OID_RAWSZ], B[GM_OID_RAWSZ], C[GM_OID_RAWSZ];
     memset(A, 0x11, sizeof A); memset(B, 0x22, sizeof B); memset(C, 0x33, sizeof C);
-    git_oid_fromraw(&edges[0].src_oid, A); git_oid_fromraw(&edges[0].tgt_oid, B);
-    edges[0].rel_type = GM_REL_IMPLEMENTS; edges[0].confidence = 0x3C00; strcpy(edges[0].src_path, "A"); strcpy(edges[0].tgt_path, "B");
-    (void)gm_ulid_generate(edges[0].ulid);
-    git_oid_fromraw(&edges[1].src_oid, A); git_oid_fromraw(&edges[1].tgt_oid, C);
-    edges[1].rel_type = GM_REL_IMPLEMENTS; edges[1].confidence = 0x3C00; strcpy(edges[1].src_path, "A"); strcpy(edges[1].tgt_path, "C");
-    (void)gm_ulid_generate(edges[1].ulid);
+    assert(gm_oid_from_raw(&edges[0].src_oid, A, sizeof A) == GM_OK);
+    assert(gm_oid_from_raw(&edges[0].tgt_oid, B, sizeof B) == GM_OK);
+    edges[0].rel_type = GM_REL_IMPLEMENTS;
+    edges[0].confidence = 0x3C00;
+    assert(gm_strcpy_safe(edges[0].src_path, sizeof edges[0].src_path, "A") == GM_OK);
+    assert(gm_strcpy_safe(edges[0].tgt_path, sizeof edges[0].tgt_path, "B") == GM_OK);
+    gm_result_ulid_t ulr0 = gm_ulid_generate(edges[0].ulid);
+    assert(ulr0.ok);
+    assert(gm_oid_from_raw(&edges[1].src_oid, A, sizeof A) == GM_OK);
+    assert(gm_oid_from_raw(&edges[1].tgt_oid, C, sizeof C) == GM_OK);
+    edges[1].rel_type = GM_REL_IMPLEMENTS;
+    edges[1].confidence = 0x3C00;
+    assert(gm_strcpy_safe(edges[1].src_path, sizeof edges[1].src_path, "A") == GM_OK);
+    assert(gm_strcpy_safe(edges[1].tgt_path, sizeof edges[1].tgt_path, "C") == GM_OK);
+    gm_result_ulid_t ulr1 = gm_ulid_generate(edges[1].ulid);
+    assert(ulr1.ok);
 
     rc = gm_journal_append(&ctx, edges, 2);
     assert(rc == GM_OK);
@@ -102,13 +117,13 @@ int main(void) {
     assert(rc == GM_OK);
 
     gm_cache_result_t r1 = {0}, r2 = {0};
-    gm_oid_t a_oid; git_oid_fromraw(&a_oid, A);
+    gm_oid_t a_oid; assert(gm_oid_from_raw(&a_oid, A, sizeof A) == GM_OK);
     rc = gm_cache_query_fanout(&ctx, "testq", &a_oid, &r1);
     assert(rc == GM_OK);
     assert(r1.count >= 2);
     gm_cache_result_free(&r1);
 
-    gm_oid_t b_oid; git_oid_fromraw(&b_oid, B);
+    gm_oid_t b_oid; assert(gm_oid_from_raw(&b_oid, B, sizeof B) == GM_OK);
     rc = gm_cache_query_fanin(&ctx, "testq", &b_oid, &r2);
     assert(rc == GM_OK);
     assert(r2.count >= 1);

@@ -5,10 +5,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <sodium.h>
+#include <stdlib.h>
 
 #include "gitmind/security/string.h"
 #include "gitmind/edge.h"
 #include "gitmind/types.h"
+#include "gitmind/util/oid.h"
+#include "gitmind/error.h"
 
 static void test_base64_roundtrip(void) {
     printf("test_base64_roundtrip... ");
@@ -55,24 +58,24 @@ static void test_edge_equal_oid_preferred(void) {
     /* Same OIDs */
     uint8_t same_raw[GM_OID_RAWSZ];
     memset(same_raw, 0xAA, sizeof same_raw);
-    git_oid_fromraw(&a.src_oid, same_raw);
-    git_oid_fromraw(&b.src_oid, same_raw);
-    git_oid_fromraw(&a.tgt_oid, same_raw);
-    git_oid_fromraw(&b.tgt_oid, same_raw);
+    assert(gm_oid_from_raw(&a.src_oid, same_raw, sizeof same_raw) == GM_OK);
+    assert(gm_oid_from_raw(&b.src_oid, same_raw, sizeof same_raw) == GM_OK);
+    assert(gm_oid_from_raw(&a.tgt_oid, same_raw, sizeof same_raw) == GM_OK);
+    assert(gm_oid_from_raw(&b.tgt_oid, same_raw, sizeof same_raw) == GM_OK);
     assert(gm_edge_equal(&a, &b));
 
     /* OIDs differ but legacy SHAs match => OID-first: not equal */
     gm_edge_t c = a, d = a;
     uint8_t other_raw[GM_OID_RAWSZ];
     memset(other_raw, 0xBB, sizeof other_raw);
-    git_oid_fromraw(&c.src_oid, other_raw);
-    git_oid_fromraw(&d.tgt_oid, other_raw);
+    assert(gm_oid_from_raw(&c.src_oid, other_raw, sizeof other_raw) == GM_OK);
+    assert(gm_oid_from_raw(&d.tgt_oid, other_raw, sizeof other_raw) == GM_OK);
     assert(!gm_edge_equal(&c, &d));
 
     /* Both differ (OIDs and legacy) => not equal */
     gm_edge_t e1 = a, e2 = b;
-    git_oid_fromraw(&e2.src_oid, other_raw);
-    git_oid_fromraw(&e2.tgt_oid, other_raw);
+    assert(gm_oid_from_raw(&e2.src_oid, other_raw, sizeof other_raw) == GM_OK);
+    assert(gm_oid_from_raw(&e2.tgt_oid, other_raw, sizeof other_raw) == GM_OK);
     assert(!gm_edge_equal(&e1, &e2));
     printf("OK\n");
 }

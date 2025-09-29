@@ -9,6 +9,8 @@
 #include "gitmind/cbor/cbor.h"
 #include "gitmind/cbor/keys.h"
 #include "gitmind/types.h"
+#include "gitmind/util/oid.h"
+#include "gitmind/error.h"
 
 static void test_roundtrip_full(void) {
     printf("test_edge_attributed_roundtrip_full... ");
@@ -23,8 +25,8 @@ static void test_roundtrip_full(void) {
     strcpy(e.ulid, "01ARZ3NDEKTSV4RRFFQ69G5FAV");
     uint8_t rawA[GM_OID_RAWSZ]; memset(rawA, 0xAA, sizeof rawA);
     uint8_t rawB[GM_OID_RAWSZ]; memset(rawB, 0xBB, sizeof rawB);
-    git_oid_fromraw(&e.src_oid, rawA);
-    git_oid_fromraw(&e.tgt_oid, rawB);
+    assert(gm_oid_from_raw(&e.src_oid, rawA, sizeof rawA) == GM_OK);
+    assert(gm_oid_from_raw(&e.tgt_oid, rawB, sizeof rawB) == GM_OK);
     e.attribution.source_type = GM_SOURCE_AI_CLAUDE;
     strcpy(e.attribution.author, "claude@local");
     strcpy(e.attribution.session_id, "sess-1");
@@ -38,8 +40,8 @@ static void test_roundtrip_full(void) {
     assert(dec.ok);
     gm_edge_attributed_t d = dec.u.val;
 
-    assert(git_oid_cmp(&e.src_oid, &d.src_oid) == 0);
-    assert(git_oid_cmp(&e.tgt_oid, &d.tgt_oid) == 0);
+    assert(gm_oid_equal(&e.src_oid, &d.src_oid));
+    assert(gm_oid_equal(&e.tgt_oid, &d.tgt_oid));
     assert(d.rel_type == e.rel_type);
     assert(d.confidence == e.confidence);
     assert(strcmp(d.src_path, e.src_path) == 0);
@@ -105,8 +107,8 @@ static void test_legacy_backfill(void) {
     gm_result_edge_attributed_t dec = gm_edge_attributed_decode_cbor(buf, off);
     assert(dec.ok);
     gm_edge_attributed_t d = dec.u.val;
-    assert(!git_oid_is_zero(&d.src_oid)); /* backfilled from SHA */
-    assert(!git_oid_is_zero(&d.tgt_oid));
+    assert(!gm_oid_is_zero(&d.src_oid)); /* backfilled from SHA */
+    assert(!gm_oid_is_zero(&d.tgt_oid));
     printf("OK\n");
 }
 

@@ -11,8 +11,7 @@
 #include "gitmind/edge.h"
 #include "gitmind/edge_attributed.h"
 #include "gitmind/security/memory.h"
-
-#include <git2/oid.h>
+#include "gitmind/util/oid.h"
 #include <sodium/utils.h>
 
 #include <stdio.h>
@@ -51,7 +50,7 @@ static int journal_init(journal_ctx_t *jctx, gm_context_t *ctx,
     jctx->repo_port = &ctx->git_repo_port;
 
     /* Parse empty tree OID */
-    if (git_oid_fromstr(&jctx->empty_tree_oid, EMPTY_TREE_SHA) < 0) {
+    if (gm_oid_from_hex(&jctx->empty_tree_oid, EMPTY_TREE_SHA) != GM_OK) {
         return GM_ERR_UNKNOWN;
     }
 
@@ -114,14 +113,18 @@ static int collect_parent_tip(const gm_oid_t *commit_oid, void *userdata) {
         ctx->found = true;
         ctx->tip.has_target = true;
         ctx->tip.oid = *commit_oid;
-        git_oid_tostr(ctx->tip.oid_hex, sizeof(ctx->tip.oid_hex), commit_oid);
+        if (gm_oid_to_hex(commit_oid, ctx->tip.oid_hex,
+                          sizeof(ctx->tip.oid_hex)) != GM_OK) {
+            gm_memset_safe(ctx->tip.oid_hex, sizeof(ctx->tip.oid_hex), 0,
+                           sizeof(ctx->tip.oid_hex));
+        }
     }
     return GM_OK;
 }
 
 /* Create journal commit */
 static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
-                                 size_t cbor_len, git_oid *commit_oid) {
+                                 size_t cbor_len, gm_oid_t *commit_oid) {
     parent_lookup_ctx_t lookup_ctx;
     gm_memset_safe(&lookup_ctx, sizeof(lookup_ctx), 0, sizeof(lookup_ctx));
     gm_result_void_t walk_result = gm_git_repository_port_walk_commits(
@@ -368,7 +371,7 @@ int gm_journal_create_commit(gm_context_t *ctx, const char *ref,
     jctx.repo_port = &ctx->git_repo_port;
 
     /* Parse empty tree OID */
-    if (git_oid_fromstr(&jctx.empty_tree_oid, EMPTY_TREE_SHA) < 0) {
+    if (gm_oid_from_hex(&jctx.empty_tree_oid, EMPTY_TREE_SHA) != GM_OK) {
         return GM_ERR_UNKNOWN;
     }
 

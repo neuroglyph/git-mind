@@ -4,10 +4,9 @@
 #include "gitmind/hooks/augment.h"
 
 #include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-#include <git2/oid.h>
 
 #include "gitmind/constants.h"
 #include "gitmind/constants_internal.h"
@@ -15,6 +14,7 @@
 #include "gitmind/result.h"
 #include "gitmind/util/memory.h"
 #include "gitmind/util/ref.h"
+#include "gitmind/util/oid.h"
 #include "gitmind/security/memory.h"
 
 /* Note: replace any private header usage with public equivalents when available. */
@@ -182,11 +182,11 @@ static int edge_search_callback(const gm_edge_t *edge, void *userdata) {
     /* Limit lookback */
     ctx->scanned++;
     if (ctx->scanned > LOOKBACK_LIMIT) {
-        return 1; /* Stop iteration */
+        return GM_CALLBACK_STOP; /* Stop iteration */
     }
 
     /* Check if source matches (OID compare) */
-    if (git_oid_cmp(&edge->src_oid, ctx->target_oid) == 0) {
+    if (gm_oid_equal(&edge->src_oid, ctx->target_oid)) {
         /* Grow array if needed */
         if (ctx->count >= ctx->capacity) {
             size_t new_capacity = ctx->capacity * ARRAY_GROWTH_FACTOR;
@@ -203,7 +203,7 @@ static int edge_search_callback(const gm_edge_t *edge, void *userdata) {
         ctx->edges[ctx->count++] = *edge;
     }
 
-    return 0; /* Continue */
+    return GM_OK; /* Continue */
 }
 
 /* Find recent edges with given source blob */
@@ -223,7 +223,7 @@ int gm_hook_find_edges_by_source(gm_context_t *ctx, const gm_oid_t *src_oid,
     /* Walk journal looking for edges */
     int error = gm_journal_read(ctx, NULL, edge_search_callback, &search_ctx);
 
-    if (error < 0 && error != 1) { /* 1 means we stopped early */
+    if (error != GM_OK && error != GM_CALLBACK_STOP) { /* stopped early */
         free(search_ctx.edges);
         return error;
     }

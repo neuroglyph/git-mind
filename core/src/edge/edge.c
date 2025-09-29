@@ -13,6 +13,7 @@
 #include "gitmind/security/string.h"
 #include "gitmind/security/memory.h"
 #include "gitmind/util/memory.h"
+#include "gitmind/util/oid.h"
 #include "gitmind/cbor/keys.h"
 #include <stdint.h>
 #include <string.h>
@@ -114,8 +115,8 @@ bool gm_edge_equal(const gm_edge_t *edge_a, const gm_edge_t *edge_b) {
     }
 
     /* Source: if both OIDs present, they must match; otherwise fallback to legacy SHA */
-    if (!git_oid_is_zero(&edge_a->src_oid) && !git_oid_is_zero(&edge_b->src_oid)) {
-        if (git_oid_cmp(&edge_a->src_oid, &edge_b->src_oid) != 0) {
+    if (!gm_oid_is_zero(&edge_a->src_oid) && !gm_oid_is_zero(&edge_b->src_oid)) {
+        if (!gm_oid_equal(&edge_a->src_oid, &edge_b->src_oid)) {
             return false;
         }
     } else {
@@ -125,8 +126,8 @@ bool gm_edge_equal(const gm_edge_t *edge_a, const gm_edge_t *edge_b) {
     }
 
     /* Target: same rule as Source */
-    if (!git_oid_is_zero(&edge_a->tgt_oid) && !git_oid_is_zero(&edge_b->tgt_oid)) {
-        if (git_oid_cmp(&edge_a->tgt_oid, &edge_b->tgt_oid) != 0) {
+    if (!gm_oid_is_zero(&edge_a->tgt_oid) && !gm_oid_is_zero(&edge_b->tgt_oid)) {
+        if (!gm_oid_equal(&edge_a->tgt_oid, &edge_b->tgt_oid)) {
             return false;
         }
     } else {
@@ -318,7 +319,7 @@ gm_result_void_t gm_edge_encode_cbor(const gm_edge_t *edge, uint8_t *buffer,
     uint8_t src_oid_bytes[GM_OID_RAWSZ] = {0};
     uint8_t tgt_oid_bytes[GM_OID_RAWSZ] = {0};
 
-    if (!git_oid_is_zero(&edge->src_oid)) {
+    if (!gm_oid_is_zero(&edge->src_oid)) {
         (void)gm_memcpy_span(src_oid_bytes, sizeof(src_oid_bytes), edge->src_oid.id,
                              GM_OID_RAWSZ);
     } else {
@@ -331,7 +332,7 @@ gm_result_void_t gm_edge_encode_cbor(const gm_edge_t *edge, uint8_t *buffer,
         }
     }
 
-    if (!git_oid_is_zero(&edge->tgt_oid)) {
+    if (!gm_oid_is_zero(&edge->tgt_oid)) {
         (void)gm_memcpy_span(tgt_oid_bytes, sizeof(tgt_oid_bytes), edge->tgt_oid.id,
                              GM_OID_RAWSZ);
     } else {
@@ -436,14 +437,20 @@ static gm_result_void_t decode_cbor_field(const uint8_t *buffer, size_t *offset,
         uint8_t raw[GM_OID_RAWSZ];
         gm_result_void_t r = gm_cbor_read_bytes(buffer, offset, len, raw, GM_OID_RAWSZ);
         if (!r.ok) return r;
-        git_oid_fromraw(&edge->src_oid, raw);
+        if (gm_oid_from_raw(&edge->src_oid, raw, GM_OID_RAWSZ) != GM_OK) {
+            return gm_err_void(
+                GM_ERROR(GM_ERR_INVALID_FORMAT, "Invalid source OID payload"));
+        }
         return gm_ok_void();
     }
     case GM_CBOR_KEY_TGT_OID: {
         uint8_t raw[GM_OID_RAWSZ];
         gm_result_void_t r = gm_cbor_read_bytes(buffer, offset, len, raw, GM_OID_RAWSZ);
         if (!r.ok) return r;
-        git_oid_fromraw(&edge->tgt_oid, raw);
+        if (gm_oid_from_raw(&edge->tgt_oid, raw, GM_OID_RAWSZ) != GM_OK) {
+            return gm_err_void(
+                GM_ERROR(GM_ERR_INVALID_FORMAT, "Invalid target OID payload"));
+        }
         return gm_ok_void();
     }
     default:
@@ -482,11 +489,11 @@ static int gm_edge_decode_cbor_ex_impl(const uint8_t *buffer, size_t len, gm_edg
     }
 
     /* Backfill OIDs from legacy SHA if missing */
-    if (git_oid_is_zero(&edge.src_oid)) {
-        git_oid_fromraw(&edge.src_oid, edge.src_sha);
+    if (gm_oid_is_zero(&edge.src_oid)) {
+        (void)gm_oid_from_raw(&edge.src_oid, edge.src_sha, GM_OID_RAWSZ);
     }
-    if (git_oid_is_zero(&edge.tgt_oid)) {
-        git_oid_fromraw(&edge.tgt_oid, edge.tgt_sha);
+    if (gm_oid_is_zero(&edge.tgt_oid)) {
+        (void)gm_oid_from_raw(&edge.tgt_oid, edge.tgt_sha, GM_OID_RAWSZ);
     }
 
     *edge_out = edge;

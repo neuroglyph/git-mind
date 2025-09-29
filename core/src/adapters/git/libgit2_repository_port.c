@@ -37,6 +37,7 @@
 #include "gitmind/security/memory.h"
 #include "gitmind/security/string.h"
 #include "gitmind/types.h"
+#include "gitmind/util/oid.h"
 
 struct gm_libgit2_repository_port_state {
     git_repository *repo;
@@ -923,7 +924,7 @@ static gm_result_void_t reference_update_impl(
             GM_ERROR(GM_ERR_UNKNOWN, "reference %s missing target", spec->ref_name));
     }
 
-    if (!git_oid_equal(current_target, spec->target_oid)) {
+    if (!gm_oid_equal(current_target, spec->target_oid)) {
         int descendant = git_graph_descendant_of(state->repo, spec->target_oid,
                                                 current_target);
         if (descendant < 0) {

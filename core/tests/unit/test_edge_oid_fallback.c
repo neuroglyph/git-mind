@@ -6,6 +6,9 @@
 #include <string.h>
 
 #include "gitmind/edge.h"
+#include "gitmind/util/oid.h"
+#include "gitmind/util/memory.h"
+#include "gitmind/error.h"
 
 int main(void) {
     printf("test_edge_oid_fallback... ");
@@ -18,8 +21,10 @@ int main(void) {
     memset(b.src_sha, 0x11, GM_SHA1_SIZE);
     memset(b.tgt_sha, 0x22, GM_SHA1_SIZE);
     a.rel_type = b.rel_type = GM_REL_REFERENCES;
-    strcpy(a.src_path, "A"); strcpy(a.tgt_path, "B");
-    strcpy(b.src_path, "A"); strcpy(b.tgt_path, "B");
+    assert(gm_strcpy_safe(a.src_path, sizeof a.src_path, "A") == GM_OK);
+    assert(gm_strcpy_safe(a.tgt_path, sizeof a.tgt_path, "B") == GM_OK);
+    assert(gm_strcpy_safe(b.src_path, sizeof b.src_path, "A") == GM_OK);
+    assert(gm_strcpy_safe(b.tgt_path, sizeof b.tgt_path, "B") == GM_OK);
 
     /* With zero OIDs and identical legacy bytes, edges should be equal */
     assert(gm_edge_equal(&a, &b));
@@ -27,8 +32,10 @@ int main(void) {
     /* Now set OIDs non-zero and different; equality must use OIDs */
     uint8_t raw1[GM_OID_RAWSZ]; memset(raw1, 0xAA, sizeof raw1);
     uint8_t raw2[GM_OID_RAWSZ]; memset(raw2, 0xBB, sizeof raw2);
-    git_oid_fromraw(&a.src_oid, raw1); git_oid_fromraw(&b.src_oid, raw2);
-    git_oid_fromraw(&a.tgt_oid, raw1); git_oid_fromraw(&b.tgt_oid, raw2);
+    assert(gm_oid_from_raw(&a.src_oid, raw1, sizeof raw1) == GM_OK);
+    assert(gm_oid_from_raw(&b.src_oid, raw2, sizeof raw2) == GM_OK);
+    assert(gm_oid_from_raw(&a.tgt_oid, raw1, sizeof raw1) == GM_OK);
+    assert(gm_oid_from_raw(&b.tgt_oid, raw2, sizeof raw2) == GM_OK);
     assert(!gm_edge_equal(&a, &b));
 
     printf("OK\n");

@@ -3,13 +3,12 @@
 
 #include "gitmind/cache/internal/edge_map.h"
 
-#include <git2/oid.h>
-
 #include <stdint.h>
 #include <stdlib.h>
 
 #include "gitmind/error.h"
 #include "gitmind/util/memory.h"
+#include "gitmind/util/oid.h"
 
 struct gm_edge_map_entry {
     gm_oid_t oid;
@@ -83,6 +82,11 @@ gm_result_void_t gm_edge_map_create(size_t bucket_count, gm_edge_map_t **out_map
             GM_ERROR(GM_ERR_INVALID_ARGUMENT, "edge map output pointer required"));
     }
 
+    if (bucket_count == 0U) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "edge map bucket count must be > 0"));
+    }
+
     gm_edge_map_t *map = calloc(1, sizeof(gm_edge_map_t));
     if (map == NULL) {
         return gm_err_void(GM_ERROR(GM_ERR_OUT_OF_MEMORY, "edge map alloc failed"));
@@ -127,7 +131,7 @@ gm_result_void_t gm_edge_map_add(gm_edge_map_t *map, const gm_oid_t *oid,
     size_t bucket_index = gm_edge_map_hash(oid, map->bucket_count);
     struct gm_edge_map_entry *entry = map->buckets[bucket_index];
     while (entry != NULL) {
-        if (git_oid_cmp(&entry->oid, oid) == 0) {
+        if (gm_oid_equal(&entry->oid, oid)) {
             gm_bitmap_add(entry->bitmap, edge_id);
             return gm_ok_void();
         }

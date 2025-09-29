@@ -28,6 +28,7 @@ extern "C" {
 #include "gitmind/edge_attributed.h"
 #include "gitmind/journal.h"
 #include "gitmind/cache.h"
+#include "gitmind/util/oid.h"
 
 /*
  * Feature toggles

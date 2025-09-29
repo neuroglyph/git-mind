@@ -7,6 +7,8 @@
 #include <string.h>
 
 #include "gitmind/types.h"
+#include "gitmind/util/oid.h"
+#include "gitmind/error.h"
 
 /* Simple LCG for deterministic pseudo-random bytes */
 static uint32_t lcg_state = 0x12345678u;
@@ -18,7 +20,7 @@ static uint32_t lcg_next(void) {
 static void random_oid(gm_oid_t *oid) {
     uint8_t raw[GM_OID_RAWSZ];
     for (int i = 0; i < GM_OID_RAWSZ; i++) raw[i] = (uint8_t)(lcg_next() & 0xFF);
-    git_oid_fromraw(oid, raw);
+    assert(gm_oid_from_raw(oid, raw, sizeof raw) == GM_OK);
 }
 
 int main(void) {
