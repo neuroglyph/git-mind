@@ -3,8 +3,6 @@
 
 #include "gitmind/cache/internal/rebuild_service.h"
 
-#include <git2/oid.h>
-
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -29,6 +27,7 @@
 #include "gitmind/security/memory.h"
 #include "gitmind/security/string.h"
 #include "gitmind/util/memory.h"
+#include "gitmind/util/oid.h"
 #include "gitmind/util/ref.h"
 
 #define MAX_SHARD_PATH 32
@@ -121,8 +120,11 @@ static void get_oid_prefix(const gm_oid_t *oid, char *prefix, int bits) {
         return;
     }
 
-    char hex[GM_OID_HEX_CHARS];
-    git_oid_fmt(hex, oid); /* not null-terminated */
+    char hex[GM_OID_HEX_CHARS + 1] = {0};
+    if (gm_oid_to_hex(oid, hex, sizeof(hex)) != GM_OK) {
+        prefix[0] = '\0';
+        return;
+    }
     if (chars > GM_OID_HEX_CHARS) {
         chars = GM_OID_HEX_CHARS;
     }
@@ -135,11 +137,7 @@ static void get_oid_prefix(const gm_oid_t *oid, char *prefix, int bits) {
 }
 
 static int oid_to_hex(const gm_oid_t *oid, char *out, size_t out_size) {
-    if (out_size < SHA_HEX_SIZE) {
-        return GM_ERR_INVALID_ARGUMENT;
-    }
-    (void)git_oid_tostr(out, out_size, oid);
-    return GM_OK;
+    return gm_oid_to_hex(oid, out, out_size);
 }
 
 typedef struct {

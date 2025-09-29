@@ -714,8 +714,14 @@ static gm_result_void_t fake_commit_create(void *self,
                                          ? *spec->tree_oid
                                          : (gm_oid_t){0};
         if (spec->message != NULL) {
-            (void)gm_strcpy_safe(fake->last_commit_message,
-                                 sizeof(fake->last_commit_message), spec->message);
+            int msg_rc = gm_strcpy_safe(fake->last_commit_message,
+                                        sizeof(fake->last_commit_message),
+                                        spec->message);
+            if (msg_rc != GM_OK) {
+                fake->last_commit_message[0] = '\0';
+                return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
+                                            "fake commit message too long"));
+            }
         } else {
             fake->last_commit_message[0] = '\0';
         }
@@ -751,15 +757,27 @@ static gm_result_void_t fake_reference_update(
 
     if (spec != NULL) {
         if (spec->ref_name != NULL) {
-            (void)gm_strcpy_safe(fake->last_update_ref, sizeof(fake->last_update_ref),
-                                 spec->ref_name);
+            int ref_rc = gm_strcpy_safe(fake->last_update_ref,
+                                        sizeof(fake->last_update_ref),
+                                        spec->ref_name);
+            if (ref_rc != GM_OK) {
+                fake->last_update_ref[0] = '\0';
+                return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
+                                            "fake update ref too long"));
+            }
         } else {
             fake->last_update_ref[0] = '\0';
         }
 
         if (spec->log_message != NULL) {
-            (void)gm_strcpy_safe(fake->last_update_log,
-                                 sizeof(fake->last_update_log), spec->log_message);
+            int log_rc = gm_strcpy_safe(fake->last_update_log,
+                                        sizeof(fake->last_update_log),
+                                        spec->log_message);
+            if (log_rc != GM_OK) {
+                fake->last_update_log[0] = '\0';
+                return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
+                                            "fake update log too long"));
+            }
         } else {
             fake->last_update_log[0] = '\0';
         }

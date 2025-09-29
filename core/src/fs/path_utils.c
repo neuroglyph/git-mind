@@ -168,7 +168,8 @@ static gm_result_void_t copy_dirname_result(const char *result_str,
 }
 
 static gm_result_void_t parse_segments(char *scratch, bool is_absolute,
-                                       char **segments, size_t *segment_count) {
+                                       char **segments, size_t *segment_count,
+                                       size_t max_segments) {
     char *cursor = scratch;
     char *segment = NULL;
     size_t count = 0U;
@@ -176,7 +177,7 @@ static gm_result_void_t parse_segments(char *scratch, bool is_absolute,
     while ((segment = next_segment(&cursor)) != NULL) {
         gm_result_void_t segment_result =
             handle_segment(segment, is_absolute, segments, &count,
-                           MAX_PATH_SEGMENTS);
+                           max_segments);
         if (!segment_result.ok) {
             *segment_count = count;
             return segment_result;
@@ -285,6 +286,11 @@ static gm_result_void_t emit_segments(bool is_absolute, char *output,
         return write_fallback(is_absolute, output, output_size);
     }
 
+    if (dst >= output_size) {
+        gm_memset_safe(output, output_size, 0, output_size);
+        return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
+                                    "normalized path exceeds buffer"));
+    }
     output[dst] = '\0';
     return gm_ok_void();
 }
@@ -315,10 +321,12 @@ GM_NODISCARD gm_result_void_t gm_fs_path_normalize_logical(const char *input,
 
     bool is_absolute = (scratch[0] == '/');
     char *segments[MAX_PATH_SEGMENTS];
+    const size_t max_segments = sizeof(segments) / sizeof(segments[0]);
     size_t segment_count = 0U;
 
     gm_result_void_t parse_result =
-        parse_segments(scratch, is_absolute, segments, &segment_count);
+        parse_segments(scratch, is_absolute, segments, &segment_count,
+                       max_segments);
     if (!parse_result.ok) {
         gm_memset_safe(output, output_size, 0, output_size);
         return parse_result;

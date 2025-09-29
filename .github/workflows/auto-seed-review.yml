@@ -33,14 +33,14 @@ jobs:
             --pr "$PR" --out docs/code-reviews
       - name: Commit and push
         run: |
-          git config user.name  "git-mind-bot"
-          git config user.email "gitmind-bot@example.com"
+          git config user.name  "P.R. PhiedBach"
+          git config user.email "phiedbach@bikeshed.dungeon"
           git add docs/code-reviews
           if git diff --cached --quiet; then
             echo "No changes to commit"; exit 0; fi
           PR=${{ github.event.number }}
           SHA=${{ github.event.pull_request.head.sha }}
-          git commit -m "chore(review): seed feedback for PR #$PR ($SHA)"
+          git commit -m "opus(PR#$PR): seed rehearsal score ($SHA)"
           git push
 
   seed-fork:
@@ -74,12 +74,12 @@ jobs:
           python3 tools/review/seed_feedback_from_github.py \
             --owner "${GITHUB_REPOSITORY%%/*}" --repo "${GITHUB_REPOSITORY##*/}" \
             --pr "$PR" --out docs/code-reviews
-          git config user.name  "git-mind-bot"
-          git config user.email "gitmind-bot@example.com"
+          git config user.name  "P.R. PhiedBach"
+          git config user.email "phiedbach@bikeshed.dungeon"
           git add docs/code-reviews
           if git diff --cached --quiet; then
             echo "No seeded changes to commit"; exit 0; fi
-          git commit -m "chore(review): seed feedback for PR #$PR"
+          git commit -m "opus(PR#$PR): seed rehearsal score"
           # Attempt to push using GITMIND_PR_WORKSHEET_BOT if provided and contributor allows edits
           if [ -n "$GITMIND_PR_WORKSHEET_BOT" ]; then
             repo_full="${{ github.event.pull_request.head.repo.full_name }}"

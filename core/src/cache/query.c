@@ -18,6 +18,7 @@
 #include "gitmind/security/string.h"
 #include "gitmind/util/ref.h"
 #include "gitmind/util/memory.h"
+#include "gitmind/util/oid.h"
 #include "gitmind/constants_internal.h"
 
 /* Constants */
@@ -38,17 +39,6 @@ static int gm_hex_value(char c) {
         return c - 'a' + 10;
     }
     return -1;
-}
-
-static void gm_raw_to_hex(const uint8_t *raw,
-                          char out_hex[GM_OID_HEX_CHARS + 1]) {
-    static const char kHexDigits[] = "0123456789abcdef";
-    for (size_t i = 0; i < GM_OID_RAWSZ; ++i) {
-        unsigned byte = raw[i];
-        out_hex[i * 2] = kHexDigits[(byte >> 4) & 0xF];
-        out_hex[i * 2 + 1] = kHexDigits[byte & 0xF];
-    }
-    out_hex[GM_OID_HEX_CHARS] = '\0';
 }
 
 static int gm_hex_to_raw(const char *hex, uint8_t *out_raw, size_t raw_size) {
@@ -84,14 +74,25 @@ static bool gm_oid_equal(const gm_oid_t *a, const gm_oid_t *b) {
 /* Get SHA prefix for sharding */
 static void get_sha_prefix(const uint8_t *sha, char *prefix, int bits) {
     int chars = (bits + 3) / BITS_PER_HEX_CHAR; /* Round up to hex chars */
-    if (chars <= 0) { prefix[0] = '\0'; return; }
-    git_oid tmp;
-    git_oid_fromraw(&tmp, sha);
-    char hex[GM_OID_HEX_CHARS];
-    git_oid_fmt(hex, &tmp); /* not null-terminated */
-    if (chars > GM_OID_HEX_CHARS) chars = GM_OID_HEX_CHARS;
-    /* Copy requested prefix and terminate */
-    for (int i = 0; i < chars; i++) prefix[i] = hex[i];
+    if (chars <= 0) {
+        prefix[0] = '\0';
+        return;
+    }
+
+    char hex[GM_OID_HEX_CHARS + 1] = {0};
+    if (gm_bytes_to_hex(sha, GM_OID_RAWSZ, hex, sizeof(hex)) != GM_OK) {
+        prefix[0] = '\0';
+        return;
+    }
+    if (chars > GM_OID_HEX_CHARS) {
+        chars = GM_OID_HEX_CHARS;
+    }
+    if (chars >= SHA_PREFIX_BUFFER_SIZE) {
+        chars = SHA_PREFIX_BUFFER_SIZE - 1;
+    }
+    for (int i = 0; i < chars; ++i) {
+        prefix[i] = hex[i];
+    }
     prefix[chars] = '\0';
 }
 
@@ -259,7 +260,9 @@ static int load_bitmap_from_cache(const gm_git_repository_port_t *port,
     get_sha_prefix(sha, prefix, GM_CACHE_SHARD_BITS);
 
     /* Convert SHA to hex */
-    gm_raw_to_hex(sha, sha_hex);
+    if (gm_bytes_to_hex(sha, GM_OID_RAWSZ, sha_hex, sizeof(sha_hex)) != GM_OK) {
+        return GM_ERR_BUFFER_TOO_SMALL;
+    }
 
     /* Build path: prefix/sha.suffix */
     {
