@@ -5,7 +5,7 @@ audience: [contributors]
 domain: [planning]
 tags: [features, progress]
 status: draft
-last_updated: 2025-09-16
+last_updated: 2025-09-29
 ---
 
 # Features Ledger
@@ -137,8 +137,8 @@ Minimum Viable Product
 
 <a id="gmmvpt001"></a>
 - [ ] (GM.MVP.T001) Finalize strict equality
-> [!INFO]- (0/4) ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀ — Step-by-step plan · 0%
-> - [ ] Audit equality helpers in cache and journal to ensure OID-first comparisons never fall back when OIDs exist.
+> [!INFO]- (1/4) ⣿⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀ — Step-by-step plan · 25%
+> - [x] Audit equality helpers in cache and journal to ensure OID-first comparisons never fall back when OIDs exist.
 > - [ ] Add regression tests covering mixed OID/string paths across cache and journal utilities.
 > - [ ] Update `docs/TECHNICAL.md` and any relevant ADRs to document strict equality behavior.
 > - [ ] Sweep references to legacy SHA fallbacks in docs and CLI examples.
