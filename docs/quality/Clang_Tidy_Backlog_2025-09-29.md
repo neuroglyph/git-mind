@@ -12,10 +12,20 @@ last_updated: 2025-09-29
 
 After landing GM.MVP.T001 we reran `tools/docker-clang-tidy.sh` inside the CI image to refresh the warning baseline. Diff-guard reported **318 new warnings**, which expand to **766 diagnostics** across **17 files** in `clang-tidy-report-full.txt`. The table below buckets each file by migration status so we know where to focus the next cleanup passes.
 
-Status legend:
+## Table of Contents
+
+- [Status legend](#status-legend)
+- [File-by-file breakdown](#file-by-file-breakdown)
+- [Observations](#observations)
+- [Next Steps](#next-steps)
+
+## Status legend
+
 - **Ported to hex** — Module already lives in the new hexagonal layout; warnings are follow-up hygiene tasks.
 - **Not Ported Yet** — Legacy implementation still needs a full hex migration; tidy cleanup will happen alongside the port.
 - **Dead code / Not needed** — _Not present in this snapshot._
+ 
+## File-by-file breakdown
 
 | Filepath | Warning Count | Status | Remarks | Roast |
 |---|---:|---|---|---|

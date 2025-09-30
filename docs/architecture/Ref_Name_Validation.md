@@ -5,7 +5,7 @@ audience: [contributors, developers]
 domain: [architecture]
 tags: [git, refs]
 status: stable
-last_updated: 2025-09-15
+last_updated: 2025-09-30
 ---
 
 # Ref Name Validation
@@ -38,6 +38,14 @@ last_updated: 2025-09-15
 
 Unit tests cover:
 - Valid shorthand: `main`, `feature/x` → OK
-- Rejected input: `refs/heads/x` → error (double prefix prevention)
+- Rejected inputs:
+  - Leading `refs/…` (double-prefix prevention)
+  - Empty branch names
+  - Leading or trailing slashes
+  - Forbidden characters (`~ ^ : ? [ * \\`)
+  - Dangerous substrings (`..`, `@{`)
+  - Buffer-too-small handling (returns `GM_ERR_BUFFER_TOO_SMALL`)
+
+See: `core/tests/unit/test_ref_utils.c` for the full matrix.
 
 See: `core/tests/unit/test_ref_utils.c`.
