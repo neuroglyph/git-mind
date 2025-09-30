@@ -109,6 +109,9 @@ git mind list --from core/src/auth.c
 git mind cache-rebuild
 ```
 
+> [!NOTE]
+> Branch shorthands that touch git-mind (for example when you pass `--branch` to the CLI) are validated. Empty names, leading/trailing slashes, `refs/...` prefixes, `..`, `@{`, or characters such as `~ ^ : ? [ * \\` will be rejected with `GM_ERR_INVALID_ARGUMENT`. Trim to `feature/x` style if you hit the guardrail—the command leaves refs untouched on failure.
+
 Package managers (Homebrew/Winget): coming soon.
 
 👉 For a hands-on walkthrough, see `docs/tutorial.md`.

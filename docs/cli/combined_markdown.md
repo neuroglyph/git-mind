@@ -136,6 +136,8 @@ This command rebuilds the performance cache for the current (or specified) branc
 
 Your semantic links live as CBOR-encoded Git commits in `refs/gitmind/edges/<branch>`. This is the permanent record - like the stars themselves.
 
+- **Ref naming guardrails** — Branch shorthands passed to git-mind go through `gm_build_ref`. Empty names, leading/trailing slashes, `refs/...` prefixes, `..`, `@{`, or characters such as `~ ^ : ? [ * \\` trigger `GM_ERR_INVALID_ARGUMENT`. Fix the shorthand (`feature/x` style) if you hit the error; the CLI leaves the ref untouched.
+
 ### The Cache: Speed of Light
 
 The cache creates two Roaring Bitmap indices:
