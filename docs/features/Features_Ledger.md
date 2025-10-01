@@ -153,11 +153,11 @@ kanban:
 
 <a id="gmmvpt002"></a>
 - [ ] (GM.MVP.T002) Negative tests for ref utils
-> [!INFO]- (0/4) ⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀ — Step-by-step plan · 0%
-> - [ ] Extend `test_ref_utils` to cover invalid prefixes, length overflows, and reserved refs.
-> - [ ] Ensure errors propagate with meaningful `GM_ERR_*` codes.
-> - [ ] Update `docs/architecture/Ref_Name_Validation.md` with new failure scenarios.
-> - [ ] Mention failure scenarios in README/tutorial examples.
+> [!INFO]- (4/4) ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿ — Step-by-step plan · 100%
+> - [x] Extend `test_ref_utils` to cover invalid prefixes, length overflows, and reserved refs.
+> - [x] Ensure errors propagate with meaningful `GM_ERR_*` codes.
+> - [x] Update `docs/architecture/Ref_Name_Validation.md` with new failure scenarios.
+> - [x] Mention failure scenarios in README/tutorial examples.
 > [!NOTE]- Dependencies
 > - **Hard:** [GM.MVP.T001](#gmmvpt001)
 

@@ -106,6 +106,9 @@ Every semantic link is stored as a Git commit in refs/gitmind/edges/<branch>. Th
 - Push/pull with your code
 - Survive forever in Git history
 
+> [!NOTE]
+> **Ref naming guardrails** — When you pass a branch shorthand to git-mind (e.g. via `--branch`), it is validated by `gm_build_ref`. Empty names, leading/trailing slashes, `refs/...` prefixes, `..`, `@{`, or characters such as `~ ^ : ? [ * \` will trigger `GM_ERR_INVALID_ARGUMENT`. The CLI returns the error and leaves the ref untouched—strip the prefix to `feature/x` style if you see the warning.
+
 ### The Cache Layer (Speed)
 
 For repositories with thousands of connections, git-mind builds Roaring Bitmap indices:

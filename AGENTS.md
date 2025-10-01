@@ -417,9 +417,9 @@ See archives under `docs/activity/` for older logs.
 
 ### 2025-09-29
 - Merged PR #173 after tightening the remaining safe-string usage and OID helper semantics; rebased on `origin/main` and created `feat/next-hex-task` for the follow-up work.
-- Problems solved today: CodeRabbit’s final cache-query/string-safety nits and the lingering `gm_oid_is_zero` ambiguity.
-- Problems still open: regression tests + docs for strict equality (GM.MVP.T001), and the outstanding libgit2 call sites lingering in CLI/bench helpers.
-- Immediate next moves: scope the equality regression tests/doc updates and queue the next hex slice on the new branch.
+- Problems solved today: delivered GM.MVP.T001 (strict equality regressions + OID-first doc sweep), captured a fresh clang-tidy snapshot, and drafted the "State of the Repo" discussion.
+- Problems still open: GM.MVP.T002 (negative ref-utils tests), GM.MVP.T003 (CLI safety matrix), and the libgit2 cleanup in CLI/bench helpers.
+- Immediate next moves: spin up the ref-utils test sprint, keep the clang-tidy backlog doc current, and log ongoing progress in `docs/activity/2025-09.md`.
 - Unscheduled-but-important: worksheet automation cleanup and the CLI safety test expansion still need dedicated time before month end.
 - Context reminder: capture major decisions in the ledger/worksheet quickly—we’re pushing the context window, so keep notes concise.
 
