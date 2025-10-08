@@ -58,7 +58,18 @@ struct gm_qry_cache_port_vtbl {
                                     const gm_oid_t *tgt_oid,
                                     gm_cache_result_t *out);
 
-    /** Retrieve cache statistics for a branch. */
+    /**
+     * Retrieve cache statistics for a branch.
+     * @param self             Port instance.
+     * @param branch           Branch name.
+     * @param edge_count       Output: total edges currently materialized in
+     *                         the cache for this branch (0 if unknown).
+     * @param cache_size_bytes Output: approximate cache tree size in bytes for
+     *                         this branch (may be estimated if exact size
+     *                         cannot be determined).
+     * On a missing/non-existent branch, implementations may return
+     * GM_ERR_NOT_FOUND encapsulated in the result.
+     */
     gm_result_void_t (*stats)(gm_qry_cache_port_t *self,
                               const char *branch,
                               uint64_t *edge_count,

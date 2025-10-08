@@ -4,8 +4,6 @@
 #ifndef GITMIND_PORTS_LOGGER_PORT_H
 #define GITMIND_PORTS_LOGGER_PORT_H
 
-#include <stddef.h>
-
 #include "gitmind/result.h"
 
 #ifdef __cplusplus
