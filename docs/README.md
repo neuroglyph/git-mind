@@ -44,9 +44,8 @@ This index organizes documentation with stable links so the project can be pause
 ## Quick Map of Existing Docs
 
 - Architecture and design
-  - [Journal Architecture Pivot](architecture/journal-architecture-pivot.md)
-  - [Bitmap Cache Design](architecture/bitmap-cache-design.md)
-  - [Attribution System](architecture/attribution-system.md)
+  - [Journal Architecture](architecture/journal-architecture.md)
+  - [Cache Architecture](architecture/cache-architecture.md)
   - [Modular Restructure Plan](architecture/MODULAR_RESTRUCTURE_PLAN.md)
 - CLI
   - [CLI Overview](cli/gitmind.md)
