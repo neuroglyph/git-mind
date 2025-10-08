@@ -131,6 +131,7 @@ src = files(
   'core/src/journal/writer.c',
   'core/src/ports/cache/cache_build_port.c',
   'core/src/ports/cache/cache_query_port.c',
+  'core/src/ports/journal/journal_command_port.c',
   'core/src/cache/bitmap.c',
   'core/src/cache/builder.c',
   'core/src/cache/query.c',
@@ -404,6 +405,13 @@ test_cache_oid_prefix = executable('test_cache_oid_prefix',
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
+test_journal_port = executable('test_journal_port',
+  ['core/tests/unit/test_journal_port.c',
+   'core/tests/fakes/git/fake_git_repository_port.c'],
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
 
 # Register tests
 test('error', test_error)
@@ -444,6 +452,7 @@ test('cache_telemetry_emit', test_cache_telemetry_emit)
 test('telemetry_cfg', test_telemetry_cfg)
 test('cache_oid_prefix', test_cache_oid_prefix)
 
+
 # Standalone header compilation checks (public headers)
 header_check_src = 'tools/header_compile.c'
 public_headers = [
@@ -463,6 +472,7 @@ public_headers = [
   'core/include/gitmind/ports/metrics_port.h',
   'core/include/gitmind/ports/cache_build_port.h',
   'core/include/gitmind/ports/cache_query_port.h',
+  'core/include/gitmind/ports/journal_command_port.h',
   'core/include/gitmind/ports/fs_temp_port.h',
   'core/include/gitmind/io/io.h',
   'core/include/gitmind/time/time.h',
