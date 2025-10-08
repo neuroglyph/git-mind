@@ -464,6 +464,50 @@ See archives under `docs/activity/` for older logs.
 - Follow-up (same day): cleaned up CodeRabbit’s fake-port feedback—fake commit/update paths now surface `gm_strcpy_safe` truncations, the shared OID helpers carry project-compliant naming/includes, and the deleted worksheet directory is ready for a fresh seed if we decide to log post-merge notes.
 - Quick-start when you return: rerun `make ci-local` if you touch the cache/journal surface, then tackle the shared blob helper → oid hex helper chain; once that’s in place, prep the PR summary referencing the fast-forward protections.
 
+### 2025-10-08 — Debrief (JSONL)
+
+```jsonl
+{"when":"2025-10-08T23:45Z","who":"Codex","what":"Scaffolded logger/metrics ports and default adapters; added cache coordinators; journal/libgit2 robustness; tests+docs green.","pr":"#177","tags":["ports","adapters","journal","cache","docs"]}
+{"when":"2025-10-08T23:58Z","who":"Codex","what":"Added API doc comments to ports headers; removed unused include; expanded stats() docs.","pr":"#177","tags":["docs","headers"]}
+{"when":"2025-10-08T23:59Z","who":"Codex","what":"Enabled cache rebuild instrumentation (logs+metrics) with safe defaults; documented telemetry config plan.","pr":"#177","tags":["telemetry","metrics","logging"]}
+```
+
+## Shared Memory (Neo4j) — Agent‑Collab Instructions
+
+We use a shared Neo4j memory to persist notes, insights, and cross‑AI messages. Preferred tool: `/Users/james/git/agent-collab` CLI.
+
+Environment (local defaults):
+
+```
+export NEO4J_HTTP_URL=http://localhost:7474
+export NEO4J_USER=neo4j
+export NEO4J_PASSWORD=password123
+```
+
+Bootstrap & usage:
+
+```
+# Initialize core schema and shared thread (idempotent)
+node scripts/neo4j-msg.js init
+
+# Register our agent (display name appears in messages)
+node scripts/neo4j-msg.js agent-init "Codex"
+
+# Send a note to James (shared-protocol thread)
+node scripts/neo4j-msg.js msg-send --from "Codex" --to "James" \
+  --text "Activated Codex memory; proceeding with cache instrumentation." \
+  --thread shared-protocol --kind note
+
+# Get a high-level inbox summary for all agents
+node scripts/neo4j-msg.js inbox-summary
+```
+
+Operational guidance:
+- Always store a short note when we change topics or land a commit on the migration PR.
+- Keep notes concise (what changed, why, next step). Use `--kind note`.
+- For structured insights, prefer a future `insight` kind; until then, tag notes with a keyword in text (e.g., `[insight]`).
+
+
 ## Next Steps (handoff checklist)
 - Complete on-disk cache migration to OID-only storage and naming; ensure rebuild and fallback readers handle both formats or gate with a one-time migration.
 - Extend journal CBOR schema to store OIDs explicitly (not only derivable from legacy fields); update reader/writer and consumers.
