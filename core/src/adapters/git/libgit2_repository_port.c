@@ -799,8 +799,11 @@ static gm_result_void_t commit_create_impl(
 
     git_signature *sig = NULL;
     if (git_signature_default(&sig, state->repo) < 0) {
-        return gm_err_void(
-            GM_ERROR(GM_ERR_UNKNOWN, "unable to create default signature"));
+        /* Fallback to a synthetic signature if repo/user config is missing */
+        if (git_signature_now(&sig, "gitmind", "gitmind@example.invalid") < 0) {
+            return gm_err_void(
+                GM_ERROR(GM_ERR_UNKNOWN, "unable to create commit signature"));
+        }
     }
 
     git_tree *tree = NULL;
@@ -898,6 +901,26 @@ static gm_result_void_t reference_update_impl(
     int lookup_status =
         git_reference_lookup(&existing, state->repo, spec->ref_name);
     if (lookup_status == GIT_ENOTFOUND) {
+        /* Ensure parent directories for the reference exist (e.g., refs/gitmind/edges) */
+        const char *gitdir = git_repository_path(state->repo);
+        if (gitdir != NULL) {
+            char fullpath[GM_PATH_MAX];
+            if (gm_snprintf(fullpath, sizeof(fullpath), "%s%s", gitdir, spec->ref_name) > 0) {
+                /* Create directories up to the file component */
+                size_t len = strlen(fullpath);
+                for (size_t i = 0; i < len; ++i) {
+                    if (i > 0 && fullpath[i] == '/') {
+                        fullpath[i] = '\0';
+                        if (mkdir(fullpath, 0777) < 0 && errno != EEXIST) {
+                            fullpath[i] = '/';
+                            return gm_err_void(GM_ERROR(GM_ERR_IO_FAILED,
+                                "failed to create ref dir %s", fullpath));
+                        }
+                        fullpath[i] = '/';
+                    }
+                }
+            }
+        }
         git_reference *created = NULL;
         int create_status = git_reference_create(&created, state->repo,
                                                  spec->ref_name, spec->target_oid,
@@ -932,7 +955,7 @@ static gm_result_void_t reference_update_impl(
             return gm_err_void(GM_ERROR(GM_ERR_UNKNOWN,
                                         "failed to check ancestry for %s", spec->ref_name));
         }
-        if (descendant == 0) {
+        if (descendant == 0 && !spec->force) {
             git_reference_free(existing);
             return gm_err_void(GM_ERROR(GM_ERR_ALREADY_EXISTS,
                                         "non-fast-forward update rejected for %s",

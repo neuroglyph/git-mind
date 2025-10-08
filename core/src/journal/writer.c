@@ -135,7 +135,10 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
             walk_code = walk_result.u.err->code;
             gm_error_free(walk_result.u.err);
         }
-        return walk_code;
+        /* Treat missing ref as empty history (no parent). */
+        if (walk_code != GM_ERR_NOT_FOUND) {
+            return walk_code;
+        }
     }
 
     char *message = NULL;
@@ -384,5 +387,27 @@ int gm_journal_create_commit(gm_context_t *ctx, const char *ref,
     jctx.ref_name[ref_len] = '\0';
 
     /* Create commit */
-    return create_journal_commit(&jctx, data, len, &commit_oid);
+    int commit_rc = create_journal_commit(&jctx, data, len, &commit_oid);
+    if (commit_rc != GM_OK) {
+        return commit_rc;
+    }
+
+    /* Update the provided ref to point at the new commit */
+    gm_git_reference_update_spec_t spec = {
+        .ref_name = jctx.ref_name,
+        .target_oid = &commit_oid,
+        .log_message = "Journal commit",
+        .force = false,
+    };
+    gm_result_void_t upd =
+        gm_git_repository_port_reference_update(jctx.repo_port, &spec);
+    if (!upd.ok) {
+        int code = GM_ERR_UNKNOWN;
+        if (upd.u.err) {
+            code = upd.u.err->code;
+            gm_error_free(upd.u.err);
+        }
+        return code;
+    }
+    return GM_OK;
 }
