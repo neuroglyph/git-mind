@@ -15,6 +15,19 @@ extern "C" {
 /**
  * @file logger_port.h
  * @brief Outbound port for structured logging.
+ *
+ * Design goals:
+ * - Umbrella-safe public header with C++ guards handled by the umbrella.
+ * - Minimal vtable surface (single log() entry point) that adapters can
+ *   implement using stdio, syslog, or external backends.
+ * - Defaults to a safe no-op via gm_logger_log() when the port is unset,
+ *   allowing callers to instrument without conditional compilation.
+ *
+ * Thread-safety and lifetime:
+ * - Implementations should be reentrant and thread-safe; the port carries
+ *   an opaque state pointer managed by the adapter.
+ * - The runtime owns adapter state; dispose functions are provided by the
+ *   adapter and should free any allocated resources.
  */
 
 typedef enum {
@@ -32,6 +45,15 @@ typedef struct gm_logger_port {
 } gm_logger_port_t;
 
 struct gm_logger_port_vtbl {
+    /**
+     * Write a single structured log entry.
+     *
+     * @param self      Adapter state (opaque to callers).
+     * @param level     Severity level (DEBUG..ERROR).
+     * @param component Subsystem/component name (e.g., "cache").
+     * @param message   Message payload (UTF-8, NUL-terminated).
+     * @return gm_result_void_t indicating success or failure.
+     */
     gm_result_void_t (*log)(void *self,
                             gm_log_level_t level,
                             const char *component,
@@ -39,6 +61,10 @@ struct gm_logger_port_vtbl {
 };
 
 /* Convenience inline wrappers */
+/**
+ * Convenience wrapper that logs when the port is available, otherwise no-ops.
+ * Safe to call unconditionally by application services.
+ */
 static inline gm_result_void_t gm_logger_log(const gm_logger_port_t *port,
                                              gm_log_level_t level,
                                              const char *component,
@@ -54,4 +80,3 @@ static inline gm_result_void_t gm_logger_log(const gm_logger_port_t *port,
 #endif
 
 #endif /* GITMIND_PORTS_LOGGER_PORT_H */
-
