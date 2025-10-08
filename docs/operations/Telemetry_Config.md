@@ -38,6 +38,7 @@ Read via `gm_env_port` (or `getenv` fallback until wiring completes). Proposed k
 - `GITMIND_METRICS_BRANCH_TAG=1|0` (default `1`)
 - `GITMIND_METRICS_MODE_TAG=1|0` (default `1`)
 - `GITMIND_METRICS_REPO_TAG=off|hash|plain` (default `off`; `hash` = short hash of canonical repo path)
+- `GITMIND_METRICS_REPO_HASH_ALGO=fnv|sha256` (default `fnv`)
 - `GITMIND_METRICS_EXTRA_TAGS="key1=val1,key2=val2"` (default none; max 3 keys; `[a-z0-9_-]+`)
 - `GITMIND_LOG_LEVEL=DEBUG|INFO|WARN|ERROR` (default `INFO`)
 - `GITMIND_LOG_FORMAT=text|json` (default `text`)
@@ -80,3 +81,61 @@ cache.edges_processed_total{branch="main",mode="full"} 12345
 cache.tree_size_bytes{branch="main",mode="full"} 9876543
 ```
 
+## Repo Tag Hash Algorithm
+
+- When `GITMIND_METRICS_REPO_TAG=hash`, git‑mind derives a low‑cardinality repo identifier from the canonical gitdir path (or a stable repo_id fallback).
+- Control the algorithm via `GITMIND_METRICS_REPO_HASH_ALGO`:
+  - `fnv` (default): 64‑bit FNV‑1a; first 12 hex chars.
+  - `sha256`: SHA‑256 digest; first 12 hex chars.
+- Both options are stable and privacy‑safe; `sha256` may be preferable in environments with crypto policy requirements. Change does not affect metric names or tags beyond the repo value.
+
+## Custom Logger Adapters (Extension Point)
+
+The logging port (`gm_logger_port`) is intentionally minimal — one `log(level, component, message)` entry point. This keeps the public ABI stable and makes it easy to swap adapters.
+
+To integrate your logging backend:
+
+1. Implement the adapter
+
+```
+#include "gitmind/ports/logger_port.h"
+
+typedef struct { /* your state */ } my_logger_state_t;
+
+static gm_result_void_t log_impl(void *self, gm_log_level_t level,
+                                 const char *component, const char *message) {
+  /* Ship to syslog/journald/OpenTelemetry/etc. */
+  return gm_ok_void();
+}
+
+static const gm_logger_port_vtbl_t VTBL = { .log = log_impl };
+
+gm_result_void_t my_logger_init(gm_logger_port_t *port, my_logger_state_t *st) {
+  port->vtbl = &VTBL;
+  port->self = st; /* caller manages lifetime */
+  return gm_ok_void();
+}
+```
+
+2. Wire it at composition
+
+In your runtime/composition code (CLI, service), initialize your adapter and assign it to `ctx->logger_port` (and optionally `ctx->logger_port_dispose`). Application services will start emitting logs through your adapter automatically.
+
+3. Structured output
+
+- Services format log entries consistently (event name + key/values). When `GITMIND_LOG_FORMAT=json`, messages are JSON — adapters can parse or pass‑through as needed. If your adapter natively supports structured fields, you can ignore the final string and map the known fields directly.
+
+4. Testing
+
+- Use the provided fakes (`core/tests/fakes/logging` and `core/tests/fakes/metrics`) as patterns for deterministic tests of your adapter wiring.
+
+## Quickstart
+
+Enable metrics with repo hash and two org‑specific tags:
+
+```
+export GITMIND_METRICS_ENABLED=1
+export GITMIND_METRICS_REPO_TAG=hash
+export GITMIND_METRICS_REPO_HASH_ALGO=sha256   # or fnv
+export GITMIND_METRICS_EXTRA_TAGS="team=dev,role=ops"
+```

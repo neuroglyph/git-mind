@@ -38,6 +38,9 @@ typedef struct {
     bool tag_branch;
     bool tag_mode;
     gm_repo_tag_mode_t repo_tag;
+    /* Repo hash algorithm when repo_tag==HASH */
+    /* Values: "fnv" (default) or "sha256" */
+    bool repo_hash_sha256; /* true => sha256, false => fnv */
 
     /* Up to 3 validated extras */
     size_t extra_count;
@@ -81,4 +84,3 @@ gm_result_void_t gm_telemetry_build_tags(const gm_telemetry_cfg_t *cfg,
 #endif
 
 #endif /* GITMIND_TELEMETRY_INTERNAL_CONFIG_H */
-

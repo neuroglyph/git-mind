@@ -75,6 +75,7 @@ static void test_extras_and_invalids(void) {
 static void test_repo_hash_via_id(void) {
     printf("test_telemetry_cfg.repo_hash... ");
     set_env("GITMIND_METRICS_REPO_TAG", "hash");
+    set_env("GITMIND_METRICS_REPO_HASH_ALGO", "sha256");
     gm_telemetry_cfg_t cfg;
     assert(gm_telemetry_cfg_load(&cfg, NULL).ok);
     gm_repo_id_t id = {.hi = 0x0123456789ABCDEFULL, .lo = 0x0F1E2D3C4B5A6978ULL};

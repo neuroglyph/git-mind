@@ -15,6 +15,8 @@
 #include "gitmind/result.h"
 #include "gitmind/security/string.h"
 #include "gitmind/util/memory.h"
+#include "gitmind/crypto/backend.h"
+#include "gitmind/crypto/sha256.h"
 
 #define MAX_TAGS_TOTAL 5
 
@@ -49,6 +51,13 @@ static gm_log_format_t parse_log_format(const char *s) {
     if (strcasecmp(s, "text") == 0) return GM_LOG_FMT_TEXT;
     if (strcasecmp(s, "json") == 0) return GM_LOG_FMT_JSON;
     return GM_LOG_FMT_TEXT;
+}
+
+static bool parse_hash_algo_sha256(const char *s) {
+    if (s == NULL || s[0] == '\0') return false; /* default fnv */
+    if (strcasecmp(s, "sha256") == 0) return true;
+    if (strcasecmp(s, "fnv") == 0) return false;
+    return false;
 }
 
 static bool is_key_char(char c) {
@@ -134,6 +143,7 @@ GM_NODISCARD gm_result_void_t gm_telemetry_cfg_load(gm_telemetry_cfg_t *out,
     out->tag_branch = true;
     out->tag_mode = true;
     out->repo_tag = GM_REPO_TAG_OFF;
+    out->repo_hash_sha256 = false;
     out->log_level = GM_LOG_INFO;
     out->log_format = GM_LOG_FMT_TEXT;
 
@@ -151,6 +161,9 @@ GM_NODISCARD gm_result_void_t gm_telemetry_cfg_load(gm_telemetry_cfg_t *out,
     }
     if (gm_env_get(src, "GITMIND_METRICS_REPO_TAG", buf, sizeof buf).ok) {
         out->repo_tag = parse_repo_tag_mode(buf);
+    }
+    if (gm_env_get(src, "GITMIND_METRICS_REPO_HASH_ALGO", buf, sizeof buf).ok) {
+        out->repo_hash_sha256 = parse_hash_algo_sha256(buf);
     }
     if (gm_env_get(src, "GITMIND_METRICS_EXTRA_TAGS", buf, sizeof buf).ok) {
         parse_extras(out, buf);
@@ -176,24 +189,38 @@ static int append_kv(char *out, size_t out_size, size_t *idx,
     return GM_OK;
 }
 
-static void short_hash_hex_12(const uint8_t *data, size_t len, char *out12) {
-    /* 64-bit FNV-1a for a stable, simple short hash */
+static void fnv1a64_hex12(const uint8_t *data, size_t len, char *out12) {
     const uint64_t FNV_OFFSET = 0xcbf29ce484222325ULL;
     const uint64_t FNV_PRIME = 0x100000001b3ULL;
     uint64_t h = FNV_OFFSET;
-    for (size_t i = 0; i < len; ++i) {
-        h ^= (uint64_t)data[i];
-        h *= FNV_PRIME;
-    }
-    /* Hex encode high-to-low; take first 12 hex chars */
+    for (size_t i = 0; i < len; ++i) { h ^= (uint64_t)data[i]; h *= FNV_PRIME; }
     static const char HEX[] = "0123456789abcdef";
-    char full[17];
-    for (int i = 0; i < 16; ++i) {
+    for (int i = 0; i < 12; ++i) {
         int shift = (15 - i) * 4;
-        full[i] = HEX[(int)((h >> shift) & 0xF)];
+        out12[i] = HEX[(int)((h >> shift) & 0xF)];
     }
-    full[16] = '\0';
-    for (int i = 0; i < 12; ++i) out12[i] = full[i];
+    out12[12] = '\0';
+}
+
+static void sha256_hex12(const uint8_t *data, size_t len, char *out12) {
+    uint8_t digest[GM_SHA256_DIGEST_SIZE];
+    gm_result_crypto_context_t cr = gm_crypto_context_create(gm_crypto_backend_libsodium());
+    if (!cr.ok) {
+        /* Fallback to FNV on any error */
+        fnv1a64_hex12(data, len, out12);
+        return;
+    }
+    gm_result_void_t hr = gm_sha256_with_context(&cr.u.val, data, len, digest);
+    if (!hr.ok) {
+        if (hr.u.err) gm_error_free(hr.u.err);
+        fnv1a64_hex12(data, len, out12);
+        return;
+    }
+    static const char HEX[] = "0123456789abcdef";
+    for (int i = 0; i < 6; ++i) {
+        out12[2 * i] = HEX[(digest[i] >> 4) & 0xF];
+        out12[2 * i + 1] = HEX[digest[i] & 0xF];
+    }
     out12[12] = '\0';
 }
 
@@ -229,15 +256,25 @@ GM_NODISCARD gm_result_void_t gm_telemetry_build_tags(
             }
         } else if (cfg->repo_tag == GM_REPO_TAG_HASH) {
             if (repo_canon_path != NULL && repo_canon_path[0] != '\0') {
-                short_hash_hex_12((const uint8_t *)repo_canon_path,
-                                  strlen(repo_canon_path), repo_val);
+                if (cfg->repo_hash_sha256) {
+                    sha256_hex12((const uint8_t *)repo_canon_path,
+                                 strlen(repo_canon_path), repo_val);
+                } else {
+                    fnv1a64_hex12((const uint8_t *)repo_canon_path,
+                                   strlen(repo_canon_path), repo_val);
+                }
             } else if (repo_id != NULL) {
                 char idbuf[33 + 33];
                 int wrote = gm_snprintf(idbuf, sizeof(idbuf), "%016" PRIx64 "%016" PRIx64,
                                         repo_id->hi, repo_id->lo);
                 if (wrote > 0 && (size_t)wrote < sizeof(idbuf)) {
-                    short_hash_hex_12((const uint8_t *)idbuf, (size_t)wrote,
+                    if (cfg->repo_hash_sha256) {
+                        sha256_hex12((const uint8_t *)idbuf, (size_t)wrote,
+                                     repo_val);
+                    } else {
+                        fnv1a64_hex12((const uint8_t *)idbuf, (size_t)wrote,
                                       repo_val);
+                    }
                 }
             }
         }
