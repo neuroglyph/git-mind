@@ -470,6 +470,7 @@ See archives under `docs/activity/` for older logs.
 {"when":"2025-10-08T23:45Z","who":"Codex","what":"Scaffolded logger/metrics ports and default adapters; added cache coordinators; journal/libgit2 robustness; tests+docs green.","pr":"#177","tags":["ports","adapters","journal","cache","docs"]}
 {"when":"2025-10-08T23:58Z","who":"Codex","what":"Added API doc comments to ports headers; removed unused include; expanded stats() docs.","pr":"#177","tags":["docs","headers"]}
 {"when":"2025-10-08T23:59Z","who":"Codex","what":"Enabled cache rebuild instrumentation (logs+metrics) with safe defaults; documented telemetry config plan.","pr":"#177","tags":["telemetry","metrics","logging"]}
+{"when":"2025-10-08T23:59Z","who":"Codex","what":"Merged remote (no rebase); resolved review artifact; added Telemetry_Config.md; added Neo4j instructions; next: telemetry cfg shim + fakes + cache domain helper.","pr":"#177","branch":"feat/hex-ports-ci-green","tags":["merge","docs","neo4j","next-steps"]}
 ```
 
 ## Shared Memory (Neo4j) — Agent‑Collab Instructions
