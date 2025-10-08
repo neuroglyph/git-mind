@@ -40,12 +40,24 @@ This file is the single source of truth for tracking the end‑to‑end migratio
   - [ ] Logger adapter (stdio or structured)
   - [ ] Metrics adapter (null default)
   - [ ] (Optional) cache storage adapter if specialized port chosen
-- [ ] Fakes (tests) implemented under `core/tests/fakes/**` with deterministic behavior for all new ports.
+- [x] Fakes (tests) implemented under `core/tests/fakes/**` with deterministic behavior for all new ports.
+  - [x] Added `logging/fake_logger_port.{h,c}` and `metrics/fake_metrics_port.{h,c}`.
 - [ ] Tests:
   - [ ] Unit tests for domain cache logic only against fakes (`core/tests/unit/*`)
   - [ ] Integration tests under `tests/` for real adapters (inside Docker)
 - [ ] Documentation: update `AGENTS.md` diagrams and add/refresh `docs/architecture/hexagonal/cache.md`.
 - [x] Verification: `make ci-local` green; no new clang‑tidy errors for cache ports.
+  - Interim: Local override build used for quick validation; full Docker CI pending.
+
+### Telemetry (cache service)
+- [x] Internal telemetry config shim added: `core/include/gitmind/telemetry/internal/config.h`, `core/src/telemetry/config.c`.
+  - Env knobs: `GITMIND_METRICS_ENABLED`, `GITMIND_METRICS_BRANCH_TAG`, `GITMIND_METRICS_MODE_TAG`, `GITMIND_METRICS_REPO_TAG=off|hash|plain`, `GITMIND_METRICS_EXTRA_TAGS`, `GITMIND_LOG_LEVEL`, `GITMIND_LOG_FORMAT`.
+  - Guardrails: ≤5 total tags; extras validated; invalids dropped.
+- [x] Cache rebuild instrumented with logs + metrics (branch/mode tags, repo tag optional).
+  - Metrics: `cache.rebuild.duration_ms`, `cache.edges_processed_total`, `cache.tree_size_bytes`.
+  - Logs: `rebuild_start` (INFO), `rebuild_ok` (INFO), `rebuild_failed` (ERROR); text or JSON format.
+- [x] Unit tests: `test_telemetry_cfg` (tag assembly) and `test_cache_oid_prefix` (pure helper).
+- [x] Extracted pure helper `gm_cache_oid_prefix` to `core/src/domain/cache/oid_prefix.c` with header `core/include/gitmind/cache/internal/oid_prefix.h`.
 
 ---
 

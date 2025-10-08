@@ -121,6 +121,8 @@ src = files(
   'core/src/domain/attribution/env_loader.c',
   'core/src/app/cache/cache_rebuild_service.c',
   'core/src/domain/cache/edge_map.c',
+  'core/src/domain/cache/oid_prefix.c',
+  'core/src/telemetry/config.c',
   'core/src/adapters/config/env_adapter.c',
   'core/src/adapters/fs/posix_temp_adapter.c',
   'core/src/ports/env_port.c',
@@ -369,6 +371,27 @@ test_fs_temp_port = executable('test_fs_temp_port',
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
+test_cache_telemetry_emit = executable('test_cache_telemetry_emit',
+  ['core/tests/unit/test_cache_telemetry_emit.c',
+   'core/tests/fakes/fs/fake_fs_temp_port.c',
+   'core/tests/fakes/logging/fake_logger_port.c',
+   'core/tests/fakes/metrics/fake_metrics_port.c'],
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_telemetry_cfg = executable('test_telemetry_cfg',
+  'core/tests/unit/test_telemetry_cfg.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_cache_oid_prefix = executable('test_cache_oid_prefix',
+  'core/tests/unit/test_cache_oid_prefix.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
 
 # Register tests
 test('error', test_error)
@@ -403,6 +426,9 @@ test('edge_oid_fallback', test_edge_oid_fallback)
 test('ref_utils', test_ref_utils)
 test('fs_temp_port', test_fs_temp_port)
 test('fs_path_utils', test_fs_path_utils)
+test('cache_telemetry_emit', test_cache_telemetry_emit)
+test('telemetry_cfg', test_telemetry_cfg)
+test('cache_oid_prefix', test_cache_oid_prefix)
 
 # Standalone header compilation checks (public headers)
 header_check_src = 'tools/header_compile.c'

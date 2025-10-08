@@ -126,6 +126,7 @@ recent_developments:
 
 - Language: C23 with warnings-as-errors; no VLAs or shadowing; explicit prototypes.
 - Formatting: `.clang-format` (LLVM-based, 4 spaces, 80 cols, pointer alignment right). Pre-commit runs `clang-format`.
+- **NEVER** use `NOLINT` or other mechanisms to suppress clang-tidy warnings. All warnings must be fixed.
 - Naming: functions/vars `lower_snake_case` (prefix `gm_`), macros `UPPER_SNAKE`, types end in `_t`, header guards `GITMIND_*`.
 - Includes: prefer specific headers; order/regroup per `.clang-format`.
  - Public headers must be umbrella-safe: compile standalone, correct include order, stable header guards, and `extern "C"` when included from C++.
@@ -138,9 +139,14 @@ recent_developments:
 
 ## Commit & Pull Request Guidelines
 
-- Conventional commits: `type(scope): description` (e.g., `fix(core/cbor): handle null keys`). Reference issues (`Fixes #123`).
+- Conventional commits: `type(scope): description` (e.g., `fix(core/cbor): handle null keys`).
+- Every PR should reference a corresponding GitHub issue. Commits closing an issue should use the `Fixes #<number>` syntax.
+- For any non-trivial task, briefly outline your plan of attack in the PR description or an associated issue. This includes the files you expect to change and the verification steps you will take.
 - PRs must describe changes, link issues, include a short test plan, pass CI, and introduce no new clang-tidy warnings (`./tools/docker-clang-tidy.sh`). Update docs when applicable.
- - Code review (CodeRabbit): Keep `.coderabbit.yml` updated. Prefer summary reviews, limit per-line comments on docs. If rejecting a suggestion, add a note under `docs/code-reviews/rejected-suggestions/{commit}_{branch}_{PR#}_{suggestion}.md` with a link to the original comment and rationale.
+- **NEVER** use `git add -A` or `git commit -a`. Always stage changes intentionally and individually (`git add <path>`) to ensure only desired changes are included.
+- **NEVER** alter, disable, or otherwise circumvent git hooks or tests. They are critical for maintaining code quality and repository integrity.
+- After a PR is approved and all checks pass, ask the user if they want you to push the changes and open a pull request.
+- Code review (CodeRabbit): Keep `.coderabbit.yml` updated. Prefer summary reviews, limit per-line comments on docs. If rejecting a suggestion, add a note under `docs/code-reviews/rejected-suggestions/{commit}_{branch}_{PR#}_{suggestion}.md` with a link to the original comment and rationale.
 
 ## Security & Configuration
 
@@ -388,6 +394,10 @@ Every outbound port ships with: (a) production adapter, (b) deterministic fake u
 - Guardrails always on: run `make ci-local` (Docker) for every commit; touched files must be clang-tidy clean.
 - Document progress: update `AGENTS.md` and `docs/activity/` as ports or adapters graduate from TODO to done.
 
+#### Integration of Legacy Concerns
+- **Security Primitives:** All new security features must be designed and implemented as ports and adapters within the hexagonal architecture.
+- **Memory Safety:** All module migrations must address memory safety concerns, including bounds checking and null checks.
+
 ### One-Thing Rule (Touched code policy)
 
 - You touch it? You refactor it. If you modify a type or function that clearly bundles multiple concerns in a single file, split out the thing you touched into its own file (1 file = 1 thing):
@@ -464,51 +474,6 @@ See archives under `docs/activity/` for older logs.
 - Follow-up (same day): cleaned up CodeRabbit’s fake-port feedback—fake commit/update paths now surface `gm_strcpy_safe` truncations, the shared OID helpers carry project-compliant naming/includes, and the deleted worksheet directory is ready for a fresh seed if we decide to log post-merge notes.
 - Quick-start when you return: rerun `make ci-local` if you touch the cache/journal surface, then tackle the shared blob helper → oid hex helper chain; once that’s in place, prep the PR summary referencing the fast-forward protections.
 
-### 2025-10-08 — Debrief (JSONL)
-
-```jsonl
-{"when":"2025-10-08T23:45Z","who":"Codex","what":"Scaffolded logger/metrics ports and default adapters; added cache coordinators; journal/libgit2 robustness; tests+docs green.","pr":"#177","tags":["ports","adapters","journal","cache","docs"]}
-{"when":"2025-10-08T23:58Z","who":"Codex","what":"Added API doc comments to ports headers; removed unused include; expanded stats() docs.","pr":"#177","tags":["docs","headers"]}
-{"when":"2025-10-08T23:59Z","who":"Codex","what":"Enabled cache rebuild instrumentation (logs+metrics) with safe defaults; documented telemetry config plan.","pr":"#177","tags":["telemetry","metrics","logging"]}
-{"when":"2025-10-08T23:59Z","who":"Codex","what":"Merged remote (no rebase); resolved review artifact; added Telemetry_Config.md; added Neo4j instructions; next: telemetry cfg shim + fakes + cache domain helper.","pr":"#177","branch":"feat/hex-ports-ci-green","tags":["merge","docs","neo4j","next-steps"]}
-```
-
-## Shared Memory (Neo4j) — Agent‑Collab Instructions
-
-We use a shared Neo4j memory to persist notes, insights, and cross‑AI messages. Preferred tool: `/Users/james/git/agent-collab` CLI.
-
-Environment (local defaults):
-
-```
-export NEO4J_HTTP_URL=http://localhost:7474
-export NEO4J_USER=neo4j
-export NEO4J_PASSWORD=password123
-```
-
-Bootstrap & usage:
-
-```
-# Initialize core schema and shared thread (idempotent)
-node scripts/neo4j-msg.js init
-
-# Register our agent (display name appears in messages)
-node scripts/neo4j-msg.js agent-init "Codex"
-
-# Send a note to James (shared-protocol thread)
-node scripts/neo4j-msg.js msg-send --from "Codex" --to "James" \
-  --text "Activated Codex memory; proceeding with cache instrumentation." \
-  --thread shared-protocol --kind note
-
-# Get a high-level inbox summary for all agents
-node scripts/neo4j-msg.js inbox-summary
-```
-
-Operational guidance:
-- Always store a short note when we change topics or land a commit on the migration PR.
-- Keep notes concise (what changed, why, next step). Use `--kind note`.
-- For structured insights, prefer a future `insight` kind; until then, tag notes with a keyword in text (e.g., `[insight]`).
-
-
 ## Next Steps (handoff checklist)
 - Complete on-disk cache migration to OID-only storage and naming; ensure rebuild and fallback readers handle both formats or gate with a one-time migration.
 - Extend journal CBOR schema to store OIDs explicitly (not only derivable from legacy fields); update reader/writer and consumers.
@@ -583,3 +548,9 @@ References
 - Code review seeding script: `tools/review/seed_feedback_from_github.py` (uses `GITHUB_TOKEN`).
 - CodeRabbit config: `.coderabbit.yml` (summary-first, caps, doc filters).
 - PR template: `.github/pull_request_template.md` (guidance for reviewers).
+
+
+---
+
+{"date":"2025-10-07","time":"15:30","summary":"Conducted a comprehensive repository analysis and cleanup, reconciled legacy documentation into a single source of truth (`AGENTS.md`), and formulated a detailed, actionable plan for the hexagonal architecture migration.","topics":[{"topic":"`CLAUDE.md` vs `AGENTS.md` Reconciliation","what":"Compared the two files to identify outdated information.","why":"To consolidate agent instructions into a single source of truth.","context":"`CLAUDE.md` was the old, conversational guide, while `AGENTS.md` is the new, technical guide.","issue":"Discrepancies and outdated information in `CLAUDE.md`.","resolution":"Created `FACTS.md` to compare the files, then updated `AGENTS.md` with the relevant information from `CLAUDE.md`.","future_work":"None.","time_percent":25},{"topic":"`TASKLIST.md` Analysis","what":"Analyzed `TASKLIST.md` to determine the relevance of its tasks.","why":"To understand the project's historical context and current priorities.","context":"`TASKLIST.md` was a historical document from mid-2022.","issue":"The file was largely outdated and did not reflect the current focus on the hexagonal architecture.","resolution":"Appended an analysis to `TASKLIST.md`, then deleted the file and integrated the relevant parts into `AGENTS.md`.","future_work":"None.","time_percent":25},{"topic":"Repository Cleanup","what":"Identified and deleted obsolete files and directories.","why":"To improve the repository's hygiene.","context":"The repository contained several build artifacts and legacy files.","issue":"The presence of unnecessary files cluttered the repository.","resolution":"Created `file-matrix.md` to analyze the file hierarchy, then deleted the unnecessary files and updated `.gitignore`.","future_work":"None.","time_percent":25},{"topic":"Hexagonal Architecture Migration Planning","what":"Created a detailed prompt for completing the hexagonal architecture migration.","why":"To provide a clear and actionable plan for the next phase of development.","context":"The hexagonal architecture is the top priority for the project.","issue":"The need for a detailed, step-by-step plan to guide the migration.","resolution":"Created a comprehensive prompt that includes progress tracking, testing, and documentation requirements.","future_work":"Execute the prompt to complete the migration.","time_percent":25}],"key_decisions":["`AGENTS.md` is the single source of truth for agent instructions.","`TASKLIST.md` is obsolete and has been deleted.","The hexagonal architecture migration is the top priority."],"action_items":[{"task":"Execute the hexagonal architecture migration prompt.","owner":"AI agent"}]}
+{"date":"2025-10-07","time":"16:08","summary":"Conducted a comprehensive documentation cleanup, consolidating and archiving outdated files to improve clarity and maintainability.","topics":[{"topic":"Documentation Cleanup","what":"Analyzed the docs/ directory, identified redundant and outdated files, and consolidated them into a more coherent structure.","why":"The documentation was disorganized and contained conflicting information, making it difficult for newcomers to understand the project.","context":"The docs/ directory had a large number of historical and overlapping documents.","issue":"The documentation was a mess.","resolution":"Created a cleanup plan, archived obsolete files, and consolidated related documents into single, comprehensive guides.","future_work":"Continue the cleanup by reviewing and updating the remaining core documents and implementing the new directory structure.","time_percent":100}],"key_decisions":["Consolidated attribution, cache, and CLI documentation into single, authoritative files.","Archived a significant number of outdated and redundant documents.","Adopted a Map of Content (MoC) approach for the documentation."],"action_items":[{"task":"Continue the documentation cleanup by reviewing and updating the remaining core documents.","owner":"AI agent"}]}
