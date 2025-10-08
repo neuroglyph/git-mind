@@ -17,7 +17,11 @@
 #include "gitmind/result.h"
 #include "gitmind/util/memory.h"
 #include "gitmind/util/oid.h"
+#include "gitmind/security/string.h"
+#include "gitmind/types.h"
+#include "gitmind/adapters/fs/posix_temp_adapter.h"
 #include "gitmind/adapters/git/libgit2_repository_port.h"
+#include "support/temp_repo_helpers.h"
 
 typedef struct {
     size_t count;
@@ -85,9 +89,21 @@ int main(void) {
     printf("test_journal_mixed_cbor... ");
     git_libgit2_init();
 
+    gm_context_t ctx = {0};
+    gm_result_void_t fs_result =
+        gm_posix_fs_temp_port_create(&ctx.fs_temp_port, NULL,
+                                     &ctx.fs_temp_port_dispose);
+    assert(fs_result.ok);
+
+    char repo_path[GM_PATH_MAX];
+    gm_result_void_t tmp_dir_result =
+        gm_test_make_temp_repo_dir(&ctx.fs_temp_port, "journal-mixed-repo",
+                                   repo_path, sizeof(repo_path));
+    assert(tmp_dir_result.ok);
+
     /* Create temp repo */
     git_repository *repo = NULL;
-    int rc = git_repository_init(&repo, "./.gm_journal_tmp", true);
+    int rc = git_repository_init(&repo, repo_path, true);
     assert(rc == 0 && repo);
 
     /* Ensure empty tree object exists */
@@ -138,7 +154,6 @@ int main(void) {
     assert(gm_memcpy_span(payload, sizeof payload, buf1, len1) == GM_OK);
     assert(gm_memcpy_span(payload + len1, sizeof payload - len1, buf2, len2) == GM_OK);
 
-    gm_context_t ctx = {0};
     gm_result_void_t repo_port_result =
         gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,
                                           &ctx.git_repo_port_dispose, repo);
@@ -169,6 +184,12 @@ int main(void) {
         ctx.git_repo_port_dispose(&ctx.git_repo_port);
     }
     git_repository_free(repo);
+    gm_result_void_t rm_result =
+        gm_fs_temp_port_remove_tree(&ctx.fs_temp_port, repo_path);
+    assert(rm_result.ok);
+    if (ctx.fs_temp_port_dispose != NULL) {
+        ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
+    }
     git_libgit2_shutdown();
     printf("OK\n");
     return 0;

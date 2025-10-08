@@ -89,7 +89,7 @@ Install/build instructions: see `docs/install.md`.
 > [!INFO]
 > _If you really want to..._
 > Use the container workflow:
-> - `make ci-local` — docs checks + build + unit tests in the CI image
+> - `make ci-local` — docs checks + build + unit tests in the CI image (stages a throwaway workspace copy so containers never mutate your tree)
 > - `tools/ci/ci_local.sh` — same as above, direct
 > Advanced (at your own risk):
 > - `meson setup build -Dforce_local_builds=true` — explicit Meson override

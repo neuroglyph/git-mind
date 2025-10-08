@@ -20,6 +20,7 @@
 
 #include "gitmind/adapters/fs/posix_temp_adapter.h"
 #include "gitmind/adapters/git/libgit2_repository_port.h"
+#include "support/temp_repo_helpers.h"
 
 static void ensure_branch_with_commit(git_repository *repo, const char *branch) {
     git_treebuilder *tb = NULL;
@@ -68,24 +69,29 @@ int main(void) {
     printf("test_cache_query... ");
     git_libgit2_init();
 
+    gm_context_t ctx = {0};
+    gm_result_void_t fs_result =
+        gm_posix_fs_temp_port_create(&ctx.fs_temp_port, NULL,
+                                     &ctx.fs_temp_port_dispose);
+    assert(fs_result.ok);
+
+    char repo_path[GM_PATH_MAX];
+    gm_result_void_t tmp_dir_result =
+        gm_test_make_temp_repo_dir(&ctx.fs_temp_port, "cache-query-repo",
+                                   repo_path, sizeof(repo_path));
+    assert(tmp_dir_result.ok);
+
     git_repository *repo = NULL;
-    int rc = git_repository_init(&repo, "./.gm_cache_query_tmp", false);
+    int rc = git_repository_init(&repo, repo_path, false);
     assert(rc == 0 && repo);
     set_user_config(repo);
     ensure_branch_with_commit(repo, "testq");
-
-    gm_context_t ctx = {0};
 
     gm_result_void_t repo_port_result =
         gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,
                                           &ctx.git_repo_port_dispose, repo);
     assert(repo_port_result.ok);
     assert(ctx.git_repo_port.vtbl != NULL);
-
-    gm_result_void_t fs_result =
-        gm_posix_fs_temp_port_create(&ctx.fs_temp_port, NULL,
-                                     &ctx.fs_temp_port_dispose);
-    assert(fs_result.ok);
 
     /* Create two edges A->B and A->C */
     gm_edge_t edges[2];
@@ -130,15 +136,20 @@ int main(void) {
     gm_cache_result_free(&r2);
 
     git_repository *saved_repo = repo;
-    if (ctx.fs_temp_port_dispose != NULL) {
-        ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
-    }
     if (ctx.git_repo_port_dispose != NULL) {
         ctx.git_repo_port_dispose(&ctx.git_repo_port);
     }
     assert(repo == saved_repo);
     git_repository_free(repo);
     repo = NULL;
+
+    gm_result_void_t rm_result =
+        gm_fs_temp_port_remove_tree(&ctx.fs_temp_port, repo_path);
+    assert(rm_result.ok);
+    if (ctx.fs_temp_port_dispose != NULL) {
+        ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
+    }
+
     git_libgit2_shutdown();
     printf("OK\n");
     return 0;

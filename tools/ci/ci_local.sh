@@ -9,6 +9,13 @@ set -euo pipefail
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$ROOT_DIR"
 
+cleanup() {
+  if [ -n "${CI_LOCAL_STAGE_DIR:-}" ] && [ -d "$CI_LOCAL_STAGE_DIR" ]; then
+    rm -rf "$CI_LOCAL_STAGE_DIR"
+  fi
+}
+trap cleanup EXIT
+
 echo "==> Docs checks (frontmatter + links + TOC)"
 python3 tools/docs/check_frontmatter.py
 python3 tools/docs/check_docs.py --mode link
@@ -41,10 +48,31 @@ if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
   docker build -t "$IMAGE" --label com.gitmind.project=git-mind -f .ci/Dockerfile .ci
 fi
 
+echo "==> Staging workspace snapshot for container run"
+CI_LOCAL_STAGE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/gitmind-ci-XXXXXX")
+WORKSPACE_COPY="$CI_LOCAL_STAGE_DIR/workspace"
+mkdir -p "$WORKSPACE_COPY"
+
+if command -v rsync >/dev/null 2>&1; then
+  rsync -a --delete \
+    --exclude '/build-local/' \
+    --exclude '/ci_logs.zip' \
+    --exclude '/clang-tidy-report.txt' \
+    --exclude '/clang-tidy-report-full.txt' \
+    "$ROOT_DIR"/ "$WORKSPACE_COPY"/
+else
+  echo "   rsync not available; falling back to tar copy"
+  (cd "$ROOT_DIR" && tar -cf - . --exclude='./build-local' \
+      --exclude='./ci_logs.zip' \
+      --exclude='./clang-tidy-report.txt' \
+      --exclude='./clang-tidy-report-full.txt') | (cd "$WORKSPACE_COPY" && tar -xf -)
+fi
+
 echo "==> Containerized build + tests + E2E"
+set +e
 docker run --rm --label com.gitmind.project=git-mind \
   -u "$(id -u):$(id -g)" \
-  -v "$PWD":/workspace -w /workspace \
+  -v "$WORKSPACE_COPY":/workspace -w /workspace \
   -e GITMIND_DOCKER=1 -e GITMIND_SAFETY=off "$IMAGE" bash -lc '
     set -euo pipefail
     BUILD_DIR=/workspace/build-local
@@ -68,5 +96,19 @@ docker run --rm --label com.gitmind.project=git-mind \
       echo "clang-tidy not found in image; skipping"
     fi
   '
+status=$?
+set -e
+
+echo "==> Collecting container artifacts"
+for artifact in clang-tidy-report.txt clang-tidy-report-full.txt compile_commands.json; do
+  if [ -f "$WORKSPACE_COPY/$artifact" ]; then
+    cp "$WORKSPACE_COPY/$artifact" "$ROOT_DIR/$artifact"
+  fi
+done
+if [ -f "$WORKSPACE_COPY/build-local/compile_commands.json" ]; then
+  cp "$WORKSPACE_COPY/build-local/compile_commands.json" "$ROOT_DIR/compile_commands.json"
+fi
+
+[ $status -eq 0 ] || exit $status
 
 echo "✅ Local CI completed"
