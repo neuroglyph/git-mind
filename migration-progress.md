@@ -53,6 +53,8 @@ This file is the single source of truth for tracking the end‑to‑end migratio
 - [x] Internal telemetry config shim added: `core/include/gitmind/telemetry/internal/config.h`, `core/src/telemetry/config.c`.
   - Env knobs: `GITMIND_METRICS_ENABLED`, `GITMIND_METRICS_BRANCH_TAG`, `GITMIND_METRICS_MODE_TAG`, `GITMIND_METRICS_REPO_TAG=off|hash|plain`, `GITMIND_METRICS_EXTRA_TAGS`, `GITMIND_LOG_LEVEL`, `GITMIND_LOG_FORMAT`.
   - Guardrails: ≤5 total tags; extras validated; invalids dropped.
+- [x] Log formatting DI seam: `gm_log_formatter_fn` in `gm_context_t` (internal), default renderer in `core/src/telemetry/log_format.c`.
+  - Services can render JSON or text consistently; advanced users may inject a custom formatter at composition.
 - [x] Cache rebuild instrumented with logs + metrics (branch/mode tags, repo tag optional).
   - Metrics: `cache.rebuild.duration_ms`, `cache.edges_processed_total`, `cache.tree_size_bytes`.
   - Logs: `rebuild_start` (INFO), `rebuild_ok` (INFO), `rebuild_failed` (ERROR); text or JSON format.

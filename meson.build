@@ -123,6 +123,7 @@ src = files(
   'core/src/domain/cache/edge_map.c',
   'core/src/domain/cache/oid_prefix.c',
   'core/src/telemetry/config.c',
+  'core/src/telemetry/log_format.c',
   'core/src/adapters/config/env_adapter.c',
   'core/src/adapters/fs/posix_temp_adapter.c',
   'core/src/ports/env_port.c',
@@ -336,6 +337,11 @@ test_cache_branch_limits = executable('test_cache_branch_limits',
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
+test_log_formatter = executable('test_log_formatter',
+  'core/tests/unit/test_log_formatter.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 test_journal_safety = executable('test_journal_safety',
   'core/tests/unit/test_journal_safety.c',
   include_directories : inc,
@@ -425,6 +431,7 @@ test('journal_mixed_cbor', test_journal_mixed_cbor)
 test('cache_query', test_cache_query)
 test('cache_strict_equality', test_cache_strict_equality)
 test('cache_branch_limits', test_cache_branch_limits)
+test('log_formatter', test_log_formatter)
 test('journal_safety', test_journal_safety)
 test('cache_shard_distribution', test_cache_shard_distribution)
 test('cache_tree_size', test_cache_tree_size)

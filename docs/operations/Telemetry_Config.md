@@ -121,9 +121,10 @@ gm_result_void_t my_logger_init(gm_logger_port_t *port, my_logger_state_t *st) {
 
 In your runtime/composition code (CLI, service), initialize your adapter and assign it to `ctx->logger_port` (and optionally `ctx->logger_port_dispose`). Application services will start emitting logs through your adapter automatically.
 
-3. Structured output
+3. Structured output + formatter DI seam (advanced)
 
 - Services format log entries consistently (event name + key/values). When `GITMIND_LOG_FORMAT=json`, messages are JSON — adapters can parse or pass‑through as needed. If your adapter natively supports structured fields, you can ignore the final string and map the known fields directly.
+- Advanced: A formatting DI seam is available via `gm_context_t.log_formatter` (internal). To override, assign a function with signature `gm_log_formatter_fn` that renders either JSON or text based on the `json` flag. If unset, the default renderer is used.
 
 4. Testing
 

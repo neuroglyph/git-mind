@@ -522,11 +522,15 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
     /* Log start */
     {
         char msg[256];
-        (void)gm_snprintf(msg, sizeof(msg),
-                          (tcfg.log_format == GM_LOG_FMT_JSON)
-                              ? "{\"event\":\"rebuild_start\",\"branch\":\"%s\",\"mode\":\"%s\"}"
-                              : "rebuild_start branch=%s mode=%s",
-                          branch, mode);
+        const gm_log_kv_t kvs[] = {
+            {.key = "event", .value = "rebuild_start"},
+            {.key = "branch", .value = branch},
+            {.key = "mode", .value = mode},
+        };
+        gm_log_formatter_fn fmt = ctx->log_formatter ? ctx->log_formatter
+                                                     : gm_log_format_render_default;
+        (void)fmt(kvs, sizeof(kvs) / sizeof(kvs[0]),
+                  (tcfg.log_format == GM_LOG_FMT_JSON), msg, sizeof(msg));
         (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache", msg);
     }
 
@@ -597,13 +601,23 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
     /* Log success */
     if (result_code == GM_OK) {
         char msg[256];
-        (void)gm_snprintf(
-            msg, sizeof(msg),
-            (tcfg.log_format == GM_LOG_FMT_JSON)
-                ? "{\"event\":\"rebuild_ok\",\"branch\":\"%s\",\"mode\":\"%s\",\"edge_count\":%u,\"duration_ms\":%llu}"
-                : "rebuild_ok branch=%s mode=%s edge_count=%u duration_ms=%llu",
-            branch, mode, (unsigned)meta.edge_count,
-            (unsigned long long)meta.build_time_ms);
+        char edge_count_buf[32];
+        char dur_buf[32];
+        (void)gm_snprintf(edge_count_buf, sizeof(edge_count_buf), "%u",
+                          (unsigned)meta.edge_count);
+        (void)gm_snprintf(dur_buf, sizeof(dur_buf), "%llu",
+                          (unsigned long long)meta.build_time_ms);
+        const gm_log_kv_t kvs[] = {
+            {.key = "event", .value = "rebuild_ok"},
+            {.key = "branch", .value = branch},
+            {.key = "mode", .value = mode},
+            {.key = "edge_count", .value = edge_count_buf},
+            {.key = "duration_ms", .value = dur_buf},
+        };
+        gm_log_formatter_fn fmt = ctx->log_formatter ? ctx->log_formatter
+                                                     : gm_log_format_render_default;
+        (void)fmt(kvs, sizeof(kvs) / sizeof(kvs[0]),
+                  (tcfg.log_format == GM_LOG_FMT_JSON), msg, sizeof(msg));
         (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache", msg);
     }
 
@@ -611,12 +625,18 @@ cleanup:
     cache_cleanup(ctx, forward_map, reverse_map, &temp_dir);
     if (result_code != GM_OK) {
         char msg[256];
-        (void)gm_snprintf(
-            msg, sizeof(msg),
-            (tcfg.log_format == GM_LOG_FMT_JSON)
-                ? "{\"event\":\"rebuild_failed\",\"branch\":\"%s\",\"mode\":\"%s\",\"code\":%d}"
-                : "rebuild_failed branch=%s mode=%s code=%d",
-            branch, mode, result_code);
+        char code_buf[16];
+        (void)gm_snprintf(code_buf, sizeof(code_buf), "%d", result_code);
+        const gm_log_kv_t kvs[] = {
+            {.key = "event", .value = "rebuild_failed"},
+            {.key = "branch", .value = branch},
+            {.key = "mode", .value = mode},
+            {.key = "code", .value = code_buf},
+        };
+        gm_log_formatter_fn fmt = ctx->log_formatter ? ctx->log_formatter
+                                                     : gm_log_format_render_default;
+        (void)fmt(kvs, sizeof(kvs) / sizeof(kvs[0]),
+                  (tcfg.log_format == GM_LOG_FMT_JSON), msg, sizeof(msg));
         (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache", msg);
     }
     return result_code;

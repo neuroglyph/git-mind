@@ -14,6 +14,7 @@
 #include "gitmind/ports/git_repository_port.h"
 #include "gitmind/ports/logger_port.h"
 #include "gitmind/ports/metrics_port.h"
+#include "gitmind/telemetry/internal/log_format.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,6 +52,9 @@ typedef struct gm_context {
 
     gm_metrics_port_t metrics_port;
     void (*metrics_port_dispose)(gm_metrics_port_t *port);
+
+    /* Optional: DI seam for structured log formatting (internal). */
+    gm_log_formatter_fn log_formatter; /* may be NULL => use default */
 } gm_context_t;
 
 #ifdef __cplusplus
