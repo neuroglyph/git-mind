@@ -1,0 +1,8 @@
+[core]
+	bare = true
+	repositoryformatversion = 0
+	filemode = true
+	ignorecase = true
+[user]
+	name = Tester
+	email = tester@example.com
