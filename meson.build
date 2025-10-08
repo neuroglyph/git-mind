@@ -126,6 +126,8 @@ src = files(
   'core/src/ports/env_port.c',
   'core/src/journal/reader.c',
   'core/src/journal/writer.c',
+  'core/src/ports/cache/cache_build_port.c',
+  'core/src/ports/cache/cache_query_port.c',
   'core/src/cache/bitmap.c',
   'core/src/cache/builder.c',
   'core/src/cache/query.c',
@@ -133,6 +135,8 @@ src = files(
   'core/src/util/ref.c',
   'core/src/util/oid.c',
   'core/src/adapters/git/libgit2_repository_port.c',
+  'core/src/adapters/logging/stdio_logger_adapter.c',
+  'core/src/adapters/metrics/null_metrics_adapter.c',
   'core/src/hooks/augment.c',
 )
 
@@ -415,6 +419,10 @@ public_headers = [
   'core/include/gitmind/edge_attributed.h',
   'core/include/gitmind/journal.h',
   'core/include/gitmind/cache.h',
+  'core/include/gitmind/ports/logger_port.h',
+  'core/include/gitmind/ports/metrics_port.h',
+  'core/include/gitmind/ports/cache_build_port.h',
+  'core/include/gitmind/ports/cache_query_port.h',
   'core/include/gitmind/ports/fs_temp_port.h',
   'core/include/gitmind/io/io.h',
   'core/include/gitmind/time/time.h',

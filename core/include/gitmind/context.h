@@ -12,6 +12,8 @@
 
 #include "gitmind/ports/fs_temp_port.h"
 #include "gitmind/ports/git_repository_port.h"
+#include "gitmind/ports/logger_port.h"
+#include "gitmind/ports/metrics_port.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +44,13 @@ typedef struct gm_context {
 
     gm_git_repository_port_t git_repo_port;
     void (*git_repo_port_dispose)(gm_git_repository_port_t *port);
+
+    /* Optional logger and metrics ports (may be uninitialized; wrappers no-op) */
+    gm_logger_port_t logger_port;
+    void (*logger_port_dispose)(gm_logger_port_t *port);
+
+    gm_metrics_port_t metrics_port;
+    void (*metrics_port_dispose)(gm_metrics_port_t *port);
 } gm_context_t;
 
 #ifdef __cplusplus
