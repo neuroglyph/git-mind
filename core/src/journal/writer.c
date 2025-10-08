@@ -19,11 +19,22 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <time.h>
+#include "gitmind/security/string.h" /* gm_snprintf */
 
 /* Local constants */
 #include "gitmind/constants_internal.h"
 #include "gitmind/util/ref.h"
+#include "gitmind/cache/cache.h" /* GM_CACHE_BRANCH_NAME_SIZE */
+#include "gitmind/ports/fs_temp_port.h"
+#include "gitmind/ports/logger_port.h"
+#include "gitmind/ports/metrics_port.h"
+#include "gitmind/ports/env_port.h"
+#include "gitmind/telemetry/internal/config.h"
+#include "gitmind/telemetry/internal/log_format.h"
 #define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
+#define CLOCKS_PER_MS                                                       \
+    ((clock_t)((CLOCKS_PER_SEC + (MILLIS_PER_SECOND - 1)) / MILLIS_PER_SECOND))
 #define COMMIT_ENCODING "UTF-8"
 #define CBOR_OVERFLOW_MARGIN GM_FORMAT_BUFFER_SIZE /* CBOR encoding safety margin */
 #define PARENT_COMMITS_MAX 1
@@ -188,17 +199,6 @@ static journal_edge_batch_t make_edge_batch(const void *edges,
 
 static int resolve_branch_name(gm_context_t *ctx, char *branch,
                                size_t branch_len) {
-    const char *env_branch = getenv("GITMIND_TEST_BRANCH");
-    if (env_branch != NULL && *env_branch != '\0') {
-        size_t env_len = strlen(env_branch);
-        if (env_len >= branch_len) {
-            env_len = branch_len - 1U;
-        }
-        gm_memcpy_safe(branch, branch_len, env_branch, env_len);
-        branch[env_len] = '\0';
-        return GM_OK;
-    }
-
     return get_current_branch(&ctx->git_repo_port, branch, branch_len);
 }
 
@@ -293,6 +293,28 @@ static int journal_append_generic(gm_context_t *ctx, journal_edge_batch_t batch,
                                   edge_encoder_fn encoder) {
     journal_ctx_t jctx;
     char branch[GM_PATH_MAX];
+    /* Telemetry setup */
+    gm_telemetry_cfg_t tcfg = {0};
+    (void)gm_telemetry_cfg_load(&tcfg, gm_env_port_system());
+    const bool json = (tcfg.log_format == GM_LOG_FMT_JSON);
+    const char *mode = "append";
+    char tags[256]; tags[0] = '\0';
+    char repo_path[GM_PATH_MAX];
+    const char *repo_canon = NULL;
+    gm_repo_id_t repo_id = {0};
+    /* Build tags: branch, mode, repo(optional), extras */
+    do {
+        if (ctx && ctx->git_repo_port.vtbl && ctx->fs_temp_port.vtbl) {
+            if (gm_git_repository_port_repository_path(&ctx->git_repo_port,
+                    GM_GIT_REPOSITORY_PATH_GITDIR, repo_path, sizeof(repo_path)).ok) {
+                gm_fs_canon_opts_t copts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
+                if (gm_fs_temp_port_canonicalize_ex(&ctx->fs_temp_port, repo_path,
+                        copts, &repo_canon).ok) {
+                    (void)gm_repo_id_from_path(repo_canon, &repo_id);
+                }
+            }
+        }
+    } while (0);
 
     if (ctx == NULL || batch.data == NULL || batch.count == 0U || encoder == NULL) {
         return GM_ERR_INVALID_ARGUMENT;
@@ -306,13 +328,60 @@ static int journal_append_generic(gm_context_t *ctx, journal_edge_batch_t batch,
         return GM_ERR_UNKNOWN;
     }
 
+    /* Emit start log */
+    {
+        char msg[256];
+        const gm_log_kv_t kvs[] = {
+            {.key = "event", .value = "journal_append_start"},
+            {.key = "branch", .value = branch},
+            {.key = "mode", .value = mode},
+        };
+        gm_log_formatter_fn fmt = ctx && ctx->log_formatter ? ctx->log_formatter
+                                                            : gm_log_format_render_default;
+        (void)fmt(kvs, sizeof(kvs)/sizeof(kvs[0]), json, msg, sizeof(msg));
+        (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "journal", msg);
+    }
+
     uint8_t *cbor_buffer = malloc(MAX_CBOR_SIZE);
     if (cbor_buffer == NULL) {
         return GM_ERR_OUT_OF_MEMORY;
     }
-
+    clock_t start_time = clock();
     int encode_result = encode_edges_to_journal(&jctx, &batch, cbor_buffer, encoder);
     free(cbor_buffer);
+
+    /* Emit metrics + end log */
+    uint64_t dur_ms = (uint64_t)((clock() - start_time) / CLOCKS_PER_MS);
+    (void)gm_telemetry_build_tags(&tcfg, branch, mode, repo_canon, &repo_id,
+                                  tags, sizeof(tags));
+    if (tcfg.metrics_enabled) {
+        (void)gm_metrics_timing_ms(&ctx->metrics_port,
+                                   "journal.append.duration_ms",
+                                   dur_ms, tags);
+        (void)gm_metrics_counter_add(&ctx->metrics_port,
+                                     "journal.append.edges_total",
+                                     (uint64_t)batch.count, tags);
+    }
+    {
+        char msg[256]; char count_buf[32]; char dur_buf[32];
+        (void)gm_snprintf(count_buf, sizeof(count_buf), "%llu",
+                          (unsigned long long)batch.count);
+        (void)gm_snprintf(dur_buf, sizeof(dur_buf), "%llu",
+                          (unsigned long long)dur_ms);
+        const gm_log_kv_t kvs[] = {
+            {.key = "event", .value = (encode_result == GM_OK) ? "journal_append_ok" : "journal_append_failed"},
+            {.key = "branch", .value = branch},
+            {.key = "mode", .value = mode},
+            {.key = "edges", .value = count_buf},
+            {.key = "duration_ms", .value = dur_buf},
+        };
+        gm_log_formatter_fn fmt = ctx && ctx->log_formatter ? ctx->log_formatter
+                                                            : gm_log_format_render_default;
+        (void)fmt(kvs, sizeof(kvs)/sizeof(kvs[0]), json, msg, sizeof(msg));
+        (void)gm_logger_log(&ctx->logger_port,
+                            (encode_result == GM_OK) ? GM_LOG_INFO : GM_LOG_ERROR,
+                            "journal", msg);
+    }
     return encode_result;
 }
 

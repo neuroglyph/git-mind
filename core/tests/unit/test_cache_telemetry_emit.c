@@ -194,8 +194,8 @@ static void test_metrics_enabled_with_tags(void) {
     int rc = gm_cache_rebuild_execute(&ctx, "dev", true);
     assert(rc == GM_OK);
 
-    /* Metrics emitted */
-    assert(met_state->timing_count == 1);
+    /* Metrics emitted (at least one timing entry) */
+    assert(met_state->timing_count >= 1);
     assert(met_state->counter_count == 1);
     /* Gauge may emit 0 if commit tree size retrieval isn't called; here it is */
     assert(met_state->gauge_count >= 1);

@@ -21,9 +21,21 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* Telemetry and logging */
+#include "gitmind/ports/logger_port.h"
+#include "gitmind/ports/metrics_port.h"
+#include "gitmind/ports/fs_temp_port.h"
+#include "gitmind/ports/env_port.h"
+#include "gitmind/telemetry/internal/config.h"
+#include "gitmind/telemetry/internal/log_format.h"
+#include "gitmind/constants_internal.h" /* MILLIS_PER_SECOND */
+#define CLOCKS_PER_MS                                                       \
+    ((clock_t)((CLOCKS_PER_SEC + (MILLIS_PER_SECOND - 1)) / MILLIS_PER_SECOND))
 
 /* Constants */
 #define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
@@ -328,6 +340,15 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
     reader_ctx_t rctx;
     char ref_name[REF_NAME_BUFFER_SIZE];
     char current_branch[CURRENT_BRANCH_BUFFER_SIZE];
+    /* Telemetry */
+    gm_telemetry_cfg_t tcfg = {0};
+    (void)gm_telemetry_cfg_load(&tcfg, gm_env_port_system());
+    const bool json = (tcfg.log_format == GM_LOG_FMT_JSON);
+    const char *mode = is_attributed ? "read_attributed" : "read";
+    char tags[256]; tags[0] = '\0';
+    char repo_path[GM_PATH_MAX];
+    const char *repo_canon = NULL;
+    gm_repo_id_t repo_id = {0};
 
     if (ctx == NULL) {
         return GM_ERR_INVALID_ARGUMENT;
@@ -364,8 +385,60 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
         return GM_ERR_BUFFER_TOO_SMALL;
     }
 
-    /* Walk the journal */
-    return walk_journal_generic(&rctx, ref_name);
+    /* Build tags now that branch is resolved */
+    do {
+        if (ctx && ctx->git_repo_port.vtbl && ctx->fs_temp_port.vtbl) {
+            if (gm_git_repository_port_repository_path(&ctx->git_repo_port,
+                    GM_GIT_REPOSITORY_PATH_GITDIR, repo_path, sizeof(repo_path)).ok) {
+                gm_fs_canon_opts_t copts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
+                (void)gm_fs_temp_port_canonicalize_ex(&ctx->fs_temp_port, repo_path, copts, &repo_canon);
+                if (repo_canon) (void)gm_repo_id_from_path(repo_canon, &repo_id);
+            }
+        }
+    } while (0);
+    (void)gm_telemetry_build_tags(&tcfg, resolved_branch, mode, repo_canon, &repo_id,
+                                  tags, sizeof(tags));
+    /* Log start */
+    {
+        char msg[256];
+        const gm_log_kv_t kvs[] = {
+            {.key = "event", .value = "journal_read_start"},
+            {.key = "branch", .value = resolved_branch},
+            {.key = "mode", .value = mode},
+        };
+        gm_log_formatter_fn fmt = ctx && ctx->log_formatter ? ctx->log_formatter
+                                                            : gm_log_format_render_default;
+        (void)fmt(kvs, sizeof(kvs)/sizeof(kvs[0]), json, msg, sizeof(msg));
+        (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "journal", msg);
+    }
+
+    clock_t st = clock();
+    int rc_walk = walk_journal_generic(&rctx, ref_name);
+
+    uint64_t dur_ms = (uint64_t)((clock() - st) / CLOCKS_PER_MS);
+    if (tcfg.metrics_enabled) {
+        (void)gm_metrics_timing_ms(&ctx->metrics_port,
+                                   "journal.read.duration_ms", dur_ms, tags);
+        /* Note: edge count not tracked here without modifying callbacks; future work */
+    }
+    {
+        char msg[256]; char dur_buf[32];
+        (void)gm_snprintf(dur_buf, sizeof(dur_buf), "%llu",
+                          (unsigned long long)dur_ms);
+        const gm_log_kv_t kvs[] = {
+            {.key = "event", .value = (rc_walk == GM_OK) ? "journal_read_ok" : "journal_read_failed"},
+            {.key = "branch", .value = resolved_branch},
+            {.key = "mode", .value = mode},
+            {.key = "duration_ms", .value = dur_buf},
+        };
+        gm_log_formatter_fn fmt = ctx && ctx->log_formatter ? ctx->log_formatter
+                                                            : gm_log_format_render_default;
+        (void)fmt(kvs, sizeof(kvs)/sizeof(kvs[0]), json, msg, sizeof(msg));
+        (void)gm_logger_log(&ctx->logger_port,
+                            (rc_walk == GM_OK) ? GM_LOG_INFO : GM_LOG_ERROR,
+                            "journal", msg);
+    }
+    return rc_walk;
 }
 
 /* Read journal for a branch */
