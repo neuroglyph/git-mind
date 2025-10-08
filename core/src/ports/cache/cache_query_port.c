@@ -51,6 +51,12 @@ static gm_result_void_t stats_impl(gm_qry_cache_port_t *self,
                                    const char *branch,
                                    uint64_t *edge_count,
                                    uint64_t *cache_size_bytes) {
+    if (edge_count != NULL) {
+        *edge_count = 0;
+    }
+    if (cache_size_bytes != NULL) {
+        *cache_size_bytes = 0;
+    }
     if (self == NULL || self->state == NULL || branch == NULL) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
                                     "cache stats requires branch"));

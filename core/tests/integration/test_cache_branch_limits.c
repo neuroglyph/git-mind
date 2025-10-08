@@ -18,9 +18,11 @@
 #include "gitmind/types.h"
 #include "gitmind/util/oid.h"
 #include "gitmind/types/ulid.h"
+#include "gitmind/security/string.h"
 
 #include "gitmind/adapters/fs/posix_temp_adapter.h"
 #include "gitmind/adapters/git/libgit2_repository_port.h"
+#include "core/tests/support/temp_repo_helpers.h"
 
 static void set_user_config(git_repository *repo) {
     git_config *cfg = NULL;
@@ -50,7 +52,8 @@ static void ensure_branch_with_commit(git_repository *repo, const char *branch) 
     rc = git_signature_now(&sig, "tester", "tester@example.com");
     assert(rc == 0);
 
-    snprintf(refname, sizeof refname, "refs/heads/%s", branch);
+    int ref_rc = gm_snprintf(refname, sizeof refname, "refs/heads/%s", branch);
+    assert(ref_rc >= 0 && (size_t)ref_rc < sizeof refname);
     rc = git_commit_create_from_ids(&commit_oid, repo, NULL, sig, sig, NULL,
                                     "init", &tree_oid, 0, NULL);
     git_signature_free(sig);
@@ -92,8 +95,22 @@ int main(void) {
     printf("test_cache_branch_limits... ");
     git_libgit2_init();
 
+    gm_context_t ctx = {0};
+
+    gm_result_void_t fs_result =
+        gm_posix_fs_temp_port_create(&ctx.fs_temp_port, NULL,
+                                     &ctx.fs_temp_port_dispose);
+    assert(fs_result.ok);
+
+    char repo_path[GM_PATH_MAX];
+    gm_result_void_t temp_rc = gm_test_make_temp_repo_dir(&ctx.fs_temp_port,
+                                                          "cache-branch-repo",
+                                                          repo_path,
+                                                          sizeof(repo_path));
+    assert(temp_rc.ok);
+
     git_repository *repo = NULL;
-    int rc = git_repository_init(&repo, "./.gm_cache_branch_tmp", false);
+    int rc = git_repository_init(&repo, repo_path, false);
     assert(rc == 0 && repo);
     set_user_config(repo);
 
@@ -102,17 +119,10 @@ int main(void) {
     valid_branch[GM_CACHE_BRANCH_NAME_SIZE - 1] = '\0';
     ensure_branch_with_commit(repo, valid_branch);
 
-    gm_context_t ctx = {0};
-
     gm_result_void_t repo_port_result =
         gm_libgit2_repository_port_create(&ctx.git_repo_port, NULL,
                                           &ctx.git_repo_port_dispose, repo);
     assert(repo_port_result.ok);
-
-    gm_result_void_t fs_result =
-        gm_posix_fs_temp_port_create(&ctx.fs_temp_port, NULL,
-                                     &ctx.fs_temp_port_dispose);
-    assert(fs_result.ok);
 
     append_dummy_edge(&ctx);
     rc = gm_cache_rebuild(&ctx, valid_branch, true);
@@ -134,6 +144,16 @@ int main(void) {
         ctx.git_repo_port_dispose(&ctx.git_repo_port);
     }
     git_repository_free(repo);
+    gm_result_void_t rm_rc =
+        gm_fs_temp_port_remove_tree(&ctx.fs_temp_port, repo_path);
+    if (!rm_rc.ok) {
+        if (rm_rc.u.err != NULL) {
+            gm_error_free(rm_rc.u.err);
+        }
+    }
+    if (ctx.fs_temp_port_dispose != NULL) {
+        ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
+    }
     git_libgit2_shutdown();
     printf("OK\n");
     return 0;

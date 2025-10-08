@@ -15,19 +15,57 @@ static gm_result_void_t emit_impl(void *self, const char *component,
     gm_fake_diag_state_t *st = (gm_fake_diag_state_t *)self;
     if (st == NULL) return gm_ok_void();
     if (st->count >= 64) return gm_ok_void();
-    size_t i = st->count++;
-    (void)gm_strcpy_safe(st->meta[i].component, sizeof(st->meta[i].component),
-                         component ? component : "");
-    (void)gm_strcpy_safe(st->meta[i].event, sizeof(st->meta[i].event),
-                         event ? event : "");
-    size_t cap = (kv_count > 8) ? 8 : kv_count;
-    st->kv_counts[i] = cap;
-    for (size_t j = 0; j < cap; ++j) {
-        (void)gm_strcpy_safe(st->kvs[i][j].key, sizeof st->kvs[i][j].key,
-                             kvs[j].key ? kvs[j].key : "");
-        (void)gm_strcpy_safe(st->kvs[i][j].value, sizeof st->kvs[i][j].value,
-                             kvs[j].value ? kvs[j].value : "");
+    if (kv_count > 0 && kvs == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "diagnostics kv list missing"));
     }
+    size_t slot = st->count;
+    st->kv_counts[slot] = 0;
+    if (gm_strcpy_safe(st->meta[slot].component,
+                       sizeof(st->meta[slot].component),
+                       component ? component : "") != GM_OK) {
+        st->meta[slot].component[0] = '\0';
+        st->meta[slot].event[0] = '\0';
+        return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
+                                    "diagnostics component truncated"));
+    }
+    if (gm_strcpy_safe(st->meta[slot].event,
+                       sizeof(st->meta[slot].event),
+                       event ? event : "") != GM_OK) {
+        st->meta[slot].component[0] = '\0';
+        st->meta[slot].event[0] = '\0';
+        return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
+                                    "diagnostics event truncated"));
+    }
+    size_t cap = kv_count > 8 ? 8 : kv_count;
+    for (size_t j = 0; j < cap; ++j) {
+        if (gm_strcpy_safe(st->kvs[slot][j].key,
+                           sizeof st->kvs[slot][j].key,
+                           kvs[j].key ? kvs[j].key : "") != GM_OK) {
+            st->meta[slot].component[0] = '\0';
+            st->meta[slot].event[0] = '\0';
+            for (size_t r = 0; r <= j; ++r) {
+                st->kvs[slot][r].key[0] = '\0';
+                st->kvs[slot][r].value[0] = '\0';
+            }
+            return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
+                                        "diagnostics kv key truncated"));
+        }
+        if (gm_strcpy_safe(st->kvs[slot][j].value,
+                           sizeof st->kvs[slot][j].value,
+                           kvs[j].value ? kvs[j].value : "") != GM_OK) {
+            st->meta[slot].component[0] = '\0';
+            st->meta[slot].event[0] = '\0';
+            for (size_t r = 0; r <= j; ++r) {
+                st->kvs[slot][r].key[0] = '\0';
+                st->kvs[slot][r].value[0] = '\0';
+            }
+            return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
+                                        "diagnostics kv value truncated"));
+        }
+    }
+    st->kv_counts[slot] = cap;
+    st->count = slot + 1;
     return gm_ok_void();
 }
 

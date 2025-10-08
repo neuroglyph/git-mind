@@ -102,9 +102,18 @@ static void add_extra_if_valid(gm_telemetry_cfg_t *cfg, const char *k,
         *dropped = true;
         return;
     }
-    gm_kv_pair_t *p = &cfg->extras[cfg->extra_count++];
-    (void)gm_strcpy_safe(p->key, sizeof(p->key), k);
-    (void)gm_strcpy_safe(p->value, sizeof(p->value), v);
+    gm_kv_pair_t *p = &cfg->extras[cfg->extra_count];
+    if (gm_strcpy_safe(p->key, sizeof(p->key), k) != GM_OK) {
+        memset(p, 0, sizeof(*p));
+        *dropped = true;
+        return;
+    }
+    if (gm_strcpy_safe(p->value, sizeof(p->value), v) != GM_OK) {
+        memset(p, 0, sizeof(*p));
+        *dropped = true;
+        return;
+    }
+    cfg->extra_count++;
 }
 
 static void parse_extras(gm_telemetry_cfg_t *cfg, const char *csv) {
@@ -252,7 +261,13 @@ GM_NODISCARD gm_result_void_t gm_telemetry_build_tags(
         char repo_val[65] = {0};
         if (cfg->repo_tag == GM_REPO_TAG_PLAIN) {
             if (repo_canon_path != NULL && repo_canon_path[0] != '\0') {
-                (void)gm_strcpy_safe(repo_val, sizeof(repo_val), repo_canon_path);
+                int copy_status =
+                    gm_strcpy_safe(repo_val, sizeof(repo_val), repo_canon_path);
+                if (copy_status != GM_OK) {
+                    memset(repo_val, 0, sizeof(repo_val));
+                    return gm_err_void(GM_ERROR(copy_status,
+                                                "repo tag truncated"));
+                }
             }
         } else if (cfg->repo_tag == GM_REPO_TAG_HASH) {
             if (repo_canon_path != NULL && repo_canon_path[0] != '\0') {

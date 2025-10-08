@@ -250,11 +250,35 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
     char current_branch[CURRENT_BRANCH_BUFFER_SIZE];
     /* Telemetry */
     gm_telemetry_cfg_t tcfg = {0};
-    (void)gm_telemetry_cfg_load(&tcfg, gm_env_port_system());
+    gm_result_void_t telemetry_rc =
+        gm_telemetry_cfg_load(&tcfg, gm_env_port_system());
+    if (!telemetry_rc.ok) {
+        char err_msg[96];
+        int32_t err_code = telemetry_rc.u.err ? telemetry_rc.u.err->code
+                                              : GM_ERR_UNKNOWN;
+        int err_len = gm_snprintf(err_msg, sizeof(err_msg),
+                                  "journal telemetry cfg load failed code=%d",
+                                  (int)err_code);
+        if (telemetry_rc.u.err != NULL) {
+            gm_error_free(telemetry_rc.u.err);
+        }
+        memset(&tcfg, 0, sizeof(tcfg));
+        tcfg.metrics_enabled = false;
+        tcfg.log_format = GM_LOG_FMT_TEXT;
+        if (err_len < 0 || (size_t)err_len >= sizeof(err_msg)) {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "journal",
+                                "telemetry_cfg_load_failed");
+        } else {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "journal",
+                                err_msg);
+        }
+    }
     const bool json = (tcfg.log_format == GM_LOG_FMT_JSON);
     const char *mode = is_attributed ? "read_attributed" : "read";
     char tags[256]; tags[0] = '\0';
     char repo_path[GM_PATH_MAX];
+    char repo_canon_buf[GM_PATH_MAX];
+    repo_canon_buf[0] = '\0';
     const char *repo_canon = NULL;
     gm_repo_id_t repo_id = {0};
 
@@ -298,19 +322,54 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
     /* Build tags now that branch is resolved */
     do {
         if (ctx && ctx->git_repo_port.vtbl && ctx->fs_temp_port.vtbl) {
-            if (gm_git_repository_port_repository_path(&ctx->git_repo_port,
-                    GM_GIT_REPOSITORY_PATH_GITDIR, repo_path, sizeof(repo_path)).ok) {
+            gm_result_void_t path_rc =
+                gm_git_repository_port_repository_path(&ctx->git_repo_port,
+                    GM_GIT_REPOSITORY_PATH_GITDIR, repo_path, sizeof(repo_path));
+            if (path_rc.ok) {
                 gm_fs_canon_opts_t copts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
-                (void)gm_fs_temp_port_canonicalize_ex(&ctx->fs_temp_port, repo_path, copts, &repo_canon);
-                if (repo_canon) (void)gm_repo_id_from_path(repo_canon, &repo_id);
+                const char *canon_tmp = NULL;
+                gm_result_void_t canon_rc = gm_fs_temp_port_canonicalize_ex(
+                    &ctx->fs_temp_port, repo_path, copts, &canon_tmp);
+                if (canon_rc.ok && canon_tmp != NULL) {
+                    if (gm_strcpy_safe(repo_canon_buf, sizeof(repo_canon_buf),
+                                       canon_tmp) == GM_OK) {
+                        repo_canon = repo_canon_buf;
+                        gm_result_void_t repo_id_rc =
+                            gm_repo_id_from_path(repo_canon, &repo_id);
+                        if (!repo_id_rc.ok) {
+                            memset(&repo_id, 0, sizeof(repo_id));
+                            if (repo_id_rc.u.err != NULL) {
+                                gm_error_free(repo_id_rc.u.err);
+                            }
+                        }
+                    } else {
+                        (void)gm_logger_log(&ctx->logger_port, GM_LOG_WARN,
+                                            "journal",
+                                            "repo_canon_truncated" );
+                    }
+                } else if (!canon_rc.ok) {
+                    if (canon_rc.u.err != NULL) {
+                        gm_error_free(canon_rc.u.err);
+                    }
+                }
+            } else {
+                if (path_rc.u.err != NULL) gm_error_free(path_rc.u.err);
             }
         }
     } while (0);
-    (void)gm_telemetry_build_tags(&tcfg, resolved_branch, mode, repo_canon, &repo_id,
-                                  tags, sizeof(tags));
+    gm_result_void_t tags_rc = gm_telemetry_build_tags(&tcfg, resolved_branch,
+                                                       mode, repo_canon, &repo_id,
+                                                       tags, sizeof(tags));
+    if (!tags_rc.ok) {
+        if (tags_rc.u.err != NULL) gm_error_free(tags_rc.u.err);
+        tags[0] = '\0';
+        (void)gm_logger_log(&ctx->logger_port, GM_LOG_WARN, "journal",
+                            "telemetry_tags_build_failed");
+    }
     /* Log start */
     {
         char msg[256];
+        msg[0] = '\0';
         const gm_log_kv_t kvs[] = {
             {.key = "event", .value = "journal_read_start"},
             {.key = "branch", .value = resolved_branch},
@@ -318,8 +377,23 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
         };
         gm_log_formatter_fn fmt = ctx && ctx->log_formatter ? ctx->log_formatter
                                                             : gm_log_format_render_default;
-        (void)fmt(kvs, sizeof(kvs)/sizeof(kvs[0]), json, msg, sizeof(msg));
-        (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "journal", msg);
+        gm_result_void_t fmt_rc = fmt(kvs, sizeof(kvs)/sizeof(kvs[0]), json, msg,
+                                      sizeof(msg));
+        if (!fmt_rc.ok) {
+            if (fmt_rc.u.err != NULL) gm_error_free(fmt_rc.u.err);
+            int alt = gm_snprintf(msg, sizeof(msg),
+                                  "event=journal_read_start branch=%s mode=%s",
+                                  resolved_branch, mode);
+            if (alt < 0 || (size_t)alt >= sizeof(msg)) {
+                msg[0] = '\0';
+            }
+        }
+        if (msg[0] == '\0') {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "journal",
+                                "journal_read_start");
+        } else {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "journal", msg);
+        }
     }
 
     clock_t st = clock();
@@ -334,9 +408,16 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
                                      (uint64_t)edge_count, tags);
     }
     {
-        char msg[256]; char dur_buf[32];
-        (void)gm_snprintf(dur_buf, sizeof(dur_buf), "%llu",
-                          (unsigned long long)dur_ms);
+        char msg[256];
+        msg[0] = '\0';
+        char dur_buf[32];
+        int dur_fmt = gm_snprintf(dur_buf, sizeof(dur_buf), "%llu",
+                                   (unsigned long long)dur_ms);
+        if (dur_fmt < 0 || (size_t)dur_fmt >= sizeof(dur_buf)) {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "journal",
+                                "journal_read_duration_format_failed");
+            dur_buf[0] = '\0';
+        }
         const gm_log_kv_t kvs[] = {
             {.key = "event", .value = (rc_walk == GM_OK) ? "journal_read_ok" : "journal_read_failed"},
             {.key = "branch", .value = resolved_branch},
@@ -345,10 +426,30 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
         };
         gm_log_formatter_fn fmt = ctx && ctx->log_formatter ? ctx->log_formatter
                                                             : gm_log_format_render_default;
-        (void)fmt(kvs, sizeof(kvs)/sizeof(kvs[0]), json, msg, sizeof(msg));
-        (void)gm_logger_log(&ctx->logger_port,
-                            (rc_walk == GM_OK) ? GM_LOG_INFO : GM_LOG_ERROR,
-                            "journal", msg);
+        gm_result_void_t fmt_rc = fmt(kvs, sizeof(kvs)/sizeof(kvs[0]), json, msg,
+                                      sizeof(msg));
+        if (!fmt_rc.ok) {
+            if (fmt_rc.u.err != NULL) gm_error_free(fmt_rc.u.err);
+            int alt = gm_snprintf(msg, sizeof(msg),
+                                  "event=%s branch=%s mode=%s",
+                                  (rc_walk == GM_OK) ? "journal_read_ok"
+                                                     : "journal_read_failed",
+                                  resolved_branch, mode);
+            if (alt < 0 || (size_t)alt >= sizeof(msg)) {
+                msg[0] = '\0';
+            }
+        }
+        if (msg[0] == '\0') {
+            (void)gm_logger_log(&ctx->logger_port,
+                                (rc_walk == GM_OK) ? GM_LOG_INFO : GM_LOG_ERROR,
+                                "journal",
+                                (rc_walk == GM_OK) ? "journal_read_ok"
+                                                   : "journal_read_failed");
+        } else {
+            (void)gm_logger_log(&ctx->logger_port,
+                                (rc_walk == GM_OK) ? GM_LOG_INFO : GM_LOG_ERROR,
+                                "journal", msg);
+        }
     }
     return rc_walk;
 }

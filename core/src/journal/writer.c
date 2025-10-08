@@ -36,6 +36,8 @@
 #include "gitmind/journal/internal/codec.h"
 #include "gitmind/journal/internal/append_plan.h"
 #define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
+_Static_assert(CLOCKS_PER_SEC >= MILLIS_PER_SECOND,
+               "CLOCKS_PER_SEC must be >= 1000");
 #define CLOCKS_PER_MS                                                       \
     ((clock_t)((CLOCKS_PER_SEC + (MILLIS_PER_SECOND - 1)) / MILLIS_PER_SECOND))
 #define COMMIT_ENCODING "UTF-8"

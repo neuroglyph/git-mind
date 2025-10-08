@@ -18,6 +18,8 @@
 #include "gitmind/util/memory.h"
 #include "gitmind/util/oid.h"
 #include "gitmind/adapters/git/libgit2_repository_port.h"
+#include "gitmind/adapters/fs/posix_temp_adapter.h"
+#include "core/tests/support/temp_repo_helpers.h"
 
 typedef struct {
     size_t count;
@@ -85,9 +87,22 @@ int main(void) {
     printf("test_journal_mixed_cbor... ");
     git_libgit2_init();
 
+    gm_fs_temp_port_t fs_port = {0};
+    gm_posix_fs_state_t *fs_state = NULL;
+    void (*fs_dispose)(gm_fs_temp_port_t *) = NULL;
+    gm_result_void_t fs_rc =
+        gm_posix_fs_temp_port_create(&fs_port, &fs_state, &fs_dispose);
+    assert(fs_rc.ok);
+
     /* Create temp repo */
+    char repo_path[GM_PATH_MAX];
+    gm_result_void_t repo_dir_rc =
+        gm_test_make_temp_repo_dir(&fs_port, "journal-mixed-repo",
+                                   repo_path, sizeof(repo_path));
+    assert(repo_dir_rc.ok);
+
     git_repository *repo = NULL;
-    int rc = git_repository_init(&repo, "./.gm_journal_tmp", true);
+    int rc = git_repository_init(&repo, repo_path, true);
     assert(rc == 0 && repo);
 
     /* Ensure empty tree object exists */
@@ -170,6 +185,11 @@ int main(void) {
     }
     git_repository_free(repo);
     git_libgit2_shutdown();
+    gm_result_void_t rm_rc = gm_fs_temp_port_remove_tree(&fs_port, repo_path);
+    assert(rm_rc.ok);
+    if (fs_dispose != NULL) {
+        fs_dispose(&fs_port);
+    }
     printf("OK\n");
     return 0;
 }

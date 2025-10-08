@@ -512,7 +512,29 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
 
     /* Telemetry configuration */
     gm_telemetry_cfg_t tcfg = {0};
-    (void)gm_telemetry_cfg_load(&tcfg, gm_env_port_system());
+    gm_result_void_t telemetry_rc =
+        gm_telemetry_cfg_load(&tcfg, gm_env_port_system());
+    if (!telemetry_rc.ok) {
+        char err_msg[96];
+        int32_t code = telemetry_rc.u.err ? telemetry_rc.u.err->code
+                                          : GM_ERR_UNKNOWN;
+        int err_snprintf =
+            gm_snprintf(err_msg, sizeof(err_msg),
+                        "telemetry_cfg_load_failed code=%d", (int)code);
+        if (telemetry_rc.u.err != NULL) {
+            gm_error_free(telemetry_rc.u.err);
+        }
+        memset(&tcfg, 0, sizeof(tcfg));
+        tcfg.metrics_enabled = false;
+        tcfg.log_format = GM_LOG_FMT_TEXT;
+        if (err_snprintf < 0 || (size_t)err_snprintf >= sizeof(err_msg)) {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache",
+                                "telemetry_cfg_load_failed");
+        } else {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache",
+                                err_msg);
+        }
+    }
     const char *mode = "full"; /* TODO: detect incremental when available */
     char tags[256];
     tags[0] = '\0';
@@ -531,8 +553,17 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
         }
         (void)compute_repo_id(ctx, &repo_id);
     } while (0);
-    (void)gm_telemetry_build_tags(&tcfg, branch, mode, repo_canon, &repo_id,
-                                  tags, sizeof(tags));
+    gm_result_void_t tags_rc = gm_telemetry_build_tags(&tcfg, branch, mode,
+                                                       repo_canon, &repo_id,
+                                                       tags, sizeof(tags));
+    if (!tags_rc.ok) {
+        if (tags_rc.u.err != NULL) {
+            gm_error_free(tags_rc.u.err);
+        }
+        tags[0] = '\0';
+        (void)gm_logger_log(&ctx->logger_port, GM_LOG_WARN, "cache",
+                            "telemetry_tags_build_failed");
+    }
     if (tcfg.extras_dropped) {
         (void)gm_logger_log(&ctx->logger_port, GM_LOG_WARN, "cache",
                             "telemetry extras dropped=1");
@@ -541,6 +572,7 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
     /* Log start */
     {
         char msg[256];
+        msg[0] = '\0';
         const gm_log_kv_t kvs[] = {
             {.key = "event", .value = "rebuild_start"},
             {.key = "branch", .value = branch},
@@ -548,9 +580,24 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
         };
         gm_log_formatter_fn fmt = ctx->log_formatter ? ctx->log_formatter
                                                      : gm_log_format_render_default;
-        (void)fmt(kvs, sizeof(kvs) / sizeof(kvs[0]),
-                  (tcfg.log_format == GM_LOG_FMT_JSON), msg, sizeof(msg));
-        (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache", msg);
+        gm_result_void_t fmt_rc = fmt(kvs, sizeof(kvs) / sizeof(kvs[0]),
+                                      (tcfg.log_format == GM_LOG_FMT_JSON),
+                                      msg, sizeof(msg));
+        if (!fmt_rc.ok) {
+            if (fmt_rc.u.err != NULL) gm_error_free(fmt_rc.u.err);
+            int alt = gm_snprintf(msg, sizeof(msg),
+                                  "event=rebuild_start branch=%s mode=%s",
+                                  branch, mode);
+            if (alt < 0 || (size_t)alt >= sizeof(msg)) {
+                msg[0] = '\0';
+            }
+        }
+        if (msg[0] == '\0') {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache",
+                                "rebuild_start");
+        } else {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache", msg);
+        }
     }
 
     result_code = cache_prepare_rebuild(ctx, branch, force_full, &old_meta,
@@ -633,12 +680,21 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
     /* Log success */
     if (result_code == GM_OK) {
         char msg[256];
+        msg[0] = '\0';
         char edge_count_buf[32];
         char dur_buf[32];
-        (void)gm_snprintf(edge_count_buf, sizeof(edge_count_buf), "%u",
-                          (unsigned)meta.edge_count);
-        (void)gm_snprintf(dur_buf, sizeof(dur_buf), "%llu",
-                          (unsigned long long)meta.build_time_ms);
+        int edge_rc = gm_snprintf(edge_count_buf, sizeof(edge_count_buf), "%u",
+                                  (unsigned)meta.edge_count);
+        if (edge_rc < 0 || (size_t)edge_rc >= sizeof(edge_count_buf)) {
+            result_code = GM_ERR_BUFFER_TOO_SMALL;
+            goto cleanup;
+        }
+        int dur_rc = gm_snprintf(dur_buf, sizeof(dur_buf), "%llu",
+                                 (unsigned long long)meta.build_time_ms);
+        if (dur_rc < 0 || (size_t)dur_rc >= sizeof(dur_buf)) {
+            result_code = GM_ERR_BUFFER_TOO_SMALL;
+            goto cleanup;
+        }
         const gm_log_kv_t kvs[] = {
             {.key = "event", .value = "rebuild_ok"},
             {.key = "branch", .value = branch},
@@ -648,17 +704,39 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
         };
         gm_log_formatter_fn fmt = ctx->log_formatter ? ctx->log_formatter
                                                      : gm_log_format_render_default;
-        (void)fmt(kvs, sizeof(kvs) / sizeof(kvs[0]),
-                  (tcfg.log_format == GM_LOG_FMT_JSON), msg, sizeof(msg));
-        (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache", msg);
+        gm_result_void_t fmt_rc = fmt(kvs, sizeof(kvs) / sizeof(kvs[0]),
+                                      (tcfg.log_format == GM_LOG_FMT_JSON),
+                                      msg, sizeof(msg));
+        if (!fmt_rc.ok) {
+            if (fmt_rc.u.err != NULL) gm_error_free(fmt_rc.u.err);
+            int alt = gm_snprintf(msg, sizeof(msg),
+                                  "event=rebuild_ok branch=%s mode=%s", branch,
+                                  mode);
+            if (alt < 0 || (size_t)alt >= sizeof(msg)) {
+                msg[0] = '\0';
+            }
+        }
+        if (msg[0] == '\0') {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache",
+                                "rebuild_ok");
+        } else {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache", msg);
+        }
     }
 
 cleanup:
     cache_cleanup(ctx, forward_map, reverse_map, &temp_dir);
     if (result_code != GM_OK) {
         char msg[256];
+        msg[0] = '\0';
         char code_buf[16];
-        (void)gm_snprintf(code_buf, sizeof(code_buf), "%d", result_code);
+        int code_rc = gm_snprintf(code_buf, sizeof(code_buf), "%d",
+                                  result_code);
+        if (code_rc < 0 || (size_t)code_rc >= sizeof(code_buf)) {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache",
+                                "rebuild_failed format_code_overflow");
+            code_buf[0] = '\0';
+        }
         const gm_log_kv_t kvs[] = {
             {.key = "event", .value = "rebuild_failed"},
             {.key = "branch", .value = branch},
@@ -667,9 +745,24 @@ cleanup:
         };
         gm_log_formatter_fn fmt = ctx->log_formatter ? ctx->log_formatter
                                                      : gm_log_format_render_default;
-        (void)fmt(kvs, sizeof(kvs) / sizeof(kvs[0]),
-                  (tcfg.log_format == GM_LOG_FMT_JSON), msg, sizeof(msg));
-        (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache", msg);
+        gm_result_void_t fmt_rc = fmt(kvs, sizeof(kvs) / sizeof(kvs[0]),
+                                      (tcfg.log_format == GM_LOG_FMT_JSON),
+                                      msg, sizeof(msg));
+        if (!fmt_rc.ok) {
+            if (fmt_rc.u.err != NULL) gm_error_free(fmt_rc.u.err);
+            int alt = gm_snprintf(msg, sizeof(msg),
+                                  "event=rebuild_failed branch=%s mode=%s", branch,
+                                  mode);
+            if (alt < 0 || (size_t)alt >= sizeof(msg)) {
+                msg[0] = '\0';
+            }
+        }
+        if (msg[0] == '\0') {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache",
+                                "rebuild_failed");
+        } else {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache", msg);
+        }
         cache_diag_emit(ctx, "rebuild_failed", branch, result_code);
     }
     return result_code;

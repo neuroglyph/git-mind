@@ -302,7 +302,7 @@ test_edge_equal_semantics = executable('test_edge_equal_semantics',
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_cache_meta = executable('test_cache_meta',
-  'core/tests/unit/test_cache_meta.c',
+  'core/tests/integration/test_cache_meta.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
@@ -319,13 +319,13 @@ test_fs_path_utils = executable('test_fs_path_utils',
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_journal_mixed_cbor = executable('test_journal_mixed_cbor',
-  'core/tests/unit/test_journal_mixed_cbor.c',
+  'core/tests/integration/test_journal_mixed_cbor.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_cache_query = executable('test_cache_query',
-  'core/tests/unit/test_cache_query.c',
+  'core/tests/integration/test_cache_query.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
@@ -337,7 +337,7 @@ test_cache_strict_equality = executable('test_cache_strict_equality',
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_cache_branch_limits = executable('test_cache_branch_limits',
-  'core/tests/unit/test_cache_branch_limits.c',
+  'core/tests/integration/test_cache_branch_limits.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
@@ -360,13 +360,13 @@ test_cache_shard_distribution = executable('test_cache_shard_distribution',
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_cache_tree_size = executable('test_cache_tree_size',
-  'core/tests/unit/test_cache_tree_size.c',
+  'core/tests/integration/test_cache_tree_size.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_repo_build_tree = executable('test_repo_build_tree',
-  'core/tests/unit/test_repo_build_tree.c',
+  'core/tests/integration/test_repo_build_tree.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
@@ -476,20 +476,21 @@ test('edge_cbor_oid', test_edge_cbor_oid)
 test('edge_attributed_cbor', test_edge_attributed_cbor)
 test('attribution_domain', test_attribution_domain)
 test('edge_equal_semantics', test_edge_equal_semantics)
-test('cache_meta', test_cache_meta)
+test('cache_meta', test_cache_meta, suite: 'integration')
 test('cache_edge_map', test_cache_edge_map)
-test('journal_mixed_cbor', test_journal_mixed_cbor)
-test('cache_query', test_cache_query)
+test('journal_mixed_cbor', test_journal_mixed_cbor, suite: 'integration')
+test('cache_query', test_cache_query, suite: 'integration')
 test('cache_strict_equality', test_cache_strict_equality)
-test('cache_branch_limits', test_cache_branch_limits)
+test('cache_branch_limits', test_cache_branch_limits, suite: 'integration')
 test('log_formatter', test_log_formatter)
 test('journal_safety', test_journal_safety)
 test('cache_shard_distribution', test_cache_shard_distribution)
-test('cache_tree_size', test_cache_tree_size)
-test('repo_build_tree', test_repo_build_tree)
+test('cache_tree_size', test_cache_tree_size, suite: 'integration')
+test('repo_build_tree', test_repo_build_tree, suite: 'integration')
 test('journal_e2e_libgit2', test_journal_e2e_libgit2)
 test('diagnostics_port', test_diagnostics_port)
 test('journal_nff_retry', test_journal_nff_retry)
+test('journal_port', test_journal_port)
 test('journal_port_append_flow', test_journal_port_append_flow)
 test('edge_oid_fallback', test_edge_oid_fallback)
 test('ref_utils', test_ref_utils)
