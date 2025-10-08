@@ -7,6 +7,9 @@ tags: [roadmap]
 status: draft
 ---
 
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
+<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+
 # Product Roadmap (Placeholder)
 
 ## Table of Contents
@@ -15,4 +18,3 @@ status: draft
 - Milestones
 
 Content to be provided.
-

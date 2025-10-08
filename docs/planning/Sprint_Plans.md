@@ -7,6 +7,9 @@ tags: [sprint]
 status: draft
 ---
 
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
+<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+
 # Sprint Plans (Placeholder)
 
 ## Table of Contents
@@ -15,4 +18,3 @@ status: draft
 - Backlog
 
 Content to be provided.
-

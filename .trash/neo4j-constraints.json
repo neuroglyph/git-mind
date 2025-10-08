@@ -1,8 +1,0 @@
-{
-  "statements": [
-    { "statement": "CREATE CONSTRAINT task_id IF NOT EXISTS FOR (t:Task) REQUIRE t.id IS UNIQUE" },
-    { "statement": "CREATE CONSTRAINT file_path IF NOT EXISTS FOR (f:File) REQUIRE f.path IS UNIQUE" },
-    { "statement": "CREATE CONSTRAINT task_repo_exists IF NOT EXISTS FOR (t:Task) REQUIRE (t.repo) IS NOT NULL" },
-    { "statement": "CREATE CONSTRAINT file_repo_exists IF NOT EXISTS FOR (f:File) REQUIRE (f.repo) IS NOT NULL" }
-  ]
-}

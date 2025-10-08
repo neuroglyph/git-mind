@@ -18,6 +18,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+.crush/
 
 # Environment files
 .env
@@ -47,6 +48,7 @@ Temporary Items
 .apdisk
 ehthumbs.db
 Thumbs.db
+.trash/
 
 # VS Code
 .vscode/*

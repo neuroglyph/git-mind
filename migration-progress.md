@@ -1,3 +1,16 @@
+---
+title: Hexagonal Architecture Migration Progress
+description: Source of truth for tracking the hex migration across modules.
+audience: [developers]
+domain: [architecture]
+tags: [hexagonal, ports, adapters, migration]
+status: draft
+last_updated: 2025-10-08
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
+<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
+
 # Hexagonal Architecture Migration Progress
 
 Started: 2025-10-08

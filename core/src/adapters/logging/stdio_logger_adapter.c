@@ -4,6 +4,7 @@
 #include "stdio_logger_adapter.h"
 #include "gitmind/error.h"
 #include "gitmind/result.h"
+#include "gitmind/time/time.h"
 #include <stdlib.h>
 #include <time.h>
 
@@ -32,12 +33,37 @@ static gm_result_void_t log_impl(void *self, gm_log_level_t level,
     if (level < state->min_level) {
         return gm_ok_void();
     }
-    time_t now = time(NULL);
-    struct tm tm;
-    gmtime_r(&now, &tm);
+    const gm_time_ops_t *time_ops = gm_time_ops_default();
+    time_t now_val = 0;
+    if (time_ops && time_ops->time) {
+        gm_result_time_t t = time_ops->time(&now_val);
+        if (!t.ok) {
+            return gm_ok_void();
+        }
+    } else {
+        now_val = time(NULL);
+    }
+
+    struct tm tm_val;
+    if (time_ops && time_ops->gmtime_r) {
+        gm_result_tm_ptr_t gmr = time_ops->gmtime_r(&now_val, &tm_val);
+        if (!gmr.ok) {
+            return gm_ok_void();
+        }
+    } else {
+        (void)gmtime_r(&now_val, &tm_val);
+    }
+
     char ts[32];
-    if (strftime(ts, sizeof(ts), "%Y-%m-%dT%H:%M:%SZ", &tm) == 0) {
-        ts[0] = '\0';
+    if (time_ops && time_ops->strftime) {
+        gm_result_size_t sr = time_ops->strftime(ts, sizeof(ts), "%Y-%m-%dT%H:%M:%SZ", &tm_val);
+        if (!sr.ok || sr.u.val == 0U) {
+            ts[0] = '\0';
+        }
+    } else {
+        if (strftime(ts, sizeof(ts), "%Y-%m-%dT%H:%M:%SZ", &tm_val) == 0) {
+            ts[0] = '\0';
+        }
     }
     fprintf(state->stream, "%s [%s] %s: %s\n", ts, level_name(level),
             component ? component : "core", message ? message : "");
