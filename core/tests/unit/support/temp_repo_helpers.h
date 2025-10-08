@@ -22,24 +22,57 @@
 #include "gitmind/types.h"
 #include "gitmind/ports/fs_temp_port.h"
 
+typedef gm_result_void_t (*gm_test_temp_repo_provider_fn)(const gm_fs_temp_port_t *port,
+                                                         const char *component,
+                                                         char *out_path,
+                                                         size_t out_size);
+
+static gm_result_void_t gm_test_default_temp_repo_provider(
+    const gm_fs_temp_port_t *port, const char *component, char *out_path,
+    size_t out_size);
+
+static inline gm_test_temp_repo_provider_fn *
+gm_test_temp_repo_provider_slot(void) {
+    static gm_test_temp_repo_provider_fn provider = NULL;
+    if (provider == NULL) {
+        provider = gm_test_default_temp_repo_provider;
+    }
+    return &provider;
+}
+
+/**
+ * Override the temporary repository provider used by unit tests.
+ *
+ * Passing `NULL` restores the default implementation, which uses the on-disk
+ * filesystem port to make a temp directory derived from the current working
+ * directory.
+ */
+static inline void
+gm_test_set_temp_repo_dir_provider(gm_test_temp_repo_provider_fn provider) {
+    gm_test_temp_repo_provider_fn *slot = gm_test_temp_repo_provider_slot();
+    *slot = provider != NULL ? provider : gm_test_default_temp_repo_provider;
+}
+
 /**
  * Acquire a repository-scoped temporary directory using the filesystem port.
  *
- * The helper derives the repo identifier from the current working directory so
- * that unit tests can reuse the same location schema that production paths use.
- *
- * @param port          Filesystem temp port providing the underlying adapter.
- * @param component     Short component name (no path separators).
- * @param out_path      Buffer that receives the absolute temp directory path.
- * @param out_size      Size of @p out_path in bytes.
- *
- * @return `gm_result_void_t` success/error result.
+ * Tests can override the implementation via
+ * `gm_test_set_temp_repo_dir_provider` to route the helper through fakes or
+ * in-memory adapters.
  */
 GM_NODISCARD static inline gm_result_void_t
 gm_test_make_temp_repo_dir(const gm_fs_temp_port_t *port,
                            const char *component,
                            char *out_path,
                            size_t out_size) {
+    gm_test_temp_repo_provider_fn provider =
+        *gm_test_temp_repo_provider_slot();
+    return provider(port, component, out_path, out_size);
+}
+
+static gm_result_void_t gm_test_default_temp_repo_provider(
+    const gm_fs_temp_port_t *port, const char *component, char *out_path,
+    size_t out_size) {
     if (port == NULL || component == NULL || component[0] == '\0' ||
         out_path == NULL || out_size == 0) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,

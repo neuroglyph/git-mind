@@ -53,6 +53,12 @@ CI_LOCAL_STAGE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/gitmind-ci-XXXXXX")
 WORKSPACE_COPY="$CI_LOCAL_STAGE_DIR/workspace"
 mkdir -p "$WORKSPACE_COPY"
 
+PREV_CLANG_TIDY=""
+if [ -f "$ROOT_DIR/clang-tidy-report.txt" ]; then
+  PREV_CLANG_TIDY="$CI_LOCAL_STAGE_DIR/prev-clang-tidy-report.txt"
+  cp "$ROOT_DIR/clang-tidy-report.txt" "$PREV_CLANG_TIDY"
+fi
+
 if command -v rsync >/dev/null 2>&1; then
   rsync -a --delete \
     --exclude '/build-local/' \
@@ -107,6 +113,15 @@ for artifact in clang-tidy-report.txt clang-tidy-report-full.txt compile_command
 done
 if [ -f "$WORKSPACE_COPY/build-local/compile_commands.json" ]; then
   cp "$WORKSPACE_COPY/build-local/compile_commands.json" "$ROOT_DIR/compile_commands.json"
+fi
+
+if [ -n "$PREV_CLANG_TIDY" ] && [ -f "$ROOT_DIR/clang-tidy-report.txt" ]; then
+  if ! diff -u "$PREV_CLANG_TIDY" "$ROOT_DIR/clang-tidy-report.txt" > "$ROOT_DIR/clang-tidy-report.diff"; then
+    echo "clang-tidy diff written to clang-tidy-report.diff"
+  else
+    rm -f "$ROOT_DIR/clang-tidy-report.diff"
+    echo "clang-tidy report unchanged"
+  fi
 fi
 
 [ $status -eq 0 ] || exit $status
