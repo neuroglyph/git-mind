@@ -126,7 +126,6 @@ recent_developments:
 
 - Language: C23 with warnings-as-errors; no VLAs or shadowing; explicit prototypes.
 - Formatting: `.clang-format` (LLVM-based, 4 spaces, 80 cols, pointer alignment right). Pre-commit runs `clang-format`.
-- **NEVER** use `NOLINT` or other mechanisms to suppress clang-tidy warnings. All warnings must be fixed.
 - Naming: functions/vars `lower_snake_case` (prefix `gm_`), macros `UPPER_SNAKE`, types end in `_t`, header guards `GITMIND_*`.
 - Includes: prefer specific headers; order/regroup per `.clang-format`.
  - Public headers must be umbrella-safe: compile standalone, correct include order, stable header guards, and `extern "C"` when included from C++.
@@ -139,14 +138,9 @@ recent_developments:
 
 ## Commit & Pull Request Guidelines
 
-- Conventional commits: `type(scope): description` (e.g., `fix(core/cbor): handle null keys`).
-- Every PR should reference a corresponding GitHub issue. Commits closing an issue should use the `Fixes #<number>` syntax.
-- For any non-trivial task, briefly outline your plan of attack in the PR description or an associated issue. This includes the files you expect to change and the verification steps you will take.
+- Conventional commits: `type(scope): description` (e.g., `fix(core/cbor): handle null keys`). Reference issues (`Fixes #123`).
 - PRs must describe changes, link issues, include a short test plan, pass CI, and introduce no new clang-tidy warnings (`./tools/docker-clang-tidy.sh`). Update docs when applicable.
-- **NEVER** use `git add -A` or `git commit -a`. Always stage changes intentionally and individually (`git add <path>`) to ensure only desired changes are included.
-- **NEVER** alter, disable, or otherwise circumvent git hooks or tests. They are critical for maintaining code quality and repository integrity.
-- After a PR is approved and all checks pass, ask the user if they want you to push the changes and open a pull request.
-- Code review (CodeRabbit): Keep `.coderabbit.yml` updated. Prefer summary reviews, limit per-line comments on docs. If rejecting a suggestion, add a note under `docs/code-reviews/rejected-suggestions/{commit}_{branch}_{PR#}_{suggestion}.md` with a link to the original comment and rationale.
+ - Code review (CodeRabbit): Keep `.coderabbit.yml` updated. Prefer summary reviews, limit per-line comments on docs. If rejecting a suggestion, add a note under `docs/code-reviews/rejected-suggestions/{commit}_{branch}_{PR#}_{suggestion}.md` with a link to the original comment and rationale.
 
 ## Security & Configuration
 
@@ -394,10 +388,6 @@ Every outbound port ships with: (a) production adapter, (b) deterministic fake u
 - Guardrails always on: run `make ci-local` (Docker) for every commit; touched files must be clang-tidy clean.
 - Document progress: update `AGENTS.md` and `docs/activity/` as ports or adapters graduate from TODO to done.
 
-#### Integration of Legacy Concerns
-- **Security Primitives:** All new security features must be designed and implemented as ports and adapters within the hexagonal architecture.
-- **Memory Safety:** All module migrations must address memory safety concerns, including bounds checking and null checks.
-
 ### One-Thing Rule (Touched code policy)
 
 - You touch it? You refactor it. If you modify a type or function that clearly bundles multiple concerns in a single file, split out the thing you touched into its own file (1 file = 1 thing):
@@ -548,8 +538,3 @@ References
 - Code review seeding script: `tools/review/seed_feedback_from_github.py` (uses `GITHUB_TOKEN`).
 - CodeRabbit config: `.coderabbit.yml` (summary-first, caps, doc filters).
 - PR template: `.github/pull_request_template.md` (guidance for reviewers).
-
-
----
-
-{"date":"2025-10-07","time":"15:30","summary":"Conducted a comprehensive repository analysis and cleanup, reconciled legacy documentation into a single source of truth (`AGENTS.md`), and formulated a detailed, actionable plan for the hexagonal architecture migration.","topics":[{"topic":"`CLAUDE.md` vs `AGENTS.md` Reconciliation","what":"Compared the two files to identify outdated information.","why":"To consolidate agent instructions into a single source of truth.","context":"`CLAUDE.md` was the old, conversational guide, while `AGENTS.md` is the new, technical guide.","issue":"Discrepancies and outdated information in `CLAUDE.md`.","resolution":"Created `FACTS.md` to compare the files, then updated `AGENTS.md` with the relevant information from `CLAUDE.md`.","future_work":"None.","time_percent":25},{"topic":"`TASKLIST.md` Analysis","what":"Analyzed `TASKLIST.md` to determine the relevance of its tasks.","why":"To understand the project's historical context and current priorities.","context":"`TASKLIST.md` was a historical document from mid-2022.","issue":"The file was largely outdated and did not reflect the current focus on the hexagonal architecture.","resolution":"Appended an analysis to `TASKLIST.md`, then deleted the file and integrated the relevant parts into `AGENTS.md`.","future_work":"None.","time_percent":25},{"topic":"Repository Cleanup","what":"Identified and deleted obsolete files and directories.","why":"To improve the repository's hygiene.","context":"The repository contained several build artifacts and legacy files.","issue":"The presence of unnecessary files cluttered the repository.","resolution":"Created `file-matrix.md` to analyze the file hierarchy, then deleted the unnecessary files and updated `.gitignore`.","future_work":"None.","time_percent":25},{"topic":"Hexagonal Architecture Migration Planning","what":"Created a detailed prompt for completing the hexagonal architecture migration.","why":"To provide a clear and actionable plan for the next phase of development.","context":"The hexagonal architecture is the top priority for the project.","issue":"The need for a detailed, step-by-step plan to guide the migration.","resolution":"Created a comprehensive prompt that includes progress tracking, testing, and documentation requirements.","future_work":"Execute the prompt to complete the migration.","time_percent":25}],"key_decisions":["`AGENTS.md` is the single source of truth for agent instructions.","`TASKLIST.md` is obsolete and has been deleted.","The hexagonal architecture migration is the top priority."],"action_items":[{"task":"Execute the hexagonal architecture migration prompt.","owner":"AI agent"}]}

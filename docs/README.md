@@ -22,7 +22,7 @@ Table of Contents
 
 This index organizes documentation with stable links so the project can be paused and resumed without confusion.
 
-- Start here if you’re new: [Journal Architecture](architecture/journal-architecture.md)
+- Start here if you’re new: [Journal Architecture Pivot](architecture/journal-architecture-pivot.md)
 - Semantics prototype PRD: [PRD: First-Class Semantics](PRDs/PRD-git-mind-semantics-time-travel-prototype.md)
 - ADR 0001 (Semantics): [ADR 0001](adr/0001-first-class-semantics.md)
 - Planning hub: [Planning docs](planning/)
@@ -44,8 +44,8 @@ This index organizes documentation with stable links so the project can be pause
 ## Quick Map of Existing Docs
 
 - Architecture and design
-  - [Journal Architecture](architecture/journal-architecture.md)
-  - [Cache Architecture](architecture/cache-architecture.md)
+  - [Journal Architecture Pivot](architecture/journal-architecture-pivot.md)
+  - [Bitmap Cache Design](architecture/bitmap-cache-design.md)
   - [Attribution System](architecture/attribution-system.md)
   - [Modular Restructure Plan](architecture/MODULAR_RESTRUCTURE_PLAN.md)
 - CLI

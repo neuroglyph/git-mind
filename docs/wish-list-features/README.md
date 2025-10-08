@@ -7,9 +7,6 @@ tags: [wishlist]
 status: draft
 ---
 
-<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
-<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
-
 # Wish List Features (Placeholder)
 
 ## Table of Contents
@@ -17,3 +14,4 @@ status: draft
 - Ideas
 
 Content to be provided.
+

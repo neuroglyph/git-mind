@@ -7,9 +7,6 @@ tags: [specs]
 status: draft
 ---
 
-<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
-<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
-
 # Technical Specifications (Placeholder)
 
 ## Table of Contents
@@ -18,3 +15,4 @@ status: draft
 - Components
 
 Content to be provided.
+

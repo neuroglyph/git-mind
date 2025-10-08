@@ -7,9 +7,6 @@ tags: [prd, mcp]
 status: draft
 ---
 
-<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
-<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
-
 # PRD — Co‑Thought MCP Service
 
 ## Table of Contents
@@ -19,3 +16,4 @@ status: draft
 - API Surface
 
 This is a placeholder to satisfy docs link checks.
+

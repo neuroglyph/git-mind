@@ -46,5 +46,5 @@ The `docs/` directory had grown organically with mixed audiences and no single e
 - [docs/README.md](../README.md)
 - [Product Roadmap](../planning/Product_Roadmap.md)
 - [Release Plans](../planning/Release_Plans.md)
-- [System Architecture](../architecture/system-overview.md)
+- [System Architecture](../architecture/System_Architecture.md)
 - [.legacy/README.md](../../.legacy/README.md)

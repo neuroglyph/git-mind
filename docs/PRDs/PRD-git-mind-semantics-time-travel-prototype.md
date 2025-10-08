@@ -7,9 +7,6 @@ tags: [prd, semantics]
 status: draft
 ---
 
-<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
-<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
-
 # PRD — First-Class Semantics (Time-Travel Prototype)
 
 ## Table of Contents
@@ -19,3 +16,4 @@ status: draft
 - Non-Goals
 
 This is a placeholder to satisfy docs link checks. The full document will be authored separately.
+
