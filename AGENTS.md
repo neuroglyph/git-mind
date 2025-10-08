@@ -426,6 +426,11 @@ Every outbound port ships with: (a) production adapter, (b) deterministic fake u
 See archives under `docs/activity/` for older logs.
 
 ### 2025-10-08
+- Workspace hygiene
+  - Reworked `tools/ci/ci_local.sh` so `make ci-local` stages a temp copy of the repo, runs the container against the copy, and syncs back artifacts—bind mounts no longer risk touching the real tree.
+  - Added `core/tests/unit/support/temp_repo_helpers.h` and refactored libgit2-heavy unit tests to request scratch repos through the filesystem temp port, keeping `.gm_*` directories out of the workspace.
+  - README quickstart now documents the staged-copy behavior; CI run verified via `make ci-local`.
+  - Opened PR #178 (`chore/temp-port-ci-copy`) with the above changes.
 - Telemetry & logging
   - Added internal telemetry config shim (`core/include/gitmind/telemetry/internal/config.h`, `core/src/telemetry/config.c`).
   - Implemented repo tag hashing flag `GITMIND_METRICS_REPO_HASH_ALGO=sha256|fnv` (default `fnv`); tests cover `sha256` path.
