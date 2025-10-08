@@ -11,6 +11,8 @@
 #include "gitmind/adapters/git/libgit2_repository_port.h"
 
 #include "gitmind/constants_internal.h"
+#include "core/src/adapters/diagnostics/stderr_diagnostics_adapter.h"
+#include "core/src/adapters/logging/stdio_logger_adapter.h"
 
 #include <git2.h>
 
@@ -115,10 +117,11 @@ static void safety_check(void) {
 
 /* Print usage */
 static void print_usage(const char *prog) {
-    printf("Usage: %s [--verbose] [--porcelain] <command> [args...]\n", prog);
+    printf("Usage: %s [--verbose] [--porcelain] [--json] <command> [args...]\n", prog);
     printf("\nGlobal options:\n");
-    printf("  --verbose      Show verbose output\n");
-    printf("  --porcelain    Machine-readable output\n");
+    printf("  --verbose      Show verbose output (DEBUG logs)\n");
+    printf("  --porcelain    Machine-readable CLI output (key=value)\n");
+    printf("  --json         Emit service logs as JSON (to stderr)\n");
     printf("\nCommands:\n");
     printf("  link <source> <target> [--type <type>]  Create a link between "
            "files\n");
@@ -149,6 +152,11 @@ static int parse_global_flags(int *argc, char ***argv, gm_output_level_t *level,
             i++;
         } else if (strcmp((*argv)[i], "--porcelain") == 0) {
             *format = GM_OUTPUT_PORCELAIN;
+            i++;
+        } else if (strcmp((*argv)[i], "--json") == 0) {
+            /* Services read GITMIND_LOG_FORMAT; set it here so all subsequent
+             * operations format their log messages as compact JSON strings. */
+            (void)setenv("GITMIND_LOG_FORMAT", "json", 1);
             i++;
         } else {
             /* Not a global flag, keep it */
@@ -237,6 +245,18 @@ static int init_context(gm_context_t *ctx, gm_output_level_t level,
         git_libgit2_shutdown();
         return GM_ERR_OUT_OF_MEMORY;
     }
+
+    /* Optional: wire diagnostics/logging adapters for local usage */
+    const char *dbg = getenv("GITMIND_DEBUG_EVENTS");
+    if (dbg && (strcmp(dbg, "1")==0 || strcasecmp(dbg, "true")==0 || strcasecmp(dbg, "on")==0)) {
+        /* stderr diagnostics adapter */
+        extern gm_result_void_t gm_stderr_diagnostics_port_init(gm_diagnostics_port_t *port);
+        (void)gm_stderr_diagnostics_port_init(&ctx->diag_port);
+    }
+    /* Basic stdio logger: INFO when normal, DEBUG when verbose */
+    extern gm_result_void_t gm_stdio_logger_port_init(gm_logger_port_t *port, FILE *stream, int min_level);
+    (void)gm_stdio_logger_port_init(&ctx->logger_port, stderr,
+                                    (level == GM_OUTPUT_VERBOSE) ? 10 /* DEBUG */ : 20 /* INFO */);
 
     return GM_OK;
 }

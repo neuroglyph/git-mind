@@ -32,6 +32,9 @@
 #include "gitmind/ports/env_port.h"
 #include "gitmind/telemetry/internal/config.h"
 #include "gitmind/telemetry/internal/log_format.h"
+#include "gitmind/ports/diagnostic_port.h"
+#include "gitmind/journal/internal/codec.h"
+#include "gitmind/journal/internal/append_plan.h"
 #define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
 #define CLOCKS_PER_MS                                                       \
     ((clock_t)((CLOCKS_PER_SEC + (MILLIS_PER_SECOND - 1)) / MILLIS_PER_SECOND))
@@ -44,6 +47,7 @@ typedef struct {
     gm_git_repository_port_t *repo_port;
     gm_oid_t empty_tree_oid;
     char ref_name[REF_NAME_BUFFER_SIZE];
+    gm_context_t *app_ctx; /* for diagnostics */
 } journal_ctx_t;
 
 typedef struct {
@@ -59,6 +63,7 @@ static int journal_init(journal_ctx_t *jctx, gm_context_t *ctx,
         return GM_ERR_INVALID_STATE;
     }
     jctx->repo_port = &ctx->git_repo_port;
+    jctx->app_ctx = ctx;
 
     /* Parse empty tree OID */
     if (gm_oid_from_hex(&jctx->empty_tree_oid, EMPTY_TREE_SHA) != GM_OK) {
@@ -91,23 +96,12 @@ static int get_current_branch(gm_git_repository_port_t *port, char *branch_name,
 
 static int encode_cbor_message(const uint8_t *cbor_data, size_t cbor_len,
                                char **message_out, size_t *message_len_out) {
-    const int variant = sodium_base64_VARIANT_ORIGINAL;
-    size_t required = sodium_base64_ENCODED_LEN(cbor_len, variant);
-    char *encoded = (char *)malloc(required);
-    if (encoded == NULL) {
-        return GM_ERR_OUT_OF_MEMORY;
-    }
-
-    sodium_bin2base64(encoded, required, cbor_data, cbor_len, variant);
-    if (required > 0U) {
-        encoded[required - 1U] = '\0';
-    }
-
-    *message_out = encoded;
-    if (message_len_out != NULL) {
-        *message_len_out = required;
-    }
-    return GM_OK;
+    gm_result_void_t r = gm_journal_encode_message(cbor_data, cbor_len,
+                                                   message_out, message_len_out);
+    if (r.ok) return GM_OK;
+    int code = GM_ERR_UNKNOWN;
+    if (r.u.err) { code = r.u.err->code; gm_error_free(r.u.err); }
+    return code;
 }
 
 typedef struct {
@@ -158,18 +152,19 @@ static int create_journal_commit(journal_ctx_t *jctx, const uint8_t *cbor_data,
         return message_rc;
     }
 
-    const gm_oid_t *parent_list = NULL;
-    size_t parent_count = 0U;
-    if (lookup_ctx.found) {
-        parent_list = &lookup_ctx.tip.oid;
-        parent_count = 1U;
-    }
+    const gm_oid_t *parent_list = lookup_ctx.found ? &lookup_ctx.tip.oid : NULL;
+
+    gm_journal_commit_plan_t plan = {0};
+    gm_result_void_t pr = gm_journal_build_commit_plan(&jctx->empty_tree_oid,
+                                                       parent_list, message,
+                                                       &plan);
+    if (!pr.ok) { int code = pr.u.err ? pr.u.err->code : GM_ERR_UNKNOWN; if (pr.u.err) gm_error_free(pr.u.err); free(message); return code; }
 
     gm_git_commit_spec_t spec = {
-        .tree_oid = &jctx->empty_tree_oid,
-        .message = message,
-        .parents = parent_list,
-        .parent_count = parent_count,
+        .tree_oid = plan.tree_oid,
+        .message = plan.message,
+        .parents = plan.parents,
+        .parent_count = (unsigned)plan.parent_count,
     };
 
     gm_result_void_t commit_result =
@@ -208,6 +203,12 @@ static int flush_journal_batch(journal_ctx_t *jctx, const uint8_t *buffer,
         gm_oid_t commit_oid;
         int commit_rc = create_journal_commit(jctx, buffer, length, &commit_oid);
         if (commit_rc != GM_OK) {
+            if (jctx->app_ctx) {
+                char code_buf[16]; (void)gm_snprintf(code_buf, sizeof code_buf, "%d", commit_rc);
+                const gm_diag_kv_t kvs[] = {{.key="code", .value=code_buf}};
+                (void)gm_diag_emit(&jctx->app_ctx->diag_port, "journal",
+                                   "journal_commit_create_failed", kvs, 1);
+            }
             return commit_rc;
         }
 
@@ -230,8 +231,22 @@ static int flush_journal_batch(journal_ctx_t *jctx, const uint8_t *buffer,
         }
 
         if (update_code == GM_ERR_ALREADY_EXISTS && attempt == 0) {
+            if (jctx->app_ctx) {
+                const gm_diag_kv_t kvs[] = {{.key="ref", .value=jctx->ref_name}};
+                (void)gm_diag_emit(&jctx->app_ctx->diag_port, "journal",
+                                   "journal_nff_retry", kvs, 1);
+            }
             /* Reference moved forward; recompute parents and try once more. */
             continue;
+        }
+        if (jctx->app_ctx) {
+            char code_buf[16]; (void)gm_snprintf(code_buf, sizeof code_buf, "%d", update_code);
+            const gm_diag_kv_t kvs[] = {
+                {.key="ref", .value=jctx->ref_name},
+                {.key="code", .value=code_buf},
+            };
+            (void)gm_diag_emit(&jctx->app_ctx->diag_port, "journal",
+                               "journal_ref_update_failed", kvs, 2);
         }
         return update_code;
     }

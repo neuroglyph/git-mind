@@ -425,6 +425,35 @@ Every outbound port ships with: (a) production adapter, (b) deterministic fake u
 
 See archives under `docs/activity/` for older logs.
 
+### 2025-10-08
+- Telemetry & logging
+  - Added internal telemetry config shim (`core/include/gitmind/telemetry/internal/config.h`, `core/src/telemetry/config.c`).
+  - Implemented repo tag hashing flag `GITMIND_METRICS_REPO_HASH_ALGO=sha256|fnv` (default `fnv`); tests cover `sha256` path.
+  - Introduced log formatter DI seam: `gm_log_formatter_fn` in `gm_context_t` (internal) with default renderer (`core/src/telemetry/log_format.c`); services format KV → render (JSON/text) → emit via `gm_logger_port`.
+- Cache
+  - Refactored cache rebuild service to use the formatter DI seam; emits `rebuild_start`/`rebuild_ok`/`rebuild_failed` logs and metrics (`cache.rebuild.duration_ms`, `cache.edges_processed_total`, `cache.tree_size_bytes`).
+  - Added end‑to‑end test using fakes for logger/metrics and a stub repo; metrics exercised by default.
+- Journal
+  - Scaffolded inbound port `gm_cmd_journal_port` (append/append_attributed) with thin coordinator.
+  - Instrumented journal append/read with logs + metrics via the formatter DI seam; unified tags (branch/mode/repo/extras). Removed legacy env branch override from writer; use repo HEAD via port.
+  - Added formatter unit test and a small journal port test using fake repo head.
+- Adapter contract tests
+  - Added libgit2 adapter test for `build_tree_from_directory` (verifies tree ODB object).
+- Docs
+  - Updated `docs/operations/Telemetry_Config.md` with repo hash flag, Quickstart, custom logger adapter guide, and note on advanced formatter DI seam.
+  - Pruned stale CLI links in docs index to keep docs checks green.
+- CI/Status
+  - `make ci-local` (Docker) green across the session; tidy diff‑guard ran. Branch: `feat/hex-ports-ci-green`. Merge‑only; no force pushes.
+- Next actions (paused for feedback)
+  - Journal: consider adding edge‑count metric on read (requires callback plumbing), and enable richer unit tests around the inbound port.
+  - Optional: regenerate concise CLI docs; consider flipping repo hash default to `sha256` after review.
+
+```jsonl
+{"ts":"2025-10-08T23:59:00Z","kind":"note","topic":"logging","msg":"Formatter DI seam added; cache/journal emitting structured logs; adapters remain the extension point."}
+{"ts":"2025-10-08T23:59:00Z","kind":"note","topic":"telemetry","msg":"Repo tag hashing supports sha256|fnv; tests and docs updated."}
+{"ts":"2025-10-08T23:59:00Z","kind":"note","topic":"journal","msg":"Inbound port scaffolded; append/read instrumented; writer env override removed; CI green."}
+```
+
 ### 2025-09-29
 - Merged PR #173 after tightening the remaining safe-string usage and OID helper semantics; rebased on `origin/main` and created `feat/next-hex-task` for the follow-up work.
 - Problems solved today: delivered GM.MVP.T001 (strict equality regressions + OID-first doc sweep), captured a fresh clang-tidy snapshot, and drafted the "State of the Repo" discussion.

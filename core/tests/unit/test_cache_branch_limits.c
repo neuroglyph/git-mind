@@ -93,7 +93,7 @@ int main(void) {
     git_libgit2_init();
 
     git_repository *repo = NULL;
-    int rc = git_repository_init(&repo, "./.gm_cache_branch_tmp", true);
+    int rc = git_repository_init(&repo, "./.gm_cache_branch_tmp", false);
     assert(rc == 0 && repo);
     set_user_config(repo);
 

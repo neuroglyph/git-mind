@@ -31,6 +31,7 @@
 #include "gitmind/util/oid.h"
 #include "gitmind/util/ref.h"
 #include "gitmind/telemetry/internal/config.h"
+#include "gitmind/ports/diagnostic_port.h"
 
 #define CLOCKS_PER_MS                                                       \
     ((clock_t)((CLOCKS_PER_SEC + (MILLIS_PER_SECOND - 1)) / MILLIS_PER_SECOND))
@@ -57,6 +58,19 @@ static int unwrap_result(gm_result_void_t result) {
         gm_error_free(result.u.err);
     }
     return code;
+}
+
+static void cache_diag_emit(gm_context_t *ctx, const char *event,
+                            const char *branch, int code) {
+    if (ctx == NULL) return;
+    char code_buf[16];
+    (void)gm_snprintf(code_buf, sizeof(code_buf), "%d", code);
+    const gm_diag_kv_t kvs[] = {
+        {.key = "branch", .value = branch ? branch : ""},
+        {.key = "code", .value = code_buf},
+    };
+    (void)gm_diag_emit(&ctx->diag_port, "cache", event, kvs,
+                       sizeof(kvs) / sizeof(kvs[0]));
 }
 
 static int compute_repo_id(gm_context_t *ctx, gm_repo_id_t *repo_id) {
@@ -341,6 +355,10 @@ static int cache_build_commit_and_update(const gm_git_repository_port_t *port,
     int result_code =
         build_tree_from_temp(port, inputs->temp_dir->path, &tree_oid);
     if (result_code != GM_OK) {
+        /* Emit via diagnostics port when available. We don't have ctx here, so skip. */
+        return result_code;
+    }
+    if (result_code != GM_OK) {
         return result_code;
     }
 
@@ -485,6 +503,7 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
     gm_edge_map_t *forward_map = NULL;
     gm_edge_map_t *reverse_map = NULL;
     gm_tempdir_t temp_dir = {0};
+    char stable_temp_path[GM_PATH_MAX];
     gm_cache_meta_t old_meta = {0};
     gm_cache_meta_t meta = {0};
     bool has_old_cache = false;
@@ -537,11 +556,21 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
     result_code = cache_prepare_rebuild(ctx, branch, force_full, &old_meta,
                                         &has_old_cache, &temp_dir);
     if (result_code != GM_OK) {
+        cache_diag_emit(ctx, "rebuild_prep_failed", branch, result_code);
         return result_code;
+    }
+
+    /* Stabilize temp dir path because fs port may reuse internal buffers. */
+    if (temp_dir.path != NULL) {
+        if (gm_strcpy_safe(stable_temp_path, sizeof(stable_temp_path),
+                           temp_dir.path) == GM_OK) {
+            temp_dir.path = stable_temp_path;
+        }
     }
 
     result_code = cache_build_edge_map(&forward_map, &reverse_map);
     if (result_code != GM_OK) {
+        cache_diag_emit(ctx, "rebuild_edge_map_failed", branch, result_code);
         cache_cleanup(ctx, forward_map, reverse_map, &temp_dir);
         return result_code;
     }
@@ -553,6 +582,7 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
                                           has_old_cache, &old_meta, &temp_dir,
                                           &total_edges);
     if (result_code != GM_OK) {
+        cache_diag_emit(ctx, "rebuild_collect_write_failed", branch, result_code);
         goto cleanup;
     }
 
@@ -563,6 +593,7 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
     result_code =
         cache_populate_meta(&ctx->git_repo_port, branch, &meta_inputs, &meta);
     if (result_code != GM_OK) {
+        cache_diag_emit(ctx, "rebuild_meta_failed", branch, result_code);
         goto cleanup;
     }
 
@@ -575,6 +606,7 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
                                                 &commit_inputs, &meta,
                                                 &final_commit);
     if (result_code == GM_OK && tcfg.metrics_enabled) {
+        /* diagnostic success can be added later if needed */
         /* duration */
         (void)gm_metrics_timing_ms(&ctx->metrics_port,
                                    "cache.rebuild.duration_ms",
@@ -638,6 +670,7 @@ cleanup:
         (void)fmt(kvs, sizeof(kvs) / sizeof(kvs[0]),
                   (tcfg.log_format == GM_LOG_FMT_JSON), msg, sizeof(msg));
         (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache", msg);
+        cache_diag_emit(ctx, "rebuild_failed", branch, result_code);
     }
     return result_code;
 }

@@ -69,7 +69,7 @@ int main(void) {
     git_libgit2_init();
 
     git_repository *repo = NULL;
-    int rc = git_repository_init(&repo, "./.gm_cache_query_tmp", true);
+    int rc = git_repository_init(&repo, "./.gm_cache_query_tmp", false);
     assert(rc == 0 && repo);
     set_user_config(repo);
     ensure_branch_with_commit(repo, "testq");

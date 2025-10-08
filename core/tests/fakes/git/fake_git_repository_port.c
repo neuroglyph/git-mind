@@ -784,6 +784,23 @@ static gm_result_void_t fake_reference_update(
 
         if (spec->target_oid != NULL) {
             fake->last_update_target = *spec->target_oid;
+            /* Record commit in the ref so walks can see it */
+            gm_fake_git_ref_entry_t *entry = NULL;
+            if (ensure_ref_entry(fake, spec->ref_name, &entry).ok) {
+                if (entry->commit_count < GM_FAKE_GIT_MAX_COMMITS_PER_REF) {
+                    gm_fake_git_commit_entry_t *commit =
+                        &entry->commits[entry->commit_count++];
+                    gm_memset_safe(commit, sizeof(*commit), 0, sizeof(*commit));
+                    commit->oid = *spec->target_oid;
+                    commit->has_message = (fake->last_commit_message[0] != '\0');
+                    if (commit->has_message) {
+                        (void)gm_strcpy_safe(commit->message,
+                                             sizeof(commit->message),
+                                             fake->last_commit_message);
+                    }
+                    commit->parent_count = 0U;
+                }
+            }
         } else {
             gm_memset_safe(&fake->last_update_target,
                            sizeof(fake->last_update_target), 0,

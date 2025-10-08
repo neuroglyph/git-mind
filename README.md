@@ -95,19 +95,37 @@ Install/build instructions: see `docs/install.md`.
 > - `meson setup build -Dforce_local_builds=true` — explicit Meson override
 > - `GITMIND_ALLOW_HOST_BUILD=1` — legacy env override (discouraged)
 
-CLI examples (subset implemented today):
+### CLI Quickstart (implemented today)
+
+Human output (stdout) + text logs (stderr):
 
 ```bash
-# Start linking
-git mind link README.md core/src/main.c --type documents
-git mind link core/src/auth.c tests/auth.test.c --type "tested-by"
-
-# Explore connections
-git mind list --from core/src/auth.c
-
-# Rebuild cache when needed
+git mind link README.md core/src/main.c --type references
+git mind list
 git mind cache-rebuild
 ```
+
+Porcelain output (stdout) + JSON logs (stderr):
+
+```bash
+git mind --json --porcelain list 2>logs.json | tee list.txt
+
+# list.txt (stdout)
+# type=IMPLEMENTS src=src/a.c tgt=include/a.h
+# ...
+
+# logs.json (stderr, one JSON per line)
+# {"event":"journal_read_start","branch":"main","mode":"read"}
+```
+
+Diagnostics breadcrumbs for debugging:
+
+```bash
+export GITMIND_DEBUG_EVENTS=1
+git mind cache-rebuild 2>diag.txt
+```
+
+More: see apps/cli/README.md.
 
 > [!NOTE]
 > Branch shorthands that touch git-mind (for example when you pass `--branch` to the CLI) are validated. Empty names, leading/trailing slashes, `refs/...` prefixes, `..`, `@{`, or characters such as `~ ^ : ? [ * \\` will be rejected with `GM_ERR_INVALID_ARGUMENT`. Trim to `feature/x` style if you hit the guardrail—the command leaves refs untouched on failure.
@@ -183,6 +201,12 @@ $ git mind list --from core/src/cache.c --format json
 - `docs/tutorial.md` — Hands‑on walkthrough
 - `docs/philosophy.md` — Why we built this
 - `docs/TECHNICAL.md` — How it works under the hood
+- `docs/operations/Observability.md` — Logs, metrics, diagnostics overview
+- `docs/operations/Telemetry_Config.md` — Telemetry knobs (env), JSON logs
+- `docs/operations/Diagnostics_Events.md` — Dev/test diagnostics events
+- `apps/cli/README.md` — CLI quickstart (flags, output channels, recipes)
+- `apps/cli/Scripting_Patterns.md` — Porcelain parsing and JSON log pipelines
+- `docs/architecture/hexagonal/Journal.md` — Journal hex split (domain vs app)
 - `CONTRIBUTING.md` — PRs welcome!
 
 ---

@@ -140,3 +140,13 @@ export GITMIND_METRICS_REPO_TAG=hash
 export GITMIND_METRICS_REPO_HASH_ALGO=sha256   # or fnv
 export GITMIND_METRICS_EXTRA_TAGS="team=dev,role=ops"
 ```
+
+## Diagnostics (Dev/Test)
+
+For low-volume debugging breadcrumbs (separate from logs/metrics), see Diagnostics Events. In the CLI, you can enable a stderr diagnostics sink by setting:
+
+```
+export GITMIND_DEBUG_EVENTS=1
+```
+
+When enabled, failure edges in cache/journal will print structured one-liners to stderr (and are also capturable in tests via a fake diagnostics sink). See: Diagnostics Events (docs/operations/Diagnostics_Events.md).

@@ -194,14 +194,28 @@ static void test_metrics_enabled_with_tags(void) {
     int rc = gm_cache_rebuild_execute(&ctx, "dev", true);
     assert(rc == GM_OK);
 
-    /* Metrics emitted (at least one timing entry) */
+    /* Metrics emitted (at least one timing entry). Additional counters from
+     * journal.read.* may be present due to internal reads during rebuild. */
     assert(met_state->timing_count >= 1);
-    assert(met_state->counter_count == 1);
-    /* Gauge may emit 0 if commit tree size retrieval isn't called; here it is */
+    /* Ensure cache edges counter exists (allow others as well). */
+    size_t found_cache_edges = 0;
+    for (size_t i = 0; i < met_state->counter_count; ++i) {
+        if (strcmp(met_state->counters[i].name, "cache.edges_processed_total") == 0) {
+            found_cache_edges = 1; break;
+        }
+    }
+    assert(found_cache_edges == 1);
+    /* Gauge should be present (tree size). */
     assert(met_state->gauge_count >= 1);
 
-    /* Check tags content */
-    const char *tags = met_state->timings[0].tags;
+    /* Check tags content on cache.rebuild.duration_ms specifically */
+    const char *tags = NULL;
+    for (size_t i = 0; i < met_state->timing_count; ++i) {
+        if (strcmp(met_state->timings[i].name, "cache.rebuild.duration_ms") == 0) {
+            tags = met_state->timings[i].tags; break;
+        }
+    }
+    assert(tags != NULL);
     assert(strstr(tags, "branch=dev") != NULL);
     assert(strstr(tags, "mode=full") != NULL);
     assert(strstr(tags, "repo=") != NULL);
