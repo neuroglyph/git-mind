@@ -354,6 +354,12 @@ test_cache_tree_size = executable('test_cache_tree_size',
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
+test_repo_build_tree = executable('test_repo_build_tree',
+  'core/tests/unit/test_repo_build_tree.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
 test_edge_oid_fallback = executable('test_edge_oid_fallback',
   'core/tests/unit/test_edge_oid_fallback.c',
   include_directories : inc,
@@ -422,6 +428,7 @@ test('cache_branch_limits', test_cache_branch_limits)
 test('journal_safety', test_journal_safety)
 test('cache_shard_distribution', test_cache_shard_distribution)
 test('cache_tree_size', test_cache_tree_size)
+test('repo_build_tree', test_repo_build_tree)
 test('edge_oid_fallback', test_edge_oid_fallback)
 test('ref_utils', test_ref_utils)
 test('fs_temp_port', test_fs_temp_port)
