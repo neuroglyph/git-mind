@@ -532,7 +532,7 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
                                 err_msg);
         }
     }
-    const char *mode = "full"; /* TODO: detect incremental when available */
+    const char *mode = "full"; /* incremental mode to be detected once available */
     char tags[256];
     tags[0] = '\0';
     gm_repo_id_t repo_id = {0};

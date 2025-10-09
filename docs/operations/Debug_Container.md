@@ -10,7 +10,7 @@ last_updated: 2025-10-09
 
 # Debug Container Workflow
 
-This guide codifies the staged debug loop we have been hand-running for cache/journal crashes. It keeps destructive binaries away from the working tree, wires in the CI Docker image, and bakes in the memory-ownership conventions from the Memory Allocation Strategies playbook.
+This guide codifies the staged debug loop we have been hand-running for cache and journal crashes. It keeps destructive binaries away from the working tree, wires in the CI Docker image, and applies the Memory Allocation Strategies ownership playbook.
 
 ## Why stage first?
 
@@ -24,39 +24,44 @@ This guide codifies the staged debug loop we have been hand-running for cache/jo
 ./tools/debug/debug-container.sh --packages "gdb valgrind" -- --login
 ```
 
-The script:
-- syncs the repo into a temp directory (`/tmp/gitmind-debug-XXXXXX` by default), respecting `.gitignore` and skipping build artifacts;
-- drops the `origin` remote inside the copy;
-- launches `gitmind/ci:clang-20` with the staged repo mounted at `/workspace`;
-- optionally installs extra apt packages when `--packages` is supplied (runs as root only when we need apt).
+The script performs the following:
 
-Key flags:
-- `--stage <dir>` reuse an existing staging checkout (set `--resync` to refresh).
-- `--keep-stage` retain the staged tree after exiting.
-- `--packages "gdb valgrind"` install extra tooling before running the requested command.
-- Anything after `--` executes as the container command; omit it to land in an interactive `bash` shell.
+- Syncs the repository into a temp directory (`/tmp/gitmind-debug-XXXXXX` by default), respecting `.gitignore` while skipping build artifacts.
+- Drops the `origin` remote inside the copy.
+- Launches `gitmind/ci:clang-20` with the staged repo mounted at `/workspace`.
+- Installs extra apt packages when `--packages` is supplied (runs as root only when needed).
 
-Examples:
+### Key flags
 
-1. Run the cache query test under ASAN:
-   ```
-   ./tools/debug/debug-container.sh --packages "gdb" -- \
-     "set -euo pipefail; CC=clang meson setup build-asan -Db_sanitize=address -Db_lundef=false; \
-      ninja -C build-asan; ASAN_OPTIONS=detect_leaks=0 ./build-asan/test_cache_query"
-   ```
-2. Attach gdb with the staged copy already prepared:
-   ```
-   STAGE=/tmp/gitmind-debug-sanity
-   ./tools/debug/debug-container.sh --stage "$STAGE" --resync
-   ./tools/debug/debug-container.sh --stage "$STAGE" --packages gdb -- \
-     "cd build-asan && gdb -q ./test_cache_query"
-   ```
+- `--stage <dir>` reuses an existing staging checkout (set `--resync` to refresh).
+- `--keep-stage` retains the staged tree after exiting.
+- `--packages "gdb valgrind"` installs additional tooling before running the requested command.
+- Arguments after `--` execute inside the container; omit them to land in an interactive shell.
+
+### Examples
+
+Run the cache query test under ASAN:
+
+```
+./tools/debug/debug-container.sh --packages "gdb" -- \
+  "set -euo pipefail; CC=clang meson setup build-asan -Db_sanitize=address -Db_lundef=false; \
+   ninja -C build-asan; ASAN_OPTIONS=detect_leaks=0 ./build-asan/test_cache_query"
+```
+
+Attach gdb with a prepped stage:
+
+```
+STAGE=/tmp/gitmind-debug-sanity
+./tools/debug/debug-container.sh --stage "$STAGE" --resync
+./tools/debug/debug-container.sh --stage "$STAGE" --packages gdb -- \
+  "cd build-asan && gdb -q ./test_cache_query"
+```
 
 ## Applying the Memory Allocation playbook
 
 - Treat every pointer out of `gm_fs_temp_port_canonicalize_ex` as a `_view`. Clients **must not** `free()` the returned pointer—copy it or wrap it in `_owned` helpers before the next port call.
-- Adopt suffixes in variable names when touching lifetime-sensitive code (e.g., `canon_view`, `repo_canon_view`).
-- Prefer `_borrowed` or `_view` comments when returning adapters’ internal buffers to make intent obvious during reviews.
+- Adopt suffixes in variable names when touching lifetime-sensitive code (for example, `canon_view`, `repo_canon_view`).
+- Prefer `_borrowed` or `_view` notes when returning adapters’ internal buffers to make intent obvious during reviews.
 
 ## Neo4j doc indexing
 
@@ -71,9 +76,9 @@ cd /Users/james/git/agent-collab
   --code ../git-mind/core/include/gitmind/ports/fs_temp_port.h
 ```
 
-(Adjust the helper/arguments once we finish scripting full automation, but keep this pairing up to date whenever cache/journal ownership rules move.)
+(Adjust the helper arguments once we finish scripting full automation, but keep this pairing up to date whenever cache or journal ownership rules move.)
 
-## Notes & hygiene
+## Notes and hygiene
 
 - Sanitizers: run `meson setup build-asan -Db_sanitize=address -Db_lundef=false` when you need ASAN/UBSAN context. The stage script leaves your compiler cache intact between runs.
 - Keep stage copies short-lived unless you pass `--keep-stage`. The cleanup hook defaults to wiping mktemp directories so we do not accumulate `/tmp/gitmind-ci-*` clutter.

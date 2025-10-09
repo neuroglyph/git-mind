@@ -74,6 +74,9 @@ fi
 
 if command -v rsync >/dev/null 2>&1; then
   rsync -a --delete \
+    --include '/meson.build' \
+    --include '/quality/' \
+    --include '/quality/***' \
     --include '/core/' \
     --include '/core/***' \
     --filter=':- .gitignore' \
