@@ -86,19 +86,13 @@ int main(void) {
     assert(gm_oid_from_raw(&e.src_oid, A, sizeof A) == GM_OK);
     assert(gm_oid_from_raw(&e.tgt_oid, B, sizeof B) == GM_OK);
     e.rel_type = GM_REL_REFERENCES; e.confidence = 0x3C00;
-    assert(gm_strcpy_safe(e.src_path, sizeof e.src_path, "A") == 0);
-    assert(gm_strcpy_safe(e.tgt_path, sizeof e.tgt_path, "B") == 0);
+    assert(gm_strcpy_safe(e.src_path, sizeof e.src_path, "A") == GM_OK);
+    assert(gm_strcpy_safe(e.tgt_path, sizeof e.tgt_path, "B") == GM_OK);
     assert(gm_ulid_generate(e.ulid).ok);
 
-    /* The writer resolves head branch through repo port; our stub lacks it,
-       so we call the internal append via current-branch path by bypassing head.
-       To keep the test minimal, set branch name inline by initializing the
-       ref in the writer (we can't). Instead, rely on the fact that when head
-       lookup fails, writer returns error; so we simulate head by injecting a
-       pre-known branch via overriding resolve function is not possible. We
-       avoid head resolution by calling gm_journal_create_commit with an
-       explicit ref and spec assembly paths exercised by flush/updates.
-    */
+    /* The writer resolves the current branch through the fake repo port stub.
+       The stub returns a deterministic branch, enabling gm_journal_append to
+       take the standard append path while exercising the retry loop. */
 
     /* Append path should retry on NFF and succeed. */
     gm_edge_t edges[1] = { e };

@@ -25,6 +25,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 /* Telemetry and logging */
 #include "gitmind/ports/logger_port.h"
@@ -36,7 +39,6 @@
 #include "gitmind/ports/diagnostic_port.h"
 #include "gitmind/journal/internal/codec.h"
 #include "gitmind/journal/internal/read_decoder.h"
-#include "gitmind/constants_internal.h" /* MILLIS_PER_SECOND */
 #define CLOCKS_PER_MS                                                       \
     ((clock_t)((CLOCKS_PER_SEC + (MILLIS_PER_SECOND - 1)) / MILLIS_PER_SECOND))
 
@@ -396,10 +398,10 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
         }
     }
 
-    clock_t st = clock();
+    uint64_t start_ms = monotonic_ms_now();
     int rc_walk = walk_journal_generic(&rctx, ref_name);
 
-    uint64_t dur_ms = (uint64_t)((clock() - st) / CLOCKS_PER_MS);
+    uint64_t dur_ms = monotonic_ms_now() - start_ms;
     if (tcfg.metrics_enabled) {
         (void)gm_metrics_timing_ms(&ctx->metrics_port,
                                    "journal.read.duration_ms", dur_ms, tags);
@@ -466,4 +468,19 @@ int gm_journal_read_attributed(gm_context_t *ctx, const char *branch,
                                gm_journal_read_attributed_callback_t callback,
                                void *userdata) {
     return journal_read_generic(ctx, branch, NULL, callback, true, userdata);
+}
+static uint64_t monotonic_ms_now(void) {
+#if defined(_WIN32)
+    LARGE_INTEGER freq, counter;
+    if (QueryPerformanceFrequency(&freq) && QueryPerformanceCounter(&counter)) {
+        return (uint64_t)((counter.QuadPart * 1000ULL) /
+                          (uint64_t)freq.QuadPart);
+    }
+#else
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+        return (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)(ts.tv_nsec / 1000000ULL);
+    }
+#endif
+    return (uint64_t)((clock() * 1000ULL) / CLOCKS_PER_SEC);
 }

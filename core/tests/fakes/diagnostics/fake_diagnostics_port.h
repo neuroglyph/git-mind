@@ -12,10 +12,20 @@
 extern "C" {
 #endif
 
+#define GM_FAKE_DIAG_MAX_EVENTS 64
+#define GM_FAKE_DIAG_MAX_KVS_PER_EVENT 8
+#define GM_FAKE_DIAG_MAX_COMPONENT 32
+#define GM_FAKE_DIAG_MAX_EVENT 64
+#define GM_FAKE_DIAG_MAX_KEY 32
+#define GM_FAKE_DIAG_MAX_VALUE 64
+
 typedef struct {
-    struct { char component[32]; char event[64]; } meta[64];
-    struct { char key[32]; char value[64]; } kvs[64][8];
-    size_t kv_counts[64];
+    struct { char component[GM_FAKE_DIAG_MAX_COMPONENT];
+             char event[GM_FAKE_DIAG_MAX_EVENT]; } meta[GM_FAKE_DIAG_MAX_EVENTS];
+    struct { char key[GM_FAKE_DIAG_MAX_KEY];
+             char value[GM_FAKE_DIAG_MAX_VALUE]; }
+        kvs[GM_FAKE_DIAG_MAX_EVENTS][GM_FAKE_DIAG_MAX_KVS_PER_EVENT];
+    size_t kv_counts[GM_FAKE_DIAG_MAX_EVENTS];
     size_t count;
 } gm_fake_diag_state_t;
 
@@ -28,4 +38,3 @@ void gm_fake_diag_port_dispose(gm_diagnostics_port_t *port);
 #endif
 
 #endif /* GITMIND_TESTS_FAKES_DIAGNOSTICS_FAKE_DIAGNOSTICS_PORT_H */
-

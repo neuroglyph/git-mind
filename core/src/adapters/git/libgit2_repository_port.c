@@ -798,11 +798,18 @@ static gm_result_void_t commit_create_impl(
                    sizeof(*out_commit_oid));
 
     git_signature *sig = NULL;
-    if (git_signature_default(&sig, state->repo) < 0) {
-        /* Fallback to a synthetic signature if repo/user config is missing */
-        if (git_signature_now(&sig, "gitmind", "gitmind@example.invalid") < 0) {
+    int sig_status = git_signature_default(&sig, state->repo);
+    if (sig_status < 0) {
+        if (sig_status == GIT_ENOTFOUND) {
+            /* Fallback to a synthetic signature if repo/user config is missing */
+            if (git_signature_now(&sig, "gitmind", "gitmind@example.invalid") < 0) {
+                return gm_err_void(
+                    GM_ERROR(GM_ERR_UNKNOWN, "unable to create commit signature"));
+            }
+        } else {
             return gm_err_void(
-                GM_ERROR(GM_ERR_UNKNOWN, "unable to create commit signature"));
+                GM_ERROR(GM_ERR_UNKNOWN,
+                         "default commit signature lookup failed"));
         }
     }
 

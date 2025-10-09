@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#include "stderr_diagnostics_adapter.h"
+#include "gitmind/adapters/diagnostics/stderr_diagnostics_adapter.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -13,6 +14,34 @@ typedef struct {
     int enabled; /* future toggle; unused for now */
 } gm_stderr_diag_state_t;
 
+static void emit_escaped(const char *value) {
+    if (value == NULL) {
+        fputs("(null)", stderr);
+        return;
+    }
+    for (const char *p = value; *p != '\0'; ++p) {
+        unsigned char ch = (unsigned char)*p;
+        switch (ch) {
+        case '\n':
+            fputs("\\n", stderr);
+            break;
+        case '\r':
+            fputs("\\r", stderr);
+            break;
+        case '\t':
+            fputs("\\t", stderr);
+            break;
+        default:
+            if (iscntrl(ch)) {
+                fprintf(stderr, "\\x%02x", ch);
+            } else {
+                fputc(ch, stderr);
+            }
+            break;
+        }
+    }
+}
+
 static gm_result_void_t emit_impl(void *self, const char *component,
                                   const char *event, const gm_diag_kv_t *kvs,
                                   size_t kv_count) {
@@ -20,14 +49,14 @@ static gm_result_void_t emit_impl(void *self, const char *component,
     if (component == NULL) component = "";
     if (event == NULL) event = "";
     fputs("[diag] ", stderr);
-    fputs(component, stderr);
+    emit_escaped(component);
     fputc(' ', stderr);
-    fputs(event, stderr);
+    emit_escaped(event);
     for (size_t i = 0; i < kv_count; ++i) {
         fputc(' ', stderr);
-        fputs(kvs[i].key ? kvs[i].key : "", stderr);
+        emit_escaped(kvs[i].key);
         fputc('=', stderr);
-        fputs(kvs[i].value ? kvs[i].value : "", stderr);
+        emit_escaped(kvs[i].value);
     }
     fputc('\n', stderr);
     return gm_ok_void();

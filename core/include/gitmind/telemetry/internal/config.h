@@ -9,7 +9,6 @@
 #include <stdint.h>
 
 #include "gitmind/ports/env_port.h"
-#include "gitmind/ports/fs_temp_port.h"
 #include "gitmind/ports/logger_port.h"
 
 #ifdef __cplusplus

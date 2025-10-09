@@ -173,9 +173,10 @@ static int edge_map_write_callback(const gm_oid_t *oid,
     edge_map_write_ctx_t *ctx = (edge_map_write_ctx_t *)userdata;
     char path[GM_PATH_MAX];
     char prefix[GM_CACHE_MAX_SHARD_PATH];
-    if (gm_cache_oid_prefix(oid, ctx->shard_bits, prefix, sizeof(prefix)) !=
-        GM_OK) {
-        return GM_ERR_INVALID_STATE;
+    int prefix_rc = gm_cache_oid_prefix(oid, ctx->shard_bits, prefix,
+                                        sizeof(prefix));
+    if (prefix_rc != GM_OK) {
+        return prefix_rc;
     }
 
     if (!is_valid_directory_name(path, sizeof(path), ctx->temp_dir, prefix)) {
@@ -354,10 +355,6 @@ static int cache_build_commit_and_update(const gm_git_repository_port_t *port,
     gm_oid_t tree_oid;
     int result_code =
         build_tree_from_temp(port, inputs->temp_dir->path, &tree_oid);
-    if (result_code != GM_OK) {
-        /* Emit via diagnostics port when available. We don't have ctx here, so skip. */
-        return result_code;
-    }
     if (result_code != GM_OK) {
         return result_code;
     }

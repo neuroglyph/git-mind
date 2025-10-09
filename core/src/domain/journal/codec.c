@@ -19,7 +19,7 @@ GM_NODISCARD gm_result_void_t gm_journal_encode_message(const uint8_t *cbor_data
         return gm_err_void(
             GM_ERROR(GM_ERR_INVALID_ARGUMENT, "journal encode requires input"));
     }
-    const int variant = sodium_base64_VARIANT_ORIGINAL;
+    const int variant = sodium_base64_VARIANT_URLSAFE_NO_PADDING;
     size_t required = sodium_base64_ENCODED_LEN(cbor_len, variant);
     char *encoded = (char *)malloc(required);
     if (encoded == NULL) {
@@ -43,7 +43,7 @@ GM_NODISCARD gm_result_void_t gm_journal_decode_message(const char *raw_message,
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "decode requires buffers"));
     }
     const size_t raw_length = strlen(raw_message);
-    const int variant = sodium_base64_VARIANT_ORIGINAL;
+    const int variant = sodium_base64_VARIANT_URLSAFE_NO_PADDING;
     size_t out_len = 0;
     if (sodium_base642bin(decoded, *decoded_length, raw_message, raw_length,
                           NULL, &out_len, NULL, variant) != 0) {
@@ -52,4 +52,3 @@ GM_NODISCARD gm_result_void_t gm_journal_decode_message(const char *raw_message,
     *decoded_length = out_len;
     return gm_ok_void();
 }
-

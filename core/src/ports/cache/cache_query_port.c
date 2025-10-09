@@ -8,6 +8,7 @@
 #include "gitmind/context.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct {
     gm_context_t *ctx; /* not owned */
@@ -22,6 +23,7 @@ static gm_result_void_t query_fanout_impl(gm_qry_cache_port_t *self,
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
                                     "cache query fanout requires inputs"));
     }
+    memset(out, 0, sizeof(*out));
     cache_query_state_t *state = (cache_query_state_t *)self->state;
     int result_code = gm_cache_query_fanout(state->ctx, branch, src_oid, out);
     if (result_code != GM_OK) {
@@ -39,6 +41,7 @@ static gm_result_void_t query_fanin_impl(gm_qry_cache_port_t *self,
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
                                     "cache query fanin requires inputs"));
     }
+    memset(out, 0, sizeof(*out));
     cache_query_state_t *state = (cache_query_state_t *)self->state;
     int result_code = gm_cache_query_fanin(state->ctx, branch, tgt_oid, out);
     if (result_code != GM_OK) {

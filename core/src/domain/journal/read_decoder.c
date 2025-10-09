@@ -12,39 +12,23 @@
 
 static void convert_legacy_to_attributed(const gm_edge_t *legacy,
                                          gm_edge_attributed_t *attributed) {
-    if (gm_memcpy_span(attributed->src_sha, GM_SHA1_SIZE, legacy->src_sha,
-                       GM_SHA1_SIZE) != GM_OK) {
-        gm_memset_safe(attributed->src_sha, GM_SHA1_SIZE, 0, GM_SHA1_SIZE);
-    }
-    if (gm_memcpy_span(attributed->tgt_sha, GM_SHA1_SIZE, legacy->tgt_sha,
-                       GM_SHA1_SIZE) != GM_OK) {
-        gm_memset_safe(attributed->tgt_sha, GM_SHA1_SIZE, 0, GM_SHA1_SIZE);
-    }
+    gm_memset_safe(attributed, sizeof(*attributed), 0, sizeof(*attributed));
+    (void)gm_memcpy_span(attributed->src_sha, GM_SHA1_SIZE, legacy->src_sha,
+                         GM_SHA1_SIZE);
+    (void)gm_memcpy_span(attributed->tgt_sha, GM_SHA1_SIZE, legacy->tgt_sha,
+                         GM_SHA1_SIZE);
     attributed->src_oid = legacy->src_oid;
     attributed->tgt_oid = legacy->tgt_oid;
     attributed->rel_type = legacy->rel_type;
     attributed->confidence = legacy->confidence;
     attributed->timestamp = legacy->timestamp;
-
-    if (gm_strcpy_safe(attributed->src_path, sizeof(attributed->src_path),
-                       legacy->src_path) != GM_OK) {
-        attributed->src_path[0] = '\0';
-    }
-
-    if (gm_strcpy_safe(attributed->tgt_path, sizeof(attributed->tgt_path),
-                       legacy->tgt_path) != GM_OK) {
-        attributed->tgt_path[0] = '\0';
-    }
-
-    if (gm_strcpy_safe(attributed->ulid, sizeof(attributed->ulid),
-                       legacy->ulid) != GM_OK) {
-        attributed->ulid[0] = '\0';
-    }
-
+    (void)gm_strcpy_safe(attributed->src_path, sizeof(attributed->src_path),
+                         legacy->src_path);
+    (void)gm_strcpy_safe(attributed->tgt_path, sizeof(attributed->tgt_path),
+                         legacy->tgt_path);
+    (void)gm_strcpy_safe(attributed->ulid, sizeof(attributed->ulid),
+                         legacy->ulid);
     attributed->attribution.source_type = GM_SOURCE_HUMAN;
-    attributed->attribution.author[0] = '\0';
-    attributed->attribution.session_id[0] = '\0';
-    attributed->attribution.flags = 0;
     attributed->lane = GM_LANE_DEFAULT;
 }
 
@@ -70,20 +54,29 @@ GM_NODISCARD gm_result_void_t gm_journal_decode_edge(const uint8_t *buf,
                                                      gm_edge_attributed_t *out_attr,
                                                      size_t *consumed,
                                                      bool *got_attr) {
-    if (buf == NULL || len == 0U || consumed == NULL || got_attr == NULL ||
-        out_basic == NULL || out_attr == NULL) {
+    if (buf == NULL || len == 0U) {
         return gm_err_void(
             GM_ERROR(GM_ERR_INVALID_ARGUMENT, "decode edge requires buffers"));
     }
-
-    *got_attr = false;
-    *consumed = 0U;
+    if (consumed != NULL) {
+        *consumed = 0U;
+    }
+    if (got_attr != NULL) {
+        *got_attr = false;
+    }
 
     if (prefer_attributed) {
         size_t c = 0; gm_edge_attributed_t a = {0};
         int rc = gm_edge_attributed_decode_cbor_ex(buf, len, &a, &c);
         if (rc == GM_OK && c > 0) {
-            *out_attr = a; *consumed = c; *got_attr = true; return gm_ok_void();
+            if (out_attr == NULL) {
+                return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                            "attributed output missing"));
+            }
+            *out_attr = a;
+            if (consumed != NULL) *consumed = c;
+            if (got_attr != NULL) *got_attr = true;
+            return gm_ok_void();
         }
         /* fallback to legacy */
         gm_edge_t e = {0}; c = 0;
@@ -91,21 +84,40 @@ GM_NODISCARD gm_result_void_t gm_journal_decode_edge(const uint8_t *buf,
         if (rc != GM_OK || c == 0) {
             return gm_err_void(GM_ERROR(GM_ERR_INVALID_FORMAT, "invalid edge"));
         }
+        if (out_attr == NULL) {
+            return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                        "attributed output missing"));
+        }
         convert_legacy_to_attributed(&e, out_attr);
-        *consumed = c; *got_attr = true; return gm_ok_void();
+        if (consumed != NULL) *consumed = c;
+        if (got_attr != NULL) *got_attr = true;
+        return gm_ok_void();
     }
 
     /* prefer regular */
     size_t c = 0; gm_edge_t e = {0};
     int rc = gm_edge_decode_cbor_ex(buf, len, &e, &c);
     if (rc == GM_OK && c > 0) {
-        *out_basic = e; *consumed = c; *got_attr = false; return gm_ok_void();
+        if (out_basic == NULL) {
+            return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                        "basic output missing"));
+        }
+        *out_basic = e;
+        if (consumed != NULL) *consumed = c;
+        if (got_attr != NULL) *got_attr = false;
+        return gm_ok_void();
     }
     gm_edge_attributed_t a = {0}; c = 0;
     rc = gm_edge_attributed_decode_cbor_ex(buf, len, &a, &c);
     if (rc != GM_OK || c == 0) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_FORMAT, "invalid edge"));
     }
+    if (out_basic == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "basic output missing"));
+    }
     convert_attributed_to_basic(&a, out_basic);
-    *consumed = c; *got_attr = false; return gm_ok_void();
+    if (consumed != NULL) *consumed = c;
+    if (got_attr != NULL) *got_attr = false;
+    return gm_ok_void();
 }

@@ -7,8 +7,8 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
-#if defined(__linux__) || defined(__APPLE__)
-#include <strings.h> /* strcasecmp */
+#if !defined(_WIN32)
+#include <strings.h>
 #endif
 
 #include "gitmind/error.h"
@@ -17,47 +17,98 @@
 #include "gitmind/util/memory.h"
 #include "gitmind/crypto/backend.h"
 #include "gitmind/crypto/sha256.h"
+#include "gitmind/constants_internal.h"
 
 #define MAX_TAGS_TOTAL 5
+
+#if defined(_WIN32)
+static int gm_ascii_casecmp(const char *a, const char *b) {
+    return _stricmp(a, b);
+}
+#else
+static int gm_ascii_casecmp(const char *a, const char *b) {
+    return strcasecmp(a, b);
+}
+#endif
 
 static bool parse_bool_default_true(const char *s) {
     if (s == NULL || s[0] == '\0') return true;
     if (strcmp(s, "0") == 0) return false;
-    if (strcasecmp(s, "false") == 0) return false;
-    if (strcasecmp(s, "off") == 0) return false;
-    if (strcasecmp(s, "no") == 0) return false;
+    if (gm_ascii_casecmp(s, "false") == 0) return false;
+    if (gm_ascii_casecmp(s, "off") == 0) return false;
+    if (gm_ascii_casecmp(s, "no") == 0) return false;
     return true;
 }
 
 static gm_repo_tag_mode_t parse_repo_tag_mode(const char *s) {
     if (s == NULL || s[0] == '\0') return GM_REPO_TAG_OFF;
-    if (strcasecmp(s, "off") == 0) return GM_REPO_TAG_OFF;
-    if (strcasecmp(s, "hash") == 0) return GM_REPO_TAG_HASH;
-    if (strcasecmp(s, "plain") == 0) return GM_REPO_TAG_PLAIN;
+    if (gm_ascii_casecmp(s, "off") == 0) return GM_REPO_TAG_OFF;
+    if (gm_ascii_casecmp(s, "hash") == 0) return GM_REPO_TAG_HASH;
+    if (gm_ascii_casecmp(s, "plain") == 0) return GM_REPO_TAG_PLAIN;
     return GM_REPO_TAG_OFF;
 }
 
 static gm_log_level_t parse_log_level(const char *s) {
     if (s == NULL || s[0] == '\0') return GM_LOG_INFO;
-    if (strcasecmp(s, "DEBUG") == 0) return GM_LOG_DEBUG;
-    if (strcasecmp(s, "INFO") == 0) return GM_LOG_INFO;
-    if (strcasecmp(s, "WARN") == 0) return GM_LOG_WARN;
-    if (strcasecmp(s, "ERROR") == 0) return GM_LOG_ERROR;
+    if (gm_ascii_casecmp(s, "DEBUG") == 0) return GM_LOG_DEBUG;
+    if (gm_ascii_casecmp(s, "INFO") == 0) return GM_LOG_INFO;
+    if (gm_ascii_casecmp(s, "WARN") == 0) return GM_LOG_WARN;
+    if (gm_ascii_casecmp(s, "ERROR") == 0) return GM_LOG_ERROR;
     return GM_LOG_INFO;
 }
 
 static gm_log_format_t parse_log_format(const char *s) {
     if (s == NULL || s[0] == '\0') return GM_LOG_FMT_TEXT;
-    if (strcasecmp(s, "text") == 0) return GM_LOG_FMT_TEXT;
-    if (strcasecmp(s, "json") == 0) return GM_LOG_FMT_JSON;
+    if (gm_ascii_casecmp(s, "text") == 0) return GM_LOG_FMT_TEXT;
+    if (gm_ascii_casecmp(s, "json") == 0) return GM_LOG_FMT_JSON;
     return GM_LOG_FMT_TEXT;
 }
 
 static bool parse_hash_algo_sha256(const char *s) {
     if (s == NULL || s[0] == '\0') return false; /* default fnv */
-    if (strcasecmp(s, "sha256") == 0) return true;
-    if (strcasecmp(s, "fnv") == 0) return false;
+    if (gm_ascii_casecmp(s, "sha256") == 0) return true;
+    if (gm_ascii_casecmp(s, "fnv") == 0) return false;
     return false;
+}
+
+static void format_repo_hash_bytes(const gm_telemetry_cfg_t *cfg,
+                                   const uint8_t *src, size_t len,
+                                   char *out) {
+    if (src == NULL || len == 0 || out == NULL) {
+        if (out != NULL) out[0] = '\0';
+        return;
+    }
+    if (cfg != NULL && cfg->repo_hash_sha256) {
+        sha256_hex12(src, len, out);
+    } else {
+        fnv1a64_hex12(src, len, out);
+    }
+}
+
+static void format_repo_hash_from_str(const gm_telemetry_cfg_t *cfg,
+                                      const char *str, char *out) {
+    if (str == NULL) {
+        if (out != NULL) out[0] = '\0';
+        return;
+    }
+    format_repo_hash_bytes(cfg, (const uint8_t *)str, strlen(str), out);
+}
+
+static void format_repo_hash_from_id(const gm_telemetry_cfg_t *cfg,
+                                     const gm_repo_id_t *repo_id,
+                                     char *out) {
+    if (repo_id == NULL) {
+        if (out != NULL) out[0] = '\0';
+        return;
+    }
+    char idbuf[33 + 33];
+    int wrote = gm_snprintf(idbuf, sizeof(idbuf), "%016" PRIx64 "%016" PRIx64,
+                            repo_id->hi, repo_id->lo);
+    if (wrote > 0 && (size_t)wrote < sizeof(idbuf)) {
+        format_repo_hash_bytes(cfg, (const uint8_t *)idbuf, (size_t)wrote, out);
+    } else if (out != NULL) {
+        out[0] = '\0';
+    }
 }
 
 static bool is_key_char(char c) {
@@ -258,39 +309,22 @@ GM_NODISCARD gm_result_void_t gm_telemetry_build_tags(
     }
 
     if (cfg != NULL && cfg->repo_tag != GM_REPO_TAG_OFF && count < MAX_TAGS_TOTAL) {
-        char repo_val[65] = {0};
+        char repo_val[GM_PATH_MAX] = {0};
         if (cfg->repo_tag == GM_REPO_TAG_PLAIN) {
             if (repo_canon_path != NULL && repo_canon_path[0] != '\0') {
                 int copy_status =
                     gm_strcpy_safe(repo_val, sizeof(repo_val), repo_canon_path);
                 if (copy_status != GM_OK) {
-                    memset(repo_val, 0, sizeof(repo_val));
-                    return gm_err_void(GM_ERROR(copy_status,
-                                                "repo tag truncated"));
+                    format_repo_hash_from_str(cfg, repo_canon_path, repo_val);
                 }
+            } else if (repo_id != NULL) {
+                format_repo_hash_from_id(cfg, repo_id, repo_val);
             }
         } else if (cfg->repo_tag == GM_REPO_TAG_HASH) {
             if (repo_canon_path != NULL && repo_canon_path[0] != '\0') {
-                if (cfg->repo_hash_sha256) {
-                    sha256_hex12((const uint8_t *)repo_canon_path,
-                                 strlen(repo_canon_path), repo_val);
-                } else {
-                    fnv1a64_hex12((const uint8_t *)repo_canon_path,
-                                   strlen(repo_canon_path), repo_val);
-                }
+                format_repo_hash_from_str(cfg, repo_canon_path, repo_val);
             } else if (repo_id != NULL) {
-                char idbuf[33 + 33];
-                int wrote = gm_snprintf(idbuf, sizeof(idbuf), "%016" PRIx64 "%016" PRIx64,
-                                        repo_id->hi, repo_id->lo);
-                if (wrote > 0 && (size_t)wrote < sizeof(idbuf)) {
-                    if (cfg->repo_hash_sha256) {
-                        sha256_hex12((const uint8_t *)idbuf, (size_t)wrote,
-                                     repo_val);
-                    } else {
-                        fnv1a64_hex12((const uint8_t *)idbuf, (size_t)wrote,
-                                      repo_val);
-                    }
-                }
+                format_repo_hash_from_id(cfg, repo_id, repo_val);
             }
         }
         if (repo_val[0] != '\0') {

@@ -11,8 +11,8 @@
 #include "gitmind/adapters/git/libgit2_repository_port.h"
 
 #include "gitmind/constants_internal.h"
-#include "core/src/adapters/diagnostics/stderr_diagnostics_adapter.h"
-#include "core/src/adapters/logging/stdio_logger_adapter.h"
+#include "gitmind/adapters/diagnostics/stderr_diagnostics_adapter.h"
+#include "gitmind/adapters/logging/stdio_logger_adapter.h"
 
 #include <git2.h>
 
@@ -250,11 +250,9 @@ static int init_context(gm_context_t *ctx, gm_output_level_t level,
     const char *dbg = getenv("GITMIND_DEBUG_EVENTS");
     if (dbg && (strcmp(dbg, "1")==0 || strcasecmp(dbg, "true")==0 || strcasecmp(dbg, "on")==0)) {
         /* stderr diagnostics adapter */
-        extern gm_result_void_t gm_stderr_diagnostics_port_init(gm_diagnostics_port_t *port);
         (void)gm_stderr_diagnostics_port_init(&ctx->diag_port);
     }
     /* Basic stdio logger: INFO when normal, DEBUG when verbose */
-    extern gm_result_void_t gm_stdio_logger_port_init(gm_logger_port_t *port, FILE *stream, int min_level);
     (void)gm_stdio_logger_port_init(&ctx->logger_port, stderr,
                                     (level == GM_OUTPUT_VERBOSE) ? 10 /* DEBUG */ : 20 /* INFO */);
 

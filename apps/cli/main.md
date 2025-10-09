@@ -91,7 +91,7 @@ Future: Specific codes for different failures.
 
 Special cases:
 
-- Safety violation: exits with `EXIT_SAFETY_VIOLATION` (42) when the CLI detects it is being run inside the git-mind development repository (guard rails to prevent self-corruption). You can override for CI/E2E by setting `GITMIND_SAFETY=off` in the environment.
+- Safety violation: exits with `EXIT_SAFETY_VIOLATION` (42) when the CLI detects it is being run inside the git-mind development repository (guard rails to prevent self-corruption). Override for CI/E2E by setting `GITMIND_SAFETY` to a falsy value (`off`, `false`, `0`, `no`). Truthy values (`on`, `true`, `1`, default unset) keep the guardrails enabled.
 
 ## Context Management
 
@@ -256,6 +256,7 @@ Future considerations:
   - Messages are exactly what services emit (strings produced by the formatter seam).
 - Structured JSON logs:
   - Set `GITMIND_LOG_FORMAT=json` to have services format log messages as compact JSON. The CLI prints these JSON strings to stderr unchanged, so you can pipe them to `jq` or other tooling.
+  - Example: `GITMIND_LOG_FORMAT=json git-mind cache rebuild 2>logs.json && jq '.' logs.json`
 - Log level via env:
   - `GITMIND_LOG_LEVEL=DEBUG|INFO|WARN|ERROR` is honored by services for internal filtering; the CLI’s stderr logger minimum is still controlled by `--verbose` (DEBUG) vs normal (INFO).
 

@@ -1,9 +1,12 @@
 /* SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 */
 /* © 2025 J. Kirby Ross / Neuroglyph Collective */
 
-#include "stdio_logger_adapter.h"
+#include "gitmind/adapters/logging/stdio_logger_adapter.h"
+
 #include "gitmind/error.h"
 #include "gitmind/result.h"
+
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
@@ -34,7 +37,11 @@ static gm_result_void_t log_impl(void *self, gm_log_level_t level,
     }
     time_t now = time(NULL);
     struct tm tm;
+#if defined(_WIN32)
+    gmtime_s(&tm, &now);
+#else
     gmtime_r(&now, &tm);
+#endif
     char ts[32];
     if (strftime(ts, sizeof(ts), "%Y-%m-%dT%H:%M:%SZ", &tm) == 0) {
         ts[0] = '\0';

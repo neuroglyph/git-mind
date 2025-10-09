@@ -39,9 +39,22 @@ static void test_json(void) {
     printf("OK\n");
 }
 
+static void test_json_escaping(void) {
+    printf("test_log_formatter.json_escape... ");
+    const gm_log_kv_t kvs[] = {
+        {.key = "event", .value = "test\"with\"quotes"},
+        {.key = "msg", .value = "line1\nline2"},
+    };
+    char out[256];
+    assert(gm_log_format_render_default(kvs, 2, true, out, sizeof(out)).ok);
+    assert(strstr(out, "\\\"") != NULL);
+    assert(strstr(out, "\\n") != NULL);
+    printf("OK\n");
+}
+
 int main(void) {
     test_text();
     test_json();
+    test_json_escaping();
     return 0;
 }
-

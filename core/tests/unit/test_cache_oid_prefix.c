@@ -27,6 +27,31 @@ int main(void) {
     assert(gm_cache_oid_prefix(&oid, 20, out, sizeof(out)) == GM_OK);
     assert(strcmp(out, "01234") == 0);
 
+    /* Rounding for non-multiples of 4 bits */
+    assert(gm_cache_oid_prefix(&oid, 5, out, sizeof(out)) == GM_OK);
+    assert(strcmp(out, "01") == 0);
+    assert(gm_cache_oid_prefix(&oid, 7, out, sizeof(out)) == GM_OK);
+    assert(strcmp(out, "01") == 0);
+    assert(gm_cache_oid_prefix(&oid, 9, out, sizeof(out)) == GM_OK);
+    assert(strcmp(out, "012") == 0);
+
+    /* Zero bits yields empty string */
+    assert(gm_cache_oid_prefix(&oid, 0, out, sizeof(out)) == GM_OK);
+    assert(strcmp(out, "") == 0);
+
+    /* Error handling paths */
+    assert(gm_cache_oid_prefix(NULL, 4, out, sizeof(out)) != GM_OK);
+    assert(gm_cache_oid_prefix(&oid, 4, NULL, sizeof(out)) != GM_OK);
+    assert(gm_cache_oid_prefix(&oid, 4, out, 0) != GM_OK);
+
+    char small[2];
+    assert(gm_cache_oid_prefix(&oid, 16, small, sizeof(small)) == GM_OK);
+    assert(strlen(small) == sizeof(small) - 1);
+
+    /* Bits beyond limit clamp at GM_CACHE_MAX_SHARD_PATH-1 */
+    assert(gm_cache_oid_prefix(&oid, 1024, out, sizeof(out)) == GM_OK);
+    assert(strlen(out) <= GM_CACHE_MAX_SHARD_PATH - 1);
+
     printf("OK\n");
     return 0;
 }

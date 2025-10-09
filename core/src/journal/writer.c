@@ -20,6 +20,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "gitmind/security/string.h" /* gm_snprintf */
 
 /* Local constants */
@@ -38,6 +41,22 @@
 #define MAX_CBOR_SIZE CBOR_MAX_STRING_LENGTH
 _Static_assert(CLOCKS_PER_SEC >= MILLIS_PER_SECOND,
                "CLOCKS_PER_SEC must be >= 1000");
+
+static uint64_t monotonic_ms_now(void) {
+#if defined(_WIN32)
+    LARGE_INTEGER freq, counter;
+    if (QueryPerformanceFrequency(&freq) && QueryPerformanceCounter(&counter)) {
+        return (uint64_t)((counter.QuadPart * 1000ULL) /
+                          (uint64_t)freq.QuadPart);
+    }
+#else
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+        return (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)(ts.tv_nsec / 1000000ULL);
+    }
+#endif
+    return (uint64_t)((clock() * 1000ULL) / CLOCKS_PER_SEC);
+}
 #define CLOCKS_PER_MS                                                       \
     ((clock_t)((CLOCKS_PER_SEC + (MILLIS_PER_SECOND - 1)) / MILLIS_PER_SECOND))
 #define COMMIT_ENCODING "UTF-8"
@@ -317,7 +336,8 @@ static int journal_append_generic(gm_context_t *ctx, journal_edge_batch_t batch,
     const char *mode = "append";
     char tags[256]; tags[0] = '\0';
     char repo_path[GM_PATH_MAX];
-    const char *repo_canon = NULL;
+    char repo_canon_buf[GM_PATH_MAX];
+    repo_canon_buf[0] = '\0';
     gm_repo_id_t repo_id = {0};
     /* Build tags: branch, mode, repo(optional), extras */
     do {
@@ -325,13 +345,19 @@ static int journal_append_generic(gm_context_t *ctx, journal_edge_batch_t batch,
             if (gm_git_repository_port_repository_path(&ctx->git_repo_port,
                     GM_GIT_REPOSITORY_PATH_GITDIR, repo_path, sizeof(repo_path)).ok) {
                 gm_fs_canon_opts_t copts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
+                const char *canon_tmp = NULL;
                 if (gm_fs_temp_port_canonicalize_ex(&ctx->fs_temp_port, repo_path,
-                        copts, &repo_canon).ok) {
-                    (void)gm_repo_id_from_path(repo_canon, &repo_id);
+                        copts, &canon_tmp).ok && canon_tmp != NULL) {
+                    if (gm_strcpy_safe(repo_canon_buf, sizeof(repo_canon_buf),
+                                       canon_tmp) == GM_OK) {
+                        (void)gm_repo_id_from_path(repo_canon_buf, &repo_id);
+                    }
+                    free((void *)canon_tmp);
                 }
             }
         }
     } while (0);
+    const char *repo_canon = (repo_canon_buf[0] != '\0') ? repo_canon_buf : NULL;
 
     if (ctx == NULL || batch.data == NULL || batch.count == 0U || encoder == NULL) {
         return GM_ERR_INVALID_ARGUMENT;
@@ -363,12 +389,12 @@ static int journal_append_generic(gm_context_t *ctx, journal_edge_batch_t batch,
     if (cbor_buffer == NULL) {
         return GM_ERR_OUT_OF_MEMORY;
     }
-    clock_t start_time = clock();
+    uint64_t start_time = monotonic_ms_now();
     int encode_result = encode_edges_to_journal(&jctx, &batch, cbor_buffer, encoder);
     free(cbor_buffer);
 
     /* Emit metrics + end log */
-    uint64_t dur_ms = (uint64_t)((clock() - start_time) / CLOCKS_PER_MS);
+    uint64_t dur_ms = monotonic_ms_now() - start_time;
     (void)gm_telemetry_build_tags(&tcfg, branch, mode, repo_canon, &repo_id,
                                   tags, sizeof(tags));
     if (tcfg.metrics_enabled) {

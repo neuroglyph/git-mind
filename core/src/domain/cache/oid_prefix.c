@@ -19,12 +19,11 @@ GM_NODISCARD int gm_cache_oid_prefix(const gm_oid_t *oid, int bits,
     if (oid == NULL || bits <= 0) {
         return GM_OK;
     }
-    int chars = (bits + (BITS_PER_HEX_CHAR - 1)) / BITS_PER_HEX_CHAR;
-    if (chars > GM_OID_HEX_CHARS) chars = GM_OID_HEX_CHARS;
-    if ((size_t)chars >= out_size) {
-        /* clamp to buffer, still try to fill */
-        chars = (int)out_size - 1;
-        if (chars < 0) chars = 0;
+    size_t chars = (size_t)((bits + (BITS_PER_HEX_CHAR - 1)) /
+                            BITS_PER_HEX_CHAR);
+    if (chars > (size_t)GM_OID_HEX_CHARS) chars = (size_t)GM_OID_HEX_CHARS;
+    if (chars >= out_size) {
+        chars = out_size - 1;
     }
 
     char hex[GM_OID_HEX_CHARS + 1] = {0};
@@ -32,11 +31,14 @@ GM_NODISCARD int gm_cache_oid_prefix(const gm_oid_t *oid, int bits,
     if (rc != GM_OK) return rc;
 
     /* Enforce a conservative maximum prefix for directory names */
-    if (chars > (GM_CACHE_MAX_SHARD_PATH - 1)) {
-        chars = GM_CACHE_MAX_SHARD_PATH - 1;
+    if (chars > (size_t)(GM_CACHE_MAX_SHARD_PATH - 1)) {
+        chars = (size_t)(GM_CACHE_MAX_SHARD_PATH - 1);
+    }
+    if (chars == 0) {
+        return GM_OK;
     }
 
-    for (int i = 0; i < chars; ++i) {
+    for (size_t i = 0; i < chars; ++i) {
         out[i] = hex[i];
     }
     out[chars] = '\0';

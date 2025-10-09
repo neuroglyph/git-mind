@@ -14,17 +14,21 @@
 #include "gitmind/cache/internal/rebuild_service.h"
 #include "gitmind/ports/git_repository_port.h"
 
-/* Minimal stub repo: fail tree build to trigger a diagnostic event. */
+/* Minimal stub repo: repository path resolves but tree build fails to trigger
+ * diagnostics during cache rebuild. */
 typedef struct { gm_git_repository_port_t port; } diag_stub_repo_t;
 
 static gm_result_void_t sr_repo_path(void *self, gm_git_repository_path_kind_t kind,
                                      char *out, size_t out_size) {
     (void)self; (void)kind;
-    /* Any path; fake fs will report not found for canonicalize in prep, but we
-     * want tree-build failure path in commit stage; use a valid-ish path. */
+    if (out == NULL || out_size == 0) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "repo path buffer missing"));
+    }
     const char *p = "/fake/state/.git";
-    size_t i = 0; while (p[i] && i + 1 < out_size) { out[i] = p[i]; ++i; }
-    out[i] = '\0';
+    if (snprintf(out, out_size, "%s", p) < 0) {
+        return gm_err_void(GM_ERROR(GM_ERR_UNKNOWN, "repo path format failed"));
+    }
     return gm_ok_void();
 }
 

@@ -11,10 +11,14 @@ cd "$ROOT_DIR"
 
 cleanup() {
   if [ -n "${CI_LOCAL_STAGE_DIR:-}" ] && [ -d "$CI_LOCAL_STAGE_DIR" ]; then
-    rm -rf "$CI_LOCAL_STAGE_DIR"
+    if [ -n "${GITMIND_KEEP_STAGE:-}" ]; then
+      echo "Keeping staging dir: $CI_LOCAL_STAGE_DIR"
+    else
+      rm -rf "$CI_LOCAL_STAGE_DIR"
+    fi
   fi
 }
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 
 echo "==> Docs checks (frontmatter + links + TOC)"
 python3 tools/docs/check_frontmatter.py
@@ -60,7 +64,7 @@ if [ -f "$ROOT_DIR/clang-tidy-report.txt" ]; then
 fi
 
 if command -v rsync >/dev/null 2>&1; then
-  rsync -a --delete \
+  rsync -a --delete --filter=':- .gitignore' \
     --exclude '/build-local/' \
     --exclude '/ci_logs.zip' \
     --exclude '/clang-tidy-report.txt' \
@@ -106,13 +110,15 @@ status=$?
 set -e
 
 echo "==> Collecting container artifacts"
-for artifact in clang-tidy-report.txt clang-tidy-report-full.txt compile_commands.json; do
+for artifact in clang-tidy-report.txt clang-tidy-report-full.txt; do
   if [ -f "$WORKSPACE_COPY/$artifact" ]; then
     cp "$WORKSPACE_COPY/$artifact" "$ROOT_DIR/$artifact"
   fi
 done
 if [ -f "$WORKSPACE_COPY/build-local/compile_commands.json" ]; then
   cp "$WORKSPACE_COPY/build-local/compile_commands.json" "$ROOT_DIR/compile_commands.json"
+elif [ -f "$WORKSPACE_COPY/compile_commands.json" ]; then
+  cp "$WORKSPACE_COPY/compile_commands.json" "$ROOT_DIR/compile_commands.json"
 fi
 
 if [ -n "$PREV_CLANG_TIDY" ] && [ -f "$ROOT_DIR/clang-tidy-report.txt" ]; then
@@ -124,6 +130,6 @@ if [ -n "$PREV_CLANG_TIDY" ] && [ -f "$ROOT_DIR/clang-tidy-report.txt" ]; then
   fi
 fi
 
-[ $status -eq 0 ] || exit $status
+[ "$status" -eq 0 ] || exit "$status"
 
 echo "✅ Local CI completed"
