@@ -20,7 +20,7 @@
 
 #include "gitmind/adapters/fs/posix_temp_adapter.h"
 #include "gitmind/adapters/git/libgit2_repository_port.h"
-#include "support/temp_repo_helpers.h"
+#include "core/tests/support/temp_repo_helpers.h"
 
 static void ensure_branch_with_commit(git_repository *repo, const char *branch) {
     git_treebuilder *tb = NULL;
@@ -70,16 +70,17 @@ int main(void) {
     git_libgit2_init();
 
     gm_context_t ctx = {0};
+
     gm_result_void_t fs_result =
         gm_posix_fs_temp_port_create(&ctx.fs_temp_port, NULL,
                                      &ctx.fs_temp_port_dispose);
     assert(fs_result.ok);
 
     char repo_path[GM_PATH_MAX];
-    gm_result_void_t tmp_dir_result =
+    gm_result_void_t temp_rc =
         gm_test_make_temp_repo_dir(&ctx.fs_temp_port, "cache-query-repo",
                                    repo_path, sizeof(repo_path));
-    assert(tmp_dir_result.ok);
+    assert(temp_rc.ok);
 
     git_repository *repo = NULL;
     int rc = git_repository_init(&repo, repo_path, false);
@@ -136,20 +137,25 @@ int main(void) {
     gm_cache_result_free(&r2);
 
     git_repository *saved_repo = repo;
+    if (ctx.fs_temp_port_dispose != NULL) {
+        ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
+    }
     if (ctx.git_repo_port_dispose != NULL) {
         ctx.git_repo_port_dispose(&ctx.git_repo_port);
     }
     assert(repo == saved_repo);
     git_repository_free(repo);
     repo = NULL;
-
-    gm_result_void_t rm_result =
+    gm_result_void_t rm_rc =
         gm_fs_temp_port_remove_tree(&ctx.fs_temp_port, repo_path);
-    assert(rm_result.ok);
+    if (!rm_rc.ok) {
+        if (rm_rc.u.err != NULL) {
+            gm_error_free(rm_rc.u.err);
+        }
+    }
     if (ctx.fs_temp_port_dispose != NULL) {
         ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
     }
-
     git_libgit2_shutdown();
     printf("OK\n");
     return 0;

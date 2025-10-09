@@ -18,10 +18,11 @@
 #include "gitmind/types.h"
 #include "gitmind/util/oid.h"
 #include "gitmind/types/ulid.h"
+#include "gitmind/security/string.h"
 
 #include "gitmind/adapters/fs/posix_temp_adapter.h"
 #include "gitmind/adapters/git/libgit2_repository_port.h"
-#include "support/temp_repo_helpers.h"
+#include "core/tests/support/temp_repo_helpers.h"
 
 static void set_user_config(git_repository *repo) {
     git_config *cfg = NULL;
@@ -51,7 +52,8 @@ static void ensure_branch_with_commit(git_repository *repo, const char *branch) 
     rc = git_signature_now(&sig, "tester", "tester@example.com");
     assert(rc == 0);
 
-    snprintf(refname, sizeof refname, "refs/heads/%s", branch);
+    int ref_rc = gm_snprintf(refname, sizeof refname, "refs/heads/%s", branch);
+    assert(ref_rc >= 0 && (size_t)ref_rc < sizeof refname);
     rc = git_commit_create_from_ids(&commit_oid, repo, NULL, sig, sig, NULL,
                                     "init", &tree_oid, 0, NULL);
     git_signature_free(sig);
@@ -94,16 +96,18 @@ int main(void) {
     git_libgit2_init();
 
     gm_context_t ctx = {0};
+
     gm_result_void_t fs_result =
         gm_posix_fs_temp_port_create(&ctx.fs_temp_port, NULL,
                                      &ctx.fs_temp_port_dispose);
     assert(fs_result.ok);
 
     char repo_path[GM_PATH_MAX];
-    gm_result_void_t tmp_dir_result =
-        gm_test_make_temp_repo_dir(&ctx.fs_temp_port, "cache-branch-repo",
-                                   repo_path, sizeof(repo_path));
-    assert(tmp_dir_result.ok);
+    gm_result_void_t temp_rc = gm_test_make_temp_repo_dir(&ctx.fs_temp_port,
+                                                          "cache-branch-repo",
+                                                          repo_path,
+                                                          sizeof(repo_path));
+    assert(temp_rc.ok);
 
     git_repository *repo = NULL;
     int rc = git_repository_init(&repo, repo_path, false);
@@ -133,13 +137,20 @@ int main(void) {
     rc = gm_cache_rebuild(&ctx, invalid_branch, true);
     assert(rc == GM_ERR_INVALID_ARGUMENT);
 
+    if (ctx.fs_temp_port_dispose != NULL) {
+        ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
+    }
     if (ctx.git_repo_port_dispose != NULL) {
         ctx.git_repo_port_dispose(&ctx.git_repo_port);
     }
     git_repository_free(repo);
-    gm_result_void_t rm_result =
+    gm_result_void_t rm_rc =
         gm_fs_temp_port_remove_tree(&ctx.fs_temp_port, repo_path);
-    assert(rm_result.ok);
+    if (!rm_rc.ok) {
+        if (rm_rc.u.err != NULL) {
+            gm_error_free(rm_rc.u.err);
+        }
+    }
     if (ctx.fs_temp_port_dispose != NULL) {
         ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
     }

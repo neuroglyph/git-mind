@@ -85,14 +85,25 @@ gm_result_void_t gm_log_format_render_default(const gm_log_kv_t *kvs,
 
     size_t idx = 0;
     if (json) {
-        if (idx + 1 >= out_size) return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "buffer too small"));
+        if (idx + 1 >= out_size) {
+            out[0] = '\0';
+            return gm_err_void(
+                GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "buffer too small"));
+        }
         out[idx++] = '{';
         bool first = true;
         for (size_t i = 0; i < kv_count; ++i) {
             int rc = append_json_kv(out, out_size, &idx, kvs[i].key, kvs[i].value, &first);
-            if (rc != GM_OK) return gm_err_void(GM_ERROR(rc, "json format overflow"));
+            if (rc != GM_OK) {
+                out[0] = '\0';
+                return gm_err_void(GM_ERROR(rc, "json format overflow"));
+            }
         }
-        if (idx + 2 >= out_size) return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "buffer too small"));
+        if (idx + 2 >= out_size) {
+            out[0] = '\0';
+            return gm_err_void(
+                GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "buffer too small"));
+        }
         out[idx++] = '}';
         out[idx] = '\0';
         return gm_ok_void();
@@ -100,9 +111,11 @@ gm_result_void_t gm_log_format_render_default(const gm_log_kv_t *kvs,
 
     for (size_t i = 0; i < kv_count; ++i) {
         int rc = append_text(out, out_size, &idx, kvs[i].key, kvs[i].value);
-        if (rc != GM_OK) return gm_err_void(GM_ERROR(rc, "text format overflow"));
+        if (rc != GM_OK) {
+            out[0] = '\0';
+            return gm_err_void(GM_ERROR(rc, "text format overflow"));
+        }
     }
     if (idx < out_size) out[idx] = '\0';
     return gm_ok_void();
 }
-

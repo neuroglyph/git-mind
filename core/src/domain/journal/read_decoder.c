@@ -12,9 +12,13 @@
 
 static void convert_legacy_to_attributed(const gm_edge_t *legacy,
                                          gm_edge_attributed_t *attributed) {
-    for (size_t i = 0; i < GM_SHA1_SIZE; i++) {
-        attributed->src_sha[i] = legacy->src_sha[i];
-        attributed->tgt_sha[i] = legacy->tgt_sha[i];
+    if (gm_memcpy_span(attributed->src_sha, GM_SHA1_SIZE, legacy->src_sha,
+                       GM_SHA1_SIZE) != GM_OK) {
+        gm_memset_safe(attributed->src_sha, GM_SHA1_SIZE, 0, GM_SHA1_SIZE);
+    }
+    if (gm_memcpy_span(attributed->tgt_sha, GM_SHA1_SIZE, legacy->tgt_sha,
+                       GM_SHA1_SIZE) != GM_OK) {
+        gm_memset_safe(attributed->tgt_sha, GM_SHA1_SIZE, 0, GM_SHA1_SIZE);
     }
     attributed->src_oid = legacy->src_oid;
     attributed->tgt_oid = legacy->tgt_oid;
@@ -22,20 +26,20 @@ static void convert_legacy_to_attributed(const gm_edge_t *legacy,
     attributed->confidence = legacy->confidence;
     attributed->timestamp = legacy->timestamp;
 
-    size_t src_len = strlen(legacy->src_path);
-    if (src_len >= sizeof(attributed->src_path)) src_len = sizeof(attributed->src_path) - 1U;
-    for (size_t i = 0; i < src_len; i++) { attributed->src_path[i] = legacy->src_path[i]; }
-    attributed->src_path[src_len] = '\0';
+    if (gm_strcpy_safe(attributed->src_path, sizeof(attributed->src_path),
+                       legacy->src_path) != GM_OK) {
+        attributed->src_path[0] = '\0';
+    }
 
-    size_t tgt_len = strlen(legacy->tgt_path);
-    if (tgt_len >= sizeof(attributed->tgt_path)) tgt_len = sizeof(attributed->tgt_path) - 1U;
-    for (size_t i = 0; i < tgt_len; i++) { attributed->tgt_path[i] = legacy->tgt_path[i]; }
-    attributed->tgt_path[tgt_len] = '\0';
+    if (gm_strcpy_safe(attributed->tgt_path, sizeof(attributed->tgt_path),
+                       legacy->tgt_path) != GM_OK) {
+        attributed->tgt_path[0] = '\0';
+    }
 
-    size_t ulid_len = strlen(legacy->ulid);
-    if (ulid_len >= sizeof(attributed->ulid)) ulid_len = sizeof(attributed->ulid) - 1U;
-    for (size_t i = 0; i < ulid_len; i++) { attributed->ulid[i] = legacy->ulid[i]; }
-    attributed->ulid[ulid_len] = '\0';
+    if (gm_strcpy_safe(attributed->ulid, sizeof(attributed->ulid),
+                       legacy->ulid) != GM_OK) {
+        attributed->ulid[0] = '\0';
+    }
 
     attributed->attribution.source_type = GM_SOURCE_HUMAN;
     attributed->attribution.author[0] = '\0';
@@ -105,4 +109,3 @@ GM_NODISCARD gm_result_void_t gm_journal_decode_edge(const uint8_t *buf,
     convert_attributed_to_basic(&a, out_basic);
     *consumed = c; *got_attr = false; return gm_ok_void();
 }
-

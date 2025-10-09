@@ -16,6 +16,8 @@ extern int putenv(char *);
 #include "gitmind/ports/fs_temp_port.h"
 #include "gitmind/security/memory.h"
 #include "gitmind/util/memory.h"
+#include "gitmind/security/string.h"
+#include "core/tests/support/temp_repo_helpers.h"
 
 #include "core/tests/fakes/fs/fake_fs_temp_port.h"
 #include "core/tests/fakes/logging/fake_logger_port.h"
@@ -110,11 +112,11 @@ static const gm_git_repository_port_vtbl_t SR_VTBL = {
 static void set_env(const char *k, const char *v) {
     char buf[256];
     if (v == NULL) v = "";
-    int n = snprintf(buf, sizeof(buf), "%s=%s", k, v);
-    assert(n > 0 && (size_t)n < sizeof(buf));
+    int n = gm_snprintf(buf, sizeof(buf), "%s=%s", k, v);
+    assert(n >= 0 && (size_t)n < sizeof(buf));
     char *heap = (char *)malloc((size_t)n + 1);
     assert(heap != NULL);
-    memcpy(heap, buf, (size_t)n + 1);
+    assert(gm_memcpy_span(heap, (size_t)n + 1, buf, (size_t)n + 1) == GM_OK);
     assert(putenv(heap) == 0);
 }
 
@@ -132,7 +134,8 @@ static void setup_context(gm_context_t *ctx,
     /* Repo: stub */
     static stub_repo_t sr;
     memset(&sr, 0, sizeof(sr));
-    gm_strcpy_safe(sr.gitdir, sizeof(sr.gitdir), "/fake/state");
+    int dir_copy = gm_strcpy_safe(sr.gitdir, sizeof(sr.gitdir), "/fake/state");
+    assert(dir_copy == GM_OK);
     sr.port.vtbl = &SR_VTBL;
     sr.port.self = &sr;
     ctx->git_repo_port = sr.port;

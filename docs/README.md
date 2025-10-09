@@ -7,16 +7,18 @@ tags: [index, docs]
 status: stable
 last_updated: 2025-09-15
 ---
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
+<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 
 # docs/ (Index and Structure)
 
-Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Planned Structure](#planned-structure)
 - [Quick Map of Existing Docs](#quick-map-of-existing-docs)
 - [Getting Started](#getting-started)
- - [Docs Conventions](#docs-conventions)
+  - [Docs Conventions](#docs-conventions)
 
 ## Overview
 

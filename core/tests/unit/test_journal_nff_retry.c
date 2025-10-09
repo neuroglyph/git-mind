@@ -11,6 +11,7 @@
 #include "gitmind/util/oid.h"
 #include "gitmind/util/memory.h"
 #include "gitmind/types/ulid.h"
+#include "gitmind/security/string.h"
 
 #include "core/tests/fakes/diagnostics/fake_diagnostics_port.h"
 
@@ -44,8 +45,16 @@ static gm_result_void_t nff_commit_create(void *self, const gm_git_commit_spec_t
 }
 
 static gm_result_void_t nff_head_branch(void *self, char *out, size_t n) {
-    (void)self; const char *name = "main";
-    size_t i=0; while (name[i] && i+1<n) { out[i]=name[i]; ++i; } out[i]='\0';
+    (void)self;
+    if (out == NULL || n == 0) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "head branch buffer missing"));
+    }
+    int copy_rc = gm_strcpy_safe(out, n, "main");
+    if (copy_rc != GM_OK) {
+        out[0] = '\0';
+        return gm_err_void(GM_ERROR(copy_rc, "head branch truncated"));
+    }
     return gm_ok_void();
 }
 

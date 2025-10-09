@@ -68,7 +68,8 @@ struct gm_qry_cache_port_vtbl {
      *                         this branch (may be estimated if exact size
      *                         cannot be determined).
      * On a missing/non-existent branch, implementations may return
-     * GM_ERR_NOT_FOUND encapsulated in the result.
+     * GM_ERR_NOT_FOUND encapsulated in the result. On any failure, both
+     * outputs are set to 0 before returning.
      */
     gm_result_void_t (*stats)(gm_qry_cache_port_t *self,
                               const char *branch,

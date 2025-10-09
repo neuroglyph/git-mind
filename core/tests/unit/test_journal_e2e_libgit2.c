@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
 
@@ -16,12 +15,11 @@
 #include "gitmind/edge.h"
 #include "gitmind/journal.h"
 #include "gitmind/ports/journal_command_port.h"
-
 #include "gitmind/security/string.h"
-#include "gitmind/types.h"
+
 #include "gitmind/adapters/fs/posix_temp_adapter.h"
 #include "gitmind/adapters/git/libgit2_repository_port.h"
-#include "support/temp_repo_helpers.h"
+#include "core/tests/support/temp_repo_helpers.h"
 
 #include "core/tests/fakes/logging/fake_logger_port.h"
 #include "core/tests/fakes/metrics/fake_metrics_port.h"
@@ -43,10 +41,12 @@ static int init_repo_with_main(const char *repo_path, git_repository **out_repo)
     if (rc != 0) return rc;
 
     /* Create two working files */
-    char a_path[1024];
-    char b_path[1024];
-    snprintf(a_path, sizeof(a_path), "%s/%s", repo_path, "a.txt");
-    snprintf(b_path, sizeof(b_path), "%s/%s", repo_path, "b.txt");
+    char a_path[GM_PATH_MAX];
+    char b_path[GM_PATH_MAX];
+    int a_fmt = gm_snprintf(a_path, sizeof(a_path), "%s/%s", repo_path, "a.txt");
+    int b_fmt = gm_snprintf(b_path, sizeof(b_path), "%s/%s", repo_path, "b.txt");
+    assert(a_fmt >= 0 && (size_t)a_fmt < sizeof(a_path));
+    assert(b_fmt >= 0 && (size_t)b_fmt < sizeof(b_path));
     write_file(a_path, "A\n");
     write_file(b_path, "B\n");
 
@@ -118,16 +118,15 @@ int main(void) {
     /* FS temp (real posix) */
     gm_posix_fs_state_t *fs_state = NULL;
     void (*fs_dispose)(gm_fs_temp_port_t *) = NULL;
-    gm_result_void_t rfs =
-        gm_posix_fs_temp_port_create(&ctx.fs_temp_port, &fs_state, &fs_dispose);
+    gm_result_void_t rfs = gm_posix_fs_temp_port_create(&ctx.fs_temp_port, &fs_state, &fs_dispose);
     assert(rfs.ok);
     ctx.fs_temp_port_dispose = fs_dispose;
 
     char repo_dir[GM_PATH_MAX];
-    gm_result_void_t tmp_dir_result =
+    gm_result_void_t repo_dir_rc =
         gm_test_make_temp_repo_dir(&ctx.fs_temp_port, "journal-e2e-repo",
                                    repo_dir, sizeof(repo_dir));
-    assert(tmp_dir_result.ok);
+    assert(repo_dir_rc.ok);
 
     git_repository *repo = NULL;
     int rc = init_repo_with_main(repo_dir, &repo);
@@ -182,15 +181,14 @@ int main(void) {
     assert(logger_contains(log_state, "journal_read_ok"));
     assert(metrics_find_timing(met_state, "journal.read.duration_ms") >= 0);
     int rcidx = metrics_find_counter(met_state, "journal.read.edges_total");
-   assert(rcidx >= 0 && met_state->counters[rcidx].value >= 2);
+    assert(rcidx >= 0 && met_state->counters[rcidx].value >= 2);
 
     /* Cleanup */
     gm_cmd_journal_port_dispose(&jport);
     if (ctx.git_repo_port_dispose) ctx.git_repo_port_dispose(&ctx.git_repo_port);
     git_repository_free(repo);
-    gm_result_void_t rm_result =
-        gm_fs_temp_port_remove_tree(&ctx.fs_temp_port, repo_dir);
-    assert(rm_result.ok);
+    gm_result_void_t rm_repo = gm_fs_temp_port_remove_tree(&ctx.fs_temp_port, repo_dir);
+    assert(rm_repo.ok);
     if (ctx.fs_temp_port_dispose) ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
     git_libgit2_shutdown();
 

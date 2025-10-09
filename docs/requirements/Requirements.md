@@ -7,10 +7,12 @@ tags: [requirements]
 status: draft
 last_updated: 2025-09-15
 ---
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
+<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 
 # Requirements
 
-Table of Contents
+## Table of Contents
 
 - [Executive Summary](#executive-summary)
 - [Functional Requirements](#functional-requirements-by-feature)
