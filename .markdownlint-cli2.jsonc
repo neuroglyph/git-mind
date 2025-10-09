@@ -1,0 +1,41 @@
+{
+  // markdownlint-cli2 configuration
+  // We trim legacy and backlog-heavy doc trees while we iteratively
+  // remediate them. Add directories back to active linting once cleaned.
+  "config": ".markdownlint.jsonc",
+  "ignores": [
+    ".legacy/**",
+    ".audits-c/**",
+    ".trash/**",
+    ".github/**",
+    ".obsidian/**",
+    "archive/**",
+    "assets/**",
+    "benchmarks/**",
+    "apps/**",
+    "docs/**",
+    "docs/architecture/**",
+    "docs/audits/**",
+    "docs/charter/**",
+    "docs/enforcer/**",
+    "docs/features/**",
+    "docs/hn-demo/**",
+    "docs/legacy/**",
+    "docs/planning/**",
+    "docs/quality/**",
+    "docs/sitrep/**",
+    "docs/specs/**",
+    "docs/talk-shop/**",
+    "docs/templates/**",
+    "docs/tutorial.md",
+    "docs/wish-list-features/**",
+    "docs/PRDs/**",
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "CLAUDE.md",
+    "CONTRIBUTING.md",
+    "README.md",
+    "migration-progress.md",
+    "TASKLIST.md"
+  ]
+}
