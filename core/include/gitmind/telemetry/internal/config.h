@@ -9,8 +9,9 @@
 #include <stdint.h>
 
 #include "gitmind/ports/env_port.h"
-#include "gitmind/ports/logger_port.h"
 #include "gitmind/ports/fs_temp_port.h"
+#include "gitmind/ports/logger_port.h"
+#include "gitmind/result.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,9 +28,15 @@ typedef enum {
     GM_LOG_FMT_JSON = 1,
 } gm_log_format_t;
 
+enum {
+    GM_TELEMETRY_KEY_CAP = 32,
+    GM_TELEMETRY_VALUE_CAP = 64,
+    GM_TELEMETRY_EXTRAS_MAX = 3,
+};
+
 typedef struct {
-    char key[32];
-    char value[64];
+    char key[GM_TELEMETRY_KEY_CAP];
+    char value[GM_TELEMETRY_VALUE_CAP];
 } gm_kv_pair_t;
 
 typedef struct {
@@ -42,9 +49,9 @@ typedef struct {
     /* Values: "fnv" (default) or "sha256" */
     bool repo_hash_sha256; /* true => sha256, false => fnv */
 
-    /* Up to 3 validated extras */
+    /* Up to GM_TELEMETRY_EXTRAS_MAX validated extras */
     size_t extra_count;
-    gm_kv_pair_t extras[3];
+    gm_kv_pair_t extras[GM_TELEMETRY_EXTRAS_MAX];
     bool extras_dropped; /* true when some extras were invalid or over the cap */
 
     /* Logging preferences */

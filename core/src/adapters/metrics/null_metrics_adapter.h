@@ -5,6 +5,7 @@
 #define GITMIND_ADAPTERS_METRICS_NULL_H
 
 #include "gitmind/ports/metrics_port.h"
+#include "gitmind/result.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,4 +19,3 @@ void gm_null_metrics_port_dispose(gm_metrics_port_t *port);
 #endif
 
 #endif /* GITMIND_ADAPTERS_METRICS_NULL_H */
-

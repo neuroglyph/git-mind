@@ -6,8 +6,8 @@
 
 #include <stddef.h>
 
-#include "gitmind/util/oid.h"
 #include "gitmind/result.h"
+#include "gitmind/types.h"
 
 #ifdef __cplusplus
 extern "C" {

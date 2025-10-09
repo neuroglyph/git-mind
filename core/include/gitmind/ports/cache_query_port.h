@@ -9,9 +9,9 @@
 #include <stdint.h>
 
 #include "gitmind/cache.h"    /* gm_cache_result_t */
-#include "gitmind/result.h"   /* gm_result_void_t */
-#include "gitmind/util/oid.h" /* gm_oid_t */
 #include "gitmind/context.h"  /* gm_context_t */
+#include "gitmind/result.h"   /* gm_result_void_t */
+#include "gitmind/types.h"    /* gm_oid_t */
 
 #ifdef __cplusplus
 extern "C" {

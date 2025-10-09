@@ -15,7 +15,9 @@ extern "C" {
 static inline bool gm_cache_staleness_time(uint64_t journal_tip_time,
                                            uint64_t now_time,
                                            uint64_t max_age_seconds) {
-    if (now_time <= journal_tip_time) return false;
+    if (now_time <= journal_tip_time) {
+        return false;
+    }
     return (now_time - journal_tip_time) > max_age_seconds;
 }
 
@@ -24,4 +26,3 @@ static inline bool gm_cache_staleness_time(uint64_t journal_tip_time,
 #endif
 
 #endif /* GITMIND_CACHE_INTERNAL_STALENESS_H */
-
