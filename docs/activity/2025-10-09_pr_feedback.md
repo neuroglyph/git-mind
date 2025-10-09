@@ -1,4 +1,14 @@
+---
+title: 2025-10-09 — PR Feedback Remediation Notes
+date: 2025-10-09
+tags: [activity, pr-feedback]
+---
+
 # 2025-10-09 — PR Feedback Remediation Notes
+
+## Table of Contents
+- [Summary](#summary)
+- [Follow-ups](#follow-ups)
 
 ## Summary
 - Document logging/diagnostics adapter improvements in `apps/cli/main.c`, including logger level typing, adapter disposal, and diagnostics opt-in.

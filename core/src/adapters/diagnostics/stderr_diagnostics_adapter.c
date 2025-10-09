@@ -46,6 +46,9 @@ static void emit_escaped(const char *value) {
 static gm_result_void_t emit_impl(void *self, const char *component,
                                   const char *event, const gm_diag_kv_t *kvs,
                                   size_t kv_count) {
+    if (kv_count > 0U && kvs == NULL) {
+        return gm_ok_void();
+    }
     gm_stderr_diag_state_t *state = (gm_stderr_diag_state_t *)self;
     if (state != NULL && !state->emit_enabled) {
         return gm_ok_void();

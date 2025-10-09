@@ -279,8 +279,16 @@ static void sha256_hex12(const uint8_t *data, size_t len, char *out12) {
     gm_result_void_t hr = gm_sha256_with_context(&cr.u.val, data, len, digest);
     if (!hr.ok) {
         if (hr.u.err) gm_error_free(hr.u.err);
+        gm_result_void_t dispose_rc = gm_crypto_context_dispose(&cr.u.val);
+        if (!dispose_rc.ok && dispose_rc.u.err) {
+            gm_error_free(dispose_rc.u.err);
+        }
         fnv1a64_hex12(data, len, out12);
         return;
+    }
+    gm_result_void_t dispose_rc = gm_crypto_context_dispose(&cr.u.val);
+    if (!dispose_rc.ok && dispose_rc.u.err) {
+        gm_error_free(dispose_rc.u.err);
     }
     static const char HEX[] = "0123456789abcdef";
     for (int i = 0; i < 6; ++i) {

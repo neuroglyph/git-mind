@@ -29,8 +29,11 @@ IMAGE="${GITMIND_CI_IMAGE:-gitmind/ci:clang-20}"
 echo "==> Using CI image: $IMAGE"
 
 if ! command -v docker >/dev/null 2>&1; then
-  echo "⚠️ Docker not found. Falling back to host build (override guard)."
-  export GITMIND_ALLOW_HOST_BUILD=1
+  if [ "${GITMIND_ALLOW_HOST_BUILD:-}" != "1" ]; then
+    echo "❌ Docker not found. Set GITMIND_ALLOW_HOST_BUILD=1 to run a host build at your own risk."
+    exit 1
+  fi
+  echo "⚠️ Docker not found. Proceeding with host build (explicit override)."
   CC=${CC:-clang}
   echo "==> Host build with $CC"
   rm -rf build-local

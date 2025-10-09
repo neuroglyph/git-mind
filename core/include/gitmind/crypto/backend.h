@@ -67,6 +67,8 @@ const gm_crypto_backend_t *gm_crypto_backend_libsodium(void);
 const gm_crypto_backend_t *gm_crypto_backend_test(void);
 #endif
 
+gm_result_void_t gm_crypto_context_dispose(gm_crypto_context_t *ctx);
+
 /* Legacy initialization removed - use gm_crypto_context_create() instead */
 
 #endif /* GITMIND_CRYPTO_BACKEND_H */

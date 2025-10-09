@@ -56,7 +56,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "${STAGE_DIR}" ]]; then
-  STAGE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/gitmind-debug-XXXXXX")
+  mktemp_template="${TMPDIR:-/tmp}/gitmind-debug-XXXXXX"
+  if ! STAGE_DIR=$(mktemp -d "${mktemp_template}" 2>/dev/null); then
+    if ! STAGE_DIR=$(mktemp -d -t gitmind-debug 2>/dev/null); then
+      echo "❌ Unable to create staging directory via mktemp" >&2
+      exit 1
+    fi
+  fi
   RESYNC=1
   AUTO_STAGE=1
 else

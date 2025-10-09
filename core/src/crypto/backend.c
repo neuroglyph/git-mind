@@ -102,6 +102,14 @@ const gm_crypto_backend_t *gm_crypto_context_get_backend(const gm_crypto_context
     return ctx ? ctx->backend : NULL;
 }
 
+gm_result_void_t gm_crypto_context_dispose(gm_crypto_context_t *ctx) {
+    if (ctx == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "crypto context cannot be null"));
+    }
+    ctx->backend = NULL;
+    return gm_ok_void();
+}
 
 
 /* Legacy initialization removed - use gm_crypto_context_create() instead */
