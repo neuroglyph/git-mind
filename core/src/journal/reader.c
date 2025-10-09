@@ -265,12 +265,16 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
         memset(&tcfg, 0, sizeof(tcfg));
         tcfg.metrics_enabled = false;
         tcfg.log_format = GM_LOG_FMT_TEXT;
+        gm_result_void_t log_rc;
         if (err_len < 0 || (size_t)err_len >= sizeof(err_msg)) {
-            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "journal",
-                                "telemetry_cfg_load_failed");
+            log_rc = gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "journal",
+                                   "telemetry_cfg_load_failed");
         } else {
-            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "journal",
-                                err_msg);
+            log_rc = gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "journal",
+                                   err_msg);
+        }
+        if (!log_rc.ok && log_rc.u.err != NULL) {
+            gm_error_free(log_rc.u.err);
         }
     }
     const bool json = (tcfg.log_format == GM_LOG_FMT_JSON);
@@ -331,8 +335,10 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
                 gm_result_void_t canon_rc = gm_fs_temp_port_canonicalize_ex(
                     &ctx->fs_temp_port, repo_path, copts, &canon_tmp);
                 if (canon_rc.ok && canon_tmp != NULL) {
-                    if (gm_strcpy_safe(repo_canon_buf, sizeof(repo_canon_buf),
-                                       canon_tmp) == GM_OK) {
+                    int copy_status = gm_strcpy_safe(repo_canon_buf,
+                                                     sizeof(repo_canon_buf),
+                                                     canon_tmp);
+                    if (copy_status == GM_OK) {
                         repo_canon = repo_canon_buf;
                         gm_result_void_t repo_id_rc =
                             gm_repo_id_from_path(repo_canon, &repo_id);
@@ -343,10 +349,14 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
                             }
                         }
                     } else {
-                        (void)gm_logger_log(&ctx->logger_port, GM_LOG_WARN,
-                                            "journal",
-                                            "repo_canon_truncated" );
+                        gm_result_void_t log_rc =
+                            gm_logger_log(&ctx->logger_port, GM_LOG_WARN,
+                                          "journal", "repo_canon_truncated");
+                        if (!log_rc.ok && log_rc.u.err != NULL) {
+                            gm_error_free(log_rc.u.err);
+                        }
                     }
+                    free((void *)canon_tmp);
                 } else if (!canon_rc.ok) {
                     if (canon_rc.u.err != NULL) {
                         gm_error_free(canon_rc.u.err);
@@ -363,8 +373,12 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
     if (!tags_rc.ok) {
         if (tags_rc.u.err != NULL) gm_error_free(tags_rc.u.err);
         tags[0] = '\0';
-        (void)gm_logger_log(&ctx->logger_port, GM_LOG_WARN, "journal",
-                            "telemetry_tags_build_failed");
+        gm_result_void_t log_rc = gm_logger_log(&ctx->logger_port, GM_LOG_WARN,
+                                                "journal",
+                                                "telemetry_tags_build_failed");
+        if (!log_rc.ok && log_rc.u.err != NULL) {
+            gm_error_free(log_rc.u.err);
+        }
     }
     /* Log start */
     {
@@ -388,11 +402,16 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
                 msg[0] = '\0';
             }
         }
+        gm_result_void_t log_rc;
         if (msg[0] == '\0') {
-            (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "journal",
-                                "journal_read_start");
+            log_rc = gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "journal",
+                                   "journal_read_start");
         } else {
-            (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "journal", msg);
+            log_rc = gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "journal",
+                                   msg);
+        }
+        if (!log_rc.ok && log_rc.u.err != NULL) {
+            gm_error_free(log_rc.u.err);
         }
     }
 
@@ -401,11 +420,17 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
 
     uint64_t dur_ms = (uint64_t)((clock() - st) / CLOCKS_PER_MS);
     if (tcfg.metrics_enabled) {
-        (void)gm_metrics_timing_ms(&ctx->metrics_port,
-                                   "journal.read.duration_ms", dur_ms, tags);
-        (void)gm_metrics_counter_add(&ctx->metrics_port,
-                                     "journal.read.edges_total",
-                                     (uint64_t)edge_count, tags);
+        gm_result_void_t timing_rc = gm_metrics_timing_ms(
+            &ctx->metrics_port, "journal.read.duration_ms", dur_ms, tags);
+        if (!timing_rc.ok && timing_rc.u.err != NULL) {
+            gm_error_free(timing_rc.u.err);
+        }
+        gm_result_void_t counter_rc = gm_metrics_counter_add(
+            &ctx->metrics_port, "journal.read.edges_total",
+            (uint64_t)edge_count, tags);
+        if (!counter_rc.ok && counter_rc.u.err != NULL) {
+            gm_error_free(counter_rc.u.err);
+        }
     }
     {
         char msg[256];
@@ -414,8 +439,12 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
         int dur_fmt = gm_snprintf(dur_buf, sizeof(dur_buf), "%llu",
                                    (unsigned long long)dur_ms);
         if (dur_fmt < 0 || (size_t)dur_fmt >= sizeof(dur_buf)) {
-            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "journal",
-                                "journal_read_duration_format_failed");
+            gm_result_void_t log_rc =
+                gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "journal",
+                               "journal_read_duration_format_failed");
+            if (!log_rc.ok && log_rc.u.err != NULL) {
+                gm_error_free(log_rc.u.err);
+            }
             dur_buf[0] = '\0';
         }
         const gm_log_kv_t kvs[] = {
@@ -439,16 +468,17 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
                 msg[0] = '\0';
             }
         }
+        gm_result_void_t log_rc;
+        gm_log_level_t level = (rc_walk == GM_OK) ? GM_LOG_INFO : GM_LOG_ERROR;
         if (msg[0] == '\0') {
-            (void)gm_logger_log(&ctx->logger_port,
-                                (rc_walk == GM_OK) ? GM_LOG_INFO : GM_LOG_ERROR,
-                                "journal",
-                                (rc_walk == GM_OK) ? "journal_read_ok"
-                                                   : "journal_read_failed");
+            log_rc = gm_logger_log(&ctx->logger_port, level, "journal",
+                                   (rc_walk == GM_OK) ? "journal_read_ok"
+                                                      : "journal_read_failed");
         } else {
-            (void)gm_logger_log(&ctx->logger_port,
-                                (rc_walk == GM_OK) ? GM_LOG_INFO : GM_LOG_ERROR,
-                                "journal", msg);
+            log_rc = gm_logger_log(&ctx->logger_port, level, "journal", msg);
+        }
+        if (!log_rc.ok && log_rc.u.err != NULL) {
+            gm_error_free(log_rc.u.err);
         }
     }
     return rc_walk;

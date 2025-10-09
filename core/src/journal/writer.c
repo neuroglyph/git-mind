@@ -317,18 +317,47 @@ static int journal_append_generic(gm_context_t *ctx, journal_edge_batch_t batch,
     const char *mode = "append";
     char tags[256]; tags[0] = '\0';
     char repo_path[GM_PATH_MAX];
+    char repo_canon_buf[GM_PATH_MAX];
+    repo_canon_buf[0] = '\0';
     const char *repo_canon = NULL;
     gm_repo_id_t repo_id = {0};
     /* Build tags: branch, mode, repo(optional), extras */
     do {
         if (ctx && ctx->git_repo_port.vtbl && ctx->fs_temp_port.vtbl) {
-            if (gm_git_repository_port_repository_path(&ctx->git_repo_port,
-                    GM_GIT_REPOSITORY_PATH_GITDIR, repo_path, sizeof(repo_path)).ok) {
+            gm_result_void_t repo_path_rc =
+                gm_git_repository_port_repository_path(&ctx->git_repo_port,
+                    GM_GIT_REPOSITORY_PATH_GITDIR, repo_path,
+                    sizeof(repo_path));
+            if (repo_path_rc.ok) {
                 gm_fs_canon_opts_t copts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
-                if (gm_fs_temp_port_canonicalize_ex(&ctx->fs_temp_port, repo_path,
-                        copts, &repo_canon).ok) {
-                    (void)gm_repo_id_from_path(repo_canon, &repo_id);
+                const char *repo_canon_tmp = NULL;
+                gm_result_void_t canon_rc = gm_fs_temp_port_canonicalize_ex(
+                    &ctx->fs_temp_port, repo_path, copts, &repo_canon_tmp);
+                if (canon_rc.ok && repo_canon_tmp != NULL) {
+                    int copy_status = gm_strcpy_safe(repo_canon_buf,
+                                                     sizeof(repo_canon_buf),
+                                                     repo_canon_tmp);
+                    if (copy_status == GM_OK) {
+                        repo_canon = repo_canon_buf;
+                        gm_result_void_t repo_id_rc =
+                            gm_repo_id_from_path(repo_canon, &repo_id);
+                        if (!repo_id_rc.ok && repo_id_rc.u.err != NULL) {
+                            gm_error_free(repo_id_rc.u.err);
+                        }
+                    } else {
+                        gm_result_void_t log_rc = gm_logger_log(
+                            &ctx->logger_port, GM_LOG_WARN, "journal",
+                            "repo_canon_truncated");
+                        if (!log_rc.ok && log_rc.u.err != NULL) {
+                            gm_error_free(log_rc.u.err);
+                        }
+                    }
+                    free((void *)repo_canon_tmp);
+                } else if (!canon_rc.ok && canon_rc.u.err != NULL) {
+                    gm_error_free(canon_rc.u.err);
                 }
+            } else if (repo_path_rc.u.err != NULL) {
+                gm_error_free(repo_path_rc.u.err);
             }
         }
     } while (0);
@@ -348,6 +377,7 @@ static int journal_append_generic(gm_context_t *ctx, journal_edge_batch_t batch,
     /* Emit start log */
     {
         char msg[256];
+        msg[0] = '\0';
         const gm_log_kv_t kvs[] = {
             {.key = "event", .value = "journal_append_start"},
             {.key = "branch", .value = branch},
@@ -355,8 +385,30 @@ static int journal_append_generic(gm_context_t *ctx, journal_edge_batch_t batch,
         };
         gm_log_formatter_fn fmt = ctx && ctx->log_formatter ? ctx->log_formatter
                                                             : gm_log_format_render_default;
-        (void)fmt(kvs, sizeof(kvs)/sizeof(kvs[0]), json, msg, sizeof(msg));
-        (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "journal", msg);
+        gm_result_void_t fmt_rc = fmt(kvs, sizeof(kvs)/sizeof(kvs[0]), json, msg,
+                                      sizeof(msg));
+        if (!fmt_rc.ok) {
+            if (fmt_rc.u.err != NULL) {
+                gm_error_free(fmt_rc.u.err);
+            }
+            int alt = gm_snprintf(msg, sizeof(msg),
+                                  "event=journal_append_start branch=%s mode=%s",
+                                  branch, mode);
+            if (alt < 0 || (size_t)alt >= sizeof(msg)) {
+                msg[0] = '\0';
+            }
+        }
+        gm_result_void_t log_rc;
+        if (msg[0] == '\0') {
+            log_rc = gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "journal",
+                                   "journal_append_start");
+        } else {
+            log_rc = gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "journal",
+                                   msg);
+        }
+        if (!log_rc.ok && log_rc.u.err != NULL) {
+            gm_error_free(log_rc.u.err);
+        }
     }
 
     uint8_t *cbor_buffer = malloc(MAX_CBOR_SIZE);
@@ -369,22 +421,61 @@ static int journal_append_generic(gm_context_t *ctx, journal_edge_batch_t batch,
 
     /* Emit metrics + end log */
     uint64_t dur_ms = (uint64_t)((clock() - start_time) / CLOCKS_PER_MS);
-    (void)gm_telemetry_build_tags(&tcfg, branch, mode, repo_canon, &repo_id,
-                                  tags, sizeof(tags));
+    gm_result_void_t tags_rc =
+        gm_telemetry_build_tags(&tcfg, branch, mode, repo_canon, &repo_id,
+                                tags, sizeof(tags));
+    if (!tags_rc.ok) {
+        if (tags_rc.u.err != NULL) {
+            gm_error_free(tags_rc.u.err);
+        }
+        tags[0] = '\0';
+        gm_result_void_t log_rc = gm_logger_log(&ctx->logger_port, GM_LOG_WARN,
+                                                "journal",
+                                                "journal_append_tags_build_failed");
+        if (!log_rc.ok && log_rc.u.err != NULL) {
+            gm_error_free(log_rc.u.err);
+        }
+    }
     if (tcfg.metrics_enabled) {
-        (void)gm_metrics_timing_ms(&ctx->metrics_port,
-                                   "journal.append.duration_ms",
-                                   dur_ms, tags);
-        (void)gm_metrics_counter_add(&ctx->metrics_port,
-                                     "journal.append.edges_total",
-                                     (uint64_t)batch.count, tags);
+        gm_result_void_t timing_rc = gm_metrics_timing_ms(
+            &ctx->metrics_port, "journal.append.duration_ms", dur_ms, tags);
+        if (!timing_rc.ok && timing_rc.u.err != NULL) {
+            gm_error_free(timing_rc.u.err);
+        }
+        gm_result_void_t counter_rc = gm_metrics_counter_add(
+            &ctx->metrics_port, "journal.append.edges_total",
+            (uint64_t)batch.count, tags);
+        if (!counter_rc.ok && counter_rc.u.err != NULL) {
+            gm_error_free(counter_rc.u.err);
+        }
     }
     {
-        char msg[256]; char count_buf[32]; char dur_buf[32];
-        (void)gm_snprintf(count_buf, sizeof(count_buf), "%llu",
-                          (unsigned long long)batch.count);
-        (void)gm_snprintf(dur_buf, sizeof(dur_buf), "%llu",
-                          (unsigned long long)dur_ms);
+        char msg[256];
+        msg[0] = '\0';
+        char count_buf[32];
+        int count_fmt = gm_snprintf(count_buf, sizeof(count_buf), "%llu",
+                                    (unsigned long long)batch.count);
+        if (count_fmt < 0 || (size_t)count_fmt >= sizeof(count_buf)) {
+            gm_result_void_t log_rc = gm_logger_log(
+                &ctx->logger_port, GM_LOG_ERROR, "journal",
+                "journal_append_count_format_failed");
+            if (!log_rc.ok && log_rc.u.err != NULL) {
+                gm_error_free(log_rc.u.err);
+            }
+            return GM_ERR_INVALID_FORMAT;
+        }
+        char dur_buf[32];
+        int dur_fmt = gm_snprintf(dur_buf, sizeof(dur_buf), "%llu",
+                                   (unsigned long long)dur_ms);
+        if (dur_fmt < 0 || (size_t)dur_fmt >= sizeof(dur_buf)) {
+            gm_result_void_t log_rc = gm_logger_log(
+                &ctx->logger_port, GM_LOG_ERROR, "journal",
+                "journal_append_duration_format_failed");
+            if (!log_rc.ok && log_rc.u.err != NULL) {
+                gm_error_free(log_rc.u.err);
+            }
+            return GM_ERR_INVALID_FORMAT;
+        }
         const gm_log_kv_t kvs[] = {
             {.key = "event", .value = (encode_result == GM_OK) ? "journal_append_ok" : "journal_append_failed"},
             {.key = "branch", .value = branch},
@@ -394,10 +485,33 @@ static int journal_append_generic(gm_context_t *ctx, journal_edge_batch_t batch,
         };
         gm_log_formatter_fn fmt = ctx && ctx->log_formatter ? ctx->log_formatter
                                                             : gm_log_format_render_default;
-        (void)fmt(kvs, sizeof(kvs)/sizeof(kvs[0]), json, msg, sizeof(msg));
-        (void)gm_logger_log(&ctx->logger_port,
-                            (encode_result == GM_OK) ? GM_LOG_INFO : GM_LOG_ERROR,
-                            "journal", msg);
+        gm_result_void_t fmt_rc = fmt(kvs, sizeof(kvs)/sizeof(kvs[0]), json, msg,
+                                      sizeof(msg));
+        if (!fmt_rc.ok) {
+            if (fmt_rc.u.err != NULL) {
+                gm_error_free(fmt_rc.u.err);
+            }
+            int alt = gm_snprintf(msg, sizeof(msg),
+                                  "event=%s branch=%s mode=%s edges=%s duration_ms=%s",
+                                  (encode_result == GM_OK) ? "journal_append_ok"
+                                                          : "journal_append_failed",
+                                  branch, mode, count_buf, dur_buf);
+            if (alt < 0 || (size_t)alt >= sizeof(msg)) {
+                msg[0] = '\0';
+            }
+        }
+        gm_log_level_t level = (encode_result == GM_OK) ? GM_LOG_INFO : GM_LOG_ERROR;
+        gm_result_void_t log_rc;
+        if (msg[0] == '\0') {
+            log_rc = gm_logger_log(&ctx->logger_port, level, "journal",
+                                   (encode_result == GM_OK) ? "journal_append_ok"
+                                                           : "journal_append_failed");
+        } else {
+            log_rc = gm_logger_log(&ctx->logger_port, level, "journal", msg);
+        }
+        if (!log_rc.ok && log_rc.u.err != NULL) {
+            gm_error_free(log_rc.u.err);
+        }
     }
     return encode_result;
 }

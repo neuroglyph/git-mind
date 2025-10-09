@@ -89,15 +89,24 @@ static int compute_repo_id(gm_context_t *ctx, gm_repo_id_t *repo_id) {
         return code;
     }
 
-    const char *canonical = NULL;
+    const char *canonical_tmp = NULL;
     gm_fs_canon_opts_t canon_opts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
-    code = unwrap_result(gm_fs_temp_port_canonicalize_ex(
-        &ctx->fs_temp_port, repo_path, canon_opts, &canonical));
-    if (code != GM_OK) {
-        return code;
+    gm_result_void_t canon_rc = gm_fs_temp_port_canonicalize_ex(
+        &ctx->fs_temp_port, repo_path, canon_opts, &canonical_tmp);
+    if (!canon_rc.ok) {
+        return unwrap_result(canon_rc);
     }
 
-    return unwrap_result(gm_repo_id_from_path(canonical, repo_id));
+    char canonical_buf[GM_PATH_MAX];
+    int copy_status = gm_strcpy_safe(canonical_buf, sizeof(canonical_buf),
+                                     canonical_tmp);
+    free((void *)canonical_tmp);
+    canonical_tmp = NULL;
+    if (copy_status != GM_OK) {
+        return GM_ERR_PATH_TOO_LONG;
+    }
+
+    return unwrap_result(gm_repo_id_from_path(canonical_buf, repo_id));
 }
 
 static int make_temp_workspace(gm_context_t *ctx, gm_tempdir_t *temp_dir) {
@@ -527,12 +536,16 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
         memset(&tcfg, 0, sizeof(tcfg));
         tcfg.metrics_enabled = false;
         tcfg.log_format = GM_LOG_FMT_TEXT;
+        gm_result_void_t log_rc;
         if (err_snprintf < 0 || (size_t)err_snprintf >= sizeof(err_msg)) {
-            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache",
-                                "telemetry_cfg_load_failed");
+            log_rc = gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache",
+                                   "telemetry_cfg_load_failed");
         } else {
-            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache",
-                                err_msg);
+            log_rc = gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache",
+                                   err_msg);
+        }
+        if (!log_rc.ok && log_rc.u.err != NULL) {
+            gm_error_free(log_rc.u.err);
         }
     }
     const char *mode = "full"; /* TODO: detect incremental when available */
@@ -540,15 +553,43 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
     tags[0] = '\0';
     gm_repo_id_t repo_id = {0};
     char repo_path[GM_PATH_MAX];
+    char repo_canon_buf[GM_PATH_MAX];
+    repo_canon_buf[0] = '\0';
     const char *repo_canon = NULL;
     do {
-        int rp = unwrap_result(gm_git_repository_port_repository_path(
-            &ctx->git_repo_port, GM_GIT_REPOSITORY_PATH_GITDIR, repo_path,
-            sizeof(repo_path)));
-        if (rp != GM_OK) break;
+        gm_result_void_t repo_path_rc =
+            gm_git_repository_port_repository_path(&ctx->git_repo_port,
+                GM_GIT_REPOSITORY_PATH_GITDIR, repo_path, sizeof(repo_path));
+        if (!repo_path_rc.ok) {
+            if (repo_path_rc.u.err != NULL) {
+                gm_error_free(repo_path_rc.u.err);
+            }
+            break;
+        }
         gm_fs_canon_opts_t copts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
-        if (unwrap_result(gm_fs_temp_port_canonicalize_ex(
-                &ctx->fs_temp_port, repo_path, copts, &repo_canon)) != GM_OK) {
+        const char *repo_canon_tmp = NULL;
+        gm_result_void_t canon_rc = gm_fs_temp_port_canonicalize_ex(
+            &ctx->fs_temp_port, repo_path, copts, &repo_canon_tmp);
+        if (canon_rc.ok && repo_canon_tmp != NULL) {
+            int copy_status = gm_strcpy_safe(repo_canon_buf,
+                                             sizeof(repo_canon_buf),
+                                             repo_canon_tmp);
+            if (copy_status == GM_OK) {
+                repo_canon = repo_canon_buf;
+            } else {
+                gm_result_void_t log_rc = gm_logger_log(
+                    &ctx->logger_port, GM_LOG_WARN, "cache",
+                    "repo_canon_truncated");
+                if (!log_rc.ok && log_rc.u.err != NULL) {
+                    gm_error_free(log_rc.u.err);
+                }
+                repo_canon = NULL;
+            }
+            free((void *)repo_canon_tmp);
+        } else {
+            if (canon_rc.u.err != NULL) {
+                gm_error_free(canon_rc.u.err);
+            }
             repo_canon = NULL;
         }
         (void)compute_repo_id(ctx, &repo_id);
@@ -561,12 +602,20 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
             gm_error_free(tags_rc.u.err);
         }
         tags[0] = '\0';
-        (void)gm_logger_log(&ctx->logger_port, GM_LOG_WARN, "cache",
-                            "telemetry_tags_build_failed");
+        gm_result_void_t log_rc = gm_logger_log(&ctx->logger_port, GM_LOG_WARN,
+                                                "cache",
+                                                "telemetry_tags_build_failed");
+        if (!log_rc.ok && log_rc.u.err != NULL) {
+            gm_error_free(log_rc.u.err);
+        }
     }
     if (tcfg.extras_dropped) {
-        (void)gm_logger_log(&ctx->logger_port, GM_LOG_WARN, "cache",
-                            "telemetry extras dropped=1");
+        gm_result_void_t log_rc = gm_logger_log(&ctx->logger_port, GM_LOG_WARN,
+                                                "cache",
+                                                "telemetry extras dropped=1");
+        if (!log_rc.ok && log_rc.u.err != NULL) {
+            gm_error_free(log_rc.u.err);
+        }
     }
 
     /* Log start */
@@ -592,11 +641,16 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
                 msg[0] = '\0';
             }
         }
+        gm_result_void_t log_rc;
         if (msg[0] == '\0') {
-            (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache",
-                                "rebuild_start");
+            log_rc = gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache",
+                                   "rebuild_start");
         } else {
-            (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache", msg);
+            log_rc = gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache",
+                                   msg);
+        }
+        if (!log_rc.ok && log_rc.u.err != NULL) {
+            gm_error_free(log_rc.u.err);
         }
     }
 

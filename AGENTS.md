@@ -426,6 +426,11 @@ Every outbound port ships with: (a) production adapter, (b) deterministic fake u
 See archives under `docs/activity/` for older logs.
 
 ### 2025-10-08
+- PR177 feedback sweep
+  - Hardened telemetry handling across cache rebuild and journal read paths (checked `gm_telemetry_cfg_load`, formatter fallbacks, safe `gm_snprintf` handling) and zeroed log buffers on every error branch.
+  - Introduced `core/tests/support/temp_repo_helpers.h`, migrated libgit2-heavy “unit” tests into `core/tests/integration/`, and tagged them in Meson so we have a clean integration suite.
+  - Tightened fake ports/tests (metrics, diagnostics, CLI env, cache telemetry) to treat truncation as fatal and removed the legacy auto review-seeding workflow.
+  - `make ci-local` green after the restructuring; pushed `e471420` to `feat/hex-ports-ci-green` (PR #177).
 - Telemetry & logging
   - Added internal telemetry config shim (`core/include/gitmind/telemetry/internal/config.h`, `core/src/telemetry/config.c`).
   - Implemented repo tag hashing flag `GITMIND_METRICS_REPO_HASH_ALGO=sha256|fnv` (default `fnv`); tests cover `sha256` path.

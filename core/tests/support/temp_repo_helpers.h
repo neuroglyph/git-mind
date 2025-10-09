@@ -51,6 +51,9 @@ static inline void
 static gm_result_void_t gm_test_default_temp_repo_provider(
     const gm_fs_temp_port_t *port, const char *component, char *out_path,
     size_t out_size) {
+    if (out_path != NULL && out_size > 0) {
+        out_path[0] = '\0';
+    }
     if (port == NULL || component == NULL || component[0] == '\0' ||
         out_path == NULL || out_size == 0) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
@@ -59,17 +62,28 @@ static gm_result_void_t gm_test_default_temp_repo_provider(
 
     char cwd[GM_PATH_MAX];
     if (gm_test_getcwd(cwd, sizeof(cwd)) == NULL) {
+        out_path[0] = '\0';
         return gm_err_void(GM_ERROR(GM_ERR_IO_FAILED,
                                     "getcwd failed: %s", strerror(errno)));
     }
 
     gm_repo_id_t repo_id = {0};
-    GM_TRY(gm_repo_id_from_path(cwd, &repo_id));
+    gm_result_void_t repo_id_rc = gm_repo_id_from_path(cwd, &repo_id);
+    if (!repo_id_rc.ok) {
+        out_path[0] = '\0';
+        return repo_id_rc;
+    }
 
     gm_tempdir_t temp_dir = {0};
-    GM_TRY(gm_fs_temp_port_make_temp_dir(port, repo_id, component, true, &temp_dir));
+    gm_result_void_t temp_rc =
+        gm_fs_temp_port_make_temp_dir(port, repo_id, component, true, &temp_dir);
+    if (!temp_rc.ok) {
+        out_path[0] = '\0';
+        return temp_rc;
+    }
 
     if (gm_strcpy_safe(out_path, out_size, temp_dir.path) != GM_OK) {
+        out_path[0] = '\0';
         return gm_err_void(
             GM_ERROR(GM_ERR_PATH_TOO_LONG, "temp dir path exceeds buffer size"));
     }

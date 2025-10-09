@@ -4,6 +4,7 @@
 #include "core/tests/fakes/fs/fake_fs_temp_port.h"
 
 #include <string.h>
+#include <stdlib.h>
 #include <inttypes.h>
 #include "gitmind/error.h"
 #include "gitmind/fs/path_utils.h"
@@ -25,6 +26,30 @@ static bool fake_path_exists(const gm_fake_fs_temp_port_t *fake,
         return true;
     }
     return false;
+}
+
+static gm_result_void_t fake_dup_path(const char *src,
+                                      const char **out_abs_path) {
+    if (src == NULL || out_abs_path == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "fake canonicalize requires buffers"));
+    }
+
+    size_t len = strlen(src) + 1U;
+    char *copy = (char *)malloc(len);
+    if (copy == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_OUT_OF_MEMORY,
+                                    "fake canonicalize allocation failed"));
+    }
+
+    if (gm_strcpy_safe(copy, len, src) != 0) {
+        free(copy);
+        return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
+                                    "fake canonicalize copy truncated"));
+    }
+
+    *out_abs_path = copy;
+    return gm_ok_void();
 }
 
 static gm_result_void_t fake_base_dir(void *self, gm_fs_base_t base, bool ensure,
@@ -168,8 +193,7 @@ static gm_result_void_t fake_canonicalize(void *self, const char *abs_path_in,
             return gm_err_void(GM_ERROR(GM_ERR_NOT_FOUND,
                                         "fake path not found"));
         }
-        *out_abs_path = fake->scratch;
-        return gm_ok_void();
+        return fake_dup_path(fake->scratch, out_abs_path);
     }
     case GM_FS_CANON_PHYSICAL_CREATE_OK: {
         char normalized[GM_PATH_MAX];
@@ -202,15 +226,13 @@ static gm_result_void_t fake_canonicalize(void *self, const char *abs_path_in,
         }
         GM_TRY(gm_fs_path_basename_append(fake->scratch, sizeof(fake->scratch), &len,
                                           leaf_copy));
-        *out_abs_path = fake->scratch;
-        return gm_ok_void();
+        return fake_dup_path(fake->scratch, out_abs_path);
     }
     case GM_FS_CANON_LOGICAL:
     default: {
         GM_TRY(gm_fs_path_normalize_logical(abs_path_in, fake->scratch,
                                             sizeof(fake->scratch)));
-        *out_abs_path = fake->scratch;
-        return gm_ok_void();
+        return fake_dup_path(fake->scratch, out_abs_path);
     }
     }
 }

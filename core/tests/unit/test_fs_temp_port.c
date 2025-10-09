@@ -45,6 +45,8 @@ int main(void) {
     gm_repo_id_t repo_id = {0};
     gm_result_void_t repo_id_result = gm_repo_id_from_path(canon, &repo_id);
     assert(repo_id_result.ok);
+    free((void *)canon);
+    canon = NULL;
 
     gm_tempdir_t tempdir = {0};
     gm_result_void_t temp_result = gm_fs_temp_port_make_temp_dir(
@@ -70,6 +72,8 @@ int main(void) {
         gm_fs_temp_port_canonicalize(&port, logical_input, &logical_out);
     assert(logical_result.ok);
     assert(strcmp(logical_out, tempdir_real) == 0);
+    free((void *)logical_out);
+    logical_out = NULL;
 
     gm_fs_canon_opts_t existing_opts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
     const char *physical_out = NULL;
@@ -77,6 +81,8 @@ int main(void) {
         &port, tempdir_real, existing_opts, &physical_out);
     assert(physical_result.ok);
     assert(strcmp(physical_out, tempdir_real) == 0);
+    free((void *)physical_out);
+    physical_out = NULL;
 
     char create_target[GM_PATH_MAX];
     int create_status = snprintf(create_target, sizeof(create_target),
@@ -88,6 +94,8 @@ int main(void) {
         &port, create_target, create_opts, &create_out);
     assert(create_ok_result.ok);
     assert(strstr(create_out, "/new-entry") != NULL);
+    free((void *)create_out);
+    create_out = NULL;
 
     const char *missing_out = NULL;
     gm_fs_canon_opts_t missing_opts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
@@ -142,12 +150,16 @@ int main(void) {
         &fake.port, fake_dir.path, fake_opts, &fake_logical);
     assert(fake_logical_res.ok);
     assert(strcmp(fake_logical, fake_dir.path) == 0);
+    free((void *)fake_logical);
+    fake_logical = NULL;
 
     gm_fs_canon_opts_t fake_phys = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
     const char *fake_phys_out = NULL;
     gm_result_void_t fake_phys_res = gm_fs_temp_port_canonicalize_ex(
         &fake.port, fake_dir.path, fake_phys, &fake_phys_out);
     assert(fake_phys_res.ok);
+    free((void *)fake_phys_out);
+    fake_phys_out = NULL;
 
     gm_result_void_t fake_remove =
         gm_fs_temp_port_remove_tree(&fake.port, fake_dir.path);

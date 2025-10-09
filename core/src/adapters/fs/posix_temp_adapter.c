@@ -520,6 +520,30 @@ static gm_result_void_t join_under_base(gm_posix_fs_state_t *state,
     return gm_ok_void();
 }
 
+static gm_result_void_t duplicate_canonical_path(const char *src,
+                                                 const char **out_abs_path) {
+    if (src == NULL || out_abs_path == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "canonicalize requires buffers"));
+    }
+
+    size_t len = strlen(src) + 1U;
+    char *dup = (char *)malloc(len);
+    if (dup == NULL) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_OUT_OF_MEMORY, "canonicalize allocation failed"));
+    }
+
+    if (gm_strcpy_safe(dup, len, src) != GM_OK) {
+        free(dup);
+        return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
+                                    "canonicalize copy truncated"));
+    }
+
+    *out_abs_path = dup;
+    return gm_ok_void();
+}
+
 static gm_result_void_t canonicalize_impl(gm_posix_fs_state_t *state,
                                           const char *abs_path_in,
                                           gm_fs_canon_opts_t opts,
@@ -534,8 +558,7 @@ static gm_result_void_t canonicalize_impl(gm_posix_fs_state_t *state,
         if (realpath(abs_path_in, state->scratch) == NULL) {
             return errno_to_result("realpath", abs_path_in);
         }
-        *out_abs_path = state->scratch;
-        return gm_ok_void();
+        return duplicate_canonical_path(state->scratch, out_abs_path);
     }
     case GM_FS_CANON_PHYSICAL_CREATE_OK: {
         char normalized[GM_PATH_MAX];
@@ -557,15 +580,13 @@ static gm_result_void_t canonicalize_impl(gm_posix_fs_state_t *state,
         size_t base_len = strlen(state->scratch);
         GM_TRY(gm_fs_path_basename_append(state->scratch, sizeof(state->scratch),
                                           &base_len, normalized));
-        *out_abs_path = state->scratch;
-        return gm_ok_void();
+        return duplicate_canonical_path(state->scratch, out_abs_path);
     }
     case GM_FS_CANON_LOGICAL:
     default: {
         GM_TRY(gm_fs_path_normalize_logical(abs_path_in, state->scratch,
                                             sizeof(state->scratch)));
-        *out_abs_path = state->scratch;
-        return gm_ok_void();
+        return duplicate_canonical_path(state->scratch, out_abs_path);
     }
     }
 }
