@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include "gitmind/ports/logger_port.h"
+#include "gitmind/result.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,4 +21,3 @@ void gm_stdio_logger_port_dispose(gm_logger_port_t *port);
 #endif
 
 #endif /* GITMIND_ADAPTERS_LOGGING_STDIO_H */
-

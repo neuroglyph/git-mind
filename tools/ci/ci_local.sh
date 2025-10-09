@@ -53,7 +53,13 @@ if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
 fi
 
 echo "==> Staging workspace snapshot for container run"
-CI_LOCAL_STAGE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/gitmind-ci-XXXXXX")
+mktemp_template="${TMPDIR:-/tmp}/gitmind-ci-XXXXXX"
+if ! CI_LOCAL_STAGE_DIR=$(mktemp -d "$mktemp_template" 2>/dev/null); then
+  if ! CI_LOCAL_STAGE_DIR=$(mktemp -d -t gitmind-ci 2>/dev/null); then
+    echo "❌ Unable to create staging directory via mktemp"
+    exit 1
+  fi
+fi
 WORKSPACE_COPY="$CI_LOCAL_STAGE_DIR/workspace"
 mkdir -p "$WORKSPACE_COPY"
 
@@ -64,7 +70,10 @@ if [ -f "$ROOT_DIR/clang-tidy-report.txt" ]; then
 fi
 
 if command -v rsync >/dev/null 2>&1; then
-  rsync -a --delete --filter=':- .gitignore' \
+  rsync -a --delete \
+    --include '/core/' \
+    --include '/core/***' \
+    --filter=':- .gitignore' \
     --exclude '/build-local/' \
     --exclude '/ci_logs.zip' \
     --exclude '/clang-tidy-report.txt' \

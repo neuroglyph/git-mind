@@ -180,6 +180,14 @@ test_backend_lib = static_library(
   c_args : ['-DGITMIND_ENABLE_TEST_BACKEND']
 )
 
+test_support_src = files('core/tests/support/temp_repo_helpers.c')
+test_support_lib = static_library(
+  'gitmind_test_support',
+  test_support_src,
+  include_directories : inc,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep]
+)
+
 # Individual test executables (matching original Makefile)
 test_error = executable('test_error',
   'core/tests/unit/test_error.c',
@@ -304,7 +312,7 @@ test_edge_equal_semantics = executable('test_edge_equal_semantics',
 test_cache_meta = executable('test_cache_meta',
   'core/tests/integration/test_cache_meta.c',
   include_directories : inc,
-  link_with : libgitmind,
+  link_with : [libgitmind, test_support_lib],
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_cache_edge_map = executable('test_cache_edge_map',
@@ -321,13 +329,19 @@ test_fs_path_utils = executable('test_fs_path_utils',
 test_journal_mixed_cbor = executable('test_journal_mixed_cbor',
   'core/tests/integration/test_journal_mixed_cbor.c',
   include_directories : inc,
-  link_with : libgitmind,
+  link_with : [libgitmind, test_support_lib],
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_cache_query = executable('test_cache_query',
   'core/tests/integration/test_cache_query.c',
   include_directories : inc,
-  link_with : libgitmind,
+  link_with : [libgitmind, test_support_lib],
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_cache_rebuild_canonicalize = executable('test_cache_rebuild_canonicalize',
+  'core/tests/integration/test_cache_rebuild_canonicalize.c',
+  include_directories : inc,
+  link_with : [libgitmind, test_support_lib],
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_cache_strict_equality = executable('test_cache_strict_equality',
@@ -339,7 +353,7 @@ test_cache_strict_equality = executable('test_cache_strict_equality',
 test_cache_branch_limits = executable('test_cache_branch_limits',
   'core/tests/integration/test_cache_branch_limits.c',
   include_directories : inc,
-  link_with : libgitmind,
+  link_with : [libgitmind, test_support_lib],
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_log_formatter = executable('test_log_formatter',
@@ -362,13 +376,13 @@ test_cache_shard_distribution = executable('test_cache_shard_distribution',
 test_cache_tree_size = executable('test_cache_tree_size',
   'core/tests/integration/test_cache_tree_size.c',
   include_directories : inc,
-  link_with : libgitmind,
+  link_with : [libgitmind, test_support_lib],
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_repo_build_tree = executable('test_repo_build_tree',
   'core/tests/integration/test_repo_build_tree.c',
   include_directories : inc,
-  link_with : libgitmind,
+  link_with : [libgitmind, test_support_lib],
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_journal_e2e_libgit2 = executable('test_journal_e2e_libgit2',
@@ -376,7 +390,7 @@ test_journal_e2e_libgit2 = executable('test_journal_e2e_libgit2',
    'core/tests/fakes/logging/fake_logger_port.c',
    'core/tests/fakes/metrics/fake_metrics_port.c'],
   include_directories : inc,
-  link_with : libgitmind,
+  link_with : [libgitmind, test_support_lib],
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_diagnostics_port = executable('test_diagnostics_port',
@@ -416,7 +430,7 @@ test_cache_telemetry_emit = executable('test_cache_telemetry_emit',
    'core/tests/fakes/logging/fake_logger_port.c',
    'core/tests/fakes/metrics/fake_metrics_port.c'],
   include_directories : inc,
-  link_with : libgitmind,
+  link_with : [libgitmind, test_support_lib],
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_telemetry_cfg = executable('test_telemetry_cfg',
@@ -480,6 +494,7 @@ test('cache_meta', test_cache_meta, suite: 'integration')
 test('cache_edge_map', test_cache_edge_map)
 test('journal_mixed_cbor', test_journal_mixed_cbor, suite: 'integration')
 test('cache_query', test_cache_query, suite: 'integration')
+test('cache_rebuild_canonicalize', test_cache_rebuild_canonicalize, suite: 'integration')
 test('cache_strict_equality', test_cache_strict_equality)
 test('cache_branch_limits', test_cache_branch_limits, suite: 'integration')
 test('log_formatter', test_log_formatter)

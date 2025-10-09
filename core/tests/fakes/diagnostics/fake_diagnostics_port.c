@@ -69,8 +69,14 @@ static gm_result_void_t emit_impl(void *self, const char *component,
     return gm_ok_void();
 }
 
+static void dispose_impl(void *self) {
+    gm_fake_diag_state_t *st = (gm_fake_diag_state_t *)self;
+    free(st);
+}
+
 static const gm_diagnostics_port_vtbl_t VTBL = {
     .emit = emit_impl,
+    .dispose = dispose_impl,
 };
 
 gm_result_void_t gm_fake_diag_port_init(gm_diagnostics_port_t *out,
@@ -90,8 +96,14 @@ gm_result_void_t gm_fake_diag_port_init(gm_diagnostics_port_t *out,
 }
 
 void gm_fake_diag_port_dispose(gm_diagnostics_port_t *port) {
-    if (port == NULL) return;
-    free(port->self);
+    if (port == NULL) {
+        return;
+    }
+    if (port->vtbl == &VTBL) {
+        dispose_impl(port->self);
+    } else if (port->vtbl != NULL && port->vtbl->dispose != NULL) {
+        port->vtbl->dispose(port->self);
+    }
     port->self = NULL;
     port->vtbl = NULL;
 }

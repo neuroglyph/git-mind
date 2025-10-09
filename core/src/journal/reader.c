@@ -35,9 +35,11 @@
 #include "gitmind/ports/fs_temp_port.h"
 #include "gitmind/ports/env_port.h"
 #include "gitmind/telemetry/internal/config.h"
-#include "gitmind/telemetry/internal/log_format.h"
+#include "gitmind/telemetry/log_format.h"
 #include "gitmind/ports/diagnostic_port.h"
 #include "gitmind/journal/internal/codec.h"
+
+static uint64_t monotonic_ms_now(void);
 #include "gitmind/journal/internal/read_decoder.h"
 #define CLOCKS_PER_MS                                                       \
     ((clock_t)((CLOCKS_PER_SEC + (MILLIS_PER_SECOND - 1)) / MILLIS_PER_SECOND))
@@ -144,10 +146,12 @@ static int resolve_branch(gm_git_repository_port_t *port,
 static int process_commit_generic(const char *raw_message, reader_ctx_t *rctx) {
     uint8_t decoded[MAX_CBOR_SIZE];
     size_t message_len = 0;
-    size_t cap = sizeof(decoded);
-    gm_result_void_t dr = gm_journal_decode_message(raw_message, decoded, &cap);
+    gm_result_void_t dr =
+        gm_journal_decode_message(raw_message, decoded, sizeof(decoded), &message_len);
     int decode_status = dr.ok ? GM_OK : (dr.u.err ? dr.u.err->code : GM_ERR_UNKNOWN);
-    message_len = dr.ok ? cap : 0;
+    if (!dr.ok) {
+        message_len = 0;
+    }
     if (!dr.ok && dr.u.err) gm_error_free(dr.u.err);
     if (decode_status != GM_OK) {
         return decode_status;
@@ -329,12 +333,12 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
                     GM_GIT_REPOSITORY_PATH_GITDIR, repo_path, sizeof(repo_path));
             if (path_rc.ok) {
                 gm_fs_canon_opts_t copts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
-                const char *canon_tmp = NULL;
+                const char *canon_view = NULL;
                 gm_result_void_t canon_rc = gm_fs_temp_port_canonicalize_ex(
-                    &ctx->fs_temp_port, repo_path, copts, &canon_tmp);
-                if (canon_rc.ok && canon_tmp != NULL) {
+                    &ctx->fs_temp_port, repo_path, copts, &canon_view);
+                if (canon_rc.ok && canon_view != NULL) {
                     if (gm_strcpy_safe(repo_canon_buf, sizeof(repo_canon_buf),
-                                       canon_tmp) == GM_OK) {
+                                       canon_view) == GM_OK) {
                         repo_canon = repo_canon_buf;
                         gm_result_void_t repo_id_rc =
                             gm_repo_id_from_path(repo_canon, &repo_id);
@@ -479,8 +483,11 @@ static uint64_t monotonic_ms_now(void) {
 #else
     struct timespec ts;
     if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
-        return (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)(ts.tv_nsec / 1000000ULL);
+        uint64_t sec_ms = (uint64_t)ts.tv_sec * 1000ULL;
+        uint64_t nsec = (uint64_t)ts.tv_nsec;
+        return sec_ms + (nsec / 1000000ULL);
     }
 #endif
-    return (uint64_t)((clock() * 1000ULL) / CLOCKS_PER_SEC);
+    uint64_t ticks = (uint64_t)clock();
+    return (ticks * 1000ULL) / (uint64_t)CLOCKS_PER_SEC;
 }

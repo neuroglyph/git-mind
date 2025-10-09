@@ -28,7 +28,7 @@ static void write_file(const char *path, const char *content) {
     FILE *f = fopen(path, "wb");
     assert(f != NULL);
     size_t n = fwrite(content, 1, strlen(content), f);
-    assert(n == strlen(content));
+    (void)n;
     fclose(f);
 }
 

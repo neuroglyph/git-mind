@@ -34,7 +34,7 @@ typedef enum {
 } gm_fs_base_t;
 
 typedef struct {
-    const char *path;
+    const char *path; /* _view: borrowed; caller copies before adapter reuse */
 } gm_tempdir_t;
 
 typedef enum {
@@ -133,6 +133,11 @@ GM_NODISCARD static inline gm_result_void_t
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_STATE,
                                     "filesystem port missing canonicalize"));
     }
+    /*
+     * canonicalize_ex returns a _view into adapter-owned scratch storage.
+     * Callers must copy the returned string before invoking another fs_temp
+     * operation or disposing the port; never free the returned pointer.
+     */
     return port->vtbl->canonicalize_ex(port->self, abs_path_in, opts,
                                        out_abs_path);
 }

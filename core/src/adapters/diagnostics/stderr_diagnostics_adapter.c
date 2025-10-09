@@ -4,6 +4,7 @@
 #include "gitmind/adapters/diagnostics/stderr_diagnostics_adapter.h"
 
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -11,7 +12,7 @@
 #include "gitmind/result.h"
 
 typedef struct {
-    int enabled; /* future toggle; unused for now */
+    bool emit_enabled;
 } gm_stderr_diag_state_t;
 
 static void emit_escaped(const char *value) {
@@ -45,7 +46,10 @@ static void emit_escaped(const char *value) {
 static gm_result_void_t emit_impl(void *self, const char *component,
                                   const char *event, const gm_diag_kv_t *kvs,
                                   size_t kv_count) {
-    (void)self;
+    gm_stderr_diag_state_t *state = (gm_stderr_diag_state_t *)self;
+    if (state != NULL && !state->emit_enabled) {
+        return gm_ok_void();
+    }
     if (component == NULL) component = "";
     if (event == NULL) event = "";
     fputs("[diag] ", stderr);
@@ -62,8 +66,13 @@ static gm_result_void_t emit_impl(void *self, const char *component,
     return gm_ok_void();
 }
 
+static void dispose_impl(void *self) {
+    free(self);
+}
+
 static const gm_diagnostics_port_vtbl_t VTBL = {
     .emit = emit_impl,
+    .dispose = dispose_impl,
 };
 
 gm_result_void_t gm_stderr_diagnostics_port_init(gm_diagnostics_port_t *port) {
@@ -75,7 +84,21 @@ gm_result_void_t gm_stderr_diagnostics_port_init(gm_diagnostics_port_t *port) {
     if (st == NULL) {
         return gm_err_void(GM_ERROR(GM_ERR_OUT_OF_MEMORY, "alloc diag state failed"));
     }
+    st->emit_enabled = true;
     port->vtbl = &VTBL;
     port->self = st;
     return gm_ok_void();
+}
+
+void gm_stderr_diagnostics_port_dispose(gm_diagnostics_port_t *port) {
+    if (port == NULL) {
+        return;
+    }
+    if (port->vtbl == &VTBL && port->self != NULL) {
+        dispose_impl(port->self);
+    } else if (port->vtbl != NULL && port->vtbl->dispose != NULL) {
+        port->vtbl->dispose(port->self);
+    }
+    port->self = NULL;
+    port->vtbl = NULL;
 }

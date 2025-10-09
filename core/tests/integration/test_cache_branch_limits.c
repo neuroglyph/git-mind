@@ -137,15 +137,12 @@ int main(void) {
     rc = gm_cache_rebuild(&ctx, invalid_branch, true);
     assert(rc == GM_ERR_INVALID_ARGUMENT);
 
-    if (ctx.fs_temp_port_dispose != NULL) {
-        ctx.fs_temp_port_dispose(&ctx.fs_temp_port);
-    }
     if (ctx.git_repo_port_dispose != NULL) {
         ctx.git_repo_port_dispose(&ctx.git_repo_port);
     }
     git_repository_free(repo);
     gm_result_void_t rm_rc =
-        gm_fs_temp_port_remove_tree(&ctx.fs_temp_port, repo_path);
+        gm_test_cleanup_temp_repo_dir(&ctx.fs_temp_port, repo_path);
     if (!rm_rc.ok) {
         if (rm_rc.u.err != NULL) {
             gm_error_free(rm_rc.u.err);

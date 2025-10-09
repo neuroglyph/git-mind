@@ -42,6 +42,9 @@ export GITMIND_DEBUG_EVENTS=1
 git-mind cache-rebuild 2>diag.txt
 ```
 
+- `GITMIND_DEBUG_EVENTS` wires the stderr diagnostics adapter automatically; the CLI cleans it up when the process exits.
+- Logger levels now track the CLI output mode: default commands log at `INFO`, while `--verbose` (or `GM_OUTPUT_VERBOSE`) raises the stderr logger to `DEBUG`.
+
 Piping JSON logs to jq:
 
 ```
@@ -55,4 +58,3 @@ The CLI prevents running in the git-mind development repository by default. To o
 ```
 export GITMIND_SAFETY=off
 ```
-

@@ -54,10 +54,12 @@ Read via `gm_env_port` (or `getenv` fallback until wiring completes). Proposed k
 - `GITMIND_METRICS_MODE_TAG=1|0` (default `1`)
 - `GITMIND_METRICS_REPO_TAG=off|hash|plain` (default `off`; `hash` = short hash of canonical repo path)
 - `GITMIND_METRICS_REPO_HASH_ALGO=fnv|sha256` (default `fnv`)
-- `GITMIND_METRICS_EXTRA_TAGS="key1=val1,key2=val2"` (default none; max 3 keys; `[a-z0-9_-]+`)
+- `GITMIND_METRICS_EXTRA_TAGS="key1=val1,key2=val2"` (default none; cap auto-derives from `gm_telemetry_cfg_t.extras` — currently 3 slots; `[a-z0-9_-]+`)
 - `GITMIND_LOG_LEVEL=DEBUG|INFO|WARN|ERROR` (default `INFO`)
 - `GITMIND_LOG_FORMAT=text|json` (default `text`)
 - `GITMIND_LOG_COMPONENTS="cache,journal"` (default all)
+- JSON formatter emits keys in lexical order so downstream tooling receives
+  deterministic field ordering.
 
 ## Guardrails
 
@@ -81,6 +83,12 @@ Read via `gm_env_port` (or `getenv` fallback until wiring completes). Proposed k
 2. Instrumentation: Apply config in `cache_rebuild_service` (already emits basic metrics/logs).
 3. Fakes + tests: Add deterministic fakes for logger/metrics and a unit test covering tag assembly.
 4. Docs: Keep this file and AGENTS.md updated with defaults and knobs.
+
+### Formatter seam
+
+- The opt-in formatter hook now lives in the public header `gitmind/telemetry/log_format.h`.
+- Override the default renderer by assigning `ctx.log_formatter = my_formatter;` anywhere a `gm_context_t` is composed.
+- Formatters receive the structured key/value list and a `json` toggle; return `gm_ok_void()` when output fits the provided buffer.
 
 ## Example (Text Log)
 

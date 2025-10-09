@@ -13,6 +13,7 @@
 #include "gitmind/constants_internal.h"
 #include "gitmind/adapters/diagnostics/stderr_diagnostics_adapter.h"
 #include "gitmind/adapters/logging/stdio_logger_adapter.h"
+#include "gitmind/ports/logger_port.h"
 
 #include <git2.h>
 
@@ -248,13 +249,24 @@ static int init_context(gm_context_t *ctx, gm_output_level_t level,
 
     /* Optional: wire diagnostics/logging adapters for local usage */
     const char *dbg = getenv("GITMIND_DEBUG_EVENTS");
-    if (dbg && (strcmp(dbg, "1")==0 || strcasecmp(dbg, "true")==0 || strcasecmp(dbg, "on")==0)) {
-        /* stderr diagnostics adapter */
-        (void)gm_stderr_diagnostics_port_init(&ctx->diag_port);
+    if (dbg && (strcmp(dbg, "1") == 0 || strcasecmp(dbg, "true") == 0 ||
+                strcasecmp(dbg, "on") == 0)) {
+        gm_result_void_t diag_rc = gm_stderr_diagnostics_port_init(&ctx->diag_port);
+        if (diag_rc.ok) {
+            ctx->diag_port_dispose = gm_stderr_diagnostics_port_dispose;
+        } else if (diag_rc.u.err != NULL) {
+            gm_error_free(diag_rc.u.err);
+        }
     }
     /* Basic stdio logger: INFO when normal, DEBUG when verbose */
-    (void)gm_stdio_logger_port_init(&ctx->logger_port, stderr,
-                                    (level == GM_OUTPUT_VERBOSE) ? 10 /* DEBUG */ : 20 /* INFO */);
+    gm_log_level_t min_level = (level == GM_OUTPUT_VERBOSE) ? GM_LOG_DEBUG : GM_LOG_INFO;
+    gm_result_void_t logger_rc =
+        gm_stdio_logger_port_init(&ctx->logger_port, stderr, min_level);
+    if (logger_rc.ok) {
+        ctx->logger_port_dispose = gm_stdio_logger_port_dispose;
+    } else if (logger_rc.u.err != NULL) {
+        gm_error_free(logger_rc.u.err);
+    }
 
     return GM_OK;
 }
@@ -268,6 +280,18 @@ static void cleanup_context(gm_context_t *ctx, gm_cli_ctx_t *cli) {
     if (ctx->fs_temp_port_dispose != NULL) {
         ctx->fs_temp_port_dispose(&ctx->fs_temp_port);
         ctx->fs_temp_port_dispose = NULL;
+    }
+    if (ctx->logger_port_dispose != NULL) {
+        ctx->logger_port_dispose(&ctx->logger_port);
+        ctx->logger_port_dispose = NULL;
+    } else {
+        gm_stdio_logger_port_dispose(&ctx->logger_port);
+    }
+    if (ctx->diag_port_dispose != NULL) {
+        ctx->diag_port_dispose(&ctx->diag_port);
+        ctx->diag_port_dispose = NULL;
+    } else {
+        gm_diag_reset(&ctx->diag_port);
     }
     if (ctx->git_repo_port_dispose != NULL) {
         ctx->git_repo_port_dispose(&ctx->git_repo_port);

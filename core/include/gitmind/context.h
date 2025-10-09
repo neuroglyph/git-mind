@@ -15,7 +15,7 @@
 #include "gitmind/ports/logger_port.h"
 #include "gitmind/ports/metrics_port.h"
 #include "gitmind/ports/diagnostic_port.h"
-#include "gitmind/telemetry/internal/log_format.h"
+#include "gitmind/telemetry/log_format.h"
 
 #ifdef __cplusplus
 extern "C" {

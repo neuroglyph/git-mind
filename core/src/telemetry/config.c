@@ -15,6 +15,8 @@
 #include "gitmind/result.h"
 #include "gitmind/security/string.h"
 #include "gitmind/util/memory.h"
+#include "gitmind/ports/fs_temp_port.h"
+#include "gitmind/types.h"
 #include "gitmind/crypto/backend.h"
 #include "gitmind/crypto/sha256.h"
 #include "gitmind/constants_internal.h"
@@ -70,6 +72,9 @@ static bool parse_hash_algo_sha256(const char *s) {
     if (gm_ascii_casecmp(s, "fnv") == 0) return false;
     return false;
 }
+
+static void fnv1a64_hex12(const uint8_t *data, size_t len, char *out12);
+static void sha256_hex12(const uint8_t *data, size_t len, char *out12);
 
 static void format_repo_hash_bytes(const gm_telemetry_cfg_t *cfg,
                                    const uint8_t *src, size_t len,
@@ -145,7 +150,8 @@ static bool validate_val(const char *v) {
 
 static void add_extra_if_valid(gm_telemetry_cfg_t *cfg, const char *k,
                                const char *v, bool *dropped) {
-    if (cfg->extra_count >= 3) {
+    const size_t cap = sizeof(cfg->extras) / sizeof(cfg->extras[0]);
+    if (cfg->extra_count >= cap) {
         *dropped = true;
         return;
     }

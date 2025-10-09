@@ -28,9 +28,16 @@ Diagnostics events are optional, structured breadcrumbs for debugging in develop
 
 gm_context_t ctx = {0};
 gm_stderr_diagnostics_port_init(&ctx.diag_port);
+
+/* Later, when tearing down the adapter */
+gm_diag_reset(&ctx.diag_port);
 ```
 
 To disable, leave `ctx.diag_port.vtbl` unset or replace with a null adapter.
+
+Notes:
+- `gm_diag_reset()` safely disposes any adapter that publishes a `dispose` hook (including the stderr adapter) and clears the port in one call.
+- The CLI automatically enables the stderr diagnostics adapter when `GITMIND_DEBUG_EVENTS=1|true|on`; it disposes the adapter on shutdown so repeated runs don’t leak state.
 
 ## When we emit
 

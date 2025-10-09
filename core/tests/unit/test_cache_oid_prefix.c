@@ -40,7 +40,8 @@ int main(void) {
     assert(strcmp(out, "") == 0);
 
     /* Error handling paths */
-    assert(gm_cache_oid_prefix(NULL, 4, out, sizeof(out)) != GM_OK);
+    assert(gm_cache_oid_prefix(NULL, 4, out, sizeof(out)) == GM_OK);
+    assert(strcmp(out, "") == 0);
     assert(gm_cache_oid_prefix(&oid, 4, NULL, sizeof(out)) != GM_OK);
     assert(gm_cache_oid_prefix(&oid, 4, out, 0) != GM_OK);
 

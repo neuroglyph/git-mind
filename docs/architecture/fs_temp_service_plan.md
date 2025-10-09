@@ -56,6 +56,7 @@ tags: [filesystem, temp, ports]
 - `GM_FS_CANON_PHYSICAL_EXISTING`: resolves symlinks and requires the path to exist (implemented via `realpath` on POSIX). Returns `GM_ERR_NOT_FOUND` for missing inputs.
 - `GM_FS_CANON_PHYSICAL_CREATE_OK`: resolves the parent directory physically (must exist) and then appends the final segment logically so callers can prepare paths they intend to create.
 - Adapters must implement all three modes; fakes should mirror the contract so unit tests can validate both success and error paths consistently.
+- Canonicalize returns a `_view` owned by the adapter; call sites **must** copy or promote to `_owned` before the next fs-temp call and must never `free()` the pointer.
 
 ## Open Questions
 

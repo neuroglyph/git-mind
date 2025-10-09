@@ -537,7 +537,7 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
     tags[0] = '\0';
     gm_repo_id_t repo_id = {0};
     char repo_path[GM_PATH_MAX];
-    const char *repo_canon = NULL;
+    const char *repo_canon_view = NULL;
     do {
         int rp = unwrap_result(gm_git_repository_port_repository_path(
             &ctx->git_repo_port, GM_GIT_REPOSITORY_PATH_GITDIR, repo_path,
@@ -545,13 +545,13 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
         if (rp != GM_OK) break;
         gm_fs_canon_opts_t copts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
         if (unwrap_result(gm_fs_temp_port_canonicalize_ex(
-                &ctx->fs_temp_port, repo_path, copts, &repo_canon)) != GM_OK) {
-            repo_canon = NULL;
+                &ctx->fs_temp_port, repo_path, copts, &repo_canon_view)) != GM_OK) {
+            repo_canon_view = NULL;
         }
         (void)compute_repo_id(ctx, &repo_id);
     } while (0);
     gm_result_void_t tags_rc = gm_telemetry_build_tags(&tcfg, branch, mode,
-                                                       repo_canon, &repo_id,
+                                                       repo_canon_view, &repo_id,
                                                        tags, sizeof(tags));
     if (!tags_rc.ok) {
         if (tags_rc.u.err != NULL) {

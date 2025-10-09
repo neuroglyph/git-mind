@@ -911,20 +911,33 @@ static gm_result_void_t reference_update_impl(
         /* Ensure parent directories for the reference exist (e.g., refs/gitmind/edges) */
         const char *gitdir = git_repository_path(state->repo);
         if (gitdir != NULL) {
+            char norm_ref[GM_PATH_MAX];
+            if (git_reference_normalize_name(norm_ref, sizeof(norm_ref),
+                                             spec->ref_name,
+                                             GIT_REFERENCE_FORMAT_NORMAL) != 0) {
+                return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                            "invalid reference name %s",
+                                            spec->ref_name));
+            }
+            if (strstr(norm_ref, "..") != NULL) {
+                return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                            "invalid traversal in reference name"));
+            }
             char fullpath[GM_PATH_MAX];
-            if (gm_snprintf(fullpath, sizeof(fullpath), "%s%s", gitdir, spec->ref_name) > 0) {
-                /* Create directories up to the file component */
-                size_t len = strlen(fullpath);
-                for (size_t i = 0; i < len; ++i) {
-                    if (i > 0 && fullpath[i] == '/') {
-                        fullpath[i] = '\0';
-                        if (mkdir(fullpath, 0777) < 0 && errno != EEXIST) {
-                            fullpath[i] = '/';
-                            return gm_err_void(GM_ERROR(GM_ERR_IO_FAILED,
-                                "failed to create ref dir %s", fullpath));
-                        }
+            int n = gm_snprintf(fullpath, sizeof(fullpath), "%s%s", gitdir, norm_ref);
+            if (n < 0 || (size_t)n >= sizeof(fullpath)) {
+                return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG, "ref path too long"));
+            }
+            size_t len = (size_t)n;
+            for (size_t i = 0; i < len; ++i) {
+                if (i > 0 && fullpath[i] == '/') {
+                    fullpath[i] = '\0';
+                    if (mkdir(fullpath, 0775) < 0 && errno != EEXIST) {
                         fullpath[i] = '/';
+                        return gm_err_void(GM_ERROR(GM_ERR_IO_FAILED,
+                            "failed to create ref dir %s", fullpath));
                     }
+                    fullpath[i] = '/';
                 }
             }
         }

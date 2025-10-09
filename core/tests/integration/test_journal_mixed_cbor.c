@@ -10,6 +10,7 @@
 #include "gitmind/error.h"
 #include "gitmind/edge.h"
 #include "gitmind/types/ulid.h"
+#include "gitmind/error.h"
 #include "gitmind/edge_attributed.h"
 #include "gitmind/types.h"
 #include "gitmind/context.h"

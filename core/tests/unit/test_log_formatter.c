@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "gitmind/telemetry/internal/log_format.h"
+#include "gitmind/telemetry/log_format.h"
 
 static void test_text(void) {
     printf("test_log_formatter.text... ");
@@ -33,9 +33,11 @@ static void test_json(void) {
     char out[256];
     assert(gm_log_format_render_default(kvs, 4, true, out, sizeof(out)).ok);
     assert(out[0] == '{' && out[strlen(out) - 1] == '}');
-    assert(strstr(out, "\"event\":\"rebuild_failed\"") != NULL);
+    /* Keys appear in deterministic order (branch, code, event, mode) */
     assert(strstr(out, "\"branch\":\"dev\"") != NULL);
     assert(strstr(out, "\"code\":\"5\"") != NULL);
+    assert(strstr(out, "\"event\":\"rebuild_failed\"") != NULL);
+    assert(strstr(out, "\"mode\":\"full\"") != NULL);
     printf("OK\n");
 }
 
@@ -48,7 +50,7 @@ static void test_json_escaping(void) {
     char out[256];
     assert(gm_log_format_render_default(kvs, 2, true, out, sizeof(out)).ok);
     assert(strstr(out, "\\\"") != NULL);
-    assert(strstr(out, "\\n") != NULL);
+    assert(strstr(out, "\\u000a") != NULL);
     printf("OK\n");
 }
 

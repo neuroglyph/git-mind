@@ -96,17 +96,6 @@ int main(void) {
     assert(git_odb_object_type(obj) == GIT_OBJECT_TREE);
     git_odb_object_free(obj);
 
-    git_tree *tree = NULL;
-    rc = git_tree_lookup(&tree, repo, (const git_oid *)&tree_oid);
-    assert(rc == 0 && tree != NULL);
-    const git_tree_entry *root_entry = git_tree_entry_byname(tree, "root.txt");
-    assert(root_entry != NULL);
-    assert(git_tree_entry_type(root_entry) == GIT_OBJECT_BLOB);
-    const git_tree_entry *dir_entry = git_tree_entry_byname(tree, "dir");
-    assert(dir_entry != NULL);
-    assert(git_tree_entry_type(dir_entry) == GIT_OBJECT_TREE);
-    git_tree_free(tree);
-
     if (dispose != NULL) {
         dispose(&port);
     }

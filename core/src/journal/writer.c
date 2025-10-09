@@ -34,7 +34,7 @@
 #include "gitmind/ports/metrics_port.h"
 #include "gitmind/ports/env_port.h"
 #include "gitmind/telemetry/internal/config.h"
-#include "gitmind/telemetry/internal/log_format.h"
+#include "gitmind/telemetry/log_format.h"
 #include "gitmind/ports/diagnostic_port.h"
 #include "gitmind/journal/internal/codec.h"
 #include "gitmind/journal/internal/append_plan.h"
@@ -52,10 +52,13 @@ static uint64_t monotonic_ms_now(void) {
 #else
     struct timespec ts;
     if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
-        return (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)(ts.tv_nsec / 1000000ULL);
+        uint64_t sec_ms = (uint64_t)ts.tv_sec * 1000ULL;
+        uint64_t nsec = (uint64_t)ts.tv_nsec;
+        return sec_ms + (nsec / 1000000ULL);
     }
 #endif
-    return (uint64_t)((clock() * 1000ULL) / CLOCKS_PER_SEC);
+    uint64_t ticks = (uint64_t)clock();
+    return (ticks * 1000ULL) / (uint64_t)CLOCKS_PER_SEC;
 }
 #define CLOCKS_PER_MS                                                       \
     ((clock_t)((CLOCKS_PER_SEC + (MILLIS_PER_SECOND - 1)) / MILLIS_PER_SECOND))
@@ -345,14 +348,13 @@ static int journal_append_generic(gm_context_t *ctx, journal_edge_batch_t batch,
             if (gm_git_repository_port_repository_path(&ctx->git_repo_port,
                     GM_GIT_REPOSITORY_PATH_GITDIR, repo_path, sizeof(repo_path)).ok) {
                 gm_fs_canon_opts_t copts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
-                const char *canon_tmp = NULL;
+                const char *canon_view = NULL; /* _view: borrow adapter scratch */
                 if (gm_fs_temp_port_canonicalize_ex(&ctx->fs_temp_port, repo_path,
-                        copts, &canon_tmp).ok && canon_tmp != NULL) {
+                        copts, &canon_view).ok && canon_view != NULL) {
                     if (gm_strcpy_safe(repo_canon_buf, sizeof(repo_canon_buf),
-                                       canon_tmp) == GM_OK) {
+                                       canon_view) == GM_OK) {
                         (void)gm_repo_id_from_path(repo_canon_buf, &repo_id);
                     }
-                    free((void *)canon_tmp);
                 }
             }
         }

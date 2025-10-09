@@ -31,6 +31,7 @@ struct gm_diagnostics_port_vtbl {
                              const char *event,
                              const gm_diag_kv_t *kvs,
                              size_t kv_count);
+    void (*dispose)(void *self);
 };
 
 /* Safe wrapper: no-op when unset */
@@ -45,9 +46,20 @@ static inline gm_result_void_t gm_diag_emit(const gm_diagnostics_port_t *port,
     return port->vtbl->emit(port->self, component, event, kvs, kv_count);
 }
 
+/* Safe disposer: releases adapter state when provided */
+static inline void gm_diag_reset(gm_diagnostics_port_t *port) {
+    if (port == NULL) {
+        return;
+    }
+    if (port->vtbl != NULL && port->vtbl->dispose != NULL) {
+        port->vtbl->dispose(port->self);
+    }
+    port->self = NULL;
+    port->vtbl = NULL;
+}
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* GITMIND_PORTS_DIAGNOSTIC_PORT_H */
-
