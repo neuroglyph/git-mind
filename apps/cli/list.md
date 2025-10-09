@@ -198,6 +198,36 @@ IMPLEMENTS: 你好.c -> 世界.h
 REFERENCES: café.md -> naïve.md
 ```
 
+## Examples: Porcelain vs Human Output
+
+The list command writes results to stdout; logs go to stderr. Use `--porcelain` when you need stable, parseable output.
+
+Human (default):
+
+```
+$ git-mind list
+IMPLEMENTS: src/a.c -> include/a.h
+REFERENCES: README.md -> docs/usage.md
+```
+
+Porcelain:
+
+```
+$ git-mind --porcelain list
+type=IMPLEMENTS src=src/a.c tgt=include/a.h
+type=REFERENCES src=README.md tgt=docs/usage.md
+```
+
+## Examples: JSON Logs + Porcelain
+
+Enable JSON logs (stderr) and porcelain stdout together:
+
+```
+$ git-mind --json --porcelain list 2>logs.json | tee list.txt
+```
+
+Each service log line in `logs.json` is a compact JSON object (works with `jq`), while `list.txt` holds parseable results.
+
 - UTF-8 passed through
 - Terminal handles display
 - No transliteration

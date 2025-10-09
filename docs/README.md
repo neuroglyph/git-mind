@@ -7,16 +7,18 @@ tags: [index, docs]
 status: stable
 last_updated: 2025-09-15
 ---
+<!-- SPDX-License-Identifier: LicenseRef-MIND-UCAL-1.0 -->
+<!-- © 2025 J. Kirby Ross / Neuroglyph Collective -->
 
 # docs/ (Index and Structure)
 
-Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Planned Structure](#planned-structure)
 - [Quick Map of Existing Docs](#quick-map-of-existing-docs)
 - [Getting Started](#getting-started)
- - [Docs Conventions](#docs-conventions)
+  - [Docs Conventions](#docs-conventions)
 
 ## Overview
 
@@ -44,16 +46,11 @@ This index organizes documentation with stable links so the project can be pause
 ## Quick Map of Existing Docs
 
 - Architecture and design
-  - [Journal Architecture Pivot](architecture/journal-architecture-pivot.md)
-  - [Bitmap Cache Design](architecture/bitmap-cache-design.md)
-  - [Attribution System](architecture/attribution-system.md)
+  - [Journal Architecture](architecture/journal-architecture.md)
+  - [Cache Architecture](architecture/cache-architecture.md)
   - [Modular Restructure Plan](architecture/MODULAR_RESTRUCTURE_PLAN.md)
-- CLI
-  - [CLI Overview](cli/gitmind.md)
-  - [git mind link](cli/gitmind-link.md)
-  - [git mind list](cli/gitmind-list.md)
-  - [git mind cache-rebuild](cli/gitmind-cache-rebuild.md)
-  - [git mind install-hooks](cli/gitmind-install-hooks.md)
+ - CLI (deferred)
+  - CLI docs are being restructured as part of the hexagonal migration and will return in a future update.
 - PRDs and ADRs
   - [PRD: First-Class Semantics](PRDs/PRD-git-mind-semantics-time-travel-prototype.md)
   - [PRD: Co‑Thought MCP Service](PRDs/PRD-co-thought-mcp-service.md)

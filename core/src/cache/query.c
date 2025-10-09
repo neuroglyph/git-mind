@@ -20,6 +20,7 @@
 #include "gitmind/util/memory.h"
 #include "gitmind/util/oid.h"
 #include "gitmind/constants_internal.h"
+#include "gitmind/cache/internal/staleness.h"
 
 /* Constants */
 #define CACHE_MAX_AGE_SECONDS 3600 /* 1 hour */
@@ -171,8 +172,8 @@ bool gm_cache_is_stale(gm_context_t *ctx, const char *branch) {
         return true;
     }
     uint64_t now_u = (uint64_t)now;
-    if (now_u > meta.journal_tip_time &&
-        (now_u - meta.journal_tip_time) > CACHE_MAX_AGE_SECONDS) {
+    if (gm_cache_staleness_time(meta.journal_tip_time, now_u,
+                                CACHE_MAX_AGE_SECONDS)) {
         return true;
     }
 

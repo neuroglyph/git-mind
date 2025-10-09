@@ -89,6 +89,10 @@ Simple binary:
 
 Future: Specific codes for different failures.
 
+Special cases:
+
+- Safety violation: exits with `EXIT_SAFETY_VIOLATION` (42) when the CLI detects it is being run inside the git-mind development repository (guard rails to prevent self-corruption). You can override for CI/E2E by setting `GITMIND_SAFETY=off` in the environment.
+
 ## Context Management
 
 ### Initialization
@@ -237,6 +241,43 @@ gm_cmd_link(&ctx, argc, argv);  // ✅
 Currently: None (default behavior)
 
 Future considerations:
+
+## Global Flags & Environment
+
+### Flags
+
+- `--verbose` — increases log verbosity for the CLI-wired logger (DEBUG level).
+- `--porcelain` — switches CLI user-facing output to a stable, key=value format (logger output unchanged; this affects gm_output_* only).
+
+### Logging
+
+- The CLI wires a simple stderr logger adapter by default:
+  - Level = INFO (normal) or DEBUG (when `--verbose` is set).
+  - Messages are exactly what services emit (strings produced by the formatter seam).
+- Structured JSON logs:
+  - Set `GITMIND_LOG_FORMAT=json` to have services format log messages as compact JSON. The CLI prints these JSON strings to stderr unchanged, so you can pipe them to `jq` or other tooling.
+- Log level via env:
+  - `GITMIND_LOG_LEVEL=DEBUG|INFO|WARN|ERROR` is honored by services for internal filtering; the CLI’s stderr logger minimum is still controlled by `--verbose` (DEBUG) vs normal (INFO).
+
+### Diagnostics (Dev/Test)
+
+- For structured, low‑volume debug breadcrumbs, enable diagnostics events:
+
+```
+export GITMIND_DEBUG_EVENTS=1
+```
+
+- With this set, the CLI wires a stderr diagnostics adapter and you’ll see lines like:
+
+```
+[diag] cache rebuild_failed branch=main code=1
+```
+
+- See docs/operations/Diagnostics_Events.md for the full list of events and how to capture them in tests.
+
+### Metrics
+
+- Metrics wrappers no‑op unless a metrics adapter is wired. Environment toggles (`GITMIND_METRICS_*`) are documented in docs/operations/Telemetry_Config.md and affect services’ behavior when a real adapter is provided.
 
 ```c
 signal(SIGINT, cleanup_handler);

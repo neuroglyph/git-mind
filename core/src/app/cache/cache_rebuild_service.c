@@ -16,6 +16,7 @@
 #include "gitmind/cache.h"
 #include "gitmind/cache/bitmap.h"
 #include "gitmind/cache/internal/edge_map.h"
+#include "gitmind/cache/internal/oid_prefix.h"
 #include "gitmind/constants_internal.h"
 #include "gitmind/context.h"
 #include "gitmind/edge.h"
@@ -29,8 +30,9 @@
 #include "gitmind/util/memory.h"
 #include "gitmind/util/oid.h"
 #include "gitmind/util/ref.h"
+#include "gitmind/telemetry/internal/config.h"
+#include "gitmind/ports/diagnostic_port.h"
 
-#define MAX_SHARD_PATH 32
 #define CLOCKS_PER_MS                                                       \
     ((clock_t)((CLOCKS_PER_SEC + (MILLIS_PER_SECOND - 1)) / MILLIS_PER_SECOND))
 #define CACHE_TEMP_COMPONENT "cache"
@@ -56,6 +58,19 @@ static int unwrap_result(gm_result_void_t result) {
         gm_error_free(result.u.err);
     }
     return code;
+}
+
+static void cache_diag_emit(gm_context_t *ctx, const char *event,
+                            const char *branch, int code) {
+    if (ctx == NULL) return;
+    char code_buf[16];
+    (void)gm_snprintf(code_buf, sizeof(code_buf), "%d", code);
+    const gm_diag_kv_t kvs[] = {
+        {.key = "branch", .value = branch ? branch : ""},
+        {.key = "code", .value = code_buf},
+    };
+    (void)gm_diag_emit(&ctx->diag_port, "cache", event, kvs,
+                       sizeof(kvs) / sizeof(kvs[0]));
 }
 
 static int compute_repo_id(gm_context_t *ctx, gm_repo_id_t *repo_id) {
@@ -113,28 +128,7 @@ static void release_temp_dir(gm_context_t *ctx, const gm_tempdir_t *temp_dir) {
     }
 }
 
-static void get_oid_prefix(const gm_oid_t *oid, char *prefix, int bits) {
-    int chars = (bits + 3) / BITS_PER_HEX_CHAR; /* Round up to hex chars */
-    if (chars <= 0) {
-        prefix[0] = '\0';
-        return;
-    }
-
-    char hex[GM_OID_HEX_CHARS + 1] = {0};
-    if (gm_oid_to_hex(oid, hex, sizeof(hex)) != GM_OK) {
-        prefix[0] = '\0';
-        return;
-    }
-    if (chars > GM_OID_HEX_CHARS) {
-        chars = GM_OID_HEX_CHARS;
-    }
-
-    int limit = (chars < (MAX_SHARD_PATH - 1)) ? chars : (MAX_SHARD_PATH - 1);
-    for (int index = 0; index < limit; ++index) {
-        prefix[index] = hex[index];
-    }
-    prefix[limit] = '\0';
-}
+/* moved to domain helper: gm_cache_oid_prefix */
 
 static int oid_to_hex(const gm_oid_t *oid, char *out, size_t out_size) {
     return gm_oid_to_hex(oid, out, out_size);
@@ -178,8 +172,11 @@ static int edge_map_write_callback(const gm_oid_t *oid,
                                    void *userdata) {
     edge_map_write_ctx_t *ctx = (edge_map_write_ctx_t *)userdata;
     char path[GM_PATH_MAX];
-    char prefix[MAX_SHARD_PATH];
-    get_oid_prefix(oid, prefix, ctx->shard_bits);
+    char prefix[GM_CACHE_MAX_SHARD_PATH];
+    if (gm_cache_oid_prefix(oid, ctx->shard_bits, prefix, sizeof(prefix)) !=
+        GM_OK) {
+        return GM_ERR_INVALID_STATE;
+    }
 
     if (!is_valid_directory_name(path, sizeof(path), ctx->temp_dir, prefix)) {
         return GM_ERR_IO_FAILED;
@@ -348,7 +345,8 @@ static int cache_populate_meta(const gm_git_repository_port_t *port,
 
 static int cache_build_commit_and_update(const gm_git_repository_port_t *port,
                                          const cache_commit_inputs_t *inputs,
-                                         const gm_cache_meta_t *meta) {
+                                         const gm_cache_meta_t *meta,
+                                         gm_oid_t *out_commit_oid) {
     if (inputs == NULL || inputs->temp_dir == NULL ||
         inputs->temp_dir->path == NULL) {
         return GM_ERR_INVALID_ARGUMENT;
@@ -356,6 +354,10 @@ static int cache_build_commit_and_update(const gm_git_repository_port_t *port,
     gm_oid_t tree_oid;
     int result_code =
         build_tree_from_temp(port, inputs->temp_dir->path, &tree_oid);
+    if (result_code != GM_OK) {
+        /* Emit via diagnostics port when available. We don't have ctx here, so skip. */
+        return result_code;
+    }
     if (result_code != GM_OK) {
         return result_code;
     }
@@ -385,7 +387,14 @@ static int cache_build_commit_and_update(const gm_git_repository_port_t *port,
         return result_code;
     }
 
-    return cache_update_ref(port, inputs->branch, &commit_oid);
+    int ref_rc = cache_update_ref(port, inputs->branch, &commit_oid);
+    if (ref_rc != GM_OK) {
+        return ref_rc;
+    }
+    if (out_commit_oid != NULL) {
+        *out_commit_oid = commit_oid;
+    }
+    return GM_OK;
 }
 
 static int cache_get_journal_tip(const gm_git_repository_port_t *port,
@@ -494,20 +503,121 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
     gm_edge_map_t *forward_map = NULL;
     gm_edge_map_t *reverse_map = NULL;
     gm_tempdir_t temp_dir = {0};
+    char stable_temp_path[GM_PATH_MAX];
     gm_cache_meta_t old_meta = {0};
     gm_cache_meta_t meta = {0};
     bool has_old_cache = false;
     int result_code = GM_OK;
     clock_t start_time;
 
+    /* Telemetry configuration */
+    gm_telemetry_cfg_t tcfg = {0};
+    gm_result_void_t telemetry_rc =
+        gm_telemetry_cfg_load(&tcfg, gm_env_port_system());
+    if (!telemetry_rc.ok) {
+        char err_msg[96];
+        int32_t code = telemetry_rc.u.err ? telemetry_rc.u.err->code
+                                          : GM_ERR_UNKNOWN;
+        int err_snprintf =
+            gm_snprintf(err_msg, sizeof(err_msg),
+                        "telemetry_cfg_load_failed code=%d", (int)code);
+        if (telemetry_rc.u.err != NULL) {
+            gm_error_free(telemetry_rc.u.err);
+        }
+        memset(&tcfg, 0, sizeof(tcfg));
+        tcfg.metrics_enabled = false;
+        tcfg.log_format = GM_LOG_FMT_TEXT;
+        if (err_snprintf < 0 || (size_t)err_snprintf >= sizeof(err_msg)) {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache",
+                                "telemetry_cfg_load_failed");
+        } else {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache",
+                                err_msg);
+        }
+    }
+    const char *mode = "full"; /* TODO: detect incremental when available */
+    char tags[256];
+    tags[0] = '\0';
+    gm_repo_id_t repo_id = {0};
+    char repo_path[GM_PATH_MAX];
+    const char *repo_canon = NULL;
+    do {
+        int rp = unwrap_result(gm_git_repository_port_repository_path(
+            &ctx->git_repo_port, GM_GIT_REPOSITORY_PATH_GITDIR, repo_path,
+            sizeof(repo_path)));
+        if (rp != GM_OK) break;
+        gm_fs_canon_opts_t copts = {.mode = GM_FS_CANON_PHYSICAL_EXISTING};
+        if (unwrap_result(gm_fs_temp_port_canonicalize_ex(
+                &ctx->fs_temp_port, repo_path, copts, &repo_canon)) != GM_OK) {
+            repo_canon = NULL;
+        }
+        (void)compute_repo_id(ctx, &repo_id);
+    } while (0);
+    gm_result_void_t tags_rc = gm_telemetry_build_tags(&tcfg, branch, mode,
+                                                       repo_canon, &repo_id,
+                                                       tags, sizeof(tags));
+    if (!tags_rc.ok) {
+        if (tags_rc.u.err != NULL) {
+            gm_error_free(tags_rc.u.err);
+        }
+        tags[0] = '\0';
+        (void)gm_logger_log(&ctx->logger_port, GM_LOG_WARN, "cache",
+                            "telemetry_tags_build_failed");
+    }
+    if (tcfg.extras_dropped) {
+        (void)gm_logger_log(&ctx->logger_port, GM_LOG_WARN, "cache",
+                            "telemetry extras dropped=1");
+    }
+
+    /* Log start */
+    {
+        char msg[256];
+        msg[0] = '\0';
+        const gm_log_kv_t kvs[] = {
+            {.key = "event", .value = "rebuild_start"},
+            {.key = "branch", .value = branch},
+            {.key = "mode", .value = mode},
+        };
+        gm_log_formatter_fn fmt = ctx->log_formatter ? ctx->log_formatter
+                                                     : gm_log_format_render_default;
+        gm_result_void_t fmt_rc = fmt(kvs, sizeof(kvs) / sizeof(kvs[0]),
+                                      (tcfg.log_format == GM_LOG_FMT_JSON),
+                                      msg, sizeof(msg));
+        if (!fmt_rc.ok) {
+            if (fmt_rc.u.err != NULL) gm_error_free(fmt_rc.u.err);
+            int alt = gm_snprintf(msg, sizeof(msg),
+                                  "event=rebuild_start branch=%s mode=%s",
+                                  branch, mode);
+            if (alt < 0 || (size_t)alt >= sizeof(msg)) {
+                msg[0] = '\0';
+            }
+        }
+        if (msg[0] == '\0') {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache",
+                                "rebuild_start");
+        } else {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache", msg);
+        }
+    }
+
     result_code = cache_prepare_rebuild(ctx, branch, force_full, &old_meta,
                                         &has_old_cache, &temp_dir);
     if (result_code != GM_OK) {
+        cache_diag_emit(ctx, "rebuild_prep_failed", branch, result_code);
         return result_code;
+    }
+
+    /* Stabilize temp dir path because fs port may reuse internal buffers. */
+    if (temp_dir.path != NULL) {
+        if (gm_strcpy_safe(stable_temp_path, sizeof(stable_temp_path),
+                           temp_dir.path) == GM_OK) {
+            temp_dir.path = stable_temp_path;
+        }
     }
 
     result_code = cache_build_edge_map(&forward_map, &reverse_map);
     if (result_code != GM_OK) {
+        cache_diag_emit(ctx, "rebuild_edge_map_failed", branch, result_code);
         cache_cleanup(ctx, forward_map, reverse_map, &temp_dir);
         return result_code;
     }
@@ -519,6 +629,7 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
                                           has_old_cache, &old_meta, &temp_dir,
                                           &total_edges);
     if (result_code != GM_OK) {
+        cache_diag_emit(ctx, "rebuild_collect_write_failed", branch, result_code);
         goto cleanup;
     }
 
@@ -529,6 +640,7 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
     result_code =
         cache_populate_meta(&ctx->git_repo_port, branch, &meta_inputs, &meta);
     if (result_code != GM_OK) {
+        cache_diag_emit(ctx, "rebuild_meta_failed", branch, result_code);
         goto cleanup;
     }
 
@@ -536,10 +648,122 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
         .branch = branch,
         .temp_dir = &temp_dir,
     };
+    gm_oid_t final_commit = {0};
     result_code = cache_build_commit_and_update(&ctx->git_repo_port,
-                                                &commit_inputs, &meta);
+                                                &commit_inputs, &meta,
+                                                &final_commit);
+    if (result_code == GM_OK && tcfg.metrics_enabled) {
+        /* diagnostic success can be added later if needed */
+        /* duration */
+        (void)gm_metrics_timing_ms(&ctx->metrics_port,
+                                   "cache.rebuild.duration_ms",
+                                   meta.build_time_ms, tags);
+        /* edges */
+        (void)gm_metrics_counter_add(&ctx->metrics_port,
+                                     "cache.edges_processed_total",
+                                     (uint64_t)meta.edge_count, tags);
+        /* tree size */
+        if (!gm_oid_is_zero(&final_commit)) {
+            uint64_t tree_size = 0;
+            gm_result_void_t ts = gm_git_repository_port_commit_tree_size(
+                &ctx->git_repo_port, &final_commit, &tree_size);
+            if (ts.ok) {
+                (void)gm_metrics_gauge_set(&ctx->metrics_port,
+                                           "cache.tree_size_bytes",
+                                           (double)tree_size, tags);
+            } else if (ts.u.err != NULL) {
+                gm_error_free(ts.u.err);
+            }
+        }
+    }
+
+    /* Log success */
+    if (result_code == GM_OK) {
+        char msg[256];
+        msg[0] = '\0';
+        char edge_count_buf[32];
+        char dur_buf[32];
+        int edge_rc = gm_snprintf(edge_count_buf, sizeof(edge_count_buf), "%u",
+                                  (unsigned)meta.edge_count);
+        if (edge_rc < 0 || (size_t)edge_rc >= sizeof(edge_count_buf)) {
+            result_code = GM_ERR_BUFFER_TOO_SMALL;
+            goto cleanup;
+        }
+        int dur_rc = gm_snprintf(dur_buf, sizeof(dur_buf), "%llu",
+                                 (unsigned long long)meta.build_time_ms);
+        if (dur_rc < 0 || (size_t)dur_rc >= sizeof(dur_buf)) {
+            result_code = GM_ERR_BUFFER_TOO_SMALL;
+            goto cleanup;
+        }
+        const gm_log_kv_t kvs[] = {
+            {.key = "event", .value = "rebuild_ok"},
+            {.key = "branch", .value = branch},
+            {.key = "mode", .value = mode},
+            {.key = "edge_count", .value = edge_count_buf},
+            {.key = "duration_ms", .value = dur_buf},
+        };
+        gm_log_formatter_fn fmt = ctx->log_formatter ? ctx->log_formatter
+                                                     : gm_log_format_render_default;
+        gm_result_void_t fmt_rc = fmt(kvs, sizeof(kvs) / sizeof(kvs[0]),
+                                      (tcfg.log_format == GM_LOG_FMT_JSON),
+                                      msg, sizeof(msg));
+        if (!fmt_rc.ok) {
+            if (fmt_rc.u.err != NULL) gm_error_free(fmt_rc.u.err);
+            int alt = gm_snprintf(msg, sizeof(msg),
+                                  "event=rebuild_ok branch=%s mode=%s", branch,
+                                  mode);
+            if (alt < 0 || (size_t)alt >= sizeof(msg)) {
+                msg[0] = '\0';
+            }
+        }
+        if (msg[0] == '\0') {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache",
+                                "rebuild_ok");
+        } else {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_INFO, "cache", msg);
+        }
+    }
 
 cleanup:
     cache_cleanup(ctx, forward_map, reverse_map, &temp_dir);
+    if (result_code != GM_OK) {
+        char msg[256];
+        msg[0] = '\0';
+        char code_buf[16];
+        int code_rc = gm_snprintf(code_buf, sizeof(code_buf), "%d",
+                                  result_code);
+        if (code_rc < 0 || (size_t)code_rc >= sizeof(code_buf)) {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache",
+                                "rebuild_failed format_code_overflow");
+            code_buf[0] = '\0';
+        }
+        const gm_log_kv_t kvs[] = {
+            {.key = "event", .value = "rebuild_failed"},
+            {.key = "branch", .value = branch},
+            {.key = "mode", .value = mode},
+            {.key = "code", .value = code_buf},
+        };
+        gm_log_formatter_fn fmt = ctx->log_formatter ? ctx->log_formatter
+                                                     : gm_log_format_render_default;
+        gm_result_void_t fmt_rc = fmt(kvs, sizeof(kvs) / sizeof(kvs[0]),
+                                      (tcfg.log_format == GM_LOG_FMT_JSON),
+                                      msg, sizeof(msg));
+        if (!fmt_rc.ok) {
+            if (fmt_rc.u.err != NULL) gm_error_free(fmt_rc.u.err);
+            int alt = gm_snprintf(msg, sizeof(msg),
+                                  "event=rebuild_failed branch=%s mode=%s", branch,
+                                  mode);
+            if (alt < 0 || (size_t)alt >= sizeof(msg)) {
+                msg[0] = '\0';
+            }
+        }
+        if (msg[0] == '\0') {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache",
+                                "rebuild_failed");
+        } else {
+            (void)gm_logger_log(&ctx->logger_port, GM_LOG_ERROR, "cache", msg);
+        }
+        cache_diag_emit(ctx, "rebuild_failed", branch, result_code);
+    }
     return result_code;
 }

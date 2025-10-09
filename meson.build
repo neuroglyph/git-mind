@@ -121,11 +121,21 @@ src = files(
   'core/src/domain/attribution/env_loader.c',
   'core/src/app/cache/cache_rebuild_service.c',
   'core/src/domain/cache/edge_map.c',
+  'core/src/domain/cache/oid_prefix.c',
+  'core/src/domain/journal/append_planner.c',
+  'core/src/domain/journal/read_decoder.c',
+  'core/src/domain/journal/codec.c',
+  'core/src/telemetry/config.c',
+  'core/src/telemetry/log_format.c',
+  'core/src/adapters/diagnostics/stderr_diagnostics_adapter.c',
   'core/src/adapters/config/env_adapter.c',
   'core/src/adapters/fs/posix_temp_adapter.c',
   'core/src/ports/env_port.c',
   'core/src/journal/reader.c',
   'core/src/journal/writer.c',
+  'core/src/ports/cache/cache_build_port.c',
+  'core/src/ports/cache/cache_query_port.c',
+  'core/src/ports/journal/journal_command_port.c',
   'core/src/cache/bitmap.c',
   'core/src/cache/builder.c',
   'core/src/cache/query.c',
@@ -133,6 +143,8 @@ src = files(
   'core/src/util/ref.c',
   'core/src/util/oid.c',
   'core/src/adapters/git/libgit2_repository_port.c',
+  'core/src/adapters/logging/stdio_logger_adapter.c',
+  'core/src/adapters/metrics/null_metrics_adapter.c',
   'core/src/hooks/augment.c',
 )
 
@@ -290,7 +302,7 @@ test_edge_equal_semantics = executable('test_edge_equal_semantics',
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_cache_meta = executable('test_cache_meta',
-  'core/tests/unit/test_cache_meta.c',
+  'core/tests/integration/test_cache_meta.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
@@ -307,13 +319,13 @@ test_fs_path_utils = executable('test_fs_path_utils',
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_journal_mixed_cbor = executable('test_journal_mixed_cbor',
-  'core/tests/unit/test_journal_mixed_cbor.c',
+  'core/tests/integration/test_journal_mixed_cbor.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_cache_query = executable('test_cache_query',
-  'core/tests/unit/test_cache_query.c',
+  'core/tests/integration/test_cache_query.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
@@ -325,11 +337,16 @@ test_cache_strict_equality = executable('test_cache_strict_equality',
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_cache_branch_limits = executable('test_cache_branch_limits',
-  'core/tests/unit/test_cache_branch_limits.c',
+  'core/tests/integration/test_cache_branch_limits.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
+test_log_formatter = executable('test_log_formatter',
+  'core/tests/unit/test_log_formatter.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 test_journal_safety = executable('test_journal_safety',
   'core/tests/unit/test_journal_safety.c',
   include_directories : inc,
@@ -343,11 +360,39 @@ test_cache_shard_distribution = executable('test_cache_shard_distribution',
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
 test_cache_tree_size = executable('test_cache_tree_size',
-  'core/tests/unit/test_cache_tree_size.c',
+  'core/tests/integration/test_cache_tree_size.c',
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 
+test_repo_build_tree = executable('test_repo_build_tree',
+  'core/tests/integration/test_repo_build_tree.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_journal_e2e_libgit2 = executable('test_journal_e2e_libgit2',
+  ['core/tests/unit/test_journal_e2e_libgit2.c',
+   'core/tests/fakes/logging/fake_logger_port.c',
+   'core/tests/fakes/metrics/fake_metrics_port.c'],
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_diagnostics_port = executable('test_diagnostics_port',
+  ['core/tests/unit/test_diagnostics_port.c',
+   'core/tests/fakes/diagnostics/fake_diagnostics_port.c',
+   'core/tests/fakes/fs/fake_fs_temp_port.c'],
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_journal_nff_retry = executable('test_journal_nff_retry',
+  ['core/tests/unit/test_journal_nff_retry.c',
+   'core/tests/fakes/diagnostics/fake_diagnostics_port.c'],
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
 test_edge_oid_fallback = executable('test_edge_oid_fallback',
   'core/tests/unit/test_edge_oid_fallback.c',
   include_directories : inc,
@@ -361,6 +406,51 @@ test_ref_utils = executable('test_ref_utils',
 test_fs_temp_port = executable('test_fs_temp_port',
   'core/tests/unit/test_fs_temp_port.c',
   'core/tests/fakes/fs/fake_fs_temp_port.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_cache_telemetry_emit = executable('test_cache_telemetry_emit',
+  ['core/tests/unit/test_cache_telemetry_emit.c',
+   'core/tests/fakes/fs/fake_fs_temp_port.c',
+   'core/tests/fakes/logging/fake_logger_port.c',
+   'core/tests/fakes/metrics/fake_metrics_port.c'],
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_telemetry_cfg = executable('test_telemetry_cfg',
+  'core/tests/unit/test_telemetry_cfg.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_cli_json_env = executable('test_cli_json_env',
+  'core/tests/unit/test_cli_json_env.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_cache_oid_prefix = executable('test_cache_oid_prefix',
+  'core/tests/unit/test_cache_oid_prefix.c',
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_journal_port = executable('test_journal_port',
+  ['core/tests/unit/test_journal_port.c',
+   'core/tests/fakes/git/fake_git_repository_port.c'],
+  include_directories : inc,
+  link_with : libgitmind,
+  dependencies : [libsodium_dep, libgit2_dep, thread_dep])
+
+test_journal_port_append_flow = executable('test_journal_port_append_flow',
+  ['core/tests/unit/test_journal_port_append_flow.c',
+   'core/tests/fakes/git/fake_git_repository_port.c',
+   'core/tests/fakes/fs/fake_fs_temp_port.c',
+   'core/tests/fakes/logging/fake_logger_port.c',
+   'core/tests/fakes/metrics/fake_metrics_port.c',
+   'core/tests/fakes/diagnostics/fake_diagnostics_port.c'],
   include_directories : inc,
   link_with : libgitmind,
   dependencies : [libsodium_dep, libgit2_dep, thread_dep])
@@ -386,19 +476,31 @@ test('edge_cbor_oid', test_edge_cbor_oid)
 test('edge_attributed_cbor', test_edge_attributed_cbor)
 test('attribution_domain', test_attribution_domain)
 test('edge_equal_semantics', test_edge_equal_semantics)
-test('cache_meta', test_cache_meta)
+test('cache_meta', test_cache_meta, suite: 'integration')
 test('cache_edge_map', test_cache_edge_map)
-test('journal_mixed_cbor', test_journal_mixed_cbor)
-test('cache_query', test_cache_query)
+test('journal_mixed_cbor', test_journal_mixed_cbor, suite: 'integration')
+test('cache_query', test_cache_query, suite: 'integration')
 test('cache_strict_equality', test_cache_strict_equality)
-test('cache_branch_limits', test_cache_branch_limits)
+test('cache_branch_limits', test_cache_branch_limits, suite: 'integration')
+test('log_formatter', test_log_formatter)
 test('journal_safety', test_journal_safety)
 test('cache_shard_distribution', test_cache_shard_distribution)
-test('cache_tree_size', test_cache_tree_size)
+test('cache_tree_size', test_cache_tree_size, suite: 'integration')
+test('repo_build_tree', test_repo_build_tree, suite: 'integration')
+test('journal_e2e_libgit2', test_journal_e2e_libgit2)
+test('diagnostics_port', test_diagnostics_port)
+test('journal_nff_retry', test_journal_nff_retry)
+test('journal_port', test_journal_port)
+test('journal_port_append_flow', test_journal_port_append_flow)
 test('edge_oid_fallback', test_edge_oid_fallback)
 test('ref_utils', test_ref_utils)
 test('fs_temp_port', test_fs_temp_port)
 test('fs_path_utils', test_fs_path_utils)
+test('cache_telemetry_emit', test_cache_telemetry_emit)
+test('telemetry_cfg', test_telemetry_cfg)
+test('cli_json_env', test_cli_json_env)
+test('cache_oid_prefix', test_cache_oid_prefix)
+
 
 # Standalone header compilation checks (public headers)
 header_check_src = 'tools/header_compile.c'
@@ -415,6 +517,12 @@ public_headers = [
   'core/include/gitmind/edge_attributed.h',
   'core/include/gitmind/journal.h',
   'core/include/gitmind/cache.h',
+  'core/include/gitmind/ports/logger_port.h',
+  'core/include/gitmind/ports/metrics_port.h',
+  'core/include/gitmind/ports/cache_build_port.h',
+  'core/include/gitmind/ports/cache_query_port.h',
+  'core/include/gitmind/ports/journal_command_port.h',
+  'core/include/gitmind/ports/diagnostic_port.h',
   'core/include/gitmind/ports/fs_temp_port.h',
   'core/include/gitmind/io/io.h',
   'core/include/gitmind/time/time.h',

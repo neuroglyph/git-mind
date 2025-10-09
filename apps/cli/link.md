@@ -324,3 +324,48 @@ Select target [1-3]:
 5. __Scriptable__: Exit codes and parseable output
 
 As Linus would say: "Make the common case fast and simple."
+## Examples: Porcelain vs Human Output
+
+CLI output (stdout) and logs (stderr) are separate channels. Use `--porcelain` when you want stable, machine‑readable stdout, and send logs to stderr.
+
+Human (default):
+
+```
+$ git-mind link src.c tgt.c --type implements
+Created link: IMPLEMENTS: src.c -> tgt.c
+```
+
+Porcelain (key=value pairs):
+
+```
+$ git-mind --porcelain link src.c tgt.c --type implements
+status=ok
+type=IMPLEMENTS
+src=src.c
+tgt=tgt.c
+```
+
+## Examples: JSON Logs + Porcelain
+
+Enable JSON logs for services with `--json` (to stderr) and porcelain output for the CLI (to stdout):
+
+```
+$ git-mind --json --porcelain link src.c tgt.c --type references \
+    2>logs.json | tee result.txt
+
+# result.txt (stdout)
+status=ok
+type=REFERENCES
+src=src.c
+tgt=tgt.c
+
+# logs.json (stderr, JSON per line)
+{"event":"journal_append_start","branch":"main","mode":"append"}
+{"event":"journal_append_ok","branch":"main","mode":"append","edges":"1","duration_ms":"3"}
+```
+
+Tip: Pipe `--json` stderr to jq for ad‑hoc debugging:
+
+```
+$ git-mind --json link a b 2> >(jq -c .)
+```

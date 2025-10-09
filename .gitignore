@@ -75,6 +75,15 @@ Review.md
 # Test directories and generated content
 chaos-backup/
 # Test environments are now created in Docker containers
+# GitMind unit tests create temporary Git repositories in the repo root
+.gm_cache_query_tmp/
+.gm_cache_branch_tmp/
+.gm_cache_tree_tmp/
+.gm_cache_meta_tmp/
+.gm_build_tree_repo/
+.gm_build_tree_src/
+.gm_journal_tmp/
+.gm_journal_e2e_repo/
 
 # Build outputs
 dist/
