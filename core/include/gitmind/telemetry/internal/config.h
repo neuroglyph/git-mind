@@ -59,6 +59,13 @@ typedef struct {
     gm_log_format_t log_format;
 } gm_telemetry_cfg_t;
 
+typedef struct {
+    const char *branch;
+    const char *mode;
+    const char *repo_canon_path;
+    const gm_repo_id_t *repo_id;
+} gm_telemetry_tag_context_t;
+
 /*
  * Load telemetry configuration from the provided env port.
  * Defaults:
@@ -80,10 +87,7 @@ gm_result_void_t gm_telemetry_cfg_load(gm_telemetry_cfg_t *out,
  * - extras => appended up to remaining capacity
  */
 gm_result_void_t gm_telemetry_build_tags(const gm_telemetry_cfg_t *cfg,
-                                         const char *branch,
-                                         const char *mode,
-                                         const char *repo_canon_path,
-                                         const gm_repo_id_t *repo_id,
+                                         const gm_telemetry_tag_context_t *ctx,
                                          char *out, size_t out_size);
 
 #ifdef __cplusplus

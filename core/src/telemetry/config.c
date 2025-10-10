@@ -15,6 +15,7 @@
 #include "gitmind/result.h"
 #include "gitmind/security/string.h"
 #include "gitmind/util/memory.h"
+#include "gitmind/security/memory.h"
 #include "gitmind/ports/fs_temp_port.h"
 #include "gitmind/types.h"
 #include "gitmind/crypto/backend.h"
@@ -161,12 +162,12 @@ static void add_extra_if_valid(gm_telemetry_cfg_t *cfg, const char *k,
     }
     gm_kv_pair_t *p = &cfg->extras[cfg->extra_count];
     if (gm_strcpy_safe(p->key, sizeof(p->key), k) != GM_OK) {
-        memset(p, 0, sizeof(*p));
+        gm_memset_safe(p, sizeof(*p), 0, sizeof(*p));
         *dropped = true;
         return;
     }
     if (gm_strcpy_safe(p->value, sizeof(p->value), v) != GM_OK) {
-        memset(p, 0, sizeof(*p));
+        gm_memset_safe(p, sizeof(*p), 0, sizeof(*p));
         *dropped = true;
         return;
     }
@@ -204,7 +205,7 @@ GM_NODISCARD gm_result_void_t gm_telemetry_cfg_load(gm_telemetry_cfg_t *out,
     if (out == NULL) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "cfg output is null"));
     }
-    memset(out, 0, sizeof(*out));
+    gm_memset_safe(out, sizeof(*out), 0, sizeof(*out));
     out->metrics_enabled = true;
     out->tag_branch = true;
     out->tag_mode = true;
@@ -246,12 +247,18 @@ GM_NODISCARD gm_result_void_t gm_telemetry_cfg_load(gm_telemetry_cfg_t *out,
 
 static int append_kv(char *out, size_t out_size, size_t *idx,
                      const char *k, const char *v) {
-    if (k == NULL || v == NULL || k[0] == '\0' || v[0] == '\0') return GM_OK;
+    if (k == NULL || v == NULL || k[0] == '\0' || v[0] == '\0') {
+        return GM_OK;
+    }
     int wrote = gm_snprintf(out + *idx, out_size - *idx, "%s%s=%s",
                             (*idx > 0) ? "," : "", k, v);
-    if (wrote < 0) return GM_ERR_BUFFER_TOO_SMALL;
+    if (wrote < 0) {
+        return GM_ERR_BUFFER_TOO_SMALL;
+    }
     *idx += (size_t)wrote;
-    if (*idx >= out_size) return GM_ERR_BUFFER_TOO_SMALL;
+    if (*idx >= out_size) {
+        return GM_ERR_BUFFER_TOO_SMALL;
+    }
     return GM_OK;
 }
 
@@ -298,66 +305,159 @@ static void sha256_hex12(const uint8_t *data, size_t len, char *out12) {
     out12[12] = '\0';
 }
 
+typedef struct {
+    char *buffer;
+    size_t capacity;
+    size_t index;
+    size_t count;
+} gm_tag_builder_t;
+
+static bool is_present(const char *value) {
+    return value != NULL && value[0] != '\0';
+}
+
+static bool can_append_tag(const gm_tag_builder_t *builder) {
+    return builder->count < MAX_TAGS_TOTAL;
+}
+
+static gm_result_void_t builder_append_tag(gm_tag_builder_t *builder,
+                                           const char *key,
+                                           const char *value) {
+    if (!is_present(key) || !is_present(value)) {
+        return gm_ok_void();
+    }
+    if (!can_append_tag(builder)) {
+        return gm_ok_void();
+    }
+    int append_status =
+        append_kv(builder->buffer, builder->capacity, &builder->index,
+                  key, value);
+    if (append_status != GM_OK) {
+        builder->buffer[0] = '\0';
+        return gm_err_void(
+            GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "tags overflow"));
+    }
+    builder->count += 1U;
+    return gm_ok_void();
+}
+
+static gm_result_void_t compute_repo_tag_value(const gm_telemetry_cfg_t *cfg,
+                                               const gm_telemetry_tag_context_t *ctx,
+                                               char *repo_value,
+                                               size_t repo_value_size) {
+    if (repo_value == NULL || repo_value_size == 0U) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_INVALID_ARGUMENT, "repo buffer missing"));
+    }
+
+    repo_value[0] = '\0';
+    if (cfg == NULL || cfg->repo_tag == GM_REPO_TAG_OFF) {
+        return gm_ok_void();
+    }
+
+    const char *canonical_path = NULL;
+    const gm_repo_id_t *repo_id = NULL;
+    if (ctx != NULL) {
+        canonical_path = ctx->repo_canon_path;
+        repo_id = ctx->repo_id;
+    }
+
+    switch (cfg->repo_tag) {
+    case GM_REPO_TAG_PLAIN:
+        if (is_present(canonical_path)) {
+            int copy_status =
+                gm_strcpy_safe(repo_value, repo_value_size, canonical_path);
+            if (copy_status != GM_OK) {
+                format_repo_hash_from_str(cfg, canonical_path, repo_value);
+            }
+        } else if (repo_id != NULL) {
+            format_repo_hash_from_id(cfg, repo_id, repo_value);
+        }
+        break;
+    case GM_REPO_TAG_HASH:
+        if (is_present(canonical_path)) {
+            format_repo_hash_from_str(cfg, canonical_path, repo_value);
+        } else if (repo_id != NULL) {
+            format_repo_hash_from_id(cfg, repo_id, repo_value);
+        }
+        break;
+    case GM_REPO_TAG_OFF:
+    default:
+        break;
+    }
+
+    return gm_ok_void();
+}
+
+static gm_result_void_t append_extra_tags(const gm_telemetry_cfg_t *cfg,
+                                          gm_tag_builder_t *builder) {
+    if (cfg == NULL || cfg->extra_count == 0U) {
+        return gm_ok_void();
+    }
+
+    for (size_t extra_index = 0; extra_index < cfg->extra_count; ++extra_index) {
+        if (!can_append_tag(builder)) {
+            break;
+        }
+        gm_result_void_t result = builder_append_tag(
+            builder, cfg->extras[extra_index].key,
+            cfg->extras[extra_index].value);
+        if (!result.ok) {
+            return result;
+        }
+    }
+
+    return gm_ok_void();
+}
+
 GM_NODISCARD gm_result_void_t gm_telemetry_build_tags(
-    const gm_telemetry_cfg_t *cfg, const char *branch, const char *mode,
-    const char *repo_canon_path, const gm_repo_id_t *repo_id, char *out,
-    size_t out_size) {
-    if (out == NULL || out_size == 0) {
-        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT, "tags buffer missing"));
+    const gm_telemetry_cfg_t *cfg, const gm_telemetry_tag_context_t *ctx,
+    char *out, size_t out_size) {
+    if (out == NULL || out_size == 0U) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_INVALID_ARGUMENT, "tags buffer missing"));
     }
+
     out[0] = '\0';
-    size_t idx = 0;
-    size_t count = 0;
 
-    if (cfg != NULL && cfg->tag_branch && branch != NULL && branch[0] != '\0') {
-        if (append_kv(out, out_size, &idx, "branch", branch) != GM_OK) {
-            return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "tags overflow"));
-        }
-        ++count;
-    }
-    if (cfg != NULL && cfg->tag_mode && mode != NULL && mode[0] != '\0') {
-        if (append_kv(out, out_size, &idx, "mode", mode) != GM_OK) {
-            return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "tags overflow"));
-        }
-        ++count;
+    gm_tag_builder_t builder = {
+        .buffer = out,
+        .capacity = out_size,
+        .index = 0U,
+        .count = 0U,
+    };
+
+    const char *branch = NULL;
+    const char *mode = NULL;
+    if (ctx != NULL) {
+        branch = ctx->branch;
+        mode = ctx->mode;
     }
 
-    if (cfg != NULL && cfg->repo_tag != GM_REPO_TAG_OFF && count < MAX_TAGS_TOTAL) {
-        char repo_val[GM_PATH_MAX] = {0};
-        if (cfg->repo_tag == GM_REPO_TAG_PLAIN) {
-            if (repo_canon_path != NULL && repo_canon_path[0] != '\0') {
-                int copy_status =
-                    gm_strcpy_safe(repo_val, sizeof(repo_val), repo_canon_path);
-                if (copy_status != GM_OK) {
-                    format_repo_hash_from_str(cfg, repo_canon_path, repo_val);
-                }
-            } else if (repo_id != NULL) {
-                format_repo_hash_from_id(cfg, repo_id, repo_val);
-            }
-        } else if (cfg->repo_tag == GM_REPO_TAG_HASH) {
-            if (repo_canon_path != NULL && repo_canon_path[0] != '\0') {
-                format_repo_hash_from_str(cfg, repo_canon_path, repo_val);
-            } else if (repo_id != NULL) {
-                format_repo_hash_from_id(cfg, repo_id, repo_val);
-            }
-        }
-        if (repo_val[0] != '\0') {
-            if (append_kv(out, out_size, &idx, "repo", repo_val) != GM_OK) {
-                return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL, "tags overflow"));
-            }
-            ++count;
+    bool has_config = (cfg != NULL);
+
+    if (has_config && cfg->tag_branch) {
+        GM_TRY(builder_append_tag(&builder, "branch", branch));
+    }
+
+    if (has_config && cfg->tag_mode) {
+        GM_TRY(builder_append_tag(&builder, "mode", mode));
+    }
+
+    if (has_config && cfg->repo_tag != GM_REPO_TAG_OFF) {
+        char repo_value[GM_PATH_MAX] = {0};
+        GM_TRY(compute_repo_tag_value(cfg, ctx, repo_value, sizeof(repo_value)));
+        if (can_append_tag(&builder)) {
+            GM_TRY(builder_append_tag(&builder, "repo", repo_value));
         }
     }
 
-    if (cfg != NULL && cfg->extra_count > 0) {
-        for (size_t i = 0; i < cfg->extra_count && count < MAX_TAGS_TOTAL; ++i) {
-            if (append_kv(out, out_size, &idx, cfg->extras[i].key,
-                          cfg->extras[i].value) != GM_OK) {
-                return gm_err_void(GM_ERROR(GM_ERR_BUFFER_TOO_SMALL,
-                                            "tags overflow"));
-            }
-            ++count;
-        }
+    if (has_config) {
+        GM_TRY(append_extra_tags(cfg, &builder));
+    }
+
+    if (builder.index < builder.capacity) {
+        builder.buffer[builder.index] = '\0';
     }
 
     return gm_ok_void();

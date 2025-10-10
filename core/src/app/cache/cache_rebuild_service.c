@@ -550,9 +550,14 @@ int gm_cache_rebuild_execute(gm_context_t *ctx, const char *branch,
         }
         (void)compute_repo_id(ctx, &repo_id);
     } while (0);
-    gm_result_void_t tags_rc = gm_telemetry_build_tags(&tcfg, branch, mode,
-                                                       repo_canon_view, &repo_id,
-                                                       tags, sizeof(tags));
+    gm_telemetry_tag_context_t tag_ctx = {
+        .branch = branch,
+        .mode = mode,
+        .repo_canon_path = repo_canon_view,
+        .repo_id = &repo_id,
+    };
+    gm_result_void_t tags_rc =
+        gm_telemetry_build_tags(&tcfg, &tag_ctx, tags, sizeof(tags));
     if (!tags_rc.ok) {
         if (tags_rc.u.err != NULL) {
             gm_error_free(tags_rc.u.err);

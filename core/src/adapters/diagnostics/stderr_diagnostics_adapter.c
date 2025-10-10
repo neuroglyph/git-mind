@@ -10,6 +10,8 @@
 
 #include "gitmind/error.h"
 #include "gitmind/result.h"
+#include "gitmind/ports/diagnostic_port.h"
+#include "gitmind/security/string.h"
 
 typedef struct {
     bool emit_enabled;
@@ -17,26 +19,33 @@ typedef struct {
 
 static void emit_escaped(const char *value) {
     if (value == NULL) {
-        fputs("(null)", stderr);
+        (void)fputs("(null)", stderr);
         return;
     }
-    for (const char *p = value; *p != '\0'; ++p) {
-        unsigned char ch = (unsigned char)*p;
-        switch (ch) {
+    for (const char *cursor = value; *cursor != '\0'; ++cursor) {
+        unsigned char ch_value = (unsigned char)*cursor;
+        switch (ch_value) {
         case '\n':
-            fputs("\\n", stderr);
+            (void)fputs("\\n", stderr);
             break;
         case '\r':
-            fputs("\\r", stderr);
+            (void)fputs("\\r", stderr);
             break;
         case '\t':
-            fputs("\\t", stderr);
+            (void)fputs("\\t", stderr);
             break;
         default:
-            if (iscntrl(ch)) {
-                fprintf(stderr, "\\x%02x", ch);
+            if (iscntrl(ch_value)) {
+                char escape_buffer[5];
+                int hex_written = gm_snprintf(escape_buffer,
+                                              sizeof(escape_buffer),
+                                              "\\x%02x",
+                                              ch_value);
+                if (hex_written > 0) {
+                    (void)fputs(escape_buffer, stderr);
+                }
             } else {
-                fputc(ch, stderr);
+                (void)fputc(ch_value, stderr);
             }
             break;
         }
@@ -53,19 +62,23 @@ static gm_result_void_t emit_impl(void *self, const char *component,
     if (state != NULL && !state->emit_enabled) {
         return gm_ok_void();
     }
-    if (component == NULL) component = "";
-    if (event == NULL) event = "";
-    fputs("[diag] ", stderr);
+    if (component == NULL) {
+        component = "";
+    }
+    if (event == NULL) {
+        event = "";
+    }
+    (void)fputs("[diag] ", stderr);
     emit_escaped(component);
-    fputc(' ', stderr);
+    (void)fputc(' ', stderr);
     emit_escaped(event);
     for (size_t i = 0; i < kv_count; ++i) {
-        fputc(' ', stderr);
+        (void)fputc(' ', stderr);
         emit_escaped(kvs[i].key);
-        fputc('=', stderr);
+        (void)fputc('=', stderr);
         emit_escaped(kvs[i].value);
     }
-    fputc('\n', stderr);
+    (void)fputc('\n', stderr);
     return gm_ok_void();
 }
 
@@ -73,7 +86,7 @@ static void dispose_impl(void *self) {
     free(self);
 }
 
-static const gm_diagnostics_port_vtbl_t VTBL = {
+static const gm_diagnostics_port_vtbl_t GmStderrDiagnosticsPortVtbl = {
     .emit = emit_impl,
     .dispose = dispose_impl,
 };
@@ -83,13 +96,15 @@ gm_result_void_t gm_stderr_diagnostics_port_init(gm_diagnostics_port_t *port) {
         return gm_err_void(
             GM_ERROR(GM_ERR_INVALID_ARGUMENT, "stderr diagnostics requires out"));
     }
-    gm_stderr_diag_state_t *st = (gm_stderr_diag_state_t *)calloc(1, sizeof(*st));
-    if (st == NULL) {
-        return gm_err_void(GM_ERROR(GM_ERR_OUT_OF_MEMORY, "alloc diag state failed"));
+    gm_stderr_diag_state_t *state =
+        (gm_stderr_diag_state_t *)calloc(1, sizeof(*state));
+    if (state == NULL) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_OUT_OF_MEMORY, "alloc diag state failed"));
     }
-    st->emit_enabled = true;
-    port->vtbl = &VTBL;
-    port->self = st;
+    state->emit_enabled = true;
+    port->vtbl = &GmStderrDiagnosticsPortVtbl;
+    port->self = state;
     return gm_ok_void();
 }
 
@@ -97,7 +112,7 @@ void gm_stderr_diagnostics_port_dispose(gm_diagnostics_port_t *port) {
     if (port == NULL) {
         return;
     }
-    if (port->vtbl == &VTBL && port->self != NULL) {
+    if (port->vtbl == &GmStderrDiagnosticsPortVtbl && port->self != NULL) {
         dispose_impl(port->self);
     } else if (port->vtbl != NULL && port->vtbl->dispose != NULL) {
         port->vtbl->dispose(port->self);

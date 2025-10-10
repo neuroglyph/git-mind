@@ -47,10 +47,14 @@ static void test_defaults_branch_mode_only(void) {
     assert(cfg.tag_mode);
     assert(cfg.repo_tag == GM_REPO_TAG_OFF);
 
+    gm_telemetry_tag_context_t ctx = {
+        .branch = "main",
+        .mode = "full",
+        .repo_canon_path = NULL,
+        .repo_id = NULL,
+    };
     char tags[128];
-    assert(gm_telemetry_build_tags(&cfg, "main", "full", NULL, NULL, tags,
-                                   sizeof(tags))
-               .ok);
+    assert(gm_telemetry_build_tags(&cfg, &ctx, tags, sizeof(tags)).ok);
     assert(strstr(tags, "branch=main") != NULL);
     assert(strstr(tags, "mode=full") != NULL);
     printf("OK\n");
@@ -66,10 +70,14 @@ static void test_extras_and_invalids(void) {
     assert(cfg.extra_count <= 3);
     assert(cfg.extras_dropped);
 
+    gm_telemetry_tag_context_t ctx = {
+        .branch = "main",
+        .mode = "full",
+        .repo_canon_path = NULL,
+        .repo_id = NULL,
+    };
     char tags[256];
-    assert(gm_telemetry_build_tags(&cfg, "main", "full", NULL, NULL, tags,
-                                   sizeof(tags))
-               .ok);
+    assert(gm_telemetry_build_tags(&cfg, &ctx, tags, sizeof(tags)).ok);
     /* Order-preserving insert up to capacity (5 total) */
     /* We know branch+mode consume 2; at most 3 extras appended */
     assert(strstr(tags, "branch=main") != NULL);
@@ -87,10 +95,14 @@ static void test_repo_hash_via_id(void) {
     gm_telemetry_cfg_t cfg;
     assert(gm_telemetry_cfg_load(&cfg, NULL).ok);
     gm_repo_id_t id = {.hi = 0x0123456789ABCDEFULL, .lo = 0x0F1E2D3C4B5A6978ULL};
+    gm_telemetry_tag_context_t ctx = {
+        .branch = "main",
+        .mode = "full",
+        .repo_canon_path = NULL,
+        .repo_id = &id,
+    };
     char tags[128];
-    assert(gm_telemetry_build_tags(&cfg, "main", "full", NULL, &id, tags,
-                                   sizeof(tags))
-               .ok);
+    assert(gm_telemetry_build_tags(&cfg, &ctx, tags, sizeof(tags)).ok);
     /* Should have repo=<12-hex> tag */
     assert(strstr(tags, "repo=") != NULL);
     /* Still includes branch/mode by default */

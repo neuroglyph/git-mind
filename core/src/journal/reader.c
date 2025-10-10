@@ -363,9 +363,14 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
             }
         }
     } while (0);
-    gm_result_void_t tags_rc = gm_telemetry_build_tags(&tcfg, resolved_branch,
-                                                       mode, repo_canon, &repo_id,
-                                                       tags, sizeof(tags));
+    gm_telemetry_tag_context_t tag_ctx = {
+        .branch = resolved_branch,
+        .mode = mode,
+        .repo_canon_path = repo_canon,
+        .repo_id = &repo_id,
+    };
+    gm_result_void_t tags_rc =
+        gm_telemetry_build_tags(&tcfg, &tag_ctx, tags, sizeof(tags));
     if (!tags_rc.ok) {
         if (tags_rc.u.err != NULL) gm_error_free(tags_rc.u.err);
         tags[0] = '\0';

@@ -397,8 +397,13 @@ static int journal_append_generic(gm_context_t *ctx, journal_edge_batch_t batch,
 
     /* Emit metrics + end log */
     uint64_t dur_ms = monotonic_ms_now() - start_time;
-    (void)gm_telemetry_build_tags(&tcfg, branch, mode, repo_canon, &repo_id,
-                                  tags, sizeof(tags));
+    gm_telemetry_tag_context_t tag_ctx = {
+        .branch = branch,
+        .mode = mode,
+        .repo_canon_path = repo_canon,
+        .repo_id = &repo_id,
+    };
+    (void)gm_telemetry_build_tags(&tcfg, &tag_ctx, tags, sizeof(tags));
     if (tcfg.metrics_enabled) {
         (void)gm_metrics_timing_ms(&ctx->metrics_port,
                                    "journal.append.duration_ms",
