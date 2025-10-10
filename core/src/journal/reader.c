@@ -148,12 +148,12 @@ static int process_commit_generic(const char *raw_message, reader_ctx_t *rctx) {
     size_t message_len = 0;
     gm_result_void_t dr =
         gm_journal_decode_message(raw_message, decoded, sizeof(decoded), &message_len);
-    int decode_status = dr.ok ? GM_OK : (dr.u.err ? dr.u.err->code : GM_ERR_UNKNOWN);
     if (!dr.ok) {
         message_len = 0;
-    }
-    if (!dr.ok && dr.u.err) gm_error_free(dr.u.err);
-    if (decode_status != GM_OK) {
+        int decode_status = dr.u.err ? dr.u.err->code : GM_ERR_UNKNOWN;
+        if (dr.u.err) {
+            gm_error_free(dr.u.err);
+        }
         return decode_status;
     }
 
@@ -268,7 +268,7 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
         if (telemetry_rc.u.err != NULL) {
             gm_error_free(telemetry_rc.u.err);
         }
-        memset(&tcfg, 0, sizeof(tcfg));
+        gm_memset_safe(&tcfg, sizeof(tcfg), 0, sizeof(tcfg));
         tcfg.metrics_enabled = false;
         tcfg.log_format = GM_LOG_FMT_TEXT;
         if (err_len < 0 || (size_t)err_len >= sizeof(err_msg)) {
@@ -343,7 +343,8 @@ static int journal_read_generic(gm_context_t *ctx, const char *branch,
                         gm_result_void_t repo_id_rc =
                             gm_repo_id_from_path(repo_canon, &repo_id);
                         if (!repo_id_rc.ok) {
-                            memset(&repo_id, 0, sizeof(repo_id));
+                            gm_memset_safe(&repo_id, sizeof(repo_id), 0,
+                                           sizeof(repo_id));
                             if (repo_id_rc.u.err != NULL) {
                                 gm_error_free(repo_id_rc.u.err);
                             }

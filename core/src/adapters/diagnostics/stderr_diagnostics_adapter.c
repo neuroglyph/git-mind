@@ -17,6 +17,10 @@ typedef struct {
     bool emit_enabled;
 } gm_stderr_diag_state_t;
 
+enum {
+    HexEscapeBufferLength = 5,
+};
+
 static void emit_escaped(const char *value) {
     if (value == NULL) {
         (void)fputs("(null)", stderr);
@@ -36,12 +40,13 @@ static void emit_escaped(const char *value) {
             break;
         default:
             if (iscntrl(ch_value)) {
-                char escape_buffer[5];
+                char escape_buffer[HexEscapeBufferLength];
                 int hex_written = gm_snprintf(escape_buffer,
                                               sizeof(escape_buffer),
                                               "\\x%02x",
                                               ch_value);
-                if (hex_written > 0) {
+                if (hex_written > 0 &&
+                    (size_t)hex_written < sizeof(escape_buffer)) {
                     (void)fputs(escape_buffer, stderr);
                 }
             } else {

@@ -57,12 +57,15 @@ static int append_literal_character(char *out, size_t out_size, size_t *idx,
 
 static int append_control_escape(char *out, size_t out_size, size_t *idx,
                                  unsigned char character) {
-    if (lacks_capacity(*idx, out_size, JsonHexEscapeLength)) {
+    /* Need space for visible characters and the terminating null written by
+     * gm_snprintf. */
+    if (lacks_capacity(*idx, out_size, JsonHexEscapeLength + 1U)) {
         return GM_ERR_BUFFER_TOO_SMALL;
     }
     int hex_written = gm_snprintf(out + *idx, out_size - *idx, "\\u%04x",
                                   (unsigned)character);
-    if (hex_written < 0) {
+    if (hex_written < 0 ||
+        (size_t)hex_written >= (out_size - *idx)) {
         return GM_ERR_BUFFER_TOO_SMALL;
     }
     *idx += (size_t)hex_written;

@@ -250,15 +250,13 @@ static int append_kv(char *out, size_t out_size, size_t *idx,
     if (k == NULL || v == NULL || k[0] == '\0' || v[0] == '\0') {
         return GM_OK;
     }
-    int wrote = gm_snprintf(out + *idx, out_size - *idx, "%s%s=%s",
+    size_t available = out_size - *idx;
+    int wrote = gm_snprintf(out + *idx, available, "%s%s=%s",
                             (*idx > 0) ? "," : "", k, v);
-    if (wrote < 0) {
+    if (wrote < 0 || (size_t)wrote >= available) {
         return GM_ERR_BUFFER_TOO_SMALL;
     }
     *idx += (size_t)wrote;
-    if (*idx >= out_size) {
-        return GM_ERR_BUFFER_TOO_SMALL;
-    }
     return GM_OK;
 }
 
@@ -277,8 +275,12 @@ static void fnv1a64_hex12(const uint8_t *data, size_t len, char *out12) {
 
 static void sha256_hex12(const uint8_t *data, size_t len, char *out12) {
     uint8_t digest[GM_SHA256_DIGEST_SIZE];
-    gm_result_crypto_context_t cr = gm_crypto_context_create(gm_crypto_backend_libsodium());
+    gm_result_crypto_context_t cr =
+        gm_crypto_context_create(gm_crypto_backend_libsodium());
     if (!cr.ok) {
+        if (cr.u.err != NULL) {
+            gm_error_free(cr.u.err);
+        }
         /* Fallback to FNV on any error */
         fnv1a64_hex12(data, len, out12);
         return;
@@ -434,25 +436,21 @@ GM_NODISCARD gm_result_void_t gm_telemetry_build_tags(
         mode = ctx->mode;
     }
 
-    bool has_config = (cfg != NULL);
-
-    if (has_config && cfg->tag_branch) {
-        GM_TRY(builder_append_tag(&builder, "branch", branch));
-    }
-
-    if (has_config && cfg->tag_mode) {
-        GM_TRY(builder_append_tag(&builder, "mode", mode));
-    }
-
-    if (has_config && cfg->repo_tag != GM_REPO_TAG_OFF) {
-        char repo_value[GM_PATH_MAX] = {0};
-        GM_TRY(compute_repo_tag_value(cfg, ctx, repo_value, sizeof(repo_value)));
-        if (can_append_tag(&builder)) {
-            GM_TRY(builder_append_tag(&builder, "repo", repo_value));
+    if (cfg != NULL) {
+        if (cfg->tag_branch) {
+            GM_TRY(builder_append_tag(&builder, "branch", branch));
         }
-    }
-
-    if (has_config) {
+        if (cfg->tag_mode) {
+            GM_TRY(builder_append_tag(&builder, "mode", mode));
+        }
+        if (cfg->repo_tag != GM_REPO_TAG_OFF) {
+            char repo_value[GM_PATH_MAX] = {0};
+            GM_TRY(
+                compute_repo_tag_value(cfg, ctx, repo_value, sizeof(repo_value)));
+            if (can_append_tag(&builder)) {
+                GM_TRY(builder_append_tag(&builder, "repo", repo_value));
+            }
+        }
         GM_TRY(append_extra_tags(cfg, &builder));
     }
 
