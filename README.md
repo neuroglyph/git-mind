@@ -4,6 +4,28 @@
 
 **git-mind** turns any Git repository into a semantic knowledge graph. Link files, concepts, and ideas with typed, confidence-scored edges — all stored in Git itself. No servers. No databases. Just `git push`.
 
+Because the graph lives *in* Git, it evolves with your code. Check out last month's commit and see what you understood then. Check out today's and see how your understanding has grown. Your knowledge has a history — git-mind makes it visible.
+
+## Watch your understanding evolve
+
+```bash
+# What implemented the auth spec six months ago?
+$ git checkout main~200
+$ git mind list --type implements --target docs/auth-spec.md
+  src/basic_auth.js --[implements]--> docs/auth-spec.md (100%)
+
+# What implements it now?
+$ git checkout main
+$ git mind list --type implements --target docs/auth-spec.md
+  src/oauth2.js --[implements]--> docs/auth-spec.md (100%)
+  src/jwt_handler.js --[implements]--> docs/auth-spec.md (100%)
+  src/basic_auth.js --[implements]--> docs/auth-spec.md (100%)
+
+# Your code changed. Your understanding changed with it.
+```
+
+Try an idea in a branch. If it works, merge it — graph and all. If it doesn't, delete the branch. Your knowledge graph supports the same workflow your code does.
+
 ## What it does
 
 ```bash
@@ -57,10 +79,10 @@ Each edge carries a **confidence score** (0.0 to 1.0). Human-created edges defau
 
 git-mind is a thin layer on [`@git-stunts/git-warp`](https://github.com/nicktomlin/git-warp) — a multi-writer CRDT graph database that lives in Git. This gives git-mind:
 
-- **Conflict-free merging** — multiple writers, deterministic convergence
-- **Time-travel** — check out any commit, get the graph from that moment
-- **Git-native storage** — invisible to normal workflows, inherits Git's integrity
-- **Branch and merge** — try experimental connections in a branch, merge what works
+- **Time-travel** — check out any commit, see the graph as it was at that moment. Watch connections appear, change, and deepen over time.
+- **Conflict-free merging** — multiple writers, deterministic convergence. No merge conflicts in your knowledge graph, ever.
+- **Branch and merge** — try experimental connections in a branch, merge what works, discard what doesn't. Same workflow as your code.
+- **Git-native storage** — invisible to normal workflows. No files in your working tree, no databases to run. It's just Git.
 
 ## Documentation
 
