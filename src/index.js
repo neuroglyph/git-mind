@@ -1,0 +1,9 @@
+/**
+ * @module @neuroglyph/git-mind
+ * Public API for git-mind — a project knowledge graph tool built on git-warp.
+ */
+
+export { initGraph, loadGraph, saveGraph } from './graph.js';
+export { createEdge, queryEdges, removeEdge, EDGE_TYPES } from './edges.js';
+export { defineView, renderView, listViews } from './views.js';
+export { parseDirectives, processCommit } from './hooks.js';

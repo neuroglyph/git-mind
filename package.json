@@ -1,0 +1,41 @@
+{
+  "name": "@neuroglyph/git-mind",
+  "version": "2.0.0-alpha.0",
+  "description": "A project knowledge graph tool built on git-warp",
+  "type": "module",
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "James Ross <james@flyingrobots.dev>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neuroglyph/git-mind.git"
+  },
+  "bin": {
+    "git-mind": "bin/git-mind.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/ bin/",
+    "format": "prettier --write 'src/**/*.js' 'bin/**/*.js'"
+  },
+  "dependencies": {
+    "@git-stunts/git-warp": "file:../git-stunts/git-warp",
+    "@git-stunts/plumbing": "file:../git-stunts/plumbing",
+    "chalk": "^5.3.0",
+    "figures": "^6.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
