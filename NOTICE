@@ -1,16 +1,14 @@
-git-mind: A Git-Integrated Knowledge Graph
-Copyright 2025 James Ross
+git-mind
+Copyright 2025-2026 James Ross
 
-This product includes software developed by James Ross and contributors.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-Licensed under the MIND-UCAL License v1.0 (Moral Intelligence Nonviolent 
-Development – Universal Charter Aligned License).
+    http://www.apache.org/licenses/LICENSE-2.0
 
-The full license text can be found in the LICENSE file in this repository.
-
-This software is provided under an ethical license aligned with the 
-Universal Charter (https://universalcharter.org) principles of nonviolence,
-respect for autonomy, and ecological stewardship.
-
-This NOTICE file is provided for informational purposes only.
-It is not a license. The MIND-UCAL License governs your use of this software.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
