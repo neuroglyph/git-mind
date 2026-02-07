@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, suggest, review } from '../src/cli/commands.js';
+import { init, link, view, list, remove, installHooks, processCommitCmd, suggest, review } from '../src/cli/commands.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -26,6 +26,7 @@ Commands:
     --type <type>               Filter by edge type
     --source <node>             Filter by source node
     --target <node>             Filter by target node
+  install-hooks                  Install post-commit Git hook
   suggest --ai                  AI suggestions (stub)
   review                        Review edges (stub)
 
@@ -96,6 +97,19 @@ switch (command) {
     });
     break;
   }
+
+  case 'install-hooks':
+    await installHooks(cwd);
+    break;
+
+  case 'process-commit':
+    if (!args[1]) {
+      console.error('Usage: git mind process-commit <sha>');
+      process.exitCode = 1;
+      break;
+    }
+    await processCommitCmd(cwd, args[1]);
+    break;
 
   case 'suggest':
     await suggest();

@@ -3,9 +3,13 @@
  * Command implementations for the git-mind CLI.
  */
 
+import { execSync } from 'node:child_process';
+import { writeFile, chmod, access, constants } from 'node:fs/promises';
+import { join } from 'node:path';
 import { initGraph, loadGraph } from '../graph.js';
 import { createEdge, queryEdges, removeEdge, EDGE_TYPES } from '../edges.js';
 import { renderView, listViews } from '../views.js';
+import { processCommit } from '../hooks.js';
 import { success, error, info, formatEdge, formatView } from './format.js';
 
 /**
@@ -104,6 +108,72 @@ export async function remove(cwd, source, target, opts = {}) {
     console.log(success(`Removed: ${source} --[${type}]--> ${target}`));
   } catch (err) {
     console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Install a post-commit Git hook that processes directives.
+ * @param {string} cwd
+ */
+export async function installHooks(cwd) {
+  const hookPath = join(cwd, '.git', 'hooks', 'post-commit');
+
+  const hookScript = `#!/bin/sh
+# git-mind post-commit hook
+# Parses commit directives and creates edges automatically
+
+SHA=$(git rev-parse HEAD)
+MSG=$(git log -1 --format=%B "$SHA")
+
+# Only run if git-mind is available
+command -v npx >/dev/null 2>&1 || exit 0
+
+npx git-mind process-commit "$SHA" 2>/dev/null || true
+`;
+
+  try {
+    // Check if a hook already exists
+    let exists = false;
+    try {
+      await access(hookPath, constants.F_OK);
+      exists = true;
+    } catch { /* doesn't exist */ }
+
+    if (exists) {
+      console.error(error(`Post-commit hook already exists at ${hookPath}`));
+      console.error(info('Remove it manually or append git-mind to the existing hook'));
+      process.exitCode = 1;
+      return;
+    }
+
+    await writeFile(hookPath, hookScript);
+    await chmod(hookPath, 0o755);
+    console.log(success('Installed post-commit hook'));
+  } catch (err) {
+    console.error(error(`Failed to install hook: ${err.message}`));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Process a commit's directives (called by post-commit hook).
+ * @param {string} cwd
+ * @param {string} sha
+ */
+export async function processCommitCmd(cwd, sha) {
+  try {
+    const message = execSync(`git log -1 --format=%B ${sha}`, { cwd, encoding: 'utf-8' });
+    const graph = await loadGraph(cwd);
+    const directives = await processCommit(graph, { sha, message });
+
+    if (directives.length > 0) {
+      for (const d of directives) {
+        console.log(success(`commit:${sha.slice(0, 8)} --[${d.type}]--> ${d.target}`));
+      }
+    }
+  } catch (err) {
+    console.error(error(`Failed to process commit: ${err.message}`));
     process.exitCode = 1;
   }
 }
