@@ -4,7 +4,7 @@
  */
 
 import { initGraph, loadGraph } from '../graph.js';
-import { createEdge, queryEdges, EDGE_TYPES } from '../edges.js';
+import { createEdge, queryEdges, removeEdge, EDGE_TYPES } from '../edges.js';
 import { renderView, listViews } from '../views.js';
 import { success, error, info, formatEdge, formatView } from './format.js';
 
@@ -64,16 +64,17 @@ export async function view(cwd, viewName) {
 }
 
 /**
- * List all edges in the graph.
+ * List edges in the graph, optionally filtered.
  * @param {string} cwd
+ * @param {{ type?: string, source?: string, target?: string }} [filter={}]
  */
-export async function list(cwd) {
+export async function list(cwd, filter = {}) {
   try {
     const graph = await loadGraph(cwd);
-    const edges = await queryEdges(graph);
+    const edges = await queryEdges(graph, filter);
 
     if (edges.length === 0) {
-      console.log(info('No edges in graph'));
+      console.log(info('No edges found'));
       return;
     }
 
@@ -81,6 +82,26 @@ export async function list(cwd) {
     for (const edge of edges) {
       console.log(formatEdge(edge));
     }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Remove an edge between two nodes.
+ * @param {string} cwd
+ * @param {string} source
+ * @param {string} target
+ * @param {{ type?: string }} opts
+ */
+export async function remove(cwd, source, target, opts = {}) {
+  const type = opts.type ?? 'relates-to';
+
+  try {
+    const graph = await loadGraph(cwd);
+    await removeEdge(graph, source, target, type);
+    console.log(success(`Removed: ${source} --[${type}]--> ${target}`));
   } catch (err) {
     console.error(error(err.message));
     process.exitCode = 1;

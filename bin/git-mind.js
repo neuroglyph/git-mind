@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, suggest, review } from '../src/cli/commands.js';
+import { init, link, view, list, remove, suggest, review } from '../src/cli/commands.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -19,8 +19,13 @@ Commands:
   link <source> <target>        Create a semantic edge
     --type <type>               Edge type (default: relates-to)
     --confidence <n>            Confidence 0.0-1.0 (default: 1.0)
+  remove <source> <target>      Remove a semantic edge
+    --type <type>               Edge type (default: relates-to)
   view [name]                   Show a named view (or list views)
   list                          List all edges
+    --type <type>               Filter by edge type
+    --source <node>             Filter by source node
+    --target <node>             Filter by target node
   suggest --ai                  AI suggestions (stub)
   review                        Review edges (stub)
 
@@ -69,9 +74,28 @@ switch (command) {
     await view(cwd, args[1]);
     break;
 
-  case 'list':
-    await list(cwd);
+  case 'remove': {
+    const rmSource = args[1];
+    const rmTarget = args[2];
+    if (!rmSource || !rmTarget) {
+      console.error('Usage: git mind remove <source> <target> [--type <type>]');
+      process.exitCode = 1;
+      break;
+    }
+    const rmFlags = parseFlags(args.slice(3));
+    await remove(cwd, rmSource, rmTarget, { type: rmFlags.type });
     break;
+  }
+
+  case 'list': {
+    const listFlags = parseFlags(args.slice(1));
+    await list(cwd, {
+      type: listFlags.type,
+      source: listFlags.source,
+      target: listFlags.target,
+    });
+    break;
+  }
 
   case 'suggest':
     await suggest();
