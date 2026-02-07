@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -24,6 +23,7 @@
 #include "gitmind/security/string.h"
 #include "gitmind/types.h"
 #include "gitmind/util/memory.h"
+#include "gitmind/util/errno_compat.h"
 
 #ifndef GM_HAVE_REALPATH_DECL
 #define GM_HAVE_REALPATH_DECL 1
@@ -31,9 +31,13 @@ extern char *realpath(const char *path, char *resolved_path);
 #endif
 
 #if defined(_WIN32)
-#define gm_strtok_r strtok_s
+static char *gm_strtok_port(char *str, const char *delim, char **saveptr) {
+    return strtok_s(str, delim, saveptr);
+}
 #else
-#define gm_strtok_r strtok_r
+static char *gm_strtok_port(char *str, const char *delim, char **saveptr) {
+    return strtok_r(str, delim, saveptr);
+}
 #endif
 
 struct gm_posix_fs_state {
@@ -48,8 +52,130 @@ static gm_result_void_t state_base_dir(gm_posix_fs_state_t *state,
                                        bool ensure);
 static gm_result_void_t temp_base_dir(gm_posix_fs_state_t *state,
                                       bool ensure);
-static gm_result_void_t errno_to_result(const char *operation,
-                                        const char *path);
+
+static void release_error(gm_error_t *error) {
+    if (error != NULL) {
+        gm_error_free(error);
+    }
+}
+
+static gm_result_void_t ignore_error_code(gm_result_void_t result,
+                                          int32_t code) {
+    if (!result.ok && result.u.err != NULL && result.u.err->code == code) {
+        gm_error_free(result.u.err);
+        return gm_ok_void();
+    }
+    return result;
+}
+
+typedef struct {
+    char *buffer;
+    size_t capacity;
+    size_t length;
+} gm_path_builder_t;
+
+static void path_builder_init(gm_path_builder_t *builder, char *storage,
+                              size_t storage_size, bool absolute) {
+    builder->buffer = storage;
+    builder->capacity = storage_size;
+    if (absolute) {
+        builder->buffer[0] = '/';
+        builder->buffer[1] = '\0';
+        builder->length = 1U;
+    } else {
+        builder->buffer[0] = '\0';
+        builder->length = 0U;
+    }
+}
+
+static gm_result_void_t path_builder_append(gm_path_builder_t *builder,
+                                            const char *segment) {
+    if (builder == NULL || segment == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "path builder missing inputs"));
+    }
+
+    size_t segment_len = strlen(segment);
+    if (segment_len == 0U) {
+        return gm_ok_void();
+    }
+
+    size_t needs_separator = 0U;
+    if (builder->length > 0U && builder->buffer[builder->length - 1U] != '/') {
+        needs_separator = 1U;
+    }
+    size_t separator_len = needs_separator;
+    size_t required = builder->length + separator_len + segment_len + 1U;
+    if (required > builder->capacity) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_PATH_TOO_LONG, "path builder exceeds capacity"));
+    }
+
+    if (needs_separator == 1U) {
+        builder->buffer[builder->length++] = '/';
+    }
+
+    if (gm_memcpy_span(builder->buffer + builder->length,
+                       builder->capacity - builder->length, segment,
+                       segment_len) != 0) {
+        return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
+                                    "segment copy exceeded capacity"));
+    }
+
+    builder->length += segment_len;
+    builder->buffer[builder->length] = '\0';
+    return gm_ok_void();
+}
+
+static gm_result_void_t ensure_directory_component(const char *path) {
+    struct stat path_stat = {0};
+    if (stat(path, &path_stat) == 0) {
+        if (!S_ISDIR(path_stat.st_mode)) {
+            return gm_err_void(GM_ERROR(GM_ERR_INVALID_PATH,
+                                        "path exists but is not a directory"));
+        }
+        return gm_ok_void();
+    }
+
+    int stat_err = errno;
+    gm_result_void_t stat_result = gm_errno_to_result("stat", path, stat_err);
+    if (!stat_result.ok) {
+        if (stat_result.u.err == NULL) {
+            return stat_result;
+        }
+        if (stat_result.u.err->code != GM_ERR_NOT_FOUND) {
+            return stat_result;
+        }
+        release_error(stat_result.u.err);
+    }
+
+    if (mkdir(path, DIR_PERMS_NORMAL) == 0) {
+        return gm_ok_void();
+    }
+
+    int mkdir_err = errno;
+
+    struct stat created = {0};
+    if (stat(path, &created) == 0 && S_ISDIR(created.st_mode)) {
+        return gm_ok_void();
+    }
+
+    return gm_errno_to_result("mkdir", path, mkdir_err);
+}
+
+static gm_result_void_t ensure_directory_segment(gm_path_builder_t *builder,
+                                                 const char *segment) {
+    if (segment == NULL || segment[0] == '\0') {
+        return gm_ok_void();
+    }
+
+    gm_result_void_t append_result = path_builder_append(builder, segment);
+    if (!append_result.ok) {
+        return append_result;
+    }
+
+    return ensure_directory_component(builder->buffer);
+}
 
 static const uint64_t FnvOffsetBasis = 1469598103934665603ULL;
 static const uint64_t FnvPrime = 1099511628211ULL;
@@ -102,7 +228,9 @@ static gm_result_void_t ensure_dir_exists(const char *path) {
         return normalize_rc;
     }
 
-    if (normalized[0] == '\0' || (normalized[0] == '.' && normalized[1] == '\0')) {
+    if (normalized[0] == '\0' ||
+        (normalized[0] == '.' && normalized[1] == '\0') ||
+        (normalized[0] == '/' && normalized[1] == '\0')) {
         return gm_ok_void();
     }
 
@@ -113,63 +241,19 @@ static gm_result_void_t ensure_dir_exists(const char *path) {
                      "normalized path exceeds buffer while ensuring dir"));
     }
 
-    size_t working_len = strlen(working);
     bool is_absolute = (working[0] == '/');
-    if (is_absolute && working_len == 1U) {
-        return gm_ok_void(); /* root */
-    }
-
     char building[GM_PATH_MAX];
-    size_t building_len = 0U;
-    if (is_absolute) {
-        building[0] = '/';
-        building[1] = '\0';
-        building_len = 1U;
-    } else {
-        building[0] = '\0';
-    }
+    gm_path_builder_t builder;
+    path_builder_init(&builder, building, sizeof(building), is_absolute);
 
     char *saveptr = NULL;
-    char *segment = gm_strtok_r(working, "/", &saveptr);
-    while (segment != NULL) {
-        size_t segment_len = strlen(segment);
-        if (segment_len == 0U) {
-            segment = gm_strtok_r(NULL, "/", &saveptr);
-            continue;
+    for (char *segment = gm_strtok_port(working, "/", &saveptr); segment != NULL;
+         segment = gm_strtok_port(NULL, "/", &saveptr)) {
+        gm_result_void_t segment_result =
+            ensure_directory_segment(&builder, segment);
+        if (!segment_result.ok) {
+            return segment_result;
         }
-
-        bool needs_separator = (building_len > 0U && building[building_len - 1U] != '/');
-        size_t required = building_len + (needs_separator ? 1U : 0U) + segment_len + 1U;
-        if (required > sizeof(building)) {
-            return gm_err_void(
-                GM_ERROR(GM_ERR_PATH_TOO_LONG, "computed path exceeds buffer"));
-        }
-
-        if (needs_separator) {
-            building[building_len++] = '/';
-        }
-        if (gm_memcpy_span(building + building_len, sizeof(building) - building_len,
-                           segment, segment_len) != 0) {
-            return gm_err_void(
-                GM_ERROR(GM_ERR_PATH_TOO_LONG, "segment copy exceeded buffer"));
-        }
-        building_len += segment_len;
-        building[building_len] = '\0';
-
-        struct stat st = {0};
-        if (stat(building, &st) != 0) {
-            if (errno != ENOENT) {
-                return errno_to_result("stat", building);
-            }
-            if (mkdir(building, DIR_PERMS_NORMAL) != 0 && errno != EEXIST) {
-                return errno_to_result("mkdir", building);
-            }
-        } else if (!S_ISDIR(st.st_mode)) {
-            return gm_err_void(
-                GM_ERROR(GM_ERR_INVALID_PATH, "path exists but is not a directory"));
-        }
-
-        segment = gm_strtok_r(NULL, "/", &saveptr);
     }
 
     return gm_ok_void();
@@ -196,30 +280,65 @@ static gm_result_void_t resolve_home(char *buffer, size_t buffer_size) {
     return gm_ok_void();
 }
 
-static gm_result_void_t errno_to_result(const char *operation,
-                                        const char *path) {
-    int err = errno;
-    int32_t code = GM_ERR_IO_FAILED;
-    switch (err) {
-    case ENOENT:
-        code = GM_ERR_NOT_FOUND;
-        break;
-    case EACCES:
-        code = GM_ERR_PERMISSION_DENIED;
-        break;
-    case ENAMETOOLONG:
-        code = GM_ERR_PATH_TOO_LONG;
-        break;
-    case EROFS:
-        code = GM_ERR_READ_ONLY;
-        break;
-    default:
-        code = GM_ERR_IO_FAILED;
-        break;
+static gm_result_void_t compose_child_path(char *buffer, size_t buffer_size,
+                                           const char *parent,
+                                           const char *child) {
+    if (buffer == NULL || parent == NULL || child == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "compose child path arguments missing"));
     }
 
-    return gm_err_void(
-        GM_ERROR(code, "%s failed for %s: %s", operation, path, strerror(err)));
+    int wrote = gm_snprintf(buffer, buffer_size, "%s/%s", parent, child);
+    if (wrote < 0 || (size_t)wrote >= buffer_size) {
+        return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
+                                    "failed to compose child path"));
+    }
+
+    return gm_ok_void();
+}
+
+static gm_result_void_t try_configure_state_base_from_home(
+    gm_posix_fs_state_t *state, bool ensure, bool *configured) {
+    if (configured == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "configured flag pointer missing"));
+    }
+
+    *configured = false;
+
+    char home[GM_PATH_MAX];
+    gm_result_void_t home_result = resolve_home(home, sizeof(home));
+    if (!home_result.ok) {
+        release_error(home_result.u.err);
+        return gm_ok_void();
+    }
+
+    size_t home_length = strlen(home);
+    if (home_length == 0U) {
+        return gm_ok_void();
+    }
+    if (home_length == 1U && home[0] == '/') {
+        return gm_ok_void();
+    }
+
+    gm_result_void_t compose_result =
+        compose_child_path(state->base_state, sizeof(state->base_state), home,
+                           ".gitmind");
+    if (!compose_result.ok) {
+        return compose_result;
+    }
+
+    if (ensure) {
+        gm_result_void_t ensure_result = ensure_dir_exists(state->base_state);
+        if (!ensure_result.ok) {
+            release_error(ensure_result.u.err);
+            return gm_ok_void();
+        }
+    }
+
+    state->base_state_ready = true;
+    *configured = true;
+    return gm_ok_void();
 }
 
 static gm_result_void_t state_base_dir(gm_posix_fs_state_t *state,
@@ -228,51 +347,26 @@ static gm_result_void_t state_base_dir(gm_posix_fs_state_t *state,
         return gm_ok_void();
     }
 
-    char home[GM_PATH_MAX];
-    gm_result_void_t home_result = resolve_home(home, sizeof(home));
-    if (home_result.ok) {
-        size_t home_length = strlen(home);
-        bool home_is_root = (home_length == 1U && home[0] == '/');
-        if (home_length > 0U && !home_is_root) {
-            int home_written = gm_snprintf(state->base_state,
-                                           sizeof(state->base_state),
-                                           "%s/.gitmind", home);
-            if (home_written < 0 ||
-                (size_t)home_written >= sizeof(state->base_state)) {
-                return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
-                                            "failed to compose state base"));
-            }
-
-            if (ensure) {
-                gm_result_void_t ensure_result =
-                    ensure_dir_exists(state->base_state);
-                if (!ensure_result.ok) {
-                    if (ensure_result.u.err != NULL) {
-                        gm_error_free(ensure_result.u.err);
-                    }
-                } else {
-                    state->base_state_ready = true;
-                    return gm_ok_void();
-                }
-            } else {
-                state->base_state_ready = true;
-                return gm_ok_void();
-            }
-        }
-    } else if (home_result.u.err != NULL) {
-        gm_error_free(home_result.u.err);
+    bool configured = false;
+    gm_result_void_t home_result =
+        try_configure_state_base_from_home(state, ensure, &configured);
+    if (!home_result.ok) {
+        return home_result;
+    }
+    if (configured) {
+        return gm_ok_void();
     }
 
-    GM_TRY(temp_base_dir(state, ensure));
+    gm_result_void_t temp_result = temp_base_dir(state, ensure);
+    if (!temp_result.ok) {
+        return temp_result;
+    }
 
-    int fallback_written = gm_snprintf(state->base_state,
-                                       sizeof(state->base_state),
-                                       "%s/gitmind-state",
-                                       state->base_temp);
-    if (fallback_written < 0 ||
-        (size_t)fallback_written >= sizeof(state->base_state)) {
-        return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
-                                    "failed to compose fallback state base"));
+    gm_result_void_t compose_result = compose_child_path(
+        state->base_state, sizeof(state->base_state), state->base_temp,
+        "gitmind-state");
+    if (!compose_result.ok) {
+        return compose_result;
     }
 
     if (ensure) {
@@ -359,9 +453,9 @@ static gm_result_void_t format_repo_component(const gm_posix_fs_state_t *state,
 }
 
 static gm_result_void_t join_segments(char *buffer, size_t buffer_size,
-                                      size_t start_index, const char *segments[],
+                                      const char *segments[],
                                       size_t segment_count) {
-    size_t idx = start_index;
+    size_t idx = strlen(buffer);
     for (size_t i = 0; i < segment_count; ++i) {
         const char *seg = segments[i];
         if (seg == NULL || seg[0] == '\0') {
@@ -379,6 +473,116 @@ static gm_result_void_t join_segments(char *buffer, size_t buffer_size,
     return gm_ok_void();
 }
 
+static gm_result_void_t ensure_repo_root(gm_posix_fs_state_t *state,
+                                         gm_repo_id_t repo, char *out_root,
+                                         size_t out_size) {
+    const char *base_state = NULL;
+    gm_result_void_t dispatch_result =
+        base_dir_dispatch(state, GM_FS_BASE_STATE, true, &base_state);
+    if (!dispatch_result.ok) {
+        return dispatch_result;
+    }
+
+    if (gm_strcpy_safe(out_root, out_size, base_state) != GM_OK) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_PATH_TOO_LONG, "failed copying base state"));
+    }
+
+    char repo_component[RepoIdHexBufferSize];
+    gm_result_void_t format_result =
+        format_repo_component(state, repo, repo_component,
+                              sizeof(repo_component));
+    if (!format_result.ok) {
+        return format_result;
+    }
+
+    const char *segments[] = {repo_component};
+    gm_result_void_t join_result =
+        join_segments(out_root, out_size, segments, 1);
+    if (!join_result.ok) {
+        return join_result;
+    }
+
+    return ensure_dir_exists(out_root);
+}
+
+static gm_result_void_t copy_path_to_state(gm_posix_fs_state_t *state,
+                                           const char *path,
+                                           gm_tempdir_t *out_dir) {
+    if (gm_strcpy_safe(state->scratch, sizeof(state->scratch), path) != GM_OK) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_PATH_TOO_LONG, "copying temp dir path failed"));
+    }
+    if (out_dir != NULL) {
+        out_dir->path = state->scratch;
+    }
+    return gm_ok_void();
+}
+
+static gm_result_void_t format_template_base(char *buffer, size_t buffer_size,
+                                             const char *directory,
+                                             const char *component) {
+    int wrote = gm_snprintf(buffer, buffer_size, "%s/%s", directory, component);
+    if (wrote < 0 || (size_t)wrote >= buffer_size) {
+        return gm_err_void(
+            GM_ERROR(GM_ERR_PATH_TOO_LONG, "failed to format temp dir base"));
+    }
+    return gm_ok_void();
+}
+
+static gm_result_void_t format_template_with_suffix(char *buffer,
+                                                    size_t buffer_size,
+                                                    const char *directory,
+                                                    const char *component,
+                                                    unsigned int suffix) {
+    int wrote = gm_snprintf(buffer, buffer_size, "%s/%s-%06X", directory,
+                             component, suffix);
+    if (wrote < 0 || (size_t)wrote >= buffer_size) {
+        return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
+                                    "failed to format temp dir suffix"));
+    }
+    return gm_ok_void();
+}
+
+static gm_result_void_t create_randomized_temp_dir(
+    gm_posix_fs_state_t *state, const char *base_dir, const char *component,
+    char *template_path, size_t template_size, gm_tempdir_t *out_dir) {
+    unsigned int seed = (unsigned int)time(NULL) ^ (unsigned int)getpid();
+
+    for (unsigned int attempt = 0; attempt < TempSuffixAttempts; ++attempt) {
+        seed = (seed * TempRandomMultiplier) + TempRandomIncrement;
+        unsigned int suffix = seed & TempRandomMask;
+
+        gm_result_void_t format_result = format_template_with_suffix(
+            template_path, template_size, base_dir, component, suffix);
+        if (!format_result.ok) {
+            return format_result;
+        }
+
+        if (mkdir(template_path, DIR_PERMS_NORMAL) == 0) {
+            gm_result_void_t copy_result =
+                copy_path_to_state(state, template_path, out_dir);
+            if (!copy_result.ok) {
+                (void)rmdir(template_path);
+                return copy_result;
+            }
+            return gm_ok_void();
+        }
+
+        int mkdir_err = errno;
+        gm_result_void_t mkdir_result =
+            gm_errno_to_result("mkdir", template_path, mkdir_err);
+        mkdir_result = ignore_error_code(mkdir_result, GM_ERR_ALREADY_EXISTS);
+        if (mkdir_result.ok) {
+            continue;
+        }
+        return mkdir_result;
+    }
+
+    return gm_err_void(GM_ERROR(GM_ERR_IO_FAILED,
+                                "unable to allocate temp dir after retries"));
+}
+
 static gm_result_void_t make_temp_dir_impl(gm_posix_fs_state_t *state,
                                            gm_repo_id_t repo,
                                            const char *component,
@@ -388,96 +592,58 @@ static gm_result_void_t make_temp_dir_impl(gm_posix_fs_state_t *state,
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
                                     "temp dir output pointer missing"));
     }
-    if (component == NULL || component[0] == '\0' || has_path_separator(component)) {
+    if (component == NULL) {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "temp dir component missing"));
+    }
+    if (component[0] == '\0') {
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
+                                    "temp dir component empty"));
+    }
+    if (has_path_separator(component)) {
         return gm_err_void(GM_ERROR(GM_ERR_INVALID_ARGUMENT,
                                     "component must be non-empty without separators"));
     }
 
-    const char *base_state = NULL;
-    GM_TRY(base_dir_dispatch(state, GM_FS_BASE_STATE, true, &base_state));
-
-    char repo_component[RepoIdHexBufferSize];
-    GM_TRY(format_repo_component(state, repo, repo_component,
-                                 sizeof(repo_component)));
-
-    const char *segments[] = {repo_component};
-    if (gm_strcpy_safe(state->scratch, sizeof(state->scratch), base_state) !=
-        GM_OK) {
-        return gm_err_void(
-            GM_ERROR(GM_ERR_PATH_TOO_LONG, "failed copying base state"));
+    char repo_root[GM_PATH_MAX];
+    gm_result_void_t root_result =
+        ensure_repo_root(state, repo, repo_root, sizeof(repo_root));
+    if (!root_result.ok) {
+        return root_result;
     }
 
-    GM_TRY(join_segments(state->scratch, sizeof(state->scratch),
-                         strlen(state->scratch), segments, 1));
-    GM_TRY(ensure_dir_exists(state->scratch));
-
     char template_path[GM_PATH_MAX];
-    int template_written = gm_snprintf(template_path, sizeof(template_path),
-                                       "%s/%s", state->scratch, component);
-    if (template_written < 0 ||
-        (size_t)template_written >= sizeof(template_path)) {
-        return gm_err_void(
-            GM_ERROR(GM_ERR_PATH_TOO_LONG, "failed to format temp dir base"));
+    gm_result_void_t format_result =
+        format_template_base(template_path, sizeof(template_path), repo_root,
+                             component);
+    if (!format_result.ok) {
+        return format_result;
     }
 
     if (!suffix_random) {
-        GM_TRY(ensure_dir_exists(template_path));
-        if (gm_strcpy_safe(state->scratch, sizeof(state->scratch),
-                           template_path) != GM_OK) {
-            return gm_err_void(
-                GM_ERROR(GM_ERR_PATH_TOO_LONG,
-                         "copying deterministic temp dir failed"));
+        gm_result_void_t ensure_result = ensure_dir_exists(template_path);
+        if (!ensure_result.ok) {
+            return ensure_result;
         }
-        out_dir->path = state->scratch;
-        return gm_ok_void();
+        return copy_path_to_state(state, template_path, out_dir);
     }
 
-    unsigned int seed = (unsigned int)time(NULL) ^ (unsigned int)getpid();
-    for (unsigned int attempt = 0; attempt < TempSuffixAttempts; ++attempt) {
-        seed = (seed * TempRandomMultiplier) + TempRandomIncrement;
-        unsigned int suffix = seed & TempRandomMask;
-        int suffix_written = gm_snprintf(template_path, sizeof(template_path),
-                                         "%s/%s-%06X", state->scratch,
-                                         component, suffix);
-        if (suffix_written < 0 ||
-            (size_t)suffix_written >= sizeof(template_path)) {
-            return gm_err_void(
-                GM_ERROR(GM_ERR_PATH_TOO_LONG,
-                         "failed to format temp dir suffix"));
-        }
-
-        if (mkdir(template_path, DIR_PERMS_NORMAL) == 0) {
-            if (gm_strcpy_safe(state->scratch, sizeof(state->scratch),
-                               template_path) != GM_OK) {
-                /* Attempt to clean up before returning */
-                (void)rmdir(template_path);
-                return gm_err_void(
-                    GM_ERROR(GM_ERR_PATH_TOO_LONG,
-                             "copying temp dir path failed"));
-            }
-            out_dir->path = state->scratch;
-            return gm_ok_void();
-        }
-
-        if (errno == EEXIST) {
-            continue;
-        }
-
-        return gm_err_void(GM_ERROR(GM_ERR_IO_FAILED,
-                                    "mkdir failed for %s: %s", template_path,
-                                    strerror(errno)));
-    }
-
-    return gm_err_void(GM_ERROR(GM_ERR_IO_FAILED,
-                                "unable to allocate temp dir after retries"));
+    return create_randomized_temp_dir(state, repo_root, component,
+                                      template_path, sizeof(template_path),
+                                      out_dir);
 }
 
 static bool is_dot_entry(const struct dirent *entry) {
     if (entry == NULL) {
         return false;
     }
-    return (strcmp(entry->d_name, ".") == 0) ||
-           (strcmp(entry->d_name, "..") == 0);
+    if (strcmp(entry->d_name, ".") == 0) {
+        return true;
+    }
+    if (strcmp(entry->d_name, "..") == 0) {
+        return true;
+    }
+    return false;
 }
 
 typedef struct {
@@ -485,13 +651,199 @@ typedef struct {
     size_t path_len;
 } dir_stack_frame_t;
 
-static void close_dir_stack(dir_stack_frame_t *stack, size_t depth) {
-    while (depth > 0U) {
-        DIR *dir = stack[--depth].dir;
+typedef struct {
+    dir_stack_frame_t frames[GM_PATH_MAX];
+    size_t depth;
+    char current[GM_PATH_MAX];
+} remove_tree_context_t;
+
+static void remove_tree_cleanup(remove_tree_context_t *ctx) {
+    while (ctx->depth > 0U) {
+        DIR *dir = ctx->frames[--ctx->depth].dir;
         if (dir != NULL) {
             closedir(dir);
         }
     }
+}
+
+static gm_result_void_t remove_tree_context_init(remove_tree_context_t *ctx,
+                                                 const char *root_path) {
+    ctx->depth = 0U;
+    if (gm_strcpy_safe(ctx->current, sizeof(ctx->current), root_path) != GM_OK) {
+        return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
+                                    "normalized path exceeds buffer while removing dir"));
+    }
+
+    DIR *root_dir = opendir(ctx->current);
+    if (root_dir == NULL) {
+        int opendir_err = errno;
+        return gm_errno_to_result("opendir", ctx->current, opendir_err);
+    }
+
+    size_t initial_len = strlen(ctx->current);
+    ctx->frames[ctx->depth++] =
+        (dir_stack_frame_t){.dir = root_dir, .path_len = initial_len};
+    return gm_ok_void();
+}
+
+static gm_result_void_t remove_tree_append_entry(remove_tree_context_t *ctx,
+                                                 size_t parent_len,
+                                                 const char *name,
+                                                 size_t *out_length) {
+    size_t name_len = strlen(name);
+    size_t needs_separator =
+        (parent_len > 0U && ctx->current[parent_len - 1U] != '/') ? 1U : 0U;
+    size_t required = parent_len + needs_separator + name_len + 1U;
+    if (required >= sizeof(ctx->current)) {
+        ctx->current[parent_len] = '\0';
+        return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
+                                    "child path exceeds buffer"));
+    }
+
+    size_t cursor = parent_len;
+    if (needs_separator == 1U) {
+        ctx->current[cursor++] = '/';
+    }
+    if (gm_memcpy_span(ctx->current + cursor,
+                       sizeof(ctx->current) - cursor, name, name_len) != 0) {
+        ctx->current[parent_len] = '\0';
+        return gm_err_void(GM_ERROR(GM_ERR_PATH_TOO_LONG,
+                                    "child path exceeds buffer"));
+    }
+    cursor += name_len;
+    ctx->current[cursor] = '\0';
+    if (out_length != NULL) {
+        *out_length = cursor;
+    }
+    return gm_ok_void();
+}
+
+static gm_result_void_t remove_tree_descend(remove_tree_context_t *ctx,
+                                            size_t path_len) {
+    DIR *child_dir = opendir(ctx->current);
+    if (child_dir == NULL) {
+        int opendir_err = errno;
+        return gm_errno_to_result("opendir", ctx->current, opendir_err);
+    }
+    size_t capacity = sizeof(ctx->frames) / sizeof(ctx->frames[0]);
+    if (ctx->depth >= capacity) {
+        closedir(child_dir);
+        return gm_err_void(GM_ERROR(GM_ERR_INVALID_PATH,
+                                    "directory depth exceeds stack capacity"));
+    }
+    ctx->frames[ctx->depth++] =
+        (dir_stack_frame_t){.dir = child_dir, .path_len = path_len};
+    return gm_ok_void();
+}
+
+static gm_result_void_t remove_tree_remove_file(remove_tree_context_t *ctx,
+                                                size_t parent_len) {
+    gm_result_void_t result = gm_ok_void();
+    if (unlink(ctx->current) != 0) {
+        int unlink_err = errno;
+        result = gm_errno_to_result("unlink", ctx->current, unlink_err);
+        result = ignore_error_code(result, GM_ERR_NOT_FOUND);
+    }
+    ctx->current[parent_len] = '\0';
+    return result;
+}
+
+static gm_result_void_t remove_tree_finalize(remove_tree_context_t *ctx) {
+    dir_stack_frame_t *frame = &ctx->frames[ctx->depth - 1U];
+    ctx->current[frame->path_len] = '\0';
+    closedir(frame->dir);
+    ctx->depth -= 1U;
+
+    if (rmdir(ctx->current) != 0) {
+        int rmdir_err = errno;
+        gm_result_void_t rmdir_result =
+            gm_errno_to_result("rmdir", ctx->current, rmdir_err);
+        rmdir_result = ignore_error_code(rmdir_result, GM_ERR_NOT_FOUND);
+        if (!rmdir_result.ok) {
+            return rmdir_result;
+        }
+    }
+
+    if (ctx->depth > 0U) {
+        size_t parent_len = ctx->frames[ctx->depth - 1U].path_len;
+        ctx->current[parent_len] = '\0';
+    }
+
+    return gm_ok_void();
+}
+
+static gm_result_void_t remove_tree_step(remove_tree_context_t *ctx) {
+    dir_stack_frame_t *frame = &ctx->frames[ctx->depth - 1U];
+    ctx->current[frame->path_len] = '\0';
+
+    struct dirent *entry = readdir(frame->dir);
+    if (entry == NULL) {
+        return remove_tree_finalize(ctx);
+    }
+
+    if (is_dot_entry(entry)) {
+        return gm_ok_void();
+    }
+
+    size_t child_len = 0U;
+    gm_result_void_t append_result = remove_tree_append_entry(
+        ctx, frame->path_len, entry->d_name, &child_len);
+    if (!append_result.ok) {
+        return append_result;
+    }
+
+    struct stat entry_stat = {0};
+    if (stat(ctx->current, &entry_stat) != 0) {
+        int stat_err = errno;
+        gm_result_void_t stat_result =
+            gm_errno_to_result("stat", ctx->current, stat_err);
+        stat_result = ignore_error_code(stat_result, GM_ERR_NOT_FOUND);
+        if (!stat_result.ok) {
+            return stat_result;
+        }
+        ctx->current[frame->path_len] = '\0';
+        return gm_ok_void();
+    }
+
+    if (S_ISDIR(entry_stat.st_mode)) {
+        return remove_tree_descend(ctx, child_len);
+    }
+
+    return remove_tree_remove_file(ctx, frame->path_len);
+}
+
+static gm_result_void_t remove_tree_directory(const char *normalized) {
+    remove_tree_context_t ctx = {0};
+    gm_result_void_t init_result = remove_tree_context_init(&ctx, normalized);
+    if (!init_result.ok) {
+        return init_result;
+    }
+
+    gm_result_void_t step_result = gm_ok_void();
+    while (ctx.depth > 0U) {
+        step_result = remove_tree_step(&ctx);
+        if (!step_result.ok) {
+            break;
+        }
+    }
+
+    if (!step_result.ok) {
+        remove_tree_cleanup(&ctx);
+        return step_result;
+    }
+
+    return gm_ok_void();
+}
+
+static gm_result_void_t remove_tree_non_directory(const char *normalized) {
+    if (unlink(normalized) == 0) {
+        return gm_ok_void();
+    }
+
+    int unlink_err = errno;
+    gm_result_void_t unlink_result =
+        gm_errno_to_result("unlink", normalized, unlink_err);
+    return ignore_error_code(unlink_result, GM_ERR_NOT_FOUND);
 }
 
 static gm_result_void_t remove_tree_impl(const char *path) {
@@ -511,121 +863,18 @@ static gm_result_void_t remove_tree_impl(const char *path) {
 
     struct stat root_stat = {0};
     if (stat(normalized, &root_stat) != 0) {
-        if (errno == ENOENT) {
-            return gm_ok_void();
-        }
-        return errno_to_result("stat", normalized);
+        int stat_err = errno;
+        gm_result_void_t stat_result =
+            gm_errno_to_result("stat", normalized, stat_err);
+        stat_result = ignore_error_code(stat_result, GM_ERR_NOT_FOUND);
+        return stat_result;
     }
 
     if (!S_ISDIR(root_stat.st_mode)) {
-        if (unlink(normalized) != 0 && errno != ENOENT) {
-            return errno_to_result("unlink", normalized);
-        }
-        return gm_ok_void();
+        return remove_tree_non_directory(normalized);
     }
 
-    dir_stack_frame_t stack[GM_PATH_MAX];
-    size_t depth = 0U;
-
-    char current[GM_PATH_MAX];
-    if (gm_strcpy_safe(current, sizeof(current), normalized) != GM_OK) {
-        return gm_err_void(
-            GM_ERROR(GM_ERR_PATH_TOO_LONG,
-                     "normalized path exceeds buffer while removing dir"));
-    }
-    size_t current_len = strlen(current);
-
-    DIR *root_dir = opendir(current);
-    if (root_dir == NULL) {
-        return errno_to_result("opendir", current);
-    }
-    stack[depth++] = (dir_stack_frame_t){.dir = root_dir, .path_len = current_len};
-
-    while (depth > 0U) {
-        dir_stack_frame_t *frame = &stack[depth - 1U];
-        struct dirent *entry = readdir(frame->dir);
-        if (entry != NULL) {
-            if (is_dot_entry(entry)) {
-                continue;
-            }
-
-            size_t parent_len = frame->path_len;
-            bool needs_separator =
-                (parent_len > 0U && current[parent_len - 1U] != '/');
-            size_t name_len = strlen(entry->d_name);
-            size_t required = parent_len + (needs_separator ? 1U : 0U) +
-                              name_len + 1U;
-            if (required >= sizeof(current)) {
-                close_dir_stack(stack, depth);
-                return gm_err_void(
-                    GM_ERROR(GM_ERR_PATH_TOO_LONG,
-                             "child path exceeds buffer"));
-            }
-
-            size_t append_pos = parent_len;
-            if (needs_separator) {
-                current[append_pos++] = '/';
-            }
-            if (gm_memcpy_span(current + append_pos,
-                               sizeof(current) - append_pos, entry->d_name,
-                               name_len) != 0) {
-                close_dir_stack(stack, depth);
-                return gm_err_void(
-                    GM_ERROR(GM_ERR_PATH_TOO_LONG,
-                             "child path exceeds buffer"));
-            }
-            current_len = append_pos + name_len;
-            current[current_len] = '\0';
-
-            struct stat entry_stat = {0};
-            if (stat(current, &entry_stat) != 0) {
-                if (errno == ENOENT) {
-                    current[parent_len] = '\0';
-                    continue;
-                }
-                close_dir_stack(stack, depth);
-                return errno_to_result("stat", current);
-            }
-
-            if (S_ISDIR(entry_stat.st_mode)) {
-                DIR *child_dir = opendir(current);
-                if (child_dir == NULL) {
-                    close_dir_stack(stack, depth);
-                    return errno_to_result("opendir", current);
-                }
-                if (depth >= (sizeof(stack) / sizeof(stack[0]))) {
-                    closedir(child_dir);
-                    close_dir_stack(stack, depth);
-                    return gm_err_void(
-                        GM_ERROR(GM_ERR_INVALID_PATH,
-                                 "directory depth exceeds stack capacity"));
-                }
-                stack[depth++] =
-                    (dir_stack_frame_t){.dir = child_dir, .path_len = current_len};
-            } else {
-                if (unlink(current) != 0 && errno != ENOENT) {
-                    close_dir_stack(stack, depth);
-                    return errno_to_result("unlink", current);
-                }
-                current[parent_len] = '\0';
-            }
-        } else {
-            closedir(frame->dir);
-            depth--;
-
-            if (rmdir(current) != 0 && errno != ENOENT) {
-                close_dir_stack(stack, depth);
-                return errno_to_result("rmdir", current);
-            }
-
-            if (depth > 0U) {
-                dir_stack_frame_t *parent = &stack[depth - 1U];
-                current[parent->path_len] = '\0';
-            }
-        }
-    }
-
-    return gm_ok_void();
+    return remove_tree_directory(normalized);
 }
 
 static gm_result_void_t join_under_base(gm_posix_fs_state_t *state,
@@ -656,8 +905,7 @@ static gm_result_void_t join_under_base(gm_posix_fs_state_t *state,
 
     const char *path_segments[] = {
         repo_component, segment1, segment2, segment3, segment4, segment5};
-    GM_TRY(join_segments(state->scratch, sizeof(state->scratch),
-                         strlen(state->scratch), path_segments,
+    GM_TRY(join_segments(state->scratch, sizeof(state->scratch), path_segments,
                          sizeof(path_segments) / sizeof(path_segments[0])));
 
     *out_abs_path = state->scratch;
@@ -668,7 +916,8 @@ static gm_result_void_t canonicalize_existing_path(gm_posix_fs_state_t *state,
                                                    const char *abs_path_in,
                                                    const char **out_abs_path) {
     if (realpath(abs_path_in, state->scratch) == NULL) {
-        return errno_to_result("realpath", abs_path_in);
+        int realpath_err = errno;
+        return gm_errno_to_result("realpath", abs_path_in, realpath_err);
     }
     *out_abs_path = state->scratch;
     return gm_ok_void();
@@ -691,7 +940,8 @@ static gm_result_void_t canonicalize_create_ok_path(gm_posix_fs_state_t *state,
     GM_TRY(gm_fs_path_dirname(normalized, parent_path, sizeof(parent_path)));
 
     if (realpath(parent_path, state->scratch) == NULL) {
-        return errno_to_result("realpath", parent_path);
+        int realpath_err = errno;
+        return gm_errno_to_result("realpath", parent_path, realpath_err);
     }
 
     size_t base_length = strlen(state->scratch);
@@ -813,7 +1063,3 @@ gm_result_void_t gm_posix_fs_temp_port_create(gm_fs_temp_port_t *out_port,
 
     return gm_ok_void();
 }
-
-#ifdef gm_strtok_r
-#undef gm_strtok_r
-#endif

@@ -21,39 +21,49 @@ enum {
     HexEscapeBufferLength = 5,
 };
 
+static bool emit_simple_escape(unsigned char value) {
+    switch (value) {
+    case '\n':
+        (void)fputs("\\n", stderr);
+        return true;
+    case '\r':
+        (void)fputs("\\r", stderr);
+        return true;
+    case '\t':
+        (void)fputs("\\t", stderr);
+        return true;
+    default:
+        return false;
+    }
+}
+
+static void emit_control_escape(unsigned char value) {
+    char escape_buffer[HexEscapeBufferLength];
+    int hex_written =
+        gm_snprintf(escape_buffer, sizeof(escape_buffer), "\\x%02x", value);
+    if (hex_written > 0 &&
+        (size_t)hex_written < sizeof(escape_buffer)) {
+        (void)fputs(escape_buffer, stderr);
+    }
+}
+
+static void emit_character(unsigned char value) {
+    if (!emit_simple_escape(value)) {
+        if (iscntrl(value)) {
+            emit_control_escape(value);
+            return;
+        }
+        (void)fputc(value, stderr);
+    }
+}
+
 static void emit_escaped(const char *value) {
     if (value == NULL) {
         (void)fputs("(null)", stderr);
         return;
     }
     for (const char *cursor = value; *cursor != '\0'; ++cursor) {
-        unsigned char ch_value = (unsigned char)*cursor;
-        switch (ch_value) {
-        case '\n':
-            (void)fputs("\\n", stderr);
-            break;
-        case '\r':
-            (void)fputs("\\r", stderr);
-            break;
-        case '\t':
-            (void)fputs("\\t", stderr);
-            break;
-        default:
-            if (iscntrl(ch_value)) {
-                char escape_buffer[HexEscapeBufferLength];
-                int hex_written = gm_snprintf(escape_buffer,
-                                              sizeof(escape_buffer),
-                                              "\\x%02x",
-                                              ch_value);
-                if (hex_written > 0 &&
-                    (size_t)hex_written < sizeof(escape_buffer)) {
-                    (void)fputs(escape_buffer, stderr);
-                }
-            } else {
-                (void)fputc(ch_value, stderr);
-            }
-            break;
-        }
+        emit_character((unsigned char)*cursor);
     }
 }
 
