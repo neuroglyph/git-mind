@@ -87,6 +87,7 @@ git-mind is a thin layer on [`@git-stunts/git-warp`](https://github.com/nicktoml
 ## Documentation
 
 - [GUIDE.md](GUIDE.md) — Complete user guide (install, tutorial, features, technical deep dives)
+- [GRAPH_SCHEMA.md](GRAPH_SCHEMA.md) — Authoritative graph schema specification (node IDs, edge types, import format)
 - [CONTRIBUTING.md](CONTRIBUTING.md) — How to contribute
 - [CHANGELOG.md](CHANGELOG.md) — Release history
 
