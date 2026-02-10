@@ -5,7 +5,15 @@
 
 import WarpGraph, { GitGraphAdapter } from '@git-stunts/git-warp';
 import GitPlumbing, { ShellRunnerFactory } from '@git-stunts/plumbing';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { resolve } from 'node:path';
+
+/** Minimal CryptoPort adapter using node:crypto. */
+const crypto = {
+  async hash(algo, data) { return createHash(algo).update(data).digest('hex'); },
+  async hmac(algo, key, data) { return createHmac(algo, key).update(data).digest(); },
+  timingSafeEqual(a, b) { return timingSafeEqual(a, b); },
+};
 
 const GRAPH_NAME = 'gitmind';
 
@@ -28,6 +36,7 @@ export async function initGraph(repoPath, opts = {}) {
     persistence,
     writerId,
     autoMaterialize: true,
+    crypto,
   });
 
   return graph;
