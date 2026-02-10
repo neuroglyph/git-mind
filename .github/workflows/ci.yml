@@ -13,13 +13,14 @@ jobs:
       matrix:
         node-version: [20, 22]
 
+    env:
+      GIT_AUTHOR_NAME: CI
+      GIT_AUTHOR_EMAIL: ci@localhost
+      GIT_COMMITTER_NAME: CI
+      GIT_COMMITTER_EMAIL: ci@localhost
+
     steps:
       - uses: actions/checkout@v4
-
-      - name: Configure git identity
-        run: |
-          git config --global user.name "CI"
-          git config --global user.email "ci@localhost"
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
