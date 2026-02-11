@@ -19,8 +19,8 @@
     }
   },
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "NODE_OPTIONS='--disable-warning=DEP0169' vitest run",
+    "test:watch": "NODE_OPTIONS='--disable-warning=DEP0169' vitest",
     "lint": "eslint src/ bin/",
     "format": "prettier --write 'src/**/*.js' 'bin/**/*.js'"
   },
