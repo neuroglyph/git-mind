@@ -1,5 +1,5 @@
 # Echo Ecosystem — PROVING GROUND seed fixture
-# ~56 nodes, ~70 edges, deterministic ground truth for 5 dogfood questions.
+# 55 nodes, 70 edges, deterministic ground truth for 5 dogfood questions.
 #
 # Q1  What blocks M2?            → milestone view  → [issue:E-003, issue:E-004]
 # Q2  Which ADRs lack impl?      → traceability    → [adr:003-encryption-at-rest, adr:004-rest-vs-grpc]
@@ -114,7 +114,7 @@ nodes:
   - id: "task:E-015"
     properties: { title: "Health check endpoint" }
 
-  # ── Issues (10) — bugs, blockers, investigations ────────────────
+  # ── Issues (9) — bugs, blockers, investigations ─────────────────
   - id: "issue:E-001"
     properties: { title: "Auth token expiry bug" }
   - id: "issue:E-002"
