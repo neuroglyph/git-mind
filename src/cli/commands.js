@@ -10,9 +10,10 @@ import { initGraph, loadGraph } from '../graph.js';
 import { createEdge, queryEdges, removeEdge, EDGE_TYPES } from '../edges.js';
 import { getNodes, hasNode, getNode, getNodesByPrefix } from '../nodes.js';
 import { computeStatus } from '../status.js';
+import { importFile } from '../import.js';
 import { renderView, listViews } from '../views.js';
 import { processCommit } from '../hooks.js';
-import { success, error, info, formatEdge, formatView, formatNode, formatNodeList, formatStatus } from './format.js';
+import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatImportResult } from './format.js';
 
 /**
  * Initialize a git-mind graph in the current repo.
@@ -242,6 +243,32 @@ export async function status(cwd, opts = {}) {
       console.log(JSON.stringify(result, null, 2));
     } else {
       console.log(formatStatus(result));
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Import a YAML file into the graph.
+ * @param {string} cwd
+ * @param {string} filePath
+ * @param {{ dryRun?: boolean, json?: boolean }} opts
+ */
+export async function importCmd(cwd, filePath, opts = {}) {
+  try {
+    const graph = await loadGraph(cwd);
+    const result = await importFile(graph, filePath, { dryRun: opts.dryRun });
+
+    if (opts.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(formatImportResult(result));
+    }
+
+    if (!result.valid) {
+      process.exitCode = 1;
     }
   } catch (err) {
     console.error(error(err.message));

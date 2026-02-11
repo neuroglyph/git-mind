@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, nodes, status, installHooks, processCommitCmd, suggest, review } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, status, importCmd, installHooks, processCommitCmd, suggest, review } from '../src/cli/commands.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -31,6 +31,9 @@ Commands:
     --id <nodeId>               Show details for a single node
     --json                      Output as JSON
   status                        Show graph health dashboard
+    --json                      Output as JSON
+  import <file>                 Import a YAML graph file
+    --dry-run                   Validate without writing
     --json                      Output as JSON
   install-hooks                  Install post-commit Git hook
   suggest --ai                  AI suggestions (stub)
@@ -119,6 +122,20 @@ switch (command) {
   case 'status':
     await status(cwd, { json: args.includes('--json') });
     break;
+
+  case 'import': {
+    const importPath = args[1];
+    if (!importPath) {
+      console.error('Usage: git mind import <file> [--dry-run] [--json]');
+      process.exitCode = 1;
+      break;
+    }
+    await importCmd(cwd, importPath, {
+      dryRun: args.includes('--dry-run') || args.includes('--validate'),
+      json: args.includes('--json'),
+    });
+    break;
+  }
 
   case 'install-hooks':
     await installHooks(cwd);
