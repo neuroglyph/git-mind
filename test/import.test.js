@@ -61,6 +61,13 @@ nodes:
       expect(result.errors[0]).toMatch(/not an object/);
     });
 
+    it('rejects YAML arrays', async () => {
+      const path = await writeYaml('bad.yaml', `- item1\n- item2`);
+      const result = await importFile(graph, path);
+      expect(result.valid).toBe(false);
+      expect(result.errors[0]).toMatch(/not an object/);
+    });
+
     it('reports file not found', async () => {
       const result = await importFile(graph, '/nonexistent/file.yaml');
       expect(result.valid).toBe(false);
@@ -280,6 +287,20 @@ nodes:
       expect(props.get('priority')).toBe('high');
     });
 
+    it('rejects array-typed node properties', async () => {
+      const path = await writeYaml('bad.yaml', `
+version: 1
+nodes:
+  - id: "task:auth"
+    properties:
+      - "not"
+      - "a map"
+`);
+      const result = await importFile(graph, path);
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(expect.stringMatching(/properties.*must be a plain object/));
+    });
+
     it('handles version-only file with no nodes or edges', async () => {
       const path = await writeYaml('empty.yaml', `version: 1`);
       const result = await importFile(graph, path);
@@ -340,6 +361,25 @@ edges:
 
       expect(nodes.length).toBe(2);
       expect(edges.length).toBe(1);
+    });
+
+    it('uses importedAt instead of createdAt for edge timestamps', async () => {
+      const path = await writeYaml('graph.yaml', `
+version: 1
+nodes:
+  - id: "spec:auth"
+  - id: "file:auth.js"
+edges:
+  - source: "file:auth.js"
+    target: "spec:auth"
+    type: "implements"
+`);
+      await importFile(graph, path);
+      const edges1 = await graph.getEdges();
+      const ts1 = edges1[0].props.importedAt;
+
+      expect(ts1).toBeDefined();
+      expect(edges1[0].props.createdAt).toBeUndefined();
     });
   });
 

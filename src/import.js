@@ -29,7 +29,7 @@ export async function parseImportFile(filePath) {
   try {
     const raw = await readFile(filePath, 'utf-8');
     const data = yaml.load(raw);
-    if (data === null || data === undefined || typeof data !== 'object') {
+    if (data === null || data === undefined || typeof data !== 'object' || Array.isArray(data)) {
       return { data: null, parseError: 'YAML file is empty or not an object' };
     }
     return { data, parseError: null };
@@ -85,6 +85,13 @@ export async function validateImportData(data, graph) {
         errors.push(`nodes[${i}]: ${v.error}`);
         continue;
       }
+      // Validate properties if provided
+      if (node.properties !== undefined && node.properties !== null) {
+        if (typeof node.properties !== 'object' || Array.isArray(node.properties)) {
+          errors.push(`nodes[${i}].properties: must be a plain object, not ${Array.isArray(node.properties) ? 'an array' : typeof node.properties}`);
+        }
+      }
+
       // Prefix warning
       const prefix = extractPrefix(node.id);
       if (prefix && classifyPrefix(prefix) === 'unknown') {
@@ -109,11 +116,17 @@ export async function validateImportData(data, graph) {
         continue;
       }
 
-      // Required fields
-      if (!edge.source) errors.push(`edges[${i}]: missing required field "source"`);
-      if (!edge.target) errors.push(`edges[${i}]: missing required field "target"`);
-      if (!edge.type) errors.push(`edges[${i}]: missing required field "type"`);
-      if (!edge.source || !edge.target || !edge.type) continue;
+      // Required fields — collect missing, skip further checks if any absent
+      const missing = [];
+      if (!edge.source) missing.push('source');
+      if (!edge.target) missing.push('target');
+      if (!edge.type) missing.push('type');
+      if (missing.length > 0) {
+        for (const field of missing) {
+          errors.push(`edges[${i}]: missing required field "${field}"`);
+        }
+        continue;
+      }
 
       // Validate source/target node IDs
       const sv = validateNodeId(edge.source);
@@ -185,7 +198,7 @@ async function writeImport(graph, data) {
 
     const confidence = edge.confidence ?? 1.0;
     patch.setEdgeProperty(edge.source, edge.target, edge.type, 'confidence', confidence);
-    patch.setEdgeProperty(edge.source, edge.target, edge.type, 'createdAt', new Date().toISOString());
+    patch.setEdgeProperty(edge.source, edge.target, edge.type, 'importedAt', new Date().toISOString());
 
     if (edge.rationale) {
       patch.setEdgeProperty(edge.source, edge.target, edge.type, 'rationale', edge.rationale);

@@ -33,7 +33,7 @@ Commands:
   status                        Show graph health dashboard
     --json                      Output as JSON
   import <file>                 Import a YAML graph file
-    --dry-run                   Validate without writing
+    --dry-run, --validate       Validate without writing
     --json                      Output as JSON
   install-hooks                  Install post-commit Git hook
   suggest --ai                  AI suggestions (stub)
