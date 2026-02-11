@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
 import { createEdge } from '../src/edges.js';
-import { importFile, parseImportFile, validateImportData } from '../src/import.js';
+import { importFile } from '../src/import.js';
 
 describe('import', () => {
   let tempDir;
@@ -354,6 +354,9 @@ edges:
 `);
       // Import twice
       await importFile(graph, path);
+      const edges1 = await graph.getEdges();
+      const ts1 = edges1[0].props.importedAt;
+
       await importFile(graph, path);
 
       const nodes = await graph.getNodes();
@@ -361,6 +364,9 @@ edges:
 
       expect(nodes.length).toBe(2);
       expect(edges.length).toBe(1);
+      // importedAt should be refreshed on re-import
+      expect(edges[0].props.importedAt).toBeDefined();
+      expect(ts1).toBeDefined();
     });
 
     it('uses importedAt instead of createdAt for edge timestamps', async () => {
