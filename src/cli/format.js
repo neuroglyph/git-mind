@@ -179,3 +179,38 @@ export function formatStatus(status) {
 
   return lines.join('\n');
 }
+
+/**
+ * Format an import result for terminal display.
+ * @param {import('../import.js').ImportResult} result
+ * @returns {string}
+ */
+export function formatImportResult(result) {
+  const lines = [];
+
+  if (result.dryRun) {
+    lines.push(chalk.bold('Import dry run'));
+  } else {
+    lines.push(chalk.bold('Import'));
+  }
+
+  if (!result.valid) {
+    lines.push(`${chalk.red(figures.cross)} Validation failed`);
+    for (const err of result.errors) {
+      lines.push(`  ${chalk.red(figures.cross)} ${err}`);
+    }
+  } else {
+    if (result.dryRun) {
+      lines.push(`${chalk.green(figures.tick)} Validation passed`);
+      lines.push(`  Would import: ${result.stats.nodes} node(s), ${result.stats.edges} edge(s)`);
+    } else {
+      lines.push(`${chalk.green(figures.tick)} Imported ${result.stats.nodes} node(s), ${result.stats.edges} edge(s)`);
+    }
+  }
+
+  for (const w of result.warnings) {
+    lines.push(`  ${chalk.yellow(figures.warning)} ${w}`);
+  }
+
+  return lines.join('\n');
+}
