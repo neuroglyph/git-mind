@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, installHooks, processCommitCmd, suggest, review } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, installHooks, processCommitCmd, suggest, review } from '../src/cli/commands.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -26,6 +26,10 @@ Commands:
     --type <type>               Filter by edge type
     --source <node>             Filter by source node
     --target <node>             Filter by target node
+  nodes                         List and inspect nodes
+    --prefix <prefix>           Filter by prefix (e.g. task, spec)
+    --id <nodeId>               Show details for a single node
+    --json                      Output as JSON
   install-hooks                  Install post-commit Git hook
   suggest --ai                  AI suggestions (stub)
   review                        Review edges (stub)
@@ -94,6 +98,18 @@ switch (command) {
       type: listFlags.type,
       source: listFlags.source,
       target: listFlags.target,
+    });
+    break;
+  }
+
+  case 'nodes': {
+    const jsonMode = args.includes('--json');
+    const nodesArgs = args.slice(1).filter(a => a !== '--json');
+    const nodesFlags = parseFlags(nodesArgs);
+    await nodes(cwd, {
+      prefix: nodesFlags.prefix,
+      id: nodesFlags.id,
+      json: jsonMode,
     });
     break;
   }

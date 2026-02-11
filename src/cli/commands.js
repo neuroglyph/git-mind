@@ -8,9 +8,10 @@ import { writeFile, chmod, access, constants } from 'node:fs/promises';
 import { join } from 'node:path';
 import { initGraph, loadGraph } from '../graph.js';
 import { createEdge, queryEdges, removeEdge, EDGE_TYPES } from '../edges.js';
+import { getNodes, hasNode, getNode, getNodesByPrefix } from '../nodes.js';
 import { renderView, listViews } from '../views.js';
 import { processCommit } from '../hooks.js';
-import { success, error, info, formatEdge, formatView } from './format.js';
+import { success, error, info, formatEdge, formatView, formatNode, formatNodeList } from './format.js';
 
 /**
  * Initialize a git-mind graph in the current repo.
@@ -174,6 +175,54 @@ export async function processCommitCmd(cwd, sha) {
     }
   } catch (err) {
     console.error(error(`Failed to process commit: ${err.message}`));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * List and inspect nodes in the graph.
+ * @param {string} cwd
+ * @param {{ prefix?: string, id?: string, json?: boolean }} opts
+ */
+export async function nodes(cwd, opts = {}) {
+  try {
+    const graph = await loadGraph(cwd);
+
+    // Single node detail
+    if (opts.id) {
+      const node = await getNode(graph, opts.id);
+      if (!node) {
+        console.error(error(`Node not found: ${opts.id}`));
+        process.exitCode = 1;
+        return;
+      }
+      if (opts.json) {
+        console.log(JSON.stringify(node, null, 2));
+      } else {
+        console.log(formatNode(node));
+      }
+      return;
+    }
+
+    // List nodes (optionally filtered by prefix)
+    const nodeList = opts.prefix
+      ? await getNodesByPrefix(graph, opts.prefix)
+      : await getNodes(graph);
+
+    if (opts.json) {
+      console.log(JSON.stringify(nodeList, null, 2));
+      return;
+    }
+
+    if (nodeList.length === 0) {
+      console.log(info('No nodes found'));
+      return;
+    }
+
+    console.log(info(`${nodeList.length} node(s):`));
+    console.log(formatNodeList(nodeList));
+  } catch (err) {
+    console.error(error(err.message));
     process.exitCode = 1;
   }
 }

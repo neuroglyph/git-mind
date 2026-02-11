@@ -89,3 +89,34 @@ export function formatView(viewName, result) {
 
   return lines.join('\n');
 }
+
+/**
+ * Format a single node for terminal display.
+ * @param {import('../nodes.js').NodeInfo} node
+ * @returns {string}
+ */
+export function formatNode(node) {
+  const lines = [];
+  lines.push(`  ${chalk.cyan(node.id)}`);
+  lines.push(`    prefix: ${chalk.yellow(node.prefix)} ${chalk.dim(`(${node.prefixClass})`)}`);
+
+  const propKeys = Object.keys(node.properties);
+  if (propKeys.length > 0) {
+    lines.push(`    properties:`);
+    for (const key of propKeys) {
+      lines.push(`      ${chalk.dim(key + ':')} ${node.properties[key]}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Format a list of node IDs for terminal display.
+ * @param {string[]} nodes
+ * @returns {string}
+ */
+export function formatNodeList(nodes) {
+  if (nodes.length === 0) return chalk.dim('  (none)');
+  return nodes.map(n => `  ${chalk.cyan(n)}`).join('\n');
+}
