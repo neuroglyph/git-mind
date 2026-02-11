@@ -1,0 +1,11 @@
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    poolOptions: {
+      forks: {
+        execArgv: ['--disable-warning=DEP0169'],
+      },
+    },
+  },
+});

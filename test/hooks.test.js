@@ -10,28 +10,28 @@ import { parseDirectives, processCommit } from '../src/hooks.js';
 describe('hooks', () => {
   describe('parseDirectives', () => {
     it('parses IMPLEMENTS directive', () => {
-      const result = parseDirectives('fix auth flow\n\nIMPLEMENTS: docs/auth-spec.md');
+      const result = parseDirectives('fix auth flow\n\nIMPLEMENTS: spec:auth');
       expect(result).toEqual([
-        { type: 'implements', target: 'docs/auth-spec.md' },
+        { type: 'implements', target: 'spec:auth' },
       ]);
     });
 
     it('parses multiple directives', () => {
       const msg = `refactor auth module
 
-IMPLEMENTS: docs/auth-spec.md
-AUGMENTS: docs/security.md
-RELATES-TO: src/session.js`;
+IMPLEMENTS: spec:auth
+AUGMENTS: module:security
+RELATES-TO: module:session`;
 
       const result = parseDirectives(msg);
       expect(result.length).toBe(3);
-      expect(result[0]).toEqual({ type: 'implements', target: 'docs/auth-spec.md' });
-      expect(result[1]).toEqual({ type: 'augments', target: 'docs/security.md' });
-      expect(result[2]).toEqual({ type: 'relates-to', target: 'src/session.js' });
+      expect(result[0]).toEqual({ type: 'implements', target: 'spec:auth' });
+      expect(result[1]).toEqual({ type: 'augments', target: 'module:security' });
+      expect(result[2]).toEqual({ type: 'relates-to', target: 'module:session' });
     });
 
     it('is case-insensitive for directives', () => {
-      const result = parseDirectives('implements: foo.md');
+      const result = parseDirectives('implements: spec:foo');
       expect(result.length).toBe(1);
       expect(result[0].type).toBe('implements');
     });
@@ -49,9 +49,9 @@ RELATES-TO: src/session.js`;
     });
 
     it('handles DOCUMENTS directive', () => {
-      const result = parseDirectives('DOCUMENTS: api/endpoints.md');
+      const result = parseDirectives('DOCUMENTS: doc:api-endpoints');
       expect(result).toEqual([
-        { type: 'documents', target: 'api/endpoints.md' },
+        { type: 'documents', target: 'doc:api-endpoints' },
       ]);
     });
   });
@@ -73,7 +73,7 @@ RELATES-TO: src/session.js`;
     it('creates edges from commit directives', async () => {
       const directives = await processCommit(graph, {
         sha: 'abc123def456',
-        message: 'add login\n\nIMPLEMENTS: docs/auth.md',
+        message: 'add login\n\nIMPLEMENTS: spec:auth',
       });
 
       expect(directives.length).toBe(1);
@@ -81,7 +81,7 @@ RELATES-TO: src/session.js`;
       const edges = await queryEdges(graph);
       expect(edges.length).toBe(1);
       expect(edges[0].from).toBe('commit:abc123def456');
-      expect(edges[0].to).toBe('docs/auth.md');
+      expect(edges[0].to).toBe('spec:auth');
       expect(edges[0].label).toBe('implements');
       expect(edges[0].props.confidence).toBe(0.8);
     });

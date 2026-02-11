@@ -3,17 +3,9 @@
  * Edge creation, querying, and removal for git-mind.
  */
 
-/** @type {string[]} */
-export const EDGE_TYPES = [
-  'implements',
-  'augments',
-  'relates-to',
-  'blocks',
-  'belongs-to',
-  'consumed-by',
-  'depends-on',
-  'documents',
-];
+import { validateEdge } from './validators.js';
+
+export { EDGE_TYPES } from './validators.js';
 
 /**
  * @typedef {object} EdgeInput
@@ -33,11 +25,12 @@ export const EDGE_TYPES = [
  * @returns {Promise<void>}
  */
 export async function createEdge(graph, { source, target, type, confidence = 1.0, rationale }) {
-  if (!EDGE_TYPES.includes(type)) {
-    throw new Error(`Unknown edge type: "${type}". Valid types: ${EDGE_TYPES.join(', ')}`);
+  const result = validateEdge(source, target, type, confidence);
+  if (!result.valid) {
+    throw new Error(result.errors.join('; '));
   }
-  if (confidence < 0 || confidence > 1) {
-    throw new Error(`Confidence must be between 0.0 and 1.0, got ${confidence}`);
+  for (const warning of result.warnings) {
+    console.warn(`[git-mind] ${warning}`);
   }
 
   const patch = await graph.createPatch();
