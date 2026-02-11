@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, nodes, installHooks, processCommitCmd, suggest, review } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, status, installHooks, processCommitCmd, suggest, review } from '../src/cli/commands.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -29,6 +29,8 @@ Commands:
   nodes                         List and inspect nodes
     --prefix <prefix>           Filter by prefix (e.g. task, spec)
     --id <nodeId>               Show details for a single node
+    --json                      Output as JSON
+  status                        Show graph health dashboard
     --json                      Output as JSON
   install-hooks                  Install post-commit Git hook
   suggest --ai                  AI suggestions (stub)
@@ -113,6 +115,10 @@ switch (command) {
     });
     break;
   }
+
+  case 'status':
+    await status(cwd, { json: args.includes('--json') });
+    break;
 
   case 'install-hooks':
     await installHooks(cwd);

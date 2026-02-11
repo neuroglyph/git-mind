@@ -9,9 +9,10 @@ import { join } from 'node:path';
 import { initGraph, loadGraph } from '../graph.js';
 import { createEdge, queryEdges, removeEdge, EDGE_TYPES } from '../edges.js';
 import { getNodes, hasNode, getNode, getNodesByPrefix } from '../nodes.js';
+import { computeStatus } from '../status.js';
 import { renderView, listViews } from '../views.js';
 import { processCommit } from '../hooks.js';
-import { success, error, info, formatEdge, formatView, formatNode, formatNodeList } from './format.js';
+import { success, error, info, formatEdge, formatView, formatNode, formatNodeList, formatStatus } from './format.js';
 
 /**
  * Initialize a git-mind graph in the current repo.
@@ -221,6 +222,27 @@ export async function nodes(cwd, opts = {}) {
 
     console.log(info(`${nodeList.length} node(s):`));
     console.log(formatNodeList(nodeList));
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Show graph status dashboard.
+ * @param {string} cwd
+ * @param {{ json?: boolean }} opts
+ */
+export async function status(cwd, opts = {}) {
+  try {
+    const graph = await loadGraph(cwd);
+    const result = await computeStatus(graph);
+
+    if (opts.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(formatStatus(result));
+    }
   } catch (err) {
     console.error(error(err.message));
     process.exitCode = 1;
