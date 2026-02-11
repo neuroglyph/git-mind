@@ -140,6 +140,16 @@ describe('views', () => {
       expect(result.meta.milestoneStats['milestone:M1'].blockers).toContain('task:blocker');
     });
 
+    it('includes features in milestone stats', async () => {
+      await createEdge(graph, { source: 'task:a', target: 'milestone:M1', type: 'belongs-to' });
+      await createEdge(graph, { source: 'feature:login', target: 'milestone:M1', type: 'belongs-to' });
+      await createEdge(graph, { source: 'feature:login', target: 'spec:auth', type: 'implements' });
+
+      const result = await renderView(graph, 'milestone');
+      expect(result.meta.milestoneStats['milestone:M1'].total).toBe(2);
+      expect(result.meta.milestoneStats['milestone:M1'].done).toBe(1);
+    });
+
     it('handles milestone with no tasks', async () => {
       // Create a milestone node by linking it to something
       await createEdge(graph, { source: 'milestone:empty', target: 'spec:x', type: 'relates-to' });
@@ -203,6 +213,16 @@ describe('views', () => {
       await createEdge(graph, { source: 'task:b', target: 'task:a', type: 'blocks' });
 
       const result = await renderView(graph, 'blockers');
+      expect(result.meta.cycles.length).toBeGreaterThan(0);
+    });
+
+    it('handles a root blocker leading into a cycle', async () => {
+      await createEdge(graph, { source: 'task:root', target: 'task:a', type: 'blocks' });
+      await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'blocks' });
+      await createEdge(graph, { source: 'task:b', target: 'task:a', type: 'blocks' });
+
+      const result = await renderView(graph, 'blockers');
+      expect(result.meta.rootBlockers).toContain('task:root');
       expect(result.meta.cycles.length).toBeGreaterThan(0);
     });
 

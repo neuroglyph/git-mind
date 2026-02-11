@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`buildChain` stack overflow on cyclic graphs** — Root blocker leading into a cycle (e.g., `C → A → B → A`) caused infinite recursion; added visited guard (#189)
+- **Duplicate cycle reports in blockers view** — Per-root DFS visited sets caused the same cycle to be reported from multiple entry points; switched to global visited set (#189)
+- **O(n*m) lookups in traceability/onboarding views** — Replaced `Array.includes()` with `Set.has()` for spec and sorted membership checks (#189)
 - **YAML arrays now rejected by `parseImportFile`** — `typeof [] === 'object'` no longer bypasses the guard; arrays produce "not an object" error instead of a confusing "Missing version" (#187)
 - **Array-typed `node.properties` rejected during validation** — `validateImportData` now rejects arrays in `properties`, preventing `Object.entries` from writing numeric-indexed keys (#187)
 - **Edge `createdAt` renamed to `importedAt`** — The timestamp on imported edges now honestly reflects import time; avoids misleading "creation" semantics on re-import (#187)
@@ -40,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`isLowConfidence()` shared helper** — Low-confidence threshold (`< 0.5`) extracted from `status.js` and `views.js` into `validators.js` to keep the threshold in one place (#185)
 - **`createEdge()` now validates all inputs** — Node IDs must use `prefix:identifier` format, confidence must be a finite number, self-edges rejected for blocking types
 - **`EDGE_TYPES` canonical source** moved to `validators.js` (re-exported from `edges.js` for backwards compatibility)
-- **Test count** — 136 tests across 8 files (was 74)
+- **Test count** — 138 tests across 8 files (was 74)
 
 ## [2.0.0-alpha.0] - 2026-02-07
 

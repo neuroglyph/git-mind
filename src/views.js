@@ -146,8 +146,8 @@ defineView('suggestions', (nodes, edges) => {
 // ── PRISM views ─────────────────────────────────────────────────
 
 defineView('milestone', (nodes, edges) => {
-  // Milestone progress: find milestones, their child tasks (belongs-to),
-  // and compute completion stats per milestone.
+  // Milestone progress: find milestones and their children (tasks + features
+  // linked via belongs-to), then compute completion stats per milestone.
   const milestones = nodes.filter(n => n.startsWith('milestone:'));
   const tasks = nodes.filter(n => n.startsWith('task:'));
   const features = nodes.filter(n => n.startsWith('feature:'));
@@ -195,6 +195,7 @@ defineView('traceability', (nodes, edges) => {
   // Spec-to-implementation gap analysis.
   // Find specs, then check which have 'implements' edges pointing at them.
   const specs = nodes.filter(n => n.startsWith('spec:') || n.startsWith('adr:'));
+  const specSet = new Set(specs);
   const implementsEdges = edges.filter(e => e.label === 'implements');
 
   const implemented = new Set(implementsEdges.map(e => e.to));
@@ -204,12 +205,12 @@ defineView('traceability', (nodes, edges) => {
   // Include all implements edges + the spec/impl nodes
   const implNodes = new Set(specs);
   for (const e of implementsEdges) {
-    if (specs.includes(e.to)) {
+    if (specSet.has(e.to)) {
       implNodes.add(e.from);
     }
   }
 
-  const relevantEdges = implementsEdges.filter(e => specs.includes(e.to));
+  const relevantEdges = implementsEdges.filter(e => specSet.has(e.to));
 
   return {
     nodes: [...implNodes],
@@ -239,8 +240,8 @@ defineView('blockers', (nodes, edges) => {
   const allInvolved = new Set();
 
   // DFS from each node that has outgoing blocks edges
+  const visited = new Set();
   for (const root of adj.keys()) {
-    const visited = new Set();
     const path = [];
 
     const dfs = (node) => {
@@ -272,7 +273,10 @@ defineView('blockers', (nodes, edges) => {
 
   for (const root of roots) {
     const chain = [];
+    const seen = new Set();
     const buildChain = (node, depth) => {
+      if (seen.has(node)) return;
+      seen.add(node);
       chain.push({ node, depth });
       for (const t of (adj.get(node) || [])) {
         buildChain(t, depth + 1);
@@ -330,9 +334,11 @@ defineView('onboarding', (nodes, edges) => {
   queue.sort(); // deterministic tie-break: alphabetical
 
   const sorted = [];
+  const sortedSet = new Set();
   while (queue.length > 0) {
     const node = queue.shift();
     sorted.push(node);
+    sortedSet.add(node);
     for (const next of (adj.get(node) || [])) {
       const newDeg = inDegree.get(next) - 1;
       inDegree.set(next, newDeg);
@@ -346,7 +352,7 @@ defineView('onboarding', (nodes, edges) => {
   }
 
   // Nodes not reached (part of a cycle) go at the end
-  const remaining = docNodes.filter(n => !sorted.includes(n)).sort();
+  const remaining = docNodes.filter(n => !sortedSet.has(n)).sort();
 
   return {
     nodes: [...sorted, ...remaining],
