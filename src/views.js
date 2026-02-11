@@ -326,7 +326,7 @@ defineView('onboarding', (nodes, edges) => {
   // or pointing to doc nodes
   const relevantTypes = new Set(['depends-on', 'documents', 'implements']);
   const docEdges = edges.filter(e =>
-    relevantTypes.has(e.label) && (docSet.has(e.from) || docSet.has(e.to))
+    relevantTypes.has(e.label) && docSet.has(e.from) && docSet.has(e.to)
   );
 
   // Build dependency graph for topological sort

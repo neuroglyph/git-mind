@@ -300,6 +300,19 @@ describe('views', () => {
       expect(result.meta.hasCycles).toBe(false);
     });
 
+    it('returns edges as a self-contained subgraph', async () => {
+      await createEdge(graph, { source: 'spec:a', target: 'spec:b', type: 'depends-on' });
+      // implements edge from a non-doc node into a doc node
+      await createEdge(graph, { source: 'file:auth.js', target: 'spec:a', type: 'implements' });
+
+      const result = await renderView(graph, 'onboarding');
+      const nodeSet = new Set(result.nodes);
+      for (const e of result.edges) {
+        expect(nodeSet.has(e.from)).toBe(true);
+        expect(nodeSet.has(e.to)).toBe(true);
+      }
+    });
+
     it('detects cycles in doc dependencies', async () => {
       await createEdge(graph, { source: 'spec:a', target: 'spec:b', type: 'depends-on' });
       await createEdge(graph, { source: 'spec:b', target: 'spec:a', type: 'depends-on' });
