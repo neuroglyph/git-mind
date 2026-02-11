@@ -15,7 +15,7 @@ import { createEdge } from './edges.js';
  * Supported directive patterns in commit messages.
  * Format: `DIRECTIVE: <target>`
  */
-const DIRECTIVE_PATTERN = /^(IMPLEMENTS|AUGMENTS|RELATES-TO|BLOCKS|DEPENDS-ON|DOCUMENTS):\s*(.+)$/gmi;
+const DIRECTIVE_PATTERN = /^(IMPLEMENTS|AUGMENTS|RELATES-TO|BLOCKS|DEPENDS-ON|DOCUMENTS):\s*(\S.*)$/gmi;
 
 /**
  * Parse directives from a commit message.
