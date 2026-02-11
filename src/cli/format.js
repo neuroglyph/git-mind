@@ -120,3 +120,62 @@ export function formatNodeList(nodes) {
   if (nodes.length === 0) return chalk.dim('  (none)');
   return nodes.map(n => `  ${chalk.cyan(n)}`).join('\n');
 }
+
+/**
+ * Format a graph status summary for terminal display.
+ * @param {import('../status.js').GraphStatus} status
+ * @returns {string}
+ */
+export function formatStatus(status) {
+  const lines = [];
+
+  // Header
+  lines.push(chalk.bold('Graph Status'));
+  lines.push(chalk.dim('═'.repeat(32)));
+  lines.push('');
+
+  // Nodes section
+  lines.push(`${chalk.bold('Nodes:')} ${status.nodes.total}`);
+  const prefixes = Object.entries(status.nodes.byPrefix)
+    .sort(([, a], [, b]) => b - a);
+  for (const [prefix, count] of prefixes) {
+    const pct = status.nodes.total > 0
+      ? Math.round((count / status.nodes.total) * 100)
+      : 0;
+    lines.push(`  ${chalk.yellow(prefix.padEnd(14))} ${String(count).padStart(3)}  ${chalk.dim(`(${pct}%)`)}`);
+  }
+  lines.push('');
+
+  // Edges section
+  lines.push(`${chalk.bold('Edges:')} ${status.edges.total}`);
+  const types = Object.entries(status.edges.byType)
+    .sort(([, a], [, b]) => b - a);
+  for (const [type, count] of types) {
+    lines.push(`  ${chalk.yellow(type.padEnd(14))} ${String(count).padStart(3)}`);
+  }
+  lines.push('');
+
+  // Health section
+  lines.push(chalk.bold('Health'));
+  const { blockedItems, lowConfidence, orphanNodes } = status.health;
+
+  if (blockedItems > 0) {
+    lines.push(`  ${chalk.yellow(figures.warning)} ${blockedItems} blocked item(s)`);
+  } else {
+    lines.push(`  ${chalk.green(figures.tick)} No blocked items`);
+  }
+
+  if (lowConfidence > 0) {
+    lines.push(`  ${chalk.yellow(figures.warning)} ${lowConfidence} low-confidence edge(s)`);
+  } else {
+    lines.push(`  ${chalk.green(figures.tick)} No low-confidence edges`);
+  }
+
+  if (orphanNodes > 0) {
+    lines.push(`  ${chalk.yellow(figures.warning)} ${orphanNodes} orphan node(s)`);
+  } else {
+    lines.push(`  ${chalk.green(figures.tick)} No orphan nodes`);
+  }
+
+  return lines.join('\n');
+}
