@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Node query API** — `src/nodes.js` promotes nodes from implicit edge endpoints to first-class queryable entities: `getNodes()`, `hasNode()`, `getNode()`, `getNodesByPrefix()`
+- **`getNode()` returns full node info** — ID, extracted prefix, prefix classification (`canonical`/`system`/`unknown`), and properties from the materialized graph
+- **`git mind nodes` command** — List and inspect nodes with `--prefix <prefix>` filtering, `--id <nodeId>` single-node detail, and `--json` output
+- **Node formatting** — `formatNode()` and `formatNodeList()` in `src/cli/format.js` for terminal display
 - **Schema validators** — `src/validators.js` enforces GRAPH_SCHEMA.md at runtime: node ID grammar (`prefix:identifier`), edge type validation, confidence type safety (rejects NaN/Infinity/strings), self-edge rejection for `blocks` and `depends-on`, prefix classification with warnings for unknown prefixes
 - **Validator exports** — `validateNodeId`, `validateEdgeType`, `validateConfidence`, `validateEdge`, `extractPrefix`, `classifyPrefix`, plus constants `NODE_ID_REGEX`, `NODE_ID_MAX_LENGTH`, `CANONICAL_PREFIXES`, `SYSTEM_PREFIXES`
 
@@ -16,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`createEdge()` now validates all inputs** — Node IDs must use `prefix:identifier` format, confidence must be a finite number, self-edges rejected for blocking types
 - **`EDGE_TYPES` canonical source** moved to `validators.js` (re-exported from `edges.js` for backwards compatibility)
+- **Test count** — 87 tests across 6 files (was 74)
 
 ## [2.0.0-alpha.0] - 2026-02-07
 
