@@ -44,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`createEdge()` now validates all inputs** — Node IDs must use `prefix:identifier` format, confidence must be a finite number, self-edges rejected for blocking types
 - **`EDGE_TYPES` canonical source** moved to `validators.js` (re-exported from `edges.js` for backwards compatibility)
 - **`resetViews()` for test cleanup** — Removes test-registered views from the module-level registry, restoring built-in-only state (#189)
+- **`builtInNames` initialized defensively** — Prevents `TypeError` if `resetViews()` is called before module finishes init (#189)
+- **Removed dead `|| 0` fallback in onboarding view** — `inDegree` map is pre-initialized for all doc nodes, so the guard was unreachable (#189)
 - **Test count** — 140 tests across 8 files (was 74)
 
 ## [2.0.0-alpha.0] - 2026-02-07
