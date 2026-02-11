@@ -53,6 +53,11 @@ describe('views', () => {
     expect(result.edges).toEqual([]);
   });
 
+  it('declareView throws on missing or empty prefixes', () => {
+    expect(() => declareView('bad-view', {})).toThrow('prefixes must be a non-empty array');
+    expect(() => declareView('bad-view', { prefixes: [] })).toThrow('prefixes must be a non-empty array');
+  });
+
   it('declareView registers a config-based view', async () => {
     declareView('declared-test', {
       prefixes: ['pkg'],

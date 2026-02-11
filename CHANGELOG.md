@@ -48,7 +48,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Removed dead `|| 0` fallback in onboarding view** — `inDegree` map is pre-initialized for all doc nodes, so the guard was unreachable (#189)
 - **Milestone view returns self-contained subgraph** — Edge filter tightened from `||` to `&&` so returned edges only reference nodes in the result; eliminates dangling `implements` references to spec nodes (#189)
 - **Onboarding view returns self-contained subgraph** — Same `||` → `&&` fix applied to `docEdges` filter; prevents non-doc nodes (e.g., `file:`) from appearing as dangling edge endpoints (#189)
-- **Test count** — 142 tests across 8 files (was 74)
+- **`declareView` validates `config.prefixes`** — Throws on missing or empty prefixes array, surfacing misconfiguration early (#189)
+- **Milestone view O(M×E) → O(E+M) edge lookups** — Pre-indexes `belongs-to` and `blocks` edges by target before the milestone loop (#189)
+- **Onboarding ordering loop uses pre-filtered `docEdges`** — Eliminates redundant `docSet.has()` checks in dependency graph construction (#189)
+- **Test count** — 143 tests across 8 files (was 74)
 
 ## [2.0.0-alpha.0] - 2026-02-07
 

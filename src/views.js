@@ -57,6 +57,9 @@ export function defineView(name, filterFn) {
  * @param {ViewConfig} config
  */
 export function declareView(name, config) {
+  if (!Array.isArray(config.prefixes) || config.prefixes.length === 0) {
+    throw new Error(`declareView("${name}"): config.prefixes must be a non-empty array`);
+  }
   const prefixSet = new Set(config.prefixes);
   const typeSet = config.edgeTypes ? new Set(config.edgeTypes) : null;
   const bothEndpoints = config.requireBothEndpoints ?? false;
@@ -176,23 +179,37 @@ defineView('milestone', (nodes, edges) => {
     edges.filter(e => e.label === 'implements').map(e => e.from)
   );
 
+  // Pre-index belongs-to and blocks edges by target for O(E + M) lookups
+  const belongsToByTarget = new Map();
+  const blocksByTarget = new Map();
+  for (const e of edges) {
+    if (e.label === 'belongs-to') {
+      if (!belongsToByTarget.has(e.to)) belongsToByTarget.set(e.to, []);
+      belongsToByTarget.get(e.to).push(e);
+    } else if (e.label === 'blocks') {
+      if (!blocksByTarget.has(e.to)) blocksByTarget.set(e.to, []);
+      blocksByTarget.get(e.to).push(e);
+    }
+  }
+
   // Compute per-milestone stats
   const milestoneStats = {};
   for (const m of milestones) {
     // Tasks and features that belong-to this milestone
-    const children = edges
-      .filter(e => e.label === 'belongs-to' && e.to === m
-        && (e.from.startsWith('task:') || e.from.startsWith('feature:')))
+    const children = (belongsToByTarget.get(m) || [])
+      .filter(e => e.from.startsWith('task:') || e.from.startsWith('feature:'))
       .map(e => e.from);
 
     // A child is "done" if it has at least one 'implements' edge pointing from it
     const done = children.filter(child => hasImplements.has(child));
 
     // Blockers: tasks that block children of this milestone
-    const childSet = new Set(children);
-    const blockers = edges
-      .filter(e => e.label === 'blocks' && childSet.has(e.to))
-      .map(e => e.from);
+    const blockers = [];
+    for (const child of children) {
+      for (const e of (blocksByTarget.get(child) || [])) {
+        blockers.push(e.from);
+      }
+    }
 
     milestoneStats[m] = {
       total: children.length,
@@ -339,9 +356,8 @@ defineView('onboarding', (nodes, edges) => {
     adj.set(n, []);
   }
 
-  for (const e of edges) {
-    // Only consider depends-on between doc nodes for ordering
-    if (e.label === 'depends-on' && docSet.has(e.from) && docSet.has(e.to)) {
+  for (const e of docEdges) {
+    if (e.label === 'depends-on') {
       adj.get(e.to).push(e.from); // B should come before A
       inDegree.set(e.from, inDegree.get(e.from) + 1);
     }
