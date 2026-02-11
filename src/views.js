@@ -109,7 +109,7 @@ export function listViews() {
 }
 
 /** @type {Set<string>} Built-in view names, captured after registration */
-let builtInNames;
+let builtInNames = new Set();
 
 /**
  * Remove all views that were not registered at module load time.
@@ -342,7 +342,7 @@ defineView('onboarding', (nodes, edges) => {
     // Only consider depends-on between doc nodes for ordering
     if (e.label === 'depends-on' && docSet.has(e.from) && docSet.has(e.to)) {
       adj.get(e.to).push(e.from); // B should come before A
-      inDegree.set(e.from, (inDegree.get(e.from) || 0) + 1);
+      inDegree.set(e.from, inDegree.get(e.from) + 1);
     }
   }
 

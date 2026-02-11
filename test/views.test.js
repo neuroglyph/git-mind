@@ -121,7 +121,7 @@ describe('views', () => {
     it('shows milestones with completion stats', async () => {
       await createEdge(graph, { source: 'task:a', target: 'milestone:M1', type: 'belongs-to' });
       await createEdge(graph, { source: 'task:b', target: 'milestone:M1', type: 'belongs-to' });
-      // task:a implements something (counts as done)
+      // Completion heuristic: a child is "done" if it has an outgoing 'implements' edge
       await createEdge(graph, { source: 'task:a', target: 'spec:x', type: 'implements' });
 
       const result = await renderView(graph, 'milestone');
@@ -167,6 +167,7 @@ describe('views', () => {
       const result = await renderView(graph, 'milestone');
       expect(result.meta.milestoneStats['milestone:empty'].total).toBe(0);
       expect(result.meta.milestoneStats['milestone:empty'].pct).toBe(0);
+      expect(result.meta.milestoneStats['milestone:empty'].blockers).toEqual([]);
     });
   });
 
