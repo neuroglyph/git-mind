@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
 import { createEdge } from '../src/edges.js';
-import { renderView, listViews, defineView, declareView } from '../src/views.js';
+import { renderView, listViews, defineView, declareView, resetViews } from '../src/views.js';
 
 describe('views', () => {
   let tempDir;
@@ -18,6 +18,7 @@ describe('views', () => {
   });
 
   afterEach(async () => {
+    resetViews();
     await rm(tempDir, { recursive: true, force: true });
   });
 
@@ -198,6 +199,14 @@ describe('views', () => {
       const result = await renderView(graph, 'traceability');
       expect(result.meta.gaps).toContain('adr:001');
     });
+
+    it('reports 100% coverage when no specs or ADRs exist', async () => {
+      await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'blocks' });
+
+      const result = await renderView(graph, 'traceability');
+      expect(result.meta.gaps).toEqual([]);
+      expect(result.meta.coveragePct).toBe(100);
+    });
   });
 
   // ── PRISM: blockers view ──────────────────────────────────────
@@ -249,13 +258,15 @@ describe('views', () => {
   // ── PRISM: onboarding view ────────────────────────────────────
 
   describe('onboarding view', () => {
-    it('returns topologically sorted reading order', async () => {
-      // spec:basics should come before spec:advanced (advanced depends on basics)
-      await createEdge(graph, { source: 'spec:advanced', target: 'spec:basics', type: 'depends-on' });
+    it('returns topologically sorted reading order for a 3-node chain', async () => {
+      // spec:a -> spec:b -> spec:c (c depends on b, b depends on a)
+      await createEdge(graph, { source: 'spec:b', target: 'spec:a', type: 'depends-on' });
+      await createEdge(graph, { source: 'spec:c', target: 'spec:b', type: 'depends-on' });
 
       const result = await renderView(graph, 'onboarding');
       const order = result.meta.readingOrder;
-      expect(order.indexOf('spec:basics')).toBeLessThan(order.indexOf('spec:advanced'));
+      expect(order.indexOf('spec:a')).toBeLessThan(order.indexOf('spec:b'));
+      expect(order.indexOf('spec:b')).toBeLessThan(order.indexOf('spec:c'));
     });
 
     it('includes doc and adr nodes', async () => {

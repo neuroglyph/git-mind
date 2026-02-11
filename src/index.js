@@ -14,5 +14,5 @@ export {
   NODE_ID_REGEX, NODE_ID_MAX_LENGTH, CANONICAL_PREFIXES, SYSTEM_PREFIXES, ALL_PREFIXES,
   LOW_CONFIDENCE_THRESHOLD,
 } from './validators.js';
-export { defineView, declareView, renderView, listViews } from './views.js';
+export { defineView, declareView, renderView, listViews, resetViews } from './views.js';
 export { parseDirectives, processCommit } from './hooks.js';

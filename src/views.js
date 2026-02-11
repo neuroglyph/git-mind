@@ -108,6 +108,19 @@ export function listViews() {
   return [...registry.keys()];
 }
 
+/** @type {Set<string>} Built-in view names, captured after registration */
+let builtInNames;
+
+/**
+ * Remove all views that were not registered at module load time.
+ * Intended for test cleanup.
+ */
+export function resetViews() {
+  for (const name of registry.keys()) {
+    if (!builtInNames.has(name)) registry.delete(name);
+  }
+}
+
 // ── Built-in declarative views ──────────────────────────────────
 
 declareView('roadmap', {
@@ -157,6 +170,11 @@ defineView('milestone', (nodes, edges) => {
     e => relevant.has(e.from) || relevant.has(e.to)
   );
 
+  // Pre-compute set of nodes that have an outgoing 'implements' edge
+  const hasImplements = new Set(
+    edges.filter(e => e.label === 'implements').map(e => e.from)
+  );
+
   // Compute per-milestone stats
   const milestoneStats = {};
   for (const m of milestones) {
@@ -167,9 +185,7 @@ defineView('milestone', (nodes, edges) => {
       .map(e => e.from);
 
     // A child is "done" if it has at least one 'implements' edge pointing from it
-    const done = children.filter(child =>
-      edges.some(e => e.from === child && e.label === 'implements')
-    );
+    const done = children.filter(child => hasImplements.has(child));
 
     // Blockers: tasks that block children of this milestone
     const childSet = new Set(children);
@@ -367,3 +383,6 @@ defineView('onboarding', (nodes, edges) => {
     },
   };
 });
+
+// Capture built-in names after all registrations
+builtInNames = new Set(registry.keys());
