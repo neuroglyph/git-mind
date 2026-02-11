@@ -4,6 +4,8 @@
  * Views are filtered projections of the graph.
  */
 
+import { isLowConfidence } from './validators.js';
+
 /** @type {Map<string, ViewDefinition>} */
 const registry = new Map();
 
@@ -84,10 +86,7 @@ defineView('backlog', (nodes, edges) => {
 
 defineView('suggestions', (nodes, edges) => {
   // Edges with low confidence (AI-suggested, not yet reviewed)
-  const lowConfEdges = edges.filter(e => {
-    const conf = e.props?.confidence;
-    return typeof conf === 'number' && conf < 0.5;
-  });
+  const lowConfEdges = edges.filter(isLowConfidence);
   const involvedNodes = new Set();
   for (const e of lowConfEdges) {
     involvedNodes.add(e.from);

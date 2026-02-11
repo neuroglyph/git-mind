@@ -9,8 +9,9 @@ export { getNodes, hasNode, getNode, getNodesByPrefix } from './nodes.js';
 export { computeStatus } from './status.js';
 export {
   validateNodeId, validateEdgeType, validateConfidence, validateEdge,
-  extractPrefix, classifyPrefix,
+  extractPrefix, classifyPrefix, isLowConfidence,
   NODE_ID_REGEX, NODE_ID_MAX_LENGTH, CANONICAL_PREFIXES, SYSTEM_PREFIXES, ALL_PREFIXES,
+  LOW_CONFIDENCE_THRESHOLD,
 } from './validators.js';
 export { defineView, renderView, listViews } from './views.js';
 export { parseDirectives, processCommit } from './hooks.js';

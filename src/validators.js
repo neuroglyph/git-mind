@@ -88,6 +88,20 @@ export function classifyPrefix(prefix) {
 /** @type {string[]} All known prefixes (canonical + system) */
 export const ALL_PREFIXES = [...CANONICAL_PREFIXES, ...SYSTEM_PREFIXES];
 
+/** @type {number} Threshold below which an edge is considered low-confidence */
+export const LOW_CONFIDENCE_THRESHOLD = 0.5;
+
+/**
+ * Check whether an edge has low confidence (below threshold).
+ *
+ * @param {{ props?: { confidence?: unknown } }} edge
+ * @returns {boolean}
+ */
+export function isLowConfidence(edge) {
+  const c = edge.props?.confidence;
+  return typeof c === 'number' && c < LOW_CONFIDENCE_THRESHOLD;
+}
+
 /**
  * Validate an edge type against the known set.
  *

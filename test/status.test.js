@@ -55,6 +55,21 @@ describe('status', () => {
     expect(s.nodes.byPrefix.file).toBe(1);
   });
 
+  it('groups prefix-less nodes under (none)', async () => {
+    // Nodes without a colon get the (none) bucket
+    // We need to add nodes directly since createEdge validates prefix:id format
+    const patch = await graph.createPatch();
+    patch.addNode('README');
+    patch.addNode('untagged');
+    patch.addEdge('README', 'untagged', 'relates-to');
+    await patch.commit();
+
+    const s = await computeStatus(graph);
+
+    expect(s.nodes.byPrefix['(none)']).toBe(2);
+    expect(s.nodes.total).toBe(2);
+  });
+
   it('groups edges by type', async () => {
     await createEdge(graph, { source: 'file:a.js', target: 'spec:auth', type: 'implements' });
     await createEdge(graph, { source: 'file:b.js', target: 'spec:auth', type: 'implements' });
@@ -66,14 +81,16 @@ describe('status', () => {
     expect(s.edges.byType.documents).toBe(1);
   });
 
-  it('counts blocked items', async () => {
+  it('counts blocked items as distinct targets', async () => {
     await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'blocks' });
+    await createEdge(graph, { source: 'task:c', target: 'task:b', type: 'blocks' }); // same target
     await createEdge(graph, { source: 'task:c', target: 'task:d', type: 'blocks' });
     await createEdge(graph, { source: 'task:a', target: 'spec:x', type: 'implements' });
 
     const s = await computeStatus(graph);
 
-    expect(s.health.blockedItems).toBe(2);
+    // task:b is blocked by two edges, but counts as 1 distinct target
+    expect(s.health.blockedItems).toBe(2); // task:b and task:d
   });
 
   it('counts low-confidence edges', async () => {
