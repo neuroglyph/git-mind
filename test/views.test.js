@@ -160,6 +160,19 @@ describe('views', () => {
       expect(result.meta.milestoneStats['milestone:M1'].total).toBe(1);
     });
 
+    it('returns edges as a self-contained subgraph', async () => {
+      await createEdge(graph, { source: 'task:a', target: 'milestone:M1', type: 'belongs-to' });
+      // implements edge targets spec:x which is NOT a milestone/task/feature
+      await createEdge(graph, { source: 'task:a', target: 'spec:x', type: 'implements' });
+
+      const result = await renderView(graph, 'milestone');
+      const nodeSet = new Set(result.nodes);
+      for (const e of result.edges) {
+        expect(nodeSet.has(e.from)).toBe(true);
+        expect(nodeSet.has(e.to)).toBe(true);
+      }
+    });
+
     it('handles milestone with no tasks', async () => {
       // Create a milestone node by linking it to something
       await createEdge(graph, { source: 'milestone:empty', target: 'spec:x', type: 'relates-to' });

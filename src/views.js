@@ -116,6 +116,7 @@ let builtInNames = new Set();
  * Intended for test cleanup.
  */
 export function resetViews() {
+  // Safe: ES Map iterators handle deletion of not-yet-visited entries
   for (const name of registry.keys()) {
     if (!builtInNames.has(name)) registry.delete(name);
   }
@@ -167,7 +168,7 @@ defineView('milestone', (nodes, edges) => {
   const relevant = new Set([...milestones, ...tasks, ...features]);
 
   const relevantEdges = edges.filter(
-    e => relevant.has(e.from) || relevant.has(e.to)
+    e => relevant.has(e.from) && relevant.has(e.to)
   );
 
   // Pre-compute set of nodes that have an outgoing 'implements' edge
