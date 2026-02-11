@@ -30,22 +30,22 @@ describe('edges', () => {
 
   it('createEdge creates an edge and both nodes', async () => {
     await createEdge(graph, {
-      source: 'src/auth.js',
-      target: 'docs/auth-spec.md',
+      source: 'file:src/auth.js',
+      target: 'spec:auth-spec',
       type: 'implements',
     });
 
     const edges = await queryEdges(graph);
     expect(edges.length).toBe(1);
-    expect(edges[0].from).toBe('src/auth.js');
-    expect(edges[0].to).toBe('docs/auth-spec.md');
+    expect(edges[0].from).toBe('file:src/auth.js');
+    expect(edges[0].to).toBe('spec:auth-spec');
     expect(edges[0].label).toBe('implements');
   });
 
   it('createEdge sets confidence and rationale', async () => {
     await createEdge(graph, {
-      source: 'a',
-      target: 'b',
+      source: 'task:a',
+      target: 'task:b',
       type: 'relates-to',
       confidence: 0.7,
       rationale: 'test rationale',
@@ -58,28 +58,46 @@ describe('edges', () => {
 
   it('createEdge rejects unknown edge types', async () => {
     await expect(
-      createEdge(graph, { source: 'a', target: 'b', type: 'invalid-type' })
+      createEdge(graph, { source: 'task:a', target: 'task:b', type: 'invalid-type' })
     ).rejects.toThrow(/Unknown edge type/);
   });
 
   it('createEdge rejects invalid confidence', async () => {
     await expect(
-      createEdge(graph, { source: 'a', target: 'b', type: 'relates-to', confidence: 1.5 })
-    ).rejects.toThrow(/Confidence must be between/);
+      createEdge(graph, { source: 'task:a', target: 'task:b', type: 'relates-to', confidence: 1.5 })
+    ).rejects.toThrow(/between 0\.0 and 1\.0/);
+  });
+
+  it('createEdge rejects invalid node IDs', async () => {
+    await expect(
+      createEdge(graph, { source: 'bad id', target: 'task:b', type: 'relates-to' })
+    ).rejects.toThrow(/Invalid node ID/);
+  });
+
+  it('createEdge rejects self-edge for blocks', async () => {
+    await expect(
+      createEdge(graph, { source: 'task:x', target: 'task:x', type: 'blocks' })
+    ).rejects.toThrow(/self-edge/i);
+  });
+
+  it('createEdge rejects non-number confidence', async () => {
+    await expect(
+      createEdge(graph, { source: 'task:a', target: 'task:b', type: 'relates-to', confidence: '0.9' })
+    ).rejects.toThrow(/must be a number/);
   });
 
   it('queryEdges filters by source', async () => {
-    await createEdge(graph, { source: 'a', target: 'b', type: 'relates-to' });
-    await createEdge(graph, { source: 'c', target: 'd', type: 'implements' });
+    await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'relates-to' });
+    await createEdge(graph, { source: 'task:c', target: 'task:d', type: 'implements' });
 
-    const filtered = await queryEdges(graph, { source: 'a' });
+    const filtered = await queryEdges(graph, { source: 'task:a' });
     expect(filtered.length).toBe(1);
-    expect(filtered[0].from).toBe('a');
+    expect(filtered[0].from).toBe('task:a');
   });
 
   it('queryEdges filters by type', async () => {
-    await createEdge(graph, { source: 'a', target: 'b', type: 'relates-to' });
-    await createEdge(graph, { source: 'c', target: 'd', type: 'implements' });
+    await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'relates-to' });
+    await createEdge(graph, { source: 'task:c', target: 'task:d', type: 'implements' });
 
     const filtered = await queryEdges(graph, { type: 'implements' });
     expect(filtered.length).toBe(1);
@@ -87,10 +105,10 @@ describe('edges', () => {
   });
 
   it('removeEdge removes an edge', async () => {
-    await createEdge(graph, { source: 'a', target: 'b', type: 'relates-to' });
+    await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'relates-to' });
     expect((await queryEdges(graph)).length).toBe(1);
 
-    await removeEdge(graph, 'a', 'b', 'relates-to');
+    await removeEdge(graph, 'task:a', 'task:b', 'relates-to');
     expect((await queryEdges(graph)).length).toBe(0);
   });
 });

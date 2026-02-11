@@ -35,12 +35,12 @@ describe('views', () => {
 
   it('roadmap view filters for phase/task nodes', async () => {
     await createEdge(graph, { source: 'phase:alpha', target: 'task:build-cli', type: 'blocks' });
-    await createEdge(graph, { source: 'src/main.js', target: 'docs/readme.md', type: 'documents' });
+    await createEdge(graph, { source: 'file:src/main.js', target: 'doc:readme', type: 'documents' });
 
     const result = await renderView(graph, 'roadmap');
     expect(result.nodes).toContain('phase:alpha');
     expect(result.nodes).toContain('task:build-cli');
-    expect(result.nodes).not.toContain('src/main.js');
+    expect(result.nodes).not.toContain('file:src/main.js');
   });
 
   it('architecture view filters for module nodes and depends-on edges', async () => {
@@ -55,15 +55,15 @@ describe('views', () => {
   });
 
   it('suggestions view filters for low-confidence edges', async () => {
-    await createEdge(graph, { source: 'a', target: 'b', type: 'relates-to', confidence: 0.3 });
-    await createEdge(graph, { source: 'c', target: 'd', type: 'implements', confidence: 1.0 });
+    await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'relates-to', confidence: 0.3 });
+    await createEdge(graph, { source: 'task:c', target: 'task:d', type: 'implements', confidence: 1.0 });
 
     const result = await renderView(graph, 'suggestions');
     expect(result.edges.length).toBe(1);
-    expect(result.edges[0].from).toBe('a');
-    expect(result.nodes).toContain('a');
-    expect(result.nodes).toContain('b');
-    expect(result.nodes).not.toContain('c');
+    expect(result.edges[0].from).toBe('task:a');
+    expect(result.nodes).toContain('task:a');
+    expect(result.nodes).toContain('task:b');
+    expect(result.nodes).not.toContain('task:c');
   });
 
   it('defineView registers a custom view', async () => {

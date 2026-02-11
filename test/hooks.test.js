@@ -73,7 +73,7 @@ RELATES-TO: src/session.js`;
     it('creates edges from commit directives', async () => {
       const directives = await processCommit(graph, {
         sha: 'abc123def456',
-        message: 'add login\n\nIMPLEMENTS: docs/auth.md',
+        message: 'add login\n\nIMPLEMENTS: spec:auth',
       });
 
       expect(directives.length).toBe(1);
@@ -81,7 +81,7 @@ RELATES-TO: src/session.js`;
       const edges = await queryEdges(graph);
       expect(edges.length).toBe(1);
       expect(edges[0].from).toBe('commit:abc123def456');
-      expect(edges[0].to).toBe('docs/auth.md');
+      expect(edges[0].to).toBe('spec:auth');
       expect(edges[0].label).toBe('implements');
       expect(edges[0].props.confidence).toBe(0.8);
     });
