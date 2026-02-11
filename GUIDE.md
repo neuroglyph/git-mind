@@ -12,10 +12,11 @@ Everything you need to know — from zero to power user.
 4. [Core concepts](#core-concepts)
 5. [CLI reference](#cli-reference)
 6. [Views](#views)
-7. [Commit directives](#commit-directives)
-8. [Using git-mind as a library](#using-git-mind-as-a-library)
-9. [Appendix A: How it works under the hood](#appendix-a-how-it-works-under-the-hood)
-10. [Appendix B: Edge types reference](#appendix-b-edge-types-reference)
+7. [Importing graphs from YAML](#importing-graphs-from-yaml)
+8. [Commit directives](#commit-directives)
+9. [Using git-mind as a library](#using-git-mind-as-a-library)
+10. [Appendix A: How it works under the hood](#appendix-a-how-it-works-under-the-hood)
+11. [Appendix B: Edge types reference](#appendix-b-edge-types-reference)
 
 ---
 
@@ -215,11 +216,77 @@ git mind link module:a module:b --type depends-on --confidence 0.9
 
 ### `git mind list`
 
-Show all edges in the graph.
+Show all edges in the graph, optionally filtered.
 
 ```bash
 git mind list
+git mind list --type implements
+git mind list --source file:src/auth.js
+git mind list --target spec:auth
 ```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--type <type>` | Filter by edge type |
+| `--source <node>` | Filter by source node |
+| `--target <node>` | Filter by target node |
+
+### `git mind nodes`
+
+List and inspect nodes in the graph.
+
+```bash
+git mind nodes                       # list all nodes
+git mind nodes --prefix task         # list only task:* nodes
+git mind nodes --id task:auth        # show details for one node
+git mind nodes --json                # JSON output
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--prefix <prefix>` | Filter by prefix (e.g. `task`, `spec`, `module`) |
+| `--id <nodeId>` | Show details for a single node (prefix classification, properties) |
+| `--json` | Output as JSON |
+
+### `git mind status`
+
+Show a health dashboard for the graph.
+
+```bash
+git mind status
+git mind status --json
+```
+
+Displays:
+- **Node counts** by prefix (with percentages)
+- **Edge counts** by type
+- **Health indicators** — blocked items, low-confidence edges (< 0.5), orphan nodes (0 edges)
+
+The `--json` flag outputs a structured object suitable for CI pipelines.
+
+### `git mind import <file>`
+
+Import a YAML graph file.
+
+```bash
+git mind import graph.yaml              # import
+git mind import graph.yaml --dry-run    # validate without writing
+git mind import graph.yaml --json       # structured output
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Validate the file and report what would be imported, without writing |
+| `--validate` | Alias for `--dry-run` |
+| `--json` | Output as JSON |
+
+See [Importing graphs from YAML](#importing-graphs-from-yaml) for the file format.
 
 ### `git mind view [name]`
 
@@ -302,6 +369,64 @@ console.log(result);
 
 ---
 
+## Importing graphs from YAML
+
+For bulk ingestion, git-mind supports a YAML import format. This is useful for bootstrapping a graph from existing documentation, seeding a project template, or sharing graph snapshots.
+
+### File format
+
+```yaml
+version: 1
+
+nodes:
+  - id: "spec:auth"
+  - id: "file:src/auth.js"
+    properties:
+      status: active
+      owner: alice
+
+edges:
+  - source: "file:src/auth.js"
+    target: "spec:auth"
+    type: implements
+    confidence: 1.0
+    rationale: "Main auth implementation"
+```
+
+**Rules:**
+
+- `version: 1` is required. Unknown versions produce a hard error.
+- `nodes` is optional. Each node must have an `id` field. Nodes can optionally include `properties` (key/value map).
+- `edges` is optional. Each edge requires `source`, `target`, and `type`. `confidence` defaults to 1.0. `rationale` is optional.
+- **Reference validation** — every edge endpoint must be declared in the `nodes` array or already exist in the graph. Dangling references are rejected.
+- **Atomic writes** — if any validation fails, nothing is written. It's all-or-nothing.
+- **Idempotent** — importing the same file twice is safe. Nodes merge, edges update.
+
+### Dry-run mode
+
+Validate without writing:
+
+```bash
+git mind import graph.yaml --dry-run
+# ✔ Validation passed
+#   Would import: 2 node(s), 1 edge(s)
+```
+
+### Programmatic import
+
+```javascript
+import { importFile, loadGraph } from '@neuroglyph/git-mind';
+
+const graph = await loadGraph('.');
+const result = await importFile(graph, 'graph.yaml', { dryRun: false });
+
+console.log(result.valid);       // true
+console.log(result.stats.nodes); // 2
+console.log(result.stats.edges); // 1
+```
+
+---
+
 ## Commit directives
 
 git-mind can automatically create edges from commit messages. Include directives in your commit body:
@@ -349,28 +474,24 @@ git-mind exports its core modules for use in scripts and integrations.
 
 ```javascript
 import {
-  initGraph,
-  loadGraph,
-  saveGraph,
-  createEdge,
-  queryEdges,
-  removeEdge,
-  EDGE_TYPES,
-  validateNodeId,
-  validateEdgeType,
-  validateConfidence,
-  validateEdge,
-  extractPrefix,
-  classifyPrefix,
-  NODE_ID_REGEX,
-  NODE_ID_MAX_LENGTH,
-  CANONICAL_PREFIXES,
-  SYSTEM_PREFIXES,
-  defineView,
-  renderView,
-  listViews,
-  parseDirectives,
-  processCommit,
+  // Graph lifecycle
+  initGraph, loadGraph, saveGraph,
+  // Edge CRUD
+  createEdge, queryEdges, removeEdge, EDGE_TYPES,
+  // Node queries
+  getNodes, hasNode, getNode, getNodesByPrefix,
+  // Status
+  computeStatus,
+  // Import
+  importFile, parseImportFile, validateImportData,
+  // Validation
+  validateNodeId, validateEdgeType, validateConfidence, validateEdge,
+  extractPrefix, classifyPrefix,
+  NODE_ID_REGEX, NODE_ID_MAX_LENGTH, CANONICAL_PREFIXES, SYSTEM_PREFIXES,
+  // Views
+  defineView, renderView, listViews,
+  // Hooks
+  parseDirectives, processCommit,
 } from '@neuroglyph/git-mind';
 ```
 
@@ -406,6 +527,35 @@ const implEdges = await queryEdges(graph, { type: 'implements' });
 
 // Remove
 await removeEdge(graph, 'file:src/auth.js', 'spec:auth', 'implements');
+```
+
+### Node queries
+
+```javascript
+// Get all node IDs
+const allNodes = await getNodes(graph);
+
+// Check existence
+const exists = await hasNode(graph, 'task:auth');
+
+// Get full node info (prefix classification, properties)
+const node = await getNode(graph, 'file:src/auth.js');
+// { id: 'file:src/auth.js', prefix: 'file', prefixClass: 'canonical', properties: {} }
+
+// Filter by prefix
+const tasks = await getNodesByPrefix(graph, 'task');
+// ['task:auth', 'task:login', ...]
+```
+
+### Status
+
+```javascript
+const status = await computeStatus(graph);
+// {
+//   nodes: { total: 12, byPrefix: { task: 5, spec: 3, ... } },
+//   edges: { total: 8, byType: { implements: 4, ... } },
+//   health: { blockedItems: 1, lowConfidence: 2, orphanNodes: 0 }
+// }
 ```
 
 ### Validation
