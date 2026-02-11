@@ -27,6 +27,12 @@ describe('extractPrefix', () => {
     // Only first colon matters
     expect(extractPrefix('task:some:thing')).toBe('task');
   });
+
+  it('returns null for non-string input', () => {
+    expect(extractPrefix(null)).toBeNull();
+    expect(extractPrefix(undefined)).toBeNull();
+    expect(extractPrefix(42)).toBeNull();
+  });
 });
 
 describe('validateNodeId', () => {

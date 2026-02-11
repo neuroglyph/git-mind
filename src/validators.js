@@ -48,6 +48,7 @@ const SELF_EDGE_FORBIDDEN = ['blocks', 'depends-on'];
  * @returns {string|null} Prefix string, or null if no colon present
  */
 export function extractPrefix(nodeId) {
+  if (typeof nodeId !== 'string') return null;
   const idx = nodeId.indexOf(':');
   if (idx === -1) return null;
   return nodeId.slice(0, idx);
