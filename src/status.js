@@ -3,7 +3,7 @@
  * Graph status computation for git-mind.
  */
 
-import { extractPrefix } from './validators.js';
+import { extractPrefix, isLowConfidence } from './validators.js';
 
 /**
  * @typedef {object} GraphStatus
@@ -35,14 +35,14 @@ export async function computeStatus(graph) {
     byType[e.label] = (byType[e.label] ?? 0) + 1;
   }
 
-  // Health: blocked items (targets of 'blocks' edges)
-  const blockedItems = edges.filter(e => e.label === 'blocks').length;
+  // Health: blocked items (distinct targets of 'blocks' edges)
+  const blockedTargets = new Set(
+    edges.filter(e => e.label === 'blocks').map(e => e.to)
+  );
+  const blockedItems = blockedTargets.size;
 
-  // Health: low-confidence edges (confidence < 0.5)
-  const lowConfidence = edges.filter(e => {
-    const c = e.props?.confidence;
-    return typeof c === 'number' && c < 0.5;
-  }).length;
+  // Health: low-confidence edges
+  const lowConfidence = edges.filter(isLowConfidence).length;
 
   // Health: orphan nodes (not referenced by any edge)
   const connected = new Set();
