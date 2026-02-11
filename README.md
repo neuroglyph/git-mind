@@ -33,11 +33,20 @@ Try an idea in a branch. If it works, merge it — graph and all. If it doesn't,
 git mind init
 
 # Link files with semantic relationships
-git mind link src/auth.js docs/auth-spec.md --type implements
+git mind link file:src/auth.js spec:auth --type implements
 git mind link module:cache module:db --type depends-on
+
+# Import a graph from YAML
+git mind import graph.yaml
 
 # See all connections
 git mind list
+
+# Query nodes
+git mind nodes --prefix task
+
+# Check graph health
+git mind status
 
 # View filtered projections
 git mind view architecture
@@ -54,8 +63,9 @@ cd git-mind && npm install
 # Use in any Git repo
 cd /path/to/your/repo
 npx git-mind init
-npx git-mind link README.md docs/spec.md --type documents
+npx git-mind link file:README.md doc:spec --type documents
 npx git-mind list
+npx git-mind status
 ```
 
 See [GUIDE.md](GUIDE.md) for a complete walkthrough.
