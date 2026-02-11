@@ -8,7 +8,7 @@ export { createEdge, queryEdges, removeEdge, EDGE_TYPES } from './edges.js';
 export {
   validateNodeId, validateEdgeType, validateConfidence, validateEdge,
   extractPrefix, classifyPrefix,
-  NODE_ID_REGEX, NODE_ID_MAX_LENGTH, CANONICAL_PREFIXES, SYSTEM_PREFIXES,
+  NODE_ID_REGEX, NODE_ID_MAX_LENGTH, CANONICAL_PREFIXES, SYSTEM_PREFIXES, ALL_PREFIXES,
 } from './validators.js';
 export { defineView, renderView, listViews } from './views.js';
 export { parseDirectives, processCommit } from './hooks.js';

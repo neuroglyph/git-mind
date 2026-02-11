@@ -3,7 +3,7 @@
  * Edge creation, querying, and removal for git-mind.
  */
 
-import { validateEdge, EDGE_TYPES as _EDGE_TYPES } from './validators.js';
+import { validateEdge } from './validators.js';
 
 export { EDGE_TYPES } from './validators.js';
 
@@ -28,6 +28,9 @@ export async function createEdge(graph, { source, target, type, confidence = 1.0
   const result = validateEdge(source, target, type, confidence);
   if (!result.valid) {
     throw new Error(result.errors.join('; '));
+  }
+  for (const warning of result.warnings) {
+    console.warn(`[git-mind] ${warning}`);
   }
 
   const patch = await graph.createPatch();

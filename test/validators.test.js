@@ -11,6 +11,7 @@ import {
   CANONICAL_PREFIXES,
   SYSTEM_PREFIXES,
   EDGE_TYPES,
+  ALL_PREFIXES,
 } from '../src/validators.js';
 
 describe('extractPrefix', () => {
@@ -108,6 +109,14 @@ describe('classifyPrefix', () => {
 
   it('classifies system prefixes', () => {
     expect(classifyPrefix('commit')).toBe('system');
+  });
+
+  it('classifies commit as system (not canonical) due to precedence', () => {
+    // SYSTEM_PREFIXES is checked before CANONICAL_PREFIXES in classifyPrefix,
+    // and commit is only in SYSTEM_PREFIXES — not in CANONICAL_PREFIXES
+    expect(classifyPrefix('commit')).toBe('system');
+    expect(SYSTEM_PREFIXES).toContain('commit');
+    expect(CANONICAL_PREFIXES).not.toContain('commit');
   });
 
   it('classifies unknown prefixes', () => {
@@ -226,7 +235,16 @@ describe('validateEdge', () => {
   it('collects multiple errors', () => {
     const r = validateEdge('', '', 'explodes', 'bad');
     expect(r.valid).toBe(false);
-    expect(r.errors.length).toBeGreaterThanOrEqual(3);
+    // 2 invalid IDs + unknown edge type + bad confidence = 4 errors
+    // Self-edge check is skipped because IDs are invalid
+    expect(r.errors.length).toBe(4);
+  });
+
+  it('skips self-edge check when IDs are already invalid', () => {
+    const r = validateEdge('bad', 'bad', 'blocks');
+    expect(r.valid).toBe(false);
+    // Should report invalid IDs but NOT a redundant self-edge error
+    expect(r.errors.some(e => /self-edge/i.test(e))).toBe(false);
   });
 });
 
@@ -239,14 +257,20 @@ describe('constants', () => {
     expect(NODE_ID_MAX_LENGTH).toBe(256);
   });
 
-  it('CANONICAL_PREFIXES includes 19 entries', () => {
-    expect(CANONICAL_PREFIXES.length).toBe(19);
+  it('CANONICAL_PREFIXES has 18 user-facing entries', () => {
+    expect(CANONICAL_PREFIXES.length).toBe(18);
     expect(CANONICAL_PREFIXES).toContain('milestone');
-    expect(CANONICAL_PREFIXES).toContain('commit');
+    expect(CANONICAL_PREFIXES).not.toContain('commit');
   });
 
   it('SYSTEM_PREFIXES contains commit', () => {
     expect(SYSTEM_PREFIXES).toEqual(['commit']);
+  });
+
+  it('ALL_PREFIXES is the union of canonical and system', () => {
+    expect(ALL_PREFIXES.length).toBe(CANONICAL_PREFIXES.length + SYSTEM_PREFIXES.length);
+    expect(ALL_PREFIXES).toContain('milestone');
+    expect(ALL_PREFIXES).toContain('commit');
   });
 
   it('EDGE_TYPES has 8 entries', () => {

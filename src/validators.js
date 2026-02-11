@@ -12,14 +12,13 @@ export const NODE_ID_REGEX = /^[a-z][a-z0-9-]*:[A-Za-z0-9._\/@-]+$/;
 /** @type {number} Maximum total length of a node ID */
 export const NODE_ID_MAX_LENGTH = 256;
 
-/** @type {string[]} All canonical prefixes including system */
+/** @type {string[]} User-facing canonical prefixes (excludes system prefixes) */
 export const CANONICAL_PREFIXES = [
   'milestone', 'feature', 'task', 'issue', 'phase',
   'spec', 'adr', 'doc', 'concept', 'decision',
   'crate', 'module', 'pkg', 'file',
   'person', 'tool',
   'event', 'metric',
-  'commit',
 ];
 
 /** @type {string[]} System-generated prefixes (reserved, not user-writable) */
@@ -85,6 +84,9 @@ export function classifyPrefix(prefix) {
   return 'unknown';
 }
 
+/** @type {string[]} All known prefixes (canonical + system) */
+export const ALL_PREFIXES = [...CANONICAL_PREFIXES, ...SYSTEM_PREFIXES];
+
 /**
  * Validate an edge type against the known set.
  *
@@ -149,8 +151,8 @@ export function validateEdge(source, target, type, confidence) {
     if (!confResult.valid) errors.push(confResult.error);
   }
 
-  // Self-edge check
-  if (source === target && SELF_EDGE_FORBIDDEN.includes(type)) {
+  // Self-edge check (only when both IDs are structurally valid)
+  if (srcResult.valid && tgtResult.valid && source === target && SELF_EDGE_FORBIDDEN.includes(type)) {
     errors.push(`Self-edge forbidden for "${type}": source and target are both "${source}"`);
   }
 
