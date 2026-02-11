@@ -401,5 +401,50 @@ defineView('onboarding', (nodes, edges) => {
   };
 });
 
+defineView('coverage', (nodes, edges) => {
+  // Code-to-spec gap analysis: which code nodes lack implements edges to specs?
+  const codePrefixes = new Set(['crate', 'module', 'pkg']);
+  const specPrefixes = new Set(['spec', 'adr']);
+
+  const codeNodes = nodes.filter(n => {
+    const p = extractPrefix(n);
+    return p && codePrefixes.has(p);
+  });
+  const specNodes = new Set(
+    nodes.filter(n => {
+      const p = extractPrefix(n);
+      return p && specPrefixes.has(p);
+    })
+  );
+
+  // Code nodes that have at least one implements edge to a spec/adr
+  const linkedSet = new Set(
+    edges
+      .filter(e => e.label === 'implements' && specNodes.has(e.to))
+      .map(e => e.from)
+  );
+
+  const linked = codeNodes.filter(n => linkedSet.has(n));
+  const unlinked = codeNodes.filter(n => !linkedSet.has(n));
+
+  // Self-contained subgraph: edges where both endpoints are in the result
+  const resultNodes = new Set([...codeNodes, ...specNodes]);
+  const resultEdges = edges.filter(
+    e => e.label === 'implements' && resultNodes.has(e.from) && resultNodes.has(e.to)
+  );
+
+  return {
+    nodes: [...resultNodes],
+    edges: resultEdges,
+    meta: {
+      linked,
+      unlinked,
+      coveragePct: codeNodes.length > 0
+        ? Math.round((linked.length / codeNodes.length) * 100)
+        : 100,
+    },
+  };
+});
+
 // Capture built-in names after all registrations
 builtInNames = new Set(registry.keys());

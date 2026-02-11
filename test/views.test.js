@@ -34,6 +34,7 @@ describe('views', () => {
     expect(views).toContain('traceability');
     expect(views).toContain('blockers');
     expect(views).toContain('onboarding');
+    expect(views).toContain('coverage');
   });
 
   it('renderView throws for unknown views', async () => {
@@ -327,6 +328,47 @@ describe('views', () => {
       // Both nodes should still appear
       expect(result.nodes).toContain('spec:a');
       expect(result.nodes).toContain('spec:b');
+    });
+  });
+
+  // ── PROVING GROUND: coverage view ────────────────────────────
+
+  describe('coverage view', () => {
+    it('identifies crates not linked to any spec/ADR', async () => {
+      await createEdge(graph, { source: 'crate:linked', target: 'spec:auth', type: 'implements' });
+      await createEdge(graph, { source: 'crate:orphan', target: 'crate:linked', type: 'depends-on' });
+
+      const result = await renderView(graph, 'coverage');
+      expect(result.meta.linked).toContain('crate:linked');
+      expect(result.meta.unlinked).toContain('crate:orphan');
+      expect(result.meta.coveragePct).toBe(50);
+    });
+
+    it('reports 100% when all crates implement specs', async () => {
+      await createEdge(graph, { source: 'crate:a', target: 'spec:x', type: 'implements' });
+      await createEdge(graph, { source: 'crate:b', target: 'adr:001', type: 'implements' });
+
+      const result = await renderView(graph, 'coverage');
+      expect(result.meta.unlinked).toEqual([]);
+      expect(result.meta.coveragePct).toBe(100);
+    });
+
+    it('handles graph with no crate/module/pkg nodes', async () => {
+      await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'blocks' });
+
+      const result = await renderView(graph, 'coverage');
+      expect(result.meta.linked).toEqual([]);
+      expect(result.meta.unlinked).toEqual([]);
+      expect(result.meta.coveragePct).toBe(100);
+    });
+
+    it('includes module and pkg nodes', async () => {
+      await createEdge(graph, { source: 'module:auth', target: 'spec:auth', type: 'implements' });
+      await createEdge(graph, { source: 'pkg:utils', target: 'task:a', type: 'relates-to' });
+
+      const result = await renderView(graph, 'coverage');
+      expect(result.meta.linked).toContain('module:auth');
+      expect(result.meta.unlinked).toContain('pkg:utils');
     });
   });
 });
