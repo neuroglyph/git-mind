@@ -87,25 +87,25 @@ Let's say your repo has a spec document and an implementation:
 
 ```bash
 # This file implements that spec
-npx git-mind link src/auth.js docs/auth-spec.md --type implements
+npx git-mind link file:src/auth.js spec:auth --type implements
 
 # These two modules are related
-npx git-mind link src/cache.js src/db.js --type depends-on
+npx git-mind link module:cache module:db --type depends-on
 
 # This test documents the expected behavior
-npx git-mind link test/auth.test.js src/auth.js --type documents
+npx git-mind link file:test/auth.test.js file:src/auth.js --type documents
 ```
 
-Each `link` command creates an edge between two nodes. If the nodes don't exist yet, they're created automatically.
+Each `link` command creates an edge between two nodes. If the nodes don't exist yet, they're created automatically. Node IDs must use the `prefix:identifier` format.
 
 ### 3. See what you've built
 
 ```bash
 npx git-mind list
 # ℹ 3 edge(s):
-#   src/auth.js --[implements]--> docs/auth-spec.md (100%)
-#   src/cache.js --[depends-on]--> src/db.js (100%)
-#   test/auth.test.js --[documents]--> src/auth.js (100%)
+#   file:src/auth.js --[implements]--> spec:auth (100%)
+#   module:cache --[depends-on]--> module:db (100%)
+#   file:test/auth.test.js --[documents]--> file:src/auth.js (100%)
 ```
 
 ### 4. Use views for focused projections
@@ -128,16 +128,21 @@ Your knowledge graph is stored in Git. It persists across clones (once pushed), 
 
 ### Nodes
 
-A node is any string identifier. By convention, use prefixes to categorize:
+A node ID follows the `prefix:identifier` format. The prefix is always lowercase, and the identifier can contain letters, digits, dots, slashes, `@`, and hyphens. See [GRAPH_SCHEMA.md](GRAPH_SCHEMA.md) for the full grammar.
 
 | Prefix | Meaning | Example |
 |--------|---------|---------|
-| (none) | File path | `src/auth.js` |
+| `file:` | File path | `file:src/auth.js` |
 | `module:` | Software module | `module:authentication` |
 | `task:` | Work item | `task:implement-oauth` |
 | `phase:` | Project phase | `phase:beta` |
-| `commit:` | Git commit | `commit:abc123` |
+| `commit:` | Git commit (system-generated) | `commit:abc123` |
 | `concept:` | Abstract idea | `concept:zero-trust` |
+| `milestone:` | Major project phase | `milestone:BEDROCK` |
+| `feature:` | Feature grouping | `feature:BDK-SCHEMA` |
+| `spec:` | Specification document | `spec:graph-schema` |
+
+Unknown prefixes produce a warning but are allowed — this lets the taxonomy grow organically. See the full prefix list in [GRAPH_SCHEMA.md](GRAPH_SCHEMA.md).
 
 Nodes are created implicitly when you create an edge referencing them. You don't need to declare nodes separately.
 
@@ -197,7 +202,7 @@ Safe to run multiple times — initialization is idempotent.
 Create a semantic edge between two nodes.
 
 ```bash
-git mind link src/auth.js docs/auth-spec.md --type implements
+git mind link file:src/auth.js spec:auth --type implements
 git mind link module:a module:b --type depends-on --confidence 0.9
 ```
 
@@ -306,8 +311,8 @@ feat: add OAuth2 login flow
 
 Implements the social login spec with Google and GitHub providers.
 
-IMPLEMENTS: docs/social-login-spec.md
-AUGMENTS: src/auth/basic.js
+IMPLEMENTS: spec:social-login
+AUGMENTS: module:auth-basic
 RELATES-TO: concept:zero-trust
 ```
 
@@ -332,7 +337,7 @@ import { processCommit, loadGraph } from '@neuroglyph/git-mind';
 const graph = await loadGraph('.');
 await processCommit(graph, {
   sha: 'abc123def456',
-  message: 'feat: add login\n\nIMPLEMENTS: docs/auth.md',
+  message: 'feat: add login\n\nIMPLEMENTS: spec:auth',
 });
 ```
 
@@ -351,6 +356,16 @@ import {
   queryEdges,
   removeEdge,
   EDGE_TYPES,
+  validateNodeId,
+  validateEdgeType,
+  validateConfidence,
+  validateEdge,
+  extractPrefix,
+  classifyPrefix,
+  NODE_ID_REGEX,
+  NODE_ID_MAX_LENGTH,
+  CANONICAL_PREFIXES,
+  SYSTEM_PREFIXES,
   defineView,
   renderView,
   listViews,
@@ -375,10 +390,10 @@ const sha = await saveGraph(graph);
 ### Edge operations
 
 ```javascript
-// Create
+// Create — node IDs must use prefix:identifier format
 await createEdge(graph, {
-  source: 'src/auth.js',
-  target: 'docs/auth-spec.md',
+  source: 'file:src/auth.js',
+  target: 'spec:auth',
   type: 'implements',
   confidence: 1.0,
   rationale: 'Direct implementation of the spec',
@@ -386,11 +401,30 @@ await createEdge(graph, {
 
 // Query
 const allEdges = await queryEdges(graph);
-const authEdges = await queryEdges(graph, { source: 'src/auth.js' });
+const authEdges = await queryEdges(graph, { source: 'file:src/auth.js' });
 const implEdges = await queryEdges(graph, { type: 'implements' });
 
 // Remove
-await removeEdge(graph, 'src/auth.js', 'docs/auth-spec.md', 'implements');
+await removeEdge(graph, 'file:src/auth.js', 'spec:auth', 'implements');
+```
+
+### Validation
+
+Validators return result objects — they don't throw. Callers decide how to handle errors.
+
+```javascript
+// Validate a node ID
+const r = validateNodeId('task:BDK-001'); // { valid: true }
+const bad = validateNodeId('bad id');     // { valid: false, error: '...' }
+
+// Validate a full edge (composite — checks everything)
+const result = validateEdge('task:X', 'feature:Y', 'implements', 0.8);
+// { valid: true, errors: [], warnings: [] }
+
+// Classify a prefix
+classifyPrefix('milestone'); // 'canonical'
+classifyPrefix('commit');    // 'system'
+classifyPrefix('banana');    // 'unknown'
 ```
 
 ### Views
@@ -414,13 +448,13 @@ defineView('unreviewed', (nodes, edges) => ({
 
 ```javascript
 // Parse directives from a message
-const directives = parseDirectives('IMPLEMENTS: docs/spec.md\nBLOCKS: task:deploy');
-// [{ type: 'implements', target: 'docs/spec.md' }, { type: 'blocks', target: 'task:deploy' }]
+const directives = parseDirectives('IMPLEMENTS: spec:auth\nBLOCKS: task:deploy');
+// [{ type: 'implements', target: 'spec:auth' }, { type: 'blocks', target: 'task:deploy' }]
 
 // Process a full commit (parse + create edges)
 const processed = await processCommit(graph, {
   sha: 'abc123',
-  message: 'feat: login\n\nIMPLEMENTS: docs/auth.md',
+  message: 'feat: login\n\nIMPLEMENTS: spec:auth',
 });
 ```
 
@@ -455,9 +489,9 @@ Internally, a patch is a JSON blob committed to Git:
 ```json
 {
   "ops": [
-    { "op": "addNode", "id": "src/auth.js" },
-    { "op": "addEdge", "from": "src/auth.js", "to": "docs/spec.md", "label": "implements" },
-    { "op": "setProp", "id": "src/auth.js", "key": "type", "value": "file" }
+    { "op": "addNode", "id": "file:src/auth.js" },
+    { "op": "addEdge", "from": "file:src/auth.js", "to": "spec:auth", "label": "implements" },
+    { "op": "setProp", "id": "file:src/auth.js", "key": "type", "value": "file" }
   ],
   "writerId": "local",
   "tick": 42,
@@ -500,11 +534,11 @@ All of this is under `refs/`, not in your working tree. Your `.gitmind/` directo
 
 | Type | Direction | Meaning | Example |
 |------|-----------|---------|---------|
-| `implements` | source implements target | Code fulfills a spec | `src/auth.js` implements `docs/auth-spec.md` |
-| `augments` | source extends target | Enhancement or extension | `src/oauth.js` augments `src/auth.js` |
-| `relates-to` | source relates to target | General association | `README.md` relates-to `docs/philosophy.md` |
-| `blocks` | source blocks target | Dependency/ordering | `task:migrate-db` blocks `task:deploy` |
-| `belongs-to` | source is part of target | Membership/containment | `src/auth.js` belongs-to `module:security` |
-| `consumed-by` | source is consumed by target | Usage relationship | `config.json` consumed-by `src/loader.js` |
-| `depends-on` | source depends on target | Dependency | `module:api` depends-on `module:auth` |
-| `documents` | source documents target | Documentation | `docs/api.md` documents `src/api/` |
+| `implements` | source implements target | Code fulfills a spec | `file:src/auth.js` implements `spec:auth` |
+| `augments` | source extends target | Enhancement or extension | `module:auth-oauth` augments `module:auth` |
+| `relates-to` | source relates to target | General association | `doc:README` relates-to `concept:philosophy` |
+| `blocks` | source blocks target | Dependency/ordering (no self-edges) | `task:migrate-db` blocks `task:deploy` |
+| `belongs-to` | source is part of target | Membership/containment | `file:src/auth.js` belongs-to `module:security` |
+| `consumed-by` | source is consumed by target | Usage relationship | `pkg:chalk` consumed-by `module:format` |
+| `depends-on` | source depends on target | Dependency (no self-edges) | `module:api` depends-on `module:auth` |
+| `documents` | source documents target | Documentation | `doc:api` documents `module:api` |
