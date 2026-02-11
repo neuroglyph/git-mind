@@ -160,12 +160,13 @@ defineView('milestone', (nodes, edges) => {
   // Compute per-milestone stats
   const milestoneStats = {};
   for (const m of milestones) {
-    // Tasks that belong-to this milestone
+    // Tasks and features that belong-to this milestone
     const children = edges
-      .filter(e => e.label === 'belongs-to' && e.to === m)
+      .filter(e => e.label === 'belongs-to' && e.to === m
+        && (e.from.startsWith('task:') || e.from.startsWith('feature:')))
       .map(e => e.from);
 
-    // A task is "done" if it has at least one 'implements' edge pointing from it
+    // A child is "done" if it has at least one 'implements' edge pointing from it
     const done = children.filter(child =>
       edges.some(e => e.from === child && e.label === 'implements')
     );
@@ -243,9 +244,10 @@ defineView('blockers', (nodes, edges) => {
   const visited = new Set();
   for (const root of adj.keys()) {
     const path = [];
+    const onStack = new Set();
 
     const dfs = (node) => {
-      if (path.includes(node)) {
+      if (onStack.has(node)) {
         // Cycle detected
         const cycleStart = path.indexOf(node);
         cycles.push([...path.slice(cycleStart), node]);
@@ -254,6 +256,7 @@ defineView('blockers', (nodes, edges) => {
       if (visited.has(node)) return;
       visited.add(node);
       path.push(node);
+      onStack.add(node);
       allInvolved.add(node);
 
       const targets = adj.get(node) || [];
@@ -262,6 +265,7 @@ defineView('blockers', (nodes, edges) => {
         dfs(t);
       }
       path.pop();
+      onStack.delete(node);
     };
 
     dfs(root);

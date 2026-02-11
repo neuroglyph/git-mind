@@ -150,6 +150,15 @@ describe('views', () => {
       expect(result.meta.milestoneStats['milestone:M1'].done).toBe(1);
     });
 
+    it('excludes non-task/non-feature children from milestone stats', async () => {
+      await createEdge(graph, { source: 'task:a', target: 'milestone:M1', type: 'belongs-to' });
+      await createEdge(graph, { source: 'spec:loose', target: 'milestone:M1', type: 'belongs-to' });
+
+      const result = await renderView(graph, 'milestone');
+      // spec:loose should not count as a milestone child
+      expect(result.meta.milestoneStats['milestone:M1'].total).toBe(1);
+    });
+
     it('handles milestone with no tasks', async () => {
       // Create a milestone node by linking it to something
       await createEdge(graph, { source: 'milestone:empty', target: 'spec:x', type: 'relates-to' });

@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`isLowConfidence()` shared helper** — Low-confidence threshold (`< 0.5`) extracted from `status.js` and `views.js` into `validators.js` to keep the threshold in one place (#185)
 - **`createEdge()` now validates all inputs** — Node IDs must use `prefix:identifier` format, confidence must be a finite number, self-edges rejected for blocking types
 - **`EDGE_TYPES` canonical source** moved to `validators.js` (re-exported from `edges.js` for backwards compatibility)
-- **Test count** — 138 tests across 8 files (was 74)
+- **Test count** — 139 tests across 8 files (was 74)
 
 ## [2.0.0-alpha.0] - 2026-02-07
 
