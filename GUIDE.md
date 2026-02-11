@@ -42,7 +42,7 @@ git-mind captures those relationships explicitly, so you can query them, visuali
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) >= 20.0.0
+- [Node.js](https://nodejs.org/) >= 22.0.0
 - [Git](https://git-scm.com/)
 
 ### From source
