@@ -186,7 +186,7 @@ export async function adjustSuggestion(graph, original, adjustments = {}) {
   const newType = adjustments.type ?? original.type;
   const newConf = adjustments.confidence ?? original.confidence;
 
-  // If type changed, create new edge first, then remove old (atomic safety)
+  // If type changed, create new edge first, then remove old (safer ordering)
   if (newType !== original.type) {
     await createEdge(graph, {
       source: original.source,
@@ -195,6 +195,10 @@ export async function adjustSuggestion(graph, original, adjustments = {}) {
       confidence: newConf,
       rationale: adjustments.rationale ?? original.rationale,
     });
+    // Set reviewedAt on the new edge
+    const patch = await graph.createPatch();
+    patch.setEdgeProperty(original.source, original.target, newType, 'reviewedAt', new Date().toISOString());
+    await patch.commit();
     await removeEdge(graph, original.source, original.target, original.type);
   } else {
     // Update existing edge

@@ -117,6 +117,17 @@ describe('review', () => {
     expect(edges[0].props.confidence).toBe(0.9);
   });
 
+  it('sets reviewedAt on new edge when type changes', async () => {
+    await createEdge(graph, { source: 'task:a', target: 'spec:b', type: 'implements', confidence: 0.3 });
+
+    const original = { source: 'task:a', target: 'spec:b', type: 'implements', confidence: 0.3 };
+    await adjustSuggestion(graph, original, { type: 'augments' });
+
+    const edges = await queryEdges(graph, { source: 'task:a', target: 'spec:b', type: 'augments' });
+    expect(edges).toHaveLength(1);
+    expect(edges[0].props.reviewedAt).toBeTruthy();
+  });
+
   // ── skipSuggestion ─────────────────────────────────────────
 
   it('returns decision without modifying graph', async () => {

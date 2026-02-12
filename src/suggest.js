@@ -23,6 +23,7 @@ import { extractContext } from './context.js';
  * @property {Suggestion[]} suggestions
  * @property {string[]} errors
  * @property {string} prompt - The prompt sent to the agent
+ * @property {number} [rejectedCount] - Number of suggestions filtered by prior rejections
  */
 
 /**
@@ -83,6 +84,7 @@ export function callAgent(prompt, opts = {}) {
       }
     });
 
+    child.stdin.on('error', () => {}); // prevent uncaught EPIPE
     child.stdin.write(prompt);
     child.stdin.end();
   });
@@ -226,5 +228,10 @@ export async function generateSuggestions(cwd, graph, opts = {}) {
   const { suggestions, errors } = parseSuggestions(responseText);
   const filtered = await filterRejected(suggestions, graph);
 
-  return { suggestions: filtered, errors, prompt: context.prompt };
+  const rejectedCount = suggestions.length - filtered.length;
+  if (rejectedCount > 0 && filtered.length === 0 && errors.length === 0) {
+    errors.push(`All ${rejectedCount} suggestion(s) were previously rejected`);
+  }
+
+  return { suggestions: filtered, errors, prompt: context.prompt, rejectedCount };
 }

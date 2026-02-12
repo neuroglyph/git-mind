@@ -13,6 +13,9 @@ import { removeEdge } from './edges.js';
  * @property {'error'|'warning'|'info'} severity
  * @property {string} message - Human-readable description
  * @property {string[]} affected - IDs of affected nodes/edges
+ * @property {string} [source] - Source node ID (set by dangling-edge)
+ * @property {string} [target] - Target node ID (set by dangling-edge)
+ * @property {string} [edgeType] - Edge type (set by dangling-edge)
  */
 
 /**

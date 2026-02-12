@@ -157,6 +157,9 @@ describe('doctor', () => {
         severity: 'error',
         message: 'test',
         affected: ['task:a', 'spec:b', 'implements'],
+        source: 'task:a',
+        target: 'spec:b',
+        edgeType: 'implements',
       },
       {
         type: 'orphan-node',

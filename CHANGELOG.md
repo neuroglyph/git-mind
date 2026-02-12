@@ -46,11 +46,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ReDoS fence regex eliminated** — Replaced regex-based code fence extraction with `indexOf`-based approach (#193)
 - **`skipSuggestion` documented as deferred** — JSDoc clarifies skip is intentional defer, not dismiss (#193)
 - **Single-writer assumption documented** — `acceptSuggestion` and `adjustSuggestion` JSDoc notes edge must exist (#193)
+- **`formatDecisionSummary` guard** — `result.decisions` now defaults to `[]` via nullish coalescing to prevent TypeError (#193)
+- **`DoctorIssue` typedef updated** — Added optional `source`, `target`, `edgeType` properties used by dangling-edge issues (#193)
+- **`adjustSuggestion` sets `reviewedAt` on type change** — New edge created during type change now receives a `reviewedAt` timestamp (#193)
+- **`generateSuggestions` rejection diagnostic** — Returns `rejectedCount` and logs a diagnostic when all suggestions were previously rejected (#193)
+- **`child.stdin` error handler** — `callAgent` attaches a no-op error listener on stdin to prevent uncaught EPIPE exceptions (#193)
+- **Doctor test fixture corrected** — Dangling-edge test issue now includes `source`/`target`/`edgeType` matching `fixIssues` expectations (#193)
 
 ### Changed
 
 - **`suggest` and `review` stubs replaced** with full implementations (#193)
-- **Test count** — 206 tests across 13 files (was 143 across 8)
+- **Test count** — 207 tests across 13 files (was 143 across 8)
 
 ## [2.0.0-alpha.1] - 2026-02-11
 

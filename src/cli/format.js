@@ -294,7 +294,7 @@ export function formatDecisionSummary(result) {
     lines.push(chalk.dim('  No pending suggestions to review'));
   } else {
     const counts = {};
-    for (const d of result.decisions) {
+    for (const d of result.decisions ?? []) {
       counts[d.action] = (counts[d.action] ?? 0) + 1;
     }
     lines.push(`  ${chalk.green(figures.tick)} Processed ${result.processed} suggestion(s)`);
