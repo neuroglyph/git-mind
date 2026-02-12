@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — PROVING GROUND
+
+### Added
+
+- **`coverage` view** — Code-to-spec gap analysis: identifies `crate:`/`module:`/`pkg:` nodes lacking `implements` edges to `spec:`/`adr:` targets. Returns `meta.linked`, `meta.unlinked`, and `meta.coveragePct`
+- **Echo ecosystem seed fixture** — `test/fixtures/echo-seed.yaml` with 55 nodes and 70 edges for integration testing (5 milestones, 5 specs, 5 ADRs, 5 docs, 15 crates, 11 tasks, 9 issues)
+- **PROVING GROUND integration tests** — `test/proving-ground.test.js` validates 5 real project management questions against the Echo seed with deterministic ground truth
+- **Dogfood session transcript** — `docs/dogfood-session.md` documents CLI walkthrough of all 5 questions with answers and timing
+
+### Changed
+
+- **Test count** — 162 tests across 9 files (was 143 across 8)
+
 ## [2.0.0-alpha.1] - 2026-02-11
 
 ### Added

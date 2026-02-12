@@ -1,0 +1,288 @@
+# Echo Ecosystem — PROVING GROUND seed fixture
+# 55 nodes, 70 edges, deterministic ground truth for 5 dogfood questions.
+#
+# Q1  What blocks M2?            → milestone view  → [issue:E-003, issue:E-004]
+# Q2  Which ADRs lack impl?      → traceability    → [adr:003-encryption-at-rest, adr:004-rest-vs-grpc]
+# Q3  Unlinked crates?           → coverage view   → 9 of 15 crates
+# Q4  What to read first?        → onboarding      → doc:getting-started before doc:architecture-overview
+# Q5  Low-confidence edges?      → suggestions     → 4 edges (confidence < 0.5)
+
+version: 1
+
+nodes:
+  # ── Milestones (5) ──────────────────────────────────────────────
+  - id: "milestone:M1"
+    properties:
+      title: "Core Foundation"
+      status: "complete"
+  - id: "milestone:M2"
+    properties:
+      title: "API Layer"
+      status: "blocked"
+  - id: "milestone:M3"
+    properties:
+      title: "Real-time Features"
+      status: "in-progress"
+  - id: "milestone:M4"
+    properties:
+      title: "Developer Experience"
+      status: "planned"
+  - id: "milestone:M5"
+    properties:
+      title: "Production Readiness"
+      status: "planned"
+
+  # ── Specs (5) ───────────────────────────────────────────────────
+  - id: "spec:001-auth-flow"
+    properties:
+      title: "Authentication Flow"
+  - id: "spec:002-queue-protocol"
+    properties:
+      title: "Message Queue Protocol"
+  - id: "spec:003-web-sockets"
+    properties:
+      title: "WebSocket Transport"
+  - id: "spec:004-rest-api"
+    properties:
+      title: "REST API Design"
+  - id: "spec:005-data-model"
+    properties:
+      title: "Data Model Schema"
+
+  # ── ADRs (5) ────────────────────────────────────────────────────
+  - id: "adr:001-event-sourcing"
+    properties:
+      title: "Use event sourcing for audit trail"
+  - id: "adr:002-postgres"
+    properties:
+      title: "PostgreSQL as primary store"
+  - id: "adr:003-encryption-at-rest"
+    properties:
+      title: "Encryption at rest for PII"
+  - id: "adr:004-rest-vs-grpc"
+    properties:
+      title: "REST over gRPC for public API"
+  - id: "adr:005-crate-structure"
+    properties:
+      title: "Workspace crate structure"
+
+  # ── Docs (5) ────────────────────────────────────────────────────
+  - id: "doc:getting-started"
+    properties:
+      title: "Getting Started Guide"
+  - id: "doc:architecture-overview"
+    properties:
+      title: "Architecture Overview"
+  - id: "doc:api-reference"
+    properties:
+      title: "API Reference"
+  - id: "doc:deployment-guide"
+    properties:
+      title: "Deployment Guide"
+  - id: "doc:contributing"
+    properties:
+      title: "Contributing Guide"
+
+  # ── Crates (15) — 6 linked to specs/ADRs, 9 unlinked ──────────
+  - id: "crate:echo-core"
+    properties:
+      description: "Core event-sourcing engine"
+  - id: "crate:echo-api"
+    properties:
+      description: "REST API server"
+  - id: "crate:echo-db"
+    properties:
+      description: "Database layer (Postgres)"
+  - id: "crate:echo-auth"
+    properties:
+      description: "Authentication module"
+  - id: "crate:echo-queue"
+    properties:
+      description: "Message queue adapter"
+  - id: "crate:echo-web"
+    properties:
+      description: "WebSocket server"
+  - id: "crate:echo-crypto"
+    properties:
+      description: "Cryptographic helpers"
+  - id: "crate:echo-cli"
+    properties:
+      description: "CLI interface"
+  - id: "crate:echo-config"
+    properties:
+      description: "Configuration loader"
+  - id: "crate:echo-log"
+    properties:
+      description: "Structured logging"
+  - id: "crate:echo-test-utils"
+    properties:
+      description: "Test utilities and fixtures"
+  - id: "crate:echo-bench"
+    properties:
+      description: "Benchmark harness"
+  - id: "crate:echo-migrate"
+    properties:
+      description: "Database migrations"
+  - id: "crate:echo-plugin"
+    properties:
+      description: "Plugin framework"
+  - id: "crate:echo-sdk"
+    properties:
+      description: "Client SDK"
+
+  # ── Tasks (11) — milestone work items ───────────────────────────
+  - id: "task:E-005"
+    properties:
+      title: "Implement auth middleware"
+  - id: "task:E-006"
+    properties:
+      title: "Implement queue consumer"
+  - id: "task:E-007"
+    properties:
+      title: "Build REST endpoints"
+  - id: "task:E-008"
+    properties:
+      title: "API schema validation"
+  - id: "task:E-009"
+    properties:
+      title: "WebSocket handshake"
+  - id: "task:E-010"
+    properties:
+      title: "Message broadcast"
+  - id: "task:E-011"
+    properties:
+      title: "Connection pooling"
+  - id: "task:E-012"
+    properties:
+      title: "CLI scaffolding"
+  - id: "task:E-013"
+    properties:
+      title: "Config file support"
+  - id: "task:E-014"
+    properties:
+      title: "Migration runner"
+  - id: "task:E-015"
+    properties:
+      title: "Health check endpoint"
+
+  # ── Issues (9) — bugs, blockers, investigations ─────────────────
+  - id: "issue:E-001"
+    properties:
+      title: "Auth token expiry bug"
+  - id: "issue:E-002"
+    properties:
+      title: "Queue deadlock under load"
+  - id: "issue:E-003"
+    properties:
+      title: "REST schema breaks on nested objects"
+  - id: "issue:E-004"
+    properties:
+      title: "Validation rejects valid payloads"
+  - id: "issue:E-016"
+    properties:
+      title: "Flaky integration test"
+  - id: "issue:E-017"
+    properties:
+      title: "Slow query on large datasets"
+  - id: "issue:E-018"
+    properties:
+      title: "Crypto padding oracle concern"
+  - id: "issue:E-019"
+    properties:
+      title: "WebSocket reconnect storms"
+  - id: "issue:E-020"
+    properties:
+      title: "Contributor docs outdated"
+
+edges:
+  # ── belongs-to: tasks → milestones (11) ─────────────────────────
+  - { source: "task:E-005", target: "milestone:M1", type: "belongs-to" }
+  - { source: "task:E-006", target: "milestone:M1", type: "belongs-to" }
+  - { source: "task:E-007", target: "milestone:M2", type: "belongs-to" }
+  - { source: "task:E-008", target: "milestone:M2", type: "belongs-to" }
+  - { source: "task:E-009", target: "milestone:M3", type: "belongs-to" }
+  - { source: "task:E-010", target: "milestone:M3", type: "belongs-to" }
+  - { source: "task:E-011", target: "milestone:M3", type: "belongs-to" }
+  - { source: "task:E-012", target: "milestone:M4", type: "belongs-to" }
+  - { source: "task:E-013", target: "milestone:M4", type: "belongs-to" }
+  - { source: "task:E-014", target: "milestone:M5", type: "belongs-to" }
+  - { source: "task:E-015", target: "milestone:M5", type: "belongs-to" }
+
+  # ── implements: tasks → specs (task completion signals) (5) ─────
+  - { source: "task:E-005", target: "spec:001-auth-flow",     type: "implements" }
+  - { source: "task:E-006", target: "spec:002-queue-protocol", type: "implements" }
+  - { source: "task:E-009", target: "spec:003-web-sockets",   type: "implements" }
+  - { source: "task:E-012", target: "spec:004-rest-api",      type: "implements" }
+  - { source: "task:E-014", target: "spec:005-data-model",    type: "implements" }
+
+  # ── implements: crates → specs/ADRs (coverage edges) (8) ───────
+  - { source: "crate:echo-core",  target: "adr:001-event-sourcing",  type: "implements" }
+  - { source: "crate:echo-api",   target: "spec:004-rest-api",       type: "implements" }
+  - { source: "crate:echo-api",   target: "adr:005-crate-structure", type: "implements" }
+  - { source: "crate:echo-db",    target: "spec:005-data-model",     type: "implements" }
+  - { source: "crate:echo-db",    target: "adr:002-postgres",        type: "implements" }
+  - { source: "crate:echo-auth",  target: "spec:001-auth-flow",      type: "implements" }
+  - { source: "crate:echo-queue", target: "spec:002-queue-protocol", type: "implements" }
+  - { source: "crate:echo-web",   target: "spec:003-web-sockets",    type: "implements" }
+
+  # ── blocks: issue → task (Q1 ground truth) (4) ─────────────────
+  - { source: "issue:E-003", target: "task:E-007",  type: "blocks" }
+  - { source: "issue:E-004", target: "task:E-008",  type: "blocks" }
+  - { source: "issue:E-001", target: "issue:E-003", type: "blocks" }
+  - { source: "issue:E-002", target: "issue:E-004", type: "blocks" }
+
+  # ── depends-on: crate → crate (architecture) (10) ──────────────
+  - { source: "crate:echo-api",    target: "crate:echo-core",   type: "depends-on" }
+  - { source: "crate:echo-db",     target: "crate:echo-core",   type: "depends-on" }
+  - { source: "crate:echo-auth",   target: "crate:echo-db",     type: "depends-on" }
+  - { source: "crate:echo-queue",  target: "crate:echo-core",   type: "depends-on" }
+  - { source: "crate:echo-web",    target: "crate:echo-api",    type: "depends-on" }
+  - { source: "crate:echo-cli",    target: "crate:echo-core",   type: "depends-on" }
+  - { source: "crate:echo-config", target: "crate:echo-core",   type: "depends-on" }
+  - { source: "crate:echo-log",    target: "crate:echo-core",   type: "depends-on" }
+  - { source: "crate:echo-plugin", target: "crate:echo-api",    type: "depends-on" }
+  - { source: "crate:echo-sdk",    target: "crate:echo-api",    type: "depends-on" }
+
+  # ── depends-on: doc → doc (reading order, Q4) (4) ──────────────
+  - { source: "doc:architecture-overview", target: "doc:getting-started",       type: "depends-on" }
+  - { source: "doc:api-reference",         target: "doc:architecture-overview", type: "depends-on" }
+  - { source: "doc:deployment-guide",      target: "doc:getting-started",       type: "depends-on" }
+  - { source: "doc:contributing",          target: "doc:architecture-overview", type: "depends-on" }
+
+  # ── documents: doc → spec/ADR (5) ──────────────────────────────
+  - { source: "doc:getting-started",       target: "spec:001-auth-flow",      type: "documents" }
+  - { source: "doc:architecture-overview", target: "adr:001-event-sourcing",  type: "documents" }
+  - { source: "doc:api-reference",         target: "spec:004-rest-api",       type: "documents" }
+  - { source: "doc:deployment-guide",      target: "adr:002-postgres",        type: "documents" }
+  - { source: "doc:contributing",          target: "adr:005-crate-structure", type: "documents" }
+
+  # ── consumed-by: spec/ADR → crate (5) ──────────────────────────
+  - { source: "spec:001-auth-flow",      target: "crate:echo-auth",  type: "consumed-by" }
+  - { source: "spec:002-queue-protocol", target: "crate:echo-queue", type: "consumed-by" }
+  - { source: "spec:004-rest-api",       target: "crate:echo-api",   type: "consumed-by" }
+  - { source: "spec:005-data-model",     target: "crate:echo-db",    type: "consumed-by" }
+  - { source: "adr:001-event-sourcing",  target: "crate:echo-core",  type: "consumed-by" }
+
+  # ── augments (4) ───────────────────────────────────────────────
+  - { source: "adr:002-postgres",        target: "adr:001-event-sourcing",  type: "augments" }
+  - { source: "adr:005-crate-structure", target: "adr:004-rest-vs-grpc",    type: "augments" }
+  - { source: "spec:003-web-sockets",    target: "spec:004-rest-api",       type: "augments" }
+  - { source: "doc:contributing",        target: "doc:getting-started",     type: "augments" }
+
+  # ── relates-to: normal confidence (10) ──────────────────────────
+  - { source: "issue:E-001", target: "task:E-005",       type: "relates-to" }
+  - { source: "issue:E-002", target: "task:E-006",       type: "relates-to" }
+  - { source: "issue:E-003", target: "spec:001-auth-flow",      type: "relates-to" }
+  - { source: "issue:E-004", target: "spec:002-queue-protocol", type: "relates-to" }
+  - { source: "crate:echo-test-utils", target: "crate:echo-core", type: "relates-to" }
+  - { source: "crate:echo-bench",      target: "crate:echo-core", type: "relates-to" }
+  - { source: "crate:echo-migrate",    target: "crate:echo-db",   type: "relates-to" }
+  - { source: "issue:E-016", target: "milestone:M3",  type: "relates-to" }
+  - { source: "issue:E-017", target: "milestone:M4",  type: "relates-to" }
+  - { source: "issue:E-019", target: "milestone:M5",  type: "relates-to" }
+
+  # ── relates-to: LOW CONFIDENCE (Q5 ground truth — 4 edges) ─────
+  - { source: "issue:E-016", target: "issue:E-017",          type: "relates-to", confidence: 0.2 }
+  - { source: "issue:E-018", target: "crate:echo-crypto",    type: "relates-to", confidence: 0.3 }
+  - { source: "issue:E-019", target: "spec:003-web-sockets", type: "relates-to", confidence: 0.4 }
+  - { source: "issue:E-020", target: "doc:contributing",      type: "relates-to", confidence: 0.3 }
