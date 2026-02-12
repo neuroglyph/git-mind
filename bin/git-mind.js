@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, nodes, status, importCmd, installHooks, processCommitCmd, doctor, suggest, review } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, status, importCmd, exportCmd, installHooks, processCommitCmd, doctor, suggest, review } from '../src/cli/commands.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -35,6 +35,10 @@ Commands:
   import <file>                 Import a YAML graph file
     --dry-run, --validate       Validate without writing
     --json                      Output as JSON
+  export [file]                 Export graph to YAML/JSON
+    --format yaml|json          Output format (default: yaml)
+    --prefix <prefix>           Filter by node prefix
+    --json                      Output as JSON metadata
   install-hooks                  Install post-commit Git hook
   doctor                        Run graph integrity checks
     --fix                       Auto-fix dangling edges
@@ -149,6 +153,18 @@ switch (command) {
     await importCmd(cwd, importPath, {
       dryRun: args.includes('--dry-run') || args.includes('--validate'),
       json: args.includes('--json'),
+    });
+    break;
+  }
+
+  case 'export': {
+    const exportFlags = parseFlags(args.slice(1));
+    const exportFile = args[1] && !args[1].startsWith('--') ? args[1] : undefined;
+    await exportCmd(cwd, {
+      file: exportFile,
+      format: exportFlags.format,
+      prefix: exportFlags.prefix,
+      json: exportFlags.json ?? false,
     });
     break;
   }

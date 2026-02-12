@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`git mind export` command** — Serialize the graph to YAML or JSON in v1 import-compatible format, enabling round-trip workflows. Supports `--format yaml|json`, `--prefix <prefix>` filtering, file output or stdout, and `--json` for structured metadata (#195)
+- **Export API** — `exportGraph(graph, opts)`, `serializeExport(data, format)`, `exportToFile(graph, path, opts)` in `src/export.js` (#195)
+
 ## [2.0.0-alpha.2] - 2026-02-11
 
 ### Added

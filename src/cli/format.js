@@ -314,6 +314,19 @@ export function formatDecisionSummary(result) {
  * @param {import('../import.js').ImportResult} result
  * @returns {string}
  */
+/**
+ * Format an export result for terminal display.
+ * @param {{stats: {nodes: number, edges: number}, path?: string}} result
+ * @param {boolean} [toStdout=false]
+ * @returns {string}
+ */
+export function formatExportResult(result, toStdout = false) {
+  if (toStdout) {
+    return `${chalk.green(figures.tick)} Exported ${result.stats.nodes} node(s), ${result.stats.edges} edge(s)`;
+  }
+  return `${chalk.green(figures.tick)} Exported ${result.stats.nodes} node(s), ${result.stats.edges} edge(s) to ${chalk.cyan(result.path)}`;
+}
+
 export function formatImportResult(result) {
   const lines = [];
 

@@ -11,12 +11,13 @@ import { createEdge, queryEdges, removeEdge, EDGE_TYPES } from '../edges.js';
 import { getNodes, hasNode, getNode, getNodesByPrefix } from '../nodes.js';
 import { computeStatus } from '../status.js';
 import { importFile } from '../import.js';
+import { exportGraph, serializeExport, exportToFile } from '../export.js';
 import { renderView, listViews } from '../views.js';
 import { processCommit } from '../hooks.js';
 import { runDoctor, fixIssues } from '../doctor.js';
 import { generateSuggestions } from '../suggest.js';
 import { getPendingSuggestions, acceptSuggestion, rejectSuggestion, skipSuggestion, batchDecision } from '../review.js';
-import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary } from './format.js';
+import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary } from './format.js';
 
 /**
  * Initialize a git-mind graph in the current repo.
@@ -272,6 +273,41 @@ export async function importCmd(cwd, filePath, opts = {}) {
 
     if (!result.valid) {
       process.exitCode = 1;
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Export the graph to a file or stdout.
+ * @param {string} cwd
+ * @param {{ file?: string, format?: string, prefix?: string, json?: boolean }} opts
+ */
+export async function exportCmd(cwd, opts = {}) {
+  try {
+    const graph = await loadGraph(cwd);
+    const format = opts.format ?? 'yaml';
+
+    if (opts.file) {
+      const result = await exportToFile(graph, opts.file, { format, prefix: opts.prefix });
+
+      if (opts.json) {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        console.log(formatExportResult(result));
+      }
+    } else {
+      // stdout mode
+      const data = await exportGraph(graph, { prefix: opts.prefix });
+
+      if (opts.json) {
+        console.log(JSON.stringify(data, null, 2));
+      } else {
+        const output = serializeExport(data, format);
+        process.stdout.write(output);
+      }
     }
   } catch (err) {
     console.error(error(err.message));
