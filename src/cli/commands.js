@@ -13,7 +13,10 @@ import { computeStatus } from '../status.js';
 import { importFile } from '../import.js';
 import { renderView, listViews } from '../views.js';
 import { processCommit } from '../hooks.js';
-import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatImportResult } from './format.js';
+import { runDoctor, fixIssues } from '../doctor.js';
+import { generateSuggestions } from '../suggest.js';
+import { getPendingSuggestions, acceptSuggestion, rejectSuggestion, skipSuggestion, batchDecision } from '../review.js';
+import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary } from './format.js';
 
 /**
  * Initialize a git-mind graph in the current repo.
@@ -277,15 +280,135 @@ export async function importCmd(cwd, filePath, opts = {}) {
 }
 
 /**
- * Stub: AI suggestions.
+ * Run graph integrity checks.
+ * @param {string} cwd
+ * @param {{ json?: boolean, fix?: boolean }} opts
  */
-export async function suggest() {
-  console.log(info('AI suggestions not yet implemented'));
+export async function doctor(cwd, opts = {}) {
+  try {
+    const graph = await loadGraph(cwd);
+    const result = await runDoctor(graph);
+
+    let fixResult;
+    if (opts.fix && result.issues.length > 0) {
+      fixResult = await fixIssues(graph, result.issues);
+    }
+
+    if (opts.json) {
+      console.log(JSON.stringify(fixResult ? { ...result, fix: fixResult } : result, null, 2));
+    } else {
+      console.log(formatDoctorResult(result, fixResult));
+    }
+
+    if (result.summary.errors > 0) {
+      process.exitCode = 1;
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
 }
 
 /**
- * Stub: review edges.
+ * Generate AI-powered edge suggestions.
+ * @param {string} cwd
+ * @param {{ agent?: string, context?: string, json?: boolean }} opts
  */
-export async function review() {
-  console.log(info('Edge review not yet implemented'));
+export async function suggest(cwd, opts = {}) {
+  try {
+    const graph = await loadGraph(cwd);
+    const result = await generateSuggestions(cwd, graph, {
+      agent: opts.agent,
+      range: opts.context,
+    });
+
+    if (opts.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(formatSuggestions(result));
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Review pending suggestions interactively or in batch.
+ * @param {string} cwd
+ * @param {{ batch?: string, json?: boolean }} opts
+ */
+export async function review(cwd, opts = {}) {
+  try {
+    const graph = await loadGraph(cwd);
+
+    // Batch mode
+    if (opts.batch) {
+      if (opts.batch !== 'accept' && opts.batch !== 'reject') {
+        console.error(error('--batch must be "accept" or "reject"'));
+        process.exitCode = 1;
+        return;
+      }
+      const result = await batchDecision(graph, opts.batch);
+
+      if (opts.json) {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        console.log(formatDecisionSummary(result));
+      }
+      return;
+    }
+
+    // Interactive mode
+    const pending = await getPendingSuggestions(graph);
+
+    if (pending.length === 0) {
+      console.log(info('No pending suggestions to review'));
+      return;
+    }
+
+    if (opts.json) {
+      console.log(JSON.stringify(pending, null, 2));
+      return;
+    }
+
+    const { createInterface } = await import('node:readline');
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    const ask = (q) => new Promise(resolve => rl.question(q, resolve));
+
+    const decisions = [];
+
+    try {
+      for (let i = 0; i < pending.length; i++) {
+        const item = pending[i];
+        console.log('');
+        console.log(formatReviewItem(item, i, pending.length));
+
+        const answer = await ask('  [a]ccept / [r]eject / [s]kip ? ');
+        const choice = answer.trim().toLowerCase();
+
+        if (choice === 'a' || choice === 'accept') {
+          const d = await acceptSuggestion(graph, item);
+          decisions.push(d);
+          console.log(success('Accepted'));
+        } else if (choice === 'r' || choice === 'reject') {
+          const d = await rejectSuggestion(graph, item);
+          decisions.push(d);
+          console.log(success('Rejected'));
+        } else {
+          const d = skipSuggestion(item);
+          decisions.push(d);
+          console.log(info('Skipped'));
+        }
+      }
+    } finally {
+      rl.close();
+    }
+
+    console.log('');
+    console.log(formatDecisionSummary({ processed: decisions.length, decisions }));
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
 }

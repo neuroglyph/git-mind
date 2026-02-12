@@ -181,6 +181,135 @@ export function formatStatus(status) {
 }
 
 /**
+ * Format a doctor result for terminal display.
+ * @param {import('../doctor.js').DoctorResult} result
+ * @param {{ fixed?: number, skipped?: number, details?: string[] }} [fixResult]
+ * @returns {string}
+ */
+export function formatDoctorResult(result, fixResult) {
+  const lines = [];
+
+  lines.push(chalk.bold('Doctor'));
+  lines.push(chalk.dim('═'.repeat(32)));
+  lines.push('');
+
+  if (result.clean) {
+    lines.push(`${chalk.green(figures.tick)} Graph is healthy — no issues found`);
+  } else {
+    for (const issue of result.issues) {
+      const icon = issue.severity === 'error'
+        ? chalk.red(figures.cross)
+        : issue.severity === 'warning'
+          ? chalk.yellow(figures.warning)
+          : chalk.blue(figures.info);
+      lines.push(`${icon} ${issue.message}`);
+    }
+
+    lines.push('');
+    lines.push(chalk.dim(
+      `${result.summary.errors} error(s), ${result.summary.warnings} warning(s), ${result.summary.info} info`
+    ));
+  }
+
+  if (fixResult) {
+    lines.push('');
+    lines.push(chalk.bold('Fix Results'));
+    lines.push(`  ${chalk.green(figures.tick)} Fixed: ${fixResult.fixed}`);
+    lines.push(`  ${chalk.dim('Skipped:')} ${fixResult.skipped}`);
+    for (const detail of fixResult.details ?? []) {
+      lines.push(`  ${chalk.dim('·')} ${detail}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Format a list of suggestions for terminal display.
+ * @param {import('../suggest.js').SuggestResult} result
+ * @returns {string}
+ */
+export function formatSuggestions(result) {
+  const lines = [];
+
+  lines.push(chalk.bold('Suggestions'));
+  lines.push(chalk.dim('═'.repeat(32)));
+  lines.push('');
+
+  if (result.suggestions.length === 0) {
+    lines.push(chalk.dim('  No suggestions generated'));
+  } else {
+    for (const s of result.suggestions) {
+      const confStr = chalk.dim(`(${(s.confidence * 100).toFixed(0)}%)`);
+      lines.push(`  ${chalk.cyan(s.source)} ${chalk.dim('--[')}${chalk.yellow(s.type)}${chalk.dim(']-->')} ${chalk.cyan(s.target)} ${confStr}`);
+      if (s.rationale) {
+        lines.push(`    ${chalk.dim(s.rationale)}`);
+      }
+    }
+  }
+
+  if (result.errors?.length > 0) {
+    lines.push('');
+    lines.push(chalk.yellow(`${result.errors.length} parse error(s):`));
+    for (const err of result.errors) {
+      lines.push(`  ${chalk.yellow(figures.warning)} ${err}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Format a single review item for terminal display.
+ * @param {import('../review.js').PendingSuggestion} item
+ * @param {number} index
+ * @param {number} total
+ * @returns {string}
+ */
+export function formatReviewItem(item, index, total) {
+  const lines = [];
+  lines.push(chalk.bold(`Review [${index + 1}/${total}]`));
+  lines.push(chalk.dim('─'.repeat(32)));
+  const confStr = chalk.dim(`(${(item.confidence * 100).toFixed(0)}%)`);
+  lines.push(`  ${chalk.cyan(item.source)} ${chalk.dim('--[')}${chalk.yellow(item.type)}${chalk.dim(']-->')} ${chalk.cyan(item.target)} ${confStr}`);
+  if (item.rationale) {
+    lines.push(`  ${chalk.dim('Rationale:')} ${item.rationale}`);
+  }
+  return lines.join('\n');
+}
+
+/**
+ * Format a decision summary for terminal display.
+ * @param {{ processed: number, decisions: import('../review.js').ReviewDecision[] }} result
+ * @returns {string}
+ */
+export function formatDecisionSummary(result) {
+  const lines = [];
+
+  lines.push(chalk.bold('Review Summary'));
+  lines.push(chalk.dim('═'.repeat(32)));
+  lines.push('');
+
+  if (result.processed === 0) {
+    lines.push(chalk.dim('  No pending suggestions to review'));
+  } else {
+    const counts = {};
+    for (const d of result.decisions ?? []) {
+      counts[d.action] = (counts[d.action] ?? 0) + 1;
+    }
+    lines.push(`  ${chalk.green(figures.tick)} Processed ${result.processed} suggestion(s)`);
+    for (const [action, count] of Object.entries(counts)) {
+      const icon = action === 'accept' ? chalk.green(figures.tick)
+        : action === 'reject' ? chalk.red(figures.cross)
+          : chalk.blue(figures.info);
+      lines.push(`    ${icon} ${action}: ${count}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+/**
  * Format an import result for terminal display.
  * @param {import('../import.js').ImportResult} result
  * @returns {string}

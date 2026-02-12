@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, nodes, status, importCmd, installHooks, processCommitCmd, suggest, review } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, status, importCmd, installHooks, processCommitCmd, doctor, suggest, review } from '../src/cli/commands.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -36,24 +36,40 @@ Commands:
     --dry-run, --validate       Validate without writing
     --json                      Output as JSON
   install-hooks                  Install post-commit Git hook
-  suggest --ai                  AI suggestions (stub)
-  review                        Review edges (stub)
+  doctor                        Run graph integrity checks
+    --fix                       Auto-fix dangling edges
+    --json                      Output as JSON
+  suggest                       AI-powered edge suggestions
+    --agent <command>           Override GITMIND_AGENT
+    --context <sha-range>       Git range for context (default: HEAD~10..HEAD)
+    --json                      Output as JSON
+  review                        Review pending suggestions
+    --batch accept|reject       Non-interactive batch mode
+    --json                      Output as JSON
 
 Edge types: implements, augments, relates-to, blocks, belongs-to,
             consumed-by, depends-on, documents`);
 }
 
+const BOOLEAN_FLAGS = new Set(['json', 'fix']);
+
 /**
  * Parse --flag value pairs from args.
+ * Boolean flags (--json, --fix) are set to true; others consume the next arg.
  * @param {string[]} args
- * @returns {Record<string, string>}
+ * @returns {Record<string, string|true>}
  */
 function parseFlags(args) {
   const flags = {};
   for (let i = 0; i < args.length; i++) {
-    if (args[i].startsWith('--') && i + 1 < args.length) {
-      flags[args[i].slice(2)] = args[i + 1];
-      i++;
+    if (args[i].startsWith('--')) {
+      const name = args[i].slice(2);
+      if (BOOLEAN_FLAGS.has(name)) {
+        flags[name] = true;
+      } else if (i + 1 < args.length) {
+        flags[name] = args[i + 1];
+        i++;
+      }
     }
   }
   return flags;
@@ -150,13 +166,33 @@ switch (command) {
     await processCommitCmd(cwd, args[1]);
     break;
 
-  case 'suggest':
-    await suggest();
+  case 'doctor': {
+    const doctorFlags = parseFlags(args.slice(1));
+    await doctor(cwd, {
+      json: doctorFlags.json ?? false,
+      fix: doctorFlags.fix ?? false,
+    });
     break;
+  }
 
-  case 'review':
-    await review();
+  case 'suggest': {
+    const suggestFlags = parseFlags(args.slice(1));
+    await suggest(cwd, {
+      agent: suggestFlags.agent,
+      context: suggestFlags.context,
+      json: suggestFlags.json ?? false,
+    });
     break;
+  }
+
+  case 'review': {
+    const reviewFlags = parseFlags(args.slice(1));
+    await review(cwd, {
+      batch: reviewFlags.batch,
+      json: reviewFlags.json ?? false,
+    });
+    break;
+  }
 
   case '--help':
   case '-h':

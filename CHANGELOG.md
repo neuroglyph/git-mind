@@ -5,18 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — PROVING GROUND
+## [2.0.0-alpha.2] - 2026-02-11
 
 ### Added
 
-- **`coverage` view** — Code-to-spec gap analysis: identifies `crate:`/`module:`/`pkg:` nodes lacking `implements` edges to `spec:`/`adr:` targets. Returns `meta.linked`, `meta.unlinked`, and `meta.coveragePct`
-- **Echo ecosystem seed fixture** — `test/fixtures/echo-seed.yaml` with 55 nodes and 70 edges for integration testing (5 milestones, 5 specs, 5 ADRs, 5 docs, 15 crates, 11 tasks, 9 issues)
-- **PROVING GROUND integration tests** — `test/proving-ground.test.js` validates 5 real project management questions against the Echo seed with deterministic ground truth
-- **Dogfood session transcript** — `docs/dogfood-session.md` documents CLI walkthrough of all 5 questions with answers and timing
+- **`git mind doctor` command** — Graph integrity checking with four composable detectors: dangling edges (error), orphan milestones (warning), orphan nodes (info), low-confidence edges (info). Supports `--fix` to auto-remove dangling edges, `--json` for structured output. Exit code 1 on errors (#193)
+- **Doctor API** — `runDoctor(graph)`, `fixIssues(graph, issues)`, and individual detectors (`detectDanglingEdges`, `detectOrphanMilestones`, `detectOrphanNodes`, `detectLowConfidenceEdges`) in `src/doctor.js` (#193)
+- **Git context extraction** — `src/context.js` extracts file, commit, and graph context for LLM prompts. Language inference from file extensions. Size-bounded prompt generation (~4000 chars) (#193)
+- **`git mind suggest` command** — AI-powered edge suggestions via `GITMIND_AGENT` env var. Shells out to any command (stdin prompt, stdout JSON). Supports `--agent <cmd>`, `--context <sha-range>`, `--json`. Zero new dependencies (#193)
+- **Suggest API** — `callAgent(prompt)`, `parseSuggestions(text)` (handles raw JSON and markdown code fences), `filterRejected(suggestions, graph)`, `generateSuggestions(cwd, graph)` in `src/suggest.js` (#193)
+- **`git mind review` command** — Interactive review of pending suggestions with `[a]ccept / [r]eject / [s]kip` prompts via readline. Non-interactive batch mode via `--batch accept|reject`. `--json` output (#193)
+- **Review API** — `getPendingSuggestions(graph)`, `acceptSuggestion` (promotes confidence to 1.0), `rejectSuggestion` (removes edge), `adjustSuggestion` (updates edge props), `skipSuggestion` (no-op), `getReviewHistory`, `batchDecision` in `src/review.js` (#193)
+- **Decision provenance** — Review decisions stored as `decision:` prefixed nodes with action, source, target, edgeType, confidence, rationale, timestamp, and reviewer properties. Rejected edges excluded from future suggestions (#193)
+- **`coverage` view** — Code-to-spec gap analysis: identifies `crate:`/`module:`/`pkg:` nodes lacking `implements` edges to `spec:`/`adr:` targets. Returns `meta.linked`, `meta.unlinked`, and `meta.coveragePct` (#191)
+- **Echo ecosystem seed fixture** — `test/fixtures/echo-seed.yaml` with 55 nodes and 70 edges for integration testing (#191)
+- **PROVING GROUND integration tests** — `test/proving-ground.test.js` validates 5 real project management questions against the Echo seed with deterministic ground truth (#191)
+- **Dogfood session transcript** — `docs/dogfood-session.md` documents CLI walkthrough of all 5 questions (#191)
+
+### Fixed
+
+- **`parseFlags` boolean flag handling** — `--json` and `--fix` no longer consume the next argument as a value, fixing `git mind suggest --json --agent <cmd>` (#193)
+- **Shell injection in `extractCommitContext`** — `opts.range` validated against shell metacharacters; commit SHAs validated as hex before interpolation into `execSync` (#193)
+- **ReDoS in `parseSuggestions`** — Replaced polynomial regex for code fence extraction with non-backtracking pattern; replaced greedy array regex with `indexOf`/`lastIndexOf` (#193)
+- **Agent subprocess timeout** — `callAgent` now enforces a configurable timeout (default 2 min) via `opts.timeout`, killing hung agent processes (#193)
+- **Readline leak in interactive review** — `rl.close()` now called via `try/finally` to prevent terminal state corruption on error (#193)
+- **Non-atomic edge type change in `adjustSuggestion`** — New edge created before old edge removed, preventing data loss if `createEdge` throws (#193)
+- **Magic confidence default** — `adjustSuggestion` now preserves `original.confidence` instead of silently defaulting to 0.8 (#193)
+- **`batchDecision` action validation** — Throws on invalid action instead of silently falling through to reject (#193)
+- **Loose file node matching** — `extractGraphContext` uses exact match (`file:${fp}`) or suffix match instead of `includes()` to prevent false positives (#193)
+- **`fixResult.details` guard** — `formatDoctorResult` handles undefined `details` array with nullish coalescing (#193)
+- **`makeDecisionId` JSDoc** — Updated to say "unique" instead of "deterministic" since it includes `Date.now()` (#193)
+- **`fixIssues` named properties** — Uses `issue.source`/`issue.target`/`issue.edgeType` instead of positional destructuring (#193)
+- **N+1 query optimization** — `getPendingSuggestions`, `getReviewHistory`, and `filterRejected` use `Promise.all` for concurrent node prop fetches (#193)
+- **Consistent flag handling** — `doctor`, `suggest`, `review` CLI commands read `--json`/`--fix` from `parseFlags` instead of mixing `args.includes()` (#193)
+- **Sanitize `opts.limit`** — `extractCommitContext` coerces limit to safe integer (1–100) before shell interpolation (#193)
+- **Expanded sanitization blocklist** — `sanitizeGitArg` now also rejects `<`, `>`, `\n`, `\r` (#193)
+- **Unused import removed** — `extractPrefix` import removed from `src/doctor.js` (#193)
+- **Decision nodes excluded from orphan detection** — `detectOrphanNodes` skips `decision:` prefix nodes (#193)
+- **Defensive guard on `result.errors`** — `formatSuggestions` uses optional chaining for `result.errors` (#193)
+- **ReDoS fence regex eliminated** — Replaced regex-based code fence extraction with `indexOf`-based approach (#193)
+- **`skipSuggestion` documented as deferred** — JSDoc clarifies skip is intentional defer, not dismiss (#193)
+- **Single-writer assumption documented** — `acceptSuggestion` and `adjustSuggestion` JSDoc notes edge must exist (#193)
+- **`formatDecisionSummary` guard** — `result.decisions` now defaults to `[]` via nullish coalescing to prevent TypeError (#193)
+- **`DoctorIssue` typedef updated** — Added optional `source`, `target`, `edgeType` properties used by dangling-edge issues (#193)
+- **`adjustSuggestion` sets `reviewedAt` on type change** — New edge created during type change now receives a `reviewedAt` timestamp (#193)
+- **`generateSuggestions` rejection diagnostic** — Returns `rejectedCount` and logs a diagnostic when all suggestions were previously rejected (#193)
+- **`child.stdin` error handler** — `callAgent` attaches a no-op error listener on stdin to prevent uncaught EPIPE exceptions (#193)
+- **Doctor test fixture corrected** — Dangling-edge test issue now includes `source`/`target`/`edgeType` matching `fixIssues` expectations (#193)
+- **`buildPrompt` defensive guards** — Handles nullish `context.graph`/`commits`/`files` with defaults instead of throwing TypeError (#193)
+- **`fetchDecisionProps` shared helper** — Extracted duplicated decision-node fetch logic from `getPendingSuggestions` and `getReviewHistory` into a reusable helper (#193)
 
 ### Changed
 
-- **Test count** — 162 tests across 9 files (was 143 across 8)
+- **`suggest` and `review` stubs replaced** with full implementations (#193)
+- **Test count** — 208 tests across 13 files (was 143 across 8)
 
 ## [2.0.0-alpha.1] - 2026-02-11
 
@@ -92,4 +134,5 @@ Complete rewrite from C23 to Node.js on `@git-stunts/git-warp`.
 - Docker-based CI/CD
 - All C-specific documentation
 
+[2.0.0-alpha.2]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.2
 [2.0.0-alpha.0]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.0

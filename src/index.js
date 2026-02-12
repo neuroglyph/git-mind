@@ -16,3 +16,16 @@ export {
 } from './validators.js';
 export { defineView, declareView, renderView, listViews, resetViews } from './views.js';
 export { parseDirectives, processCommit } from './hooks.js';
+export {
+  detectDanglingEdges, detectOrphanMilestones, detectOrphanNodes,
+  detectLowConfidenceEdges, runDoctor, fixIssues,
+} from './doctor.js';
+export {
+  extractFileContext, extractCommitContext, extractGraphContext,
+  buildPrompt, extractContext,
+} from './context.js';
+export { callAgent, parseSuggestions, filterRejected, generateSuggestions } from './suggest.js';
+export {
+  getPendingSuggestions, acceptSuggestion, rejectSuggestion,
+  adjustSuggestion, skipSuggestion, getReviewHistory, batchDecision,
+} from './review.js';
