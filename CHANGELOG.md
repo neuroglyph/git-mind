@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Remote API** — `parseCrossRepoId`, `buildCrossRepoId`, `isCrossRepoId`, `extractRepo`, `qualifyNodeId` in `src/remote.js` (#197)
 - **`git mind merge` command** — Merge another repository's graph into the local graph with cross-repo qualification. Supports `--from <path>`, `--repo-name <owner/name>`, `--dry-run`, `--json`. Auto-detects repo identifier from origin remote (#198)
 - **Merge API** — `mergeFromRepo(localGraph, remotePath, opts)`, `detectRepoIdentifier(repoPath)` in `src/merge.js` (#198)
+- **GitHub Action** — Composite action (`action.yml`) that runs `git mind suggest` on PRs and posts formatted suggestions as a comment. Configurable agent command via action input or `.github/git-mind.yml` (#199)
 
 ## [2.0.0-alpha.2] - 2026-02-11
 

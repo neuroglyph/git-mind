@@ -1,0 +1,8 @@
+# git-mind configuration for GitHub Actions
+# Copy to .github/git-mind.yml and customize
+
+suggest:
+  # Agent command for generating suggestions.
+  # Must accept prompt on stdin and output JSON on stdout.
+  # Example using Claude:
+  agent: "claude -p --output-format json"
