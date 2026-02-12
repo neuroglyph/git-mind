@@ -58,6 +58,10 @@ describe('remote', () => {
       expect(buildCrossRepoId('neuroglyph/echo', 'crate:echo-core'))
         .toBe('repo:neuroglyph/echo:crate:echo-core');
     });
+
+    it('throws on invalid localId', () => {
+      expect(() => buildCrossRepoId('owner/name', 'nocolon')).toThrow(/prefix:identifier/);
+    });
   });
 
   // ── isCrossRepoId ──────────────────────────────────────────

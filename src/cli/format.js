@@ -310,11 +310,6 @@ export function formatDecisionSummary(result) {
 }
 
 /**
- * Format an import result for terminal display.
- * @param {import('../import.js').ImportResult} result
- * @returns {string}
- */
-/**
  * Format an export result for terminal display.
  * @param {{stats: {nodes: number, edges: number}, path?: string}} result
  * @param {boolean} [toStdout=false]
@@ -327,6 +322,11 @@ export function formatExportResult(result, toStdout = false) {
   return `${chalk.green(figures.tick)} Exported ${result.stats.nodes} node(s), ${result.stats.edges} edge(s) to ${chalk.cyan(result.path)}`;
 }
 
+/**
+ * Format an import result for terminal display.
+ * @param {import('../import.js').ImportResult} result
+ * @returns {string}
+ */
 export function formatImportResult(result) {
   const lines = [];
 

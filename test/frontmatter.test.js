@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
@@ -26,7 +26,7 @@ describe('frontmatter', () => {
    */
   async function writeMd(relativePath, content) {
     const fullPath = join(tempDir, relativePath);
-    const dir = fullPath.substring(0, fullPath.lastIndexOf('/'));
+    const dir = dirname(fullPath);
     await mkdir(dir, { recursive: true });
     await writeFile(fullPath, content, 'utf-8');
     return fullPath;
@@ -58,6 +58,13 @@ title: "Open"
 # No closing delimiter`;
       const { frontmatter } = parseFrontmatter(content);
       expect(frontmatter).toBeNull();
+    });
+
+    it('handles CRLF line endings', () => {
+      const content = '---\r\ntitle: "Hello"\r\nid: doc:hello\r\n---\r\n# Hello World';
+      const { frontmatter, body } = parseFrontmatter(content);
+      expect(frontmatter).toEqual({ title: 'Hello', id: 'doc:hello' });
+      expect(body).toContain('# Hello World');
     });
 
     it('returns null for invalid YAML in frontmatter', () => {

@@ -62,7 +62,7 @@ Edge types: implements, augments, relates-to, blocks, belongs-to,
             consumed-by, depends-on, documents`);
 }
 
-const BOOLEAN_FLAGS = new Set(['json', 'fix']);
+const BOOLEAN_FLAGS = new Set(['json', 'fix', 'dry-run', 'validate']);
 
 /**
  * Parse --flag value pairs from args.

@@ -47,6 +47,22 @@ describe('format-pr', () => {
       expect(result).toContain('/gitmind accept-all');
     });
 
+    it('escapes pipe characters in rationale', () => {
+      const suggestions = [{
+        source: 'task:a',
+        target: 'spec:b',
+        type: 'implements',
+        confidence: 0.8,
+        rationale: 'reason A | reason B',
+      }];
+
+      const result = formatSuggestionsAsMarkdown(suggestions);
+      // Pipe should be escaped so it doesn't break the table
+      expect(result).not.toMatch(/\| reason A \| reason B \|/);
+      expect(result).toContain('reason A');
+      expect(result).toContain('reason B');
+    });
+
     it('handles missing rationale', () => {
       const suggestions = [{
         source: 'task:a',

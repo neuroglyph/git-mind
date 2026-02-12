@@ -22,10 +22,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PR suggestion display** — `formatSuggestionsAsMarkdown` renders suggestions as a markdown table with `/gitmind accept|reject|accept-all` commands. `parseReviewCommand` parses slash commands from comment bodies (#200)
 - **Slash command workflow** — `.github/workflows/gitmind-review.yml` handles `/gitmind accept N`, `/gitmind reject N`, and `/gitmind accept-all` commands in PR comments (#200)
 
+### Fixed
+
+- **Privileged workflow checkout** — `gitmind-review.yml` now checks out the default branch (trusted code) instead of the PR head ref, preventing untrusted code execution in `issue_comment` context. Permissions scoped to `pull-requests: write` and `issues: write` only (#200)
+- **Shell injection in `post-comment.js`** — Comment body passed via stdin (`--input -`) instead of shell interpolation, preventing backtick command substitution. Repo and PR number validated before use (#199)
+- **`BOOLEAN_FLAGS` missing `dry-run` and `validate`** — `parseFlags` now treats `--dry-run` and `--validate` as boolean flags instead of consuming the next argument as their value (#195, #198)
+- **Pipe characters in markdown table** — `formatSuggestionsAsMarkdown` escapes `|` in rationale and type fields to prevent table row corruption (#200)
+- **Frontmatter CRLF handling** — `parseFrontmatter` now finds the first newline dynamically instead of assuming `\n` at offset 4, supporting Windows line endings (#196)
+- **`buildCrossRepoId` validation** — Throws on malformed `localId` missing `prefix:identifier` format instead of producing an invalid cross-repo ID (#197)
+- **Orphaned JSDoc** — `formatExportResult` moved above `formatImportResult`'s JSDoc block to restore correct documentation association (#195)
+- **Accept/reject workflow stubs** — Individual `/gitmind accept N` and `/gitmind reject N` now respond with "not yet supported" instead of silently appearing to succeed (#200)
+- **`action.yml` stderr mixing** — Suggest step redirects stderr to `/dev/null` instead of mixing it into JSON output (#199)
+
 ### Changed
 
 - **`repo` added to `SYSTEM_PREFIXES`** — Cross-repo IDs use the `repo:` prefix, now classified as system (#197)
-- **Test count** — 283 tests across 18 files (was 208 across 13)
+- **Test count** — 286 tests across 18 files (was 208 across 13)
 
 ## [2.0.0-alpha.2] - 2026-02-11
 

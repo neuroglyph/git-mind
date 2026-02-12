@@ -255,12 +255,10 @@ export async function importData(graph, data, opts = {}) {
  * @returns {Promise<ImportResult>}
  */
 export async function importFile(graph, filePath, opts = {}) {
-  const dryRun = opts.dryRun ?? false;
-
   // Parse
   const { data, parseError } = await parseImportFile(filePath);
   if (parseError) {
-    return { valid: false, errors: [parseError], warnings: [], stats: { nodes: 0, edges: 0 }, dryRun };
+    return { valid: false, errors: [parseError], warnings: [], stats: { nodes: 0, edges: 0 }, dryRun: opts.dryRun ?? false };
   }
 
   return importData(graph, data, opts);

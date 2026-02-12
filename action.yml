@@ -31,7 +31,7 @@ runs:
       run: |
         BASE_SHA="${{ github.event.pull_request.base.sha }}"
         HEAD_SHA="${{ github.event.pull_request.head.sha }}"
-        RESULT=$(node ${{ github.action_path }}/bin/git-mind.js suggest --json --context "${BASE_SHA}..${HEAD_SHA}" 2>&1) || true
+        RESULT=$(node ${{ github.action_path }}/bin/git-mind.js suggest --json --context "${BASE_SHA}..${HEAD_SHA}" 2>/dev/null) || true
         echo "result<<GITMIND_EOF" >> "$GITHUB_OUTPUT"
         echo "$RESULT" >> "$GITHUB_OUTPUT"
         echo "GITMIND_EOF" >> "$GITHUB_OUTPUT"

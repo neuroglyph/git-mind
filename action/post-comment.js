@@ -18,6 +18,16 @@ if (!repo || !prNumber) {
   process.exit(1);
 }
 
+// Validate inputs before shell interpolation
+if (!/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/.test(repo)) {
+  console.error('Invalid repo format. Expected owner/name.');
+  process.exit(1);
+}
+if (!/^\d+$/.test(prNumber)) {
+  console.error('Invalid PR number. Expected an integer.');
+  process.exit(1);
+}
+
 const raw = process.env.SUGGEST_RESULT ?? '';
 
 // Parse the suggest result
@@ -31,11 +41,12 @@ try {
 
 const body = `## git-mind Suggestions\n\n${formatSuggestionsAsMarkdown(result.suggestions)}`;
 
-// Post comment via gh CLI
+// Post comment via gh CLI — pass body as JSON via stdin to avoid shell injection
 try {
+  const payload = JSON.stringify({ body });
   execSync(
-    `gh api repos/${repo}/issues/${prNumber}/comments -f body=${JSON.stringify(body)}`,
-    { stdio: 'inherit' },
+    `gh api repos/${repo}/issues/${prNumber}/comments --input -`,
+    { input: payload, stdio: ['pipe', 'inherit', 'inherit'] },
   );
   console.log('Comment posted successfully.');
 } catch (err) {

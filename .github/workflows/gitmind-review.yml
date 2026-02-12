@@ -5,7 +5,6 @@ on:
     types: [created]
 
 permissions:
-  contents: write
   pull-requests: write
   issues: write
 
@@ -16,10 +15,11 @@ jobs:
       contains(github.event.comment.body, '/gitmind')
     runs-on: ubuntu-latest
     steps:
+      # Checkout default branch (trusted code) — never the PR head.
+      # issue_comment is a privileged context; checking out attacker-controlled
+      # code would allow arbitrary execution with write permissions.
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.issue.pull_request.head.ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -54,12 +54,15 @@ jobs:
               ;;
             accept)
               if [ -n "$INDEX" ]; then
-                REPLY="Suggestion $INDEX accepted."
+                # Individual accept by index is not yet supported in the CLI.
+                # accept-all is available; individual accept requires CLI changes.
+                REPLY="Individual accept by index is not yet supported. Use \`/gitmind accept-all\` instead."
               fi
               ;;
             reject)
               if [ -n "$INDEX" ]; then
-                REPLY="Suggestion $INDEX rejected."
+                # Individual reject by index is not yet supported in the CLI.
+                REPLY="Individual reject by index is not yet supported."
               fi
               ;;
           esac

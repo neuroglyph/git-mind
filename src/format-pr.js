@@ -3,6 +3,11 @@
  * Markdown formatting for PR suggestion display and slash command parsing.
  */
 
+/** Escape pipe characters for markdown table cells. */
+function escapeCell(str) {
+  return str.replace(/\|/g, '\\|');
+}
+
 /**
  * Format suggestions as a markdown table for PR comments.
  *
@@ -22,8 +27,8 @@ export function formatSuggestionsAsMarkdown(suggestions) {
   for (let i = 0; i < suggestions.length; i++) {
     const s = suggestions[i];
     const conf = `${(s.confidence * 100).toFixed(0)}%`;
-    const rationale = s.rationale ?? '';
-    lines.push(`| ${i + 1} | \`${s.source}\` | \`${s.target}\` | ${s.type} | ${conf} | ${rationale} |`);
+    const rationale = escapeCell(s.rationale ?? '');
+    lines.push(`| ${i + 1} | \`${s.source}\` | \`${s.target}\` | ${escapeCell(s.type)} | ${conf} | ${rationale} |`);
   }
 
   lines.push('');

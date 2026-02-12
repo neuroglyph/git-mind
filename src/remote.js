@@ -41,6 +41,9 @@ export function parseCrossRepoId(nodeId) {
  * @returns {string} Cross-repo ID (repo:owner/name:prefix:identifier)
  */
 export function buildCrossRepoId(repo, localId) {
+  if (typeof localId !== 'string' || !localId.includes(':')) {
+    throw new Error(`Invalid localId: "${localId}". Must match prefix:identifier format.`);
+  }
   return `repo:${repo}:${localId}`;
 }
 

@@ -24,12 +24,15 @@ export function parseFrontmatter(content) {
     return { frontmatter: null, body: content };
   }
 
-  const endIdx = content.indexOf('\n---', 3);
+  const firstNewline = content.indexOf('\n');
+  if (firstNewline === -1) return { frontmatter: null, body: content };
+
+  const endIdx = content.indexOf('\n---', firstNewline);
   if (endIdx === -1) {
     return { frontmatter: null, body: content };
   }
 
-  const yamlBlock = content.slice(4, endIdx);
+  const yamlBlock = content.slice(firstNewline + 1, endIdx);
   try {
     const parsed = yaml.load(yamlBlock);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
