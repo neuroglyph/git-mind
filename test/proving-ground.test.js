@@ -173,7 +173,7 @@ describe('PROVING GROUND', () => {
 
   describe('complexity', () => {
     /**
-     * Generate a synthetic graph with ~N nodes and ~2N edges.
+     * Generate a synthetic graph with ~N nodes and ~0.7N edges.
      * Uses the same prefixes/types as echo-seed so views exercise real code paths.
      */
     async function generateGraph(nodeCount) {
