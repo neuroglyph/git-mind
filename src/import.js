@@ -215,21 +215,16 @@ async function writeImport(graph, data) {
 }
 
 /**
- * Import a YAML file into the graph.
+ * Import a validated v1 data object into the graph.
+ * This is the shared pipeline used by both YAML import and frontmatter import.
  *
  * @param {import('@git-stunts/git-warp').default} graph
- * @param {string} filePath - Path to the YAML file
+ * @param {object} data - v1 import data ({ version, nodes, edges })
  * @param {{ dryRun?: boolean }} [opts]
  * @returns {Promise<ImportResult>}
  */
-export async function importFile(graph, filePath, opts = {}) {
+export async function importData(graph, data, opts = {}) {
   const dryRun = opts.dryRun ?? false;
-
-  // Parse
-  const { data, parseError } = await parseImportFile(filePath);
-  if (parseError) {
-    return { valid: false, errors: [parseError], warnings: [], stats: { nodes: 0, edges: 0 }, dryRun };
-  }
 
   // Validate
   const { valid, errors, warnings } = await validateImportData(data, graph);
@@ -249,4 +244,24 @@ export async function importFile(graph, filePath, opts = {}) {
   // Write atomically
   const stats = await writeImport(graph, data);
   return { valid: true, errors: [], warnings, stats, dryRun: false };
+}
+
+/**
+ * Import a YAML file into the graph.
+ *
+ * @param {import('@git-stunts/git-warp').default} graph
+ * @param {string} filePath - Path to the YAML file
+ * @param {{ dryRun?: boolean }} [opts]
+ * @returns {Promise<ImportResult>}
+ */
+export async function importFile(graph, filePath, opts = {}) {
+  const dryRun = opts.dryRun ?? false;
+
+  // Parse
+  const { data, parseError } = await parseImportFile(filePath);
+  if (parseError) {
+    return { valid: false, errors: [parseError], warnings: [], stats: { nodes: 0, edges: 0 }, dryRun };
+  }
+
+  return importData(graph, data, opts);
 }

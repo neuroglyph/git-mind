@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`git mind export` command** — Serialize the graph to YAML or JSON in v1 import-compatible format, enabling round-trip workflows. Supports `--format yaml|json`, `--prefix <prefix>` filtering, file output or stdout, and `--json` for structured metadata (#195)
 - **Export API** — `exportGraph(graph, opts)`, `serializeExport(data, format)`, `exportToFile(graph, path, opts)` in `src/export.js` (#195)
+- **`git mind import --from-markdown` command** — Import nodes and edges from markdown file frontmatter. Auto-generates `doc:` IDs from file paths, recognizes all 8 edge types as frontmatter fields. Supports `--dry-run`, `--json`, glob patterns (#196)
+- **Frontmatter API** — `parseFrontmatter(content)`, `extractGraphData(path, frontmatter)`, `findMarkdownFiles(basePath, pattern)`, `importFromMarkdown(graph, cwd, pattern, opts)` in `src/frontmatter.js` (#196)
+- **`importData` shared pipeline** — Extracted from `importFile` in `src/import.js` for reuse by frontmatter import and future merge (#196)
 
 ## [2.0.0-alpha.2] - 2026-02-11
 

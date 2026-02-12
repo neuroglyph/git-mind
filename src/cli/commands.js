@@ -11,6 +11,7 @@ import { createEdge, queryEdges, removeEdge, EDGE_TYPES } from '../edges.js';
 import { getNodes, hasNode, getNode, getNodesByPrefix } from '../nodes.js';
 import { computeStatus } from '../status.js';
 import { importFile } from '../import.js';
+import { importFromMarkdown } from '../frontmatter.js';
 import { exportGraph, serializeExport, exportToFile } from '../export.js';
 import { renderView, listViews } from '../views.js';
 import { processCommit } from '../hooks.js';
@@ -264,6 +265,32 @@ export async function importCmd(cwd, filePath, opts = {}) {
   try {
     const graph = await loadGraph(cwd);
     const result = await importFile(graph, filePath, { dryRun: opts.dryRun });
+
+    if (opts.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(formatImportResult(result));
+    }
+
+    if (!result.valid) {
+      process.exitCode = 1;
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Import nodes and edges from markdown frontmatter.
+ * @param {string} cwd
+ * @param {string} pattern - Glob pattern for markdown files
+ * @param {{ dryRun?: boolean, json?: boolean }} opts
+ */
+export async function importMarkdownCmd(cwd, pattern, opts = {}) {
+  try {
+    const graph = await loadGraph(cwd);
+    const result = await importFromMarkdown(graph, cwd, pattern, { dryRun: opts.dryRun });
 
     if (opts.json) {
       console.log(JSON.stringify(result, null, 2));

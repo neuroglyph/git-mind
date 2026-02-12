@@ -7,7 +7,8 @@ export { initGraph, loadGraph, saveGraph } from './graph.js';
 export { createEdge, queryEdges, removeEdge, EDGE_TYPES } from './edges.js';
 export { getNodes, hasNode, getNode, getNodesByPrefix } from './nodes.js';
 export { computeStatus } from './status.js';
-export { importFile, parseImportFile, validateImportData } from './import.js';
+export { importFile, importData, parseImportFile, validateImportData } from './import.js';
+export { importFromMarkdown, parseFrontmatter } from './frontmatter.js';
 export { exportGraph, serializeExport, exportToFile } from './export.js';
 export {
   validateNodeId, validateEdgeType, validateConfidence, validateEdge,

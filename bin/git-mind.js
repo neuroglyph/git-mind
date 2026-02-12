@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, nodes, status, importCmd, exportCmd, installHooks, processCommitCmd, doctor, suggest, review } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, status, importCmd, importMarkdownCmd, exportCmd, installHooks, processCommitCmd, doctor, suggest, review } from '../src/cli/commands.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -35,6 +35,7 @@ Commands:
   import <file>                 Import a YAML graph file
     --dry-run, --validate       Validate without writing
     --json                      Output as JSON
+    --from-markdown <glob>      Import from markdown frontmatter
   export [file]                 Export graph to YAML/JSON
     --format yaml|json          Output format (default: yaml)
     --prefix <prefix>           Filter by node prefix
@@ -144,16 +145,22 @@ switch (command) {
     break;
 
   case 'import': {
+    const importFlags = parseFlags(args.slice(1));
+    const dryRun = args.includes('--dry-run') || args.includes('--validate');
+    const jsonMode = args.includes('--json');
+
+    if (importFlags['from-markdown']) {
+      await importMarkdownCmd(cwd, importFlags['from-markdown'], { dryRun, json: jsonMode });
+      break;
+    }
+
     const importPath = args[1];
-    if (!importPath) {
-      console.error('Usage: git mind import <file> [--dry-run] [--json]');
+    if (!importPath || importPath.startsWith('--')) {
+      console.error('Usage: git mind import <file> [--dry-run] [--json] [--from-markdown <glob>]');
       process.exitCode = 1;
       break;
     }
-    await importCmd(cwd, importPath, {
-      dryRun: args.includes('--dry-run') || args.includes('--validate'),
-      json: args.includes('--json'),
-    });
+    await importCmd(cwd, importPath, { dryRun, json: jsonMode });
     break;
   }
 
