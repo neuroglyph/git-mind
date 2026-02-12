@@ -181,6 +181,50 @@ export function formatStatus(status) {
 }
 
 /**
+ * Format a doctor result for terminal display.
+ * @param {import('../doctor.js').DoctorResult} result
+ * @param {{ fixed?: number, skipped?: number, details?: string[] }} [fixResult]
+ * @returns {string}
+ */
+export function formatDoctorResult(result, fixResult) {
+  const lines = [];
+
+  lines.push(chalk.bold('Doctor'));
+  lines.push(chalk.dim('═'.repeat(32)));
+  lines.push('');
+
+  if (result.clean) {
+    lines.push(`${chalk.green(figures.tick)} Graph is healthy — no issues found`);
+  } else {
+    for (const issue of result.issues) {
+      const icon = issue.severity === 'error'
+        ? chalk.red(figures.cross)
+        : issue.severity === 'warning'
+          ? chalk.yellow(figures.warning)
+          : chalk.blue(figures.info);
+      lines.push(`${icon} ${issue.message}`);
+    }
+
+    lines.push('');
+    lines.push(chalk.dim(
+      `${result.summary.errors} error(s), ${result.summary.warnings} warning(s), ${result.summary.info} info`
+    ));
+  }
+
+  if (fixResult) {
+    lines.push('');
+    lines.push(chalk.bold('Fix Results'));
+    lines.push(`  ${chalk.green(figures.tick)} Fixed: ${fixResult.fixed}`);
+    lines.push(`  ${chalk.dim('Skipped:')} ${fixResult.skipped}`);
+    for (const detail of fixResult.details) {
+      lines.push(`  ${chalk.dim('·')} ${detail}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+/**
  * Format an import result for terminal display.
  * @param {import('../import.js').ImportResult} result
  * @returns {string}

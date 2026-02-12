@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, nodes, status, importCmd, installHooks, processCommitCmd, suggest, review } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, status, importCmd, installHooks, processCommitCmd, doctor, suggest, review } from '../src/cli/commands.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -36,7 +36,10 @@ Commands:
     --dry-run, --validate       Validate without writing
     --json                      Output as JSON
   install-hooks                  Install post-commit Git hook
-  suggest --ai                  AI suggestions (stub)
+  doctor                        Run graph integrity checks
+    --fix                       Auto-fix dangling edges
+    --json                      Output as JSON
+  suggest                       AI suggestions (stub)
   review                        Review edges (stub)
 
 Edge types: implements, augments, relates-to, blocks, belongs-to,
@@ -149,6 +152,14 @@ switch (command) {
     }
     await processCommitCmd(cwd, args[1]);
     break;
+
+  case 'doctor': {
+    await doctor(cwd, {
+      json: args.includes('--json'),
+      fix: args.includes('--fix'),
+    });
+    break;
+  }
 
   case 'suggest':
     await suggest();

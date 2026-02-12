@@ -13,7 +13,8 @@ import { computeStatus } from '../status.js';
 import { importFile } from '../import.js';
 import { renderView, listViews } from '../views.js';
 import { processCommit } from '../hooks.js';
-import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatImportResult } from './format.js';
+import { runDoctor, fixIssues } from '../doctor.js';
+import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatImportResult, formatDoctorResult } from './format.js';
 
 /**
  * Initialize a git-mind graph in the current repo.
@@ -268,6 +269,36 @@ export async function importCmd(cwd, filePath, opts = {}) {
     }
 
     if (!result.valid) {
+      process.exitCode = 1;
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Run graph integrity checks.
+ * @param {string} cwd
+ * @param {{ json?: boolean, fix?: boolean }} opts
+ */
+export async function doctor(cwd, opts = {}) {
+  try {
+    const graph = await loadGraph(cwd);
+    const result = await runDoctor(graph);
+
+    let fixResult;
+    if (opts.fix && result.issues.length > 0) {
+      fixResult = await fixIssues(graph, result.issues);
+    }
+
+    if (opts.json) {
+      console.log(JSON.stringify(fixResult ? { ...result, fix: fixResult } : result, null, 2));
+    } else {
+      console.log(formatDoctorResult(result, fixResult));
+    }
+
+    if (result.summary.errors > 0) {
       process.exitCode = 1;
     }
   } catch (err) {
