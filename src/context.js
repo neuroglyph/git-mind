@@ -103,14 +103,14 @@ export function extractFileContext(cwd, opts = {}) {
  */
 /** Validate that a string is safe for use as a git command argument. */
 function sanitizeGitArg(value) {
-  if (/[;&|`$(){}!#]/.test(value)) {
+  if (/[;&|`$(){}!#<>\n\r]/.test(value)) {
     throw new Error(`Unsafe characters in git argument: ${value}`);
   }
   return value;
 }
 
 export function extractCommitContext(cwd, opts = {}) {
-  const limit = opts.limit ?? 10;
+  const limit = Math.max(1, Math.min(Number.parseInt(opts.limit ?? 10, 10) || 10, 100));
   const range = sanitizeGitArg(opts.range ?? `HEAD~${limit}..HEAD`);
 
   try {

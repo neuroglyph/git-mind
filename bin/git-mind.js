@@ -167,9 +167,10 @@ switch (command) {
     break;
 
   case 'doctor': {
+    const doctorFlags = parseFlags(args.slice(1));
     await doctor(cwd, {
-      json: args.includes('--json'),
-      fix: args.includes('--fix'),
+      json: doctorFlags.json ?? false,
+      fix: doctorFlags.fix ?? false,
     });
     break;
   }
@@ -179,7 +180,7 @@ switch (command) {
     await suggest(cwd, {
       agent: suggestFlags.agent,
       context: suggestFlags.context,
-      json: args.includes('--json'),
+      json: suggestFlags.json ?? false,
     });
     break;
   }
@@ -188,7 +189,7 @@ switch (command) {
     const reviewFlags = parseFlags(args.slice(1));
     await review(cwd, {
       batch: reviewFlags.batch,
-      json: args.includes('--json'),
+      json: reviewFlags.json ?? false,
     });
     break;
   }

@@ -29,7 +29,7 @@ describe('suggest', () => {
     try {
       expect(() => callAgent('test prompt')).toThrow(/GITMIND_AGENT not set/);
     } finally {
-      if (original) process.env.GITMIND_AGENT = original;
+      if (original !== undefined) process.env.GITMIND_AGENT = original;
     }
   });
 

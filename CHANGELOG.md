@@ -36,12 +36,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`fixResult.details` guard** — `formatDoctorResult` handles undefined `details` array with nullish coalescing (#193)
 - **`makeDecisionId` JSDoc** — Updated to say "unique" instead of "deterministic" since it includes `Date.now()` (#193)
 - **`fixIssues` named properties** — Uses `issue.source`/`issue.target`/`issue.edgeType` instead of positional destructuring (#193)
-- **N+1 query optimization** — `getPendingSuggestions` and `getReviewHistory` use `Promise.all` for concurrent node prop fetches (#193)
+- **N+1 query optimization** — `getPendingSuggestions`, `getReviewHistory`, and `filterRejected` use `Promise.all` for concurrent node prop fetches (#193)
+- **Consistent flag handling** — `doctor`, `suggest`, `review` CLI commands read `--json`/`--fix` from `parseFlags` instead of mixing `args.includes()` (#193)
+- **Sanitize `opts.limit`** — `extractCommitContext` coerces limit to safe integer (1–100) before shell interpolation (#193)
+- **Expanded sanitization blocklist** — `sanitizeGitArg` now also rejects `<`, `>`, `\n`, `\r` (#193)
+- **Unused import removed** — `extractPrefix` import removed from `src/doctor.js` (#193)
+- **Decision nodes excluded from orphan detection** — `detectOrphanNodes` skips `decision:` prefix nodes (#193)
+- **Defensive guard on `result.errors`** — `formatSuggestions` uses optional chaining for `result.errors` (#193)
+- **ReDoS fence regex eliminated** — Replaced regex-based code fence extraction with `indexOf`-based approach (#193)
+- **`skipSuggestion` documented as deferred** — JSDoc clarifies skip is intentional defer, not dismiss (#193)
+- **Single-writer assumption documented** — `acceptSuggestion` and `adjustSuggestion` JSDoc notes edge must exist (#193)
 
 ### Changed
 
 - **`suggest` and `review` stubs replaced** with full implementations (#193)
-- **Test count** — 205 tests across 13 files (was 143 across 8)
+- **Test count** — 206 tests across 13 files (was 143 across 8)
 
 ## [2.0.0-alpha.1] - 2026-02-11
 

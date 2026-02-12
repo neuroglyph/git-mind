@@ -115,6 +115,8 @@ export async function getPendingSuggestions(graph) {
 
 /**
  * Accept a suggestion: promote edge confidence to 1.0, record decision.
+ * Assumes single-writer: the edge must still exist when called.
+ * If the edge was concurrently deleted, setEdgeProperty will throw.
  *
  * @param {import('@git-stunts/git-warp').default} graph
  * @param {PendingSuggestion} suggestion
@@ -173,6 +175,7 @@ export async function rejectSuggestion(graph, suggestion, opts = {}) {
 
 /**
  * Adjust a suggestion: update edge props, record decision.
+ * Assumes single-writer: the edge must still exist when called.
  *
  * @param {import('@git-stunts/git-warp').default} graph
  * @param {PendingSuggestion} original
@@ -221,7 +224,9 @@ export async function adjustSuggestion(graph, original, adjustments = {}) {
 }
 
 /**
- * Skip a suggestion: no graph write, return decision object.
+ * Skip a suggestion: defers the decision without persisting.
+ * Skipped items intentionally remain pending and will reappear in future
+ * review sessions, allowing the reviewer to revisit them later.
  *
  * @param {PendingSuggestion} suggestion
  * @returns {ReviewDecision}

@@ -78,6 +78,15 @@ describe('doctor', () => {
     expect(issues[0].affected).toEqual(['task:c']);
   });
 
+  it('excludes decision: nodes from orphan detection', () => {
+    const nodes = ['task:a', 'task:b', 'decision:123-abc'];
+    const edges = [{ from: 'task:a', to: 'task:b', label: 'blocks' }];
+    const issues = detectOrphanNodes(nodes, edges);
+
+    expect(issues).toHaveLength(0);
+    expect(issues.find(i => i.affected[0] === 'decision:123-abc')).toBeUndefined();
+  });
+
   // ── detectLowConfidenceEdges ────────────────────────────────
 
   it('detects edges below the confidence threshold', () => {

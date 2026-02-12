@@ -248,7 +248,7 @@ export function formatSuggestions(result) {
     }
   }
 
-  if (result.errors.length > 0) {
+  if (result.errors?.length > 0) {
     lines.push('');
     lines.push(chalk.yellow(`${result.errors.length} parse error(s):`));
     for (const err of result.errors) {

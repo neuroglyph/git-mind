@@ -4,7 +4,7 @@
  * Composable checks that identify structural issues in the knowledge graph.
  */
 
-import { extractPrefix, isLowConfidence } from './validators.js';
+import { isLowConfidence } from './validators.js';
 import { removeEdge } from './edges.js';
 
 /**
@@ -94,7 +94,7 @@ export function detectOrphanNodes(nodes, edges) {
   }
 
   return nodes
-    .filter(n => !connected.has(n))
+    .filter(n => !connected.has(n) && !n.startsWith('decision:'))
     .map(n => ({
       type: 'orphan-node',
       severity: 'info',

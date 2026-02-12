@@ -104,10 +104,14 @@ export function parseSuggestions(responseText) {
 
   let text = responseText.trim();
 
-  // Extract JSON from markdown code fences if present
-  const fenceMatch = text.match(/```(?:json)?[ \t]*\n([\s\S]*?)\n```/);
-  if (fenceMatch) {
-    text = fenceMatch[1].trim();
+  // Extract JSON from markdown code fences if present (indexOf-based, no regex)
+  const fenceStart = text.indexOf('```');
+  if (fenceStart !== -1) {
+    const contentStart = text.indexOf('\n', fenceStart);
+    const fenceEnd = text.indexOf('\n```', contentStart + 1);
+    if (contentStart !== -1 && fenceEnd !== -1) {
+      text = text.slice(contentStart + 1, fenceEnd).trim();
+    }
   }
 
   // Try to parse as JSON
@@ -192,8 +196,8 @@ export async function filterRejected(suggestions, graph) {
 
   // Build a set of rejected source|target|type combinations
   const rejectedKeys = new Set();
-  for (const nodeId of decisionNodes) {
-    const propsMap = await graph.getNodeProps(nodeId);
+  const propsResults = await Promise.all(decisionNodes.map(id => graph.getNodeProps(id)));
+  for (const propsMap of propsResults) {
     if (!propsMap) continue;
     const action = propsMap.get('action');
     if (action !== 'reject') continue;

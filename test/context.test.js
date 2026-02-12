@@ -130,6 +130,8 @@ describe('context', () => {
     expect(() => extractCommitContext(tempDir, { range: 'HEAD; rm -rf /' })).toThrow(/Unsafe characters/);
     expect(() => extractCommitContext(tempDir, { range: 'HEAD | cat /etc/passwd' })).toThrow(/Unsafe characters/);
     expect(() => extractCommitContext(tempDir, { range: '$(whoami)' })).toThrow(/Unsafe characters/);
+    expect(() => extractCommitContext(tempDir, { range: 'HEAD > /tmp/output' })).toThrow(/Unsafe characters/);
+    expect(() => extractCommitContext(tempDir, { range: 'HEAD\necho pwned' })).toThrow(/Unsafe characters/);
   });
 
   it('uses exact match for file node association', async () => {
