@@ -5,18 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — PROVING GROUND
+## [2.0.0-alpha.2] - 2026-02-11
 
 ### Added
 
-- **`coverage` view** — Code-to-spec gap analysis: identifies `crate:`/`module:`/`pkg:` nodes lacking `implements` edges to `spec:`/`adr:` targets. Returns `meta.linked`, `meta.unlinked`, and `meta.coveragePct`
-- **Echo ecosystem seed fixture** — `test/fixtures/echo-seed.yaml` with 55 nodes and 70 edges for integration testing (5 milestones, 5 specs, 5 ADRs, 5 docs, 15 crates, 11 tasks, 9 issues)
-- **PROVING GROUND integration tests** — `test/proving-ground.test.js` validates 5 real project management questions against the Echo seed with deterministic ground truth
-- **Dogfood session transcript** — `docs/dogfood-session.md` documents CLI walkthrough of all 5 questions with answers and timing
+- **`git mind doctor` command** — Graph integrity checking with four composable detectors: dangling edges (error), orphan milestones (warning), orphan nodes (info), low-confidence edges (info). Supports `--fix` to auto-remove dangling edges, `--json` for structured output. Exit code 1 on errors (#193)
+- **Doctor API** — `runDoctor(graph)`, `fixIssues(graph, issues)`, and individual detectors (`detectDanglingEdges`, `detectOrphanMilestones`, `detectOrphanNodes`, `detectLowConfidenceEdges`) in `src/doctor.js` (#193)
+- **Git context extraction** — `src/context.js` extracts file, commit, and graph context for LLM prompts. Language inference from file extensions. Size-bounded prompt generation (~4000 chars) (#193)
+- **`git mind suggest` command** — AI-powered edge suggestions via `GITMIND_AGENT` env var. Shells out to any command (stdin prompt, stdout JSON). Supports `--agent <cmd>`, `--context <sha-range>`, `--json`. Zero new dependencies (#193)
+- **Suggest API** — `callAgent(prompt)`, `parseSuggestions(text)` (handles raw JSON and markdown code fences), `filterRejected(suggestions, graph)`, `generateSuggestions(cwd, graph)` in `src/suggest.js` (#193)
+- **`git mind review` command** — Interactive review of pending suggestions with `[a]ccept / [r]eject / [s]kip` prompts via readline. Non-interactive batch mode via `--batch accept|reject`. `--json` output (#193)
+- **Review API** — `getPendingSuggestions(graph)`, `acceptSuggestion` (promotes confidence to 1.0), `rejectSuggestion` (removes edge), `adjustSuggestion` (updates edge props), `skipSuggestion` (no-op), `getReviewHistory`, `batchDecision` in `src/review.js` (#193)
+- **Decision provenance** — Review decisions stored as `decision:` prefixed nodes with action, source, target, edgeType, confidence, rationale, timestamp, and reviewer properties. Rejected edges excluded from future suggestions (#193)
+- **`coverage` view** — Code-to-spec gap analysis: identifies `crate:`/`module:`/`pkg:` nodes lacking `implements` edges to `spec:`/`adr:` targets. Returns `meta.linked`, `meta.unlinked`, and `meta.coveragePct` (#191)
+- **Echo ecosystem seed fixture** — `test/fixtures/echo-seed.yaml` with 55 nodes and 70 edges for integration testing (#191)
+- **PROVING GROUND integration tests** — `test/proving-ground.test.js` validates 5 real project management questions against the Echo seed with deterministic ground truth (#191)
+- **Dogfood session transcript** — `docs/dogfood-session.md` documents CLI walkthrough of all 5 questions (#191)
 
 ### Changed
 
-- **Test count** — 162 tests across 9 files (was 143 across 8)
+- **`suggest` and `review` stubs replaced** with full implementations (#193)
+- **Test count** — 200 tests across 13 files (was 143 across 8)
 
 ## [2.0.0-alpha.1] - 2026-02-11
 
@@ -92,4 +101,5 @@ Complete rewrite from C23 to Node.js on `@git-stunts/git-warp`.
 - Docker-based CI/CD
 - All C-specific documentation
 
+[2.0.0-alpha.2]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.2
 [2.0.0-alpha.0]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.0
