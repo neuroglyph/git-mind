@@ -32,7 +32,7 @@ import { removeEdge, createEdge } from './edges.js';
  */
 
 /**
- * Generate a deterministic decision node ID from edge components.
+ * Generate a unique decision node ID from edge components.
  *
  * @param {string} source
  * @param {string} target
@@ -90,8 +90,8 @@ export async function getPendingSuggestions(graph) {
   const decisionNodes = nodes.filter(n => n.startsWith('decision:'));
 
   const reviewedKeys = new Set();
-  for (const nodeId of decisionNodes) {
-    const propsMap = await graph.getNodeProps(nodeId);
+  const propsResults = await Promise.all(decisionNodes.map(id => graph.getNodeProps(id)));
+  for (const propsMap of propsResults) {
     if (!propsMap) continue;
     const source = propsMap.get('source');
     const target = propsMap.get('target');
@@ -181,11 +181,10 @@ export async function rejectSuggestion(graph, suggestion, opts = {}) {
  */
 export async function adjustSuggestion(graph, original, adjustments = {}) {
   const newType = adjustments.type ?? original.type;
-  const newConf = adjustments.confidence ?? 0.8;
+  const newConf = adjustments.confidence ?? original.confidence;
 
-  // If type changed, remove old edge and create new one
+  // If type changed, create new edge first, then remove old (atomic safety)
   if (newType !== original.type) {
-    await removeEdge(graph, original.source, original.target, original.type);
     await createEdge(graph, {
       source: original.source,
       target: original.target,
@@ -193,6 +192,7 @@ export async function adjustSuggestion(graph, original, adjustments = {}) {
       confidence: newConf,
       rationale: adjustments.rationale ?? original.rationale,
     });
+    await removeEdge(graph, original.source, original.target, original.type);
   } else {
     // Update existing edge
     const patch = await graph.createPatch();
@@ -251,15 +251,16 @@ export async function getReviewHistory(graph, filter = {}) {
   const decisionNodes = nodes.filter(n => n.startsWith('decision:'));
 
   const decisions = [];
-  for (const nodeId of decisionNodes) {
-    const propsMap = await graph.getNodeProps(nodeId);
+  const propsResults = await Promise.all(decisionNodes.map(id => graph.getNodeProps(id)));
+  for (let i = 0; i < decisionNodes.length; i++) {
+    const propsMap = propsResults[i];
     if (!propsMap) continue;
 
     const action = propsMap.get('action');
     if (filter.action && action !== filter.action) continue;
 
     decisions.push({
-      id: nodeId,
+      id: decisionNodes[i],
       action,
       source: propsMap.get('source'),
       target: propsMap.get('target'),
@@ -283,6 +284,9 @@ export async function getReviewHistory(graph, filter = {}) {
  * @returns {Promise<{ processed: number, decisions: ReviewDecision[] }>}
  */
 export async function batchDecision(graph, action, opts = {}) {
+  if (action !== 'accept' && action !== 'reject') {
+    throw new Error(`Invalid batch action: ${action}. Must be "accept" or "reject".`);
+  }
   const pending = await getPendingSuggestions(graph);
   const decisions = [];
 

@@ -124,6 +124,25 @@ describe('context', () => {
     expect(prompt.length).toBeLessThanOrEqual(500);
   });
 
+  // ── security: sanitizeGitArg ───────────────────────────────
+
+  it('rejects range values with shell metacharacters', () => {
+    expect(() => extractCommitContext(tempDir, { range: 'HEAD; rm -rf /' })).toThrow(/Unsafe characters/);
+    expect(() => extractCommitContext(tempDir, { range: 'HEAD | cat /etc/passwd' })).toThrow(/Unsafe characters/);
+    expect(() => extractCommitContext(tempDir, { range: '$(whoami)' })).toThrow(/Unsafe characters/);
+  });
+
+  it('uses exact match for file node association', async () => {
+    await createEdge(graph, { source: 'file:src/app.js', target: 'spec:main', type: 'implements' });
+    await createEdge(graph, { source: 'file:src/app.json', target: 'spec:other', type: 'implements' });
+
+    // "app.js" should match "file:app.js" or "file:src/app.js" but NOT "file:src/app.json"
+    const ctx = await extractGraphContext(graph, ['app.js']);
+    const matchedNodes = ctx.nodes.filter(n => n.startsWith('file:'));
+    expect(matchedNodes).toContain('file:src/app.js');
+    expect(matchedNodes).not.toContain('file:src/app.json');
+  });
+
   // ── extractContext orchestrator ─────────────────────────────
 
   it('assembles full context with prompt', async () => {

@@ -42,23 +42,44 @@ export function callAgent(prompt, opts = {}) {
     );
   }
 
+  const timeout = opts.timeout ?? 120_000;
+
   return new Promise((resolve, reject) => {
     const child = spawn(cmd, { shell: true, stdio: ['pipe', 'pipe', 'pipe'] });
     const chunks = [];
     const errChunks = [];
+    let settled = false;
+
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        child.kill('SIGTERM');
+        reject(new Error(`Agent command timed out after ${timeout}ms`));
+      }
+    }, timeout);
 
     child.stdout.on('data', (data) => chunks.push(data));
     child.stderr.on('data', (data) => errChunks.push(data));
 
-    child.on('error', (err) => reject(new Error(`Agent command failed to start: ${err.message}`)));
+    child.on('error', (err) => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        reject(new Error(`Agent command failed to start: ${err.message}`));
+      }
+    });
 
     child.on('close', (code) => {
-      const stdout = Buffer.concat(chunks).toString('utf-8');
-      if (code !== 0) {
-        const stderr = Buffer.concat(errChunks).toString('utf-8');
-        reject(new Error(`Agent exited with code ${code}: ${stderr.slice(0, 500)}`));
-      } else {
-        resolve(stdout);
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        const stdout = Buffer.concat(chunks).toString('utf-8');
+        if (code !== 0) {
+          const stderr = Buffer.concat(errChunks).toString('utf-8');
+          reject(new Error(`Agent exited with code ${code}: ${stderr.slice(0, 500)}`));
+        } else {
+          resolve(stdout);
+        }
       }
     });
 
@@ -84,7 +105,7 @@ export function parseSuggestions(responseText) {
   let text = responseText.trim();
 
   // Extract JSON from markdown code fences if present
-  const fenceMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+  const fenceMatch = text.match(/```(?:json)?[ \t]*\n([\s\S]*?)\n```/);
   if (fenceMatch) {
     text = fenceMatch[1].trim();
   }
@@ -94,11 +115,12 @@ export function parseSuggestions(responseText) {
   try {
     parsed = JSON.parse(text);
   } catch (err) {
-    // Try to find a JSON array in the text
-    const arrayMatch = text.match(/\[[\s\S]*\]/);
-    if (arrayMatch) {
+    // Try to find a JSON array in the text using indexOf (avoids ReDoS)
+    const start = text.indexOf('[');
+    const end = text.lastIndexOf(']');
+    if (start !== -1 && end > start) {
       try {
-        parsed = JSON.parse(arrayMatch[0]);
+        parsed = JSON.parse(text.slice(start, end + 1));
       } catch {
         return { suggestions: [], errors: [`Failed to parse agent response as JSON: ${err.message}`] };
       }

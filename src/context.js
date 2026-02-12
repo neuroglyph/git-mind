@@ -101,9 +101,17 @@ export function extractFileContext(cwd, opts = {}) {
  * @param {{ range?: string, limit?: number }} [opts={}]
  * @returns {CommitContext[]}
  */
+/** Validate that a string is safe for use as a git command argument. */
+function sanitizeGitArg(value) {
+  if (/[;&|`$(){}!#]/.test(value)) {
+    throw new Error(`Unsafe characters in git argument: ${value}`);
+  }
+  return value;
+}
+
 export function extractCommitContext(cwd, opts = {}) {
   const limit = opts.limit ?? 10;
-  const range = opts.range ?? `HEAD~${limit}..HEAD`;
+  const range = sanitizeGitArg(opts.range ?? `HEAD~${limit}..HEAD`);
 
   try {
     // Get commits with short sha and first line of message
@@ -117,6 +125,9 @@ export function extractCommitContext(cwd, opts = {}) {
       const spaceIdx = line.indexOf(' ');
       const sha = line.slice(0, spaceIdx);
       const message = line.slice(spaceIdx + 1);
+
+      // Validate sha is a hex string before interpolation
+      if (!/^[0-9a-f]+$/.test(sha)) return { sha, message, files: [] };
 
       // Get changed files for this commit
       let files = [];
@@ -156,7 +167,7 @@ export async function extractGraphContext(graph, filePaths) {
   const fileNodeSet = new Set();
   for (const fp of filePaths) {
     for (const node of nodes) {
-      if (node.startsWith('file:') && node.includes(fp)) {
+      if (node === `file:${fp}` || (node.startsWith('file:') && node.endsWith(`/${fp}`))) {
         fileNodeSet.add(node);
       }
     }

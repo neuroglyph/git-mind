@@ -44,6 +44,9 @@ export function detectDanglingEdges(nodes, edges) {
         severity: 'error',
         message: `Edge ${edge.from} --[${edge.label}]--> ${edge.to} references missing node(s): ${missing.join(', ')}`,
         affected: [edge.from, edge.to, edge.label],
+        source: edge.from,
+        target: edge.to,
+        edgeType: edge.label,
       });
     }
   }
@@ -164,14 +167,14 @@ export async function fixIssues(graph, issues) {
 
   for (const issue of issues) {
     if (issue.type === 'dangling-edge') {
-      const [source, target, type] = issue.affected;
+      const { source, target, edgeType } = issue;
       try {
-        await removeEdge(graph, source, target, type);
+        await removeEdge(graph, source, target, edgeType);
         fixed++;
-        details.push(`Removed dangling edge: ${source} --[${type}]--> ${target}`);
+        details.push(`Removed dangling edge: ${source} --[${edgeType}]--> ${target}`);
       } catch (err) {
         skipped++;
-        details.push(`Failed to remove edge ${source} --[${type}]--> ${target}: ${err.message}`);
+        details.push(`Failed to remove edge ${source} --[${edgeType}]--> ${target}: ${err.message}`);
       }
     } else {
       skipped++;

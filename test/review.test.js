@@ -154,6 +154,20 @@ describe('review', () => {
     expect(rejects[0].action).toBe('reject');
   });
 
+  // ── adjustSuggestion: preserve original confidence ─────────
+
+  it('preserves original confidence when adjustment omits confidence', async () => {
+    await createEdge(graph, { source: 'task:a', target: 'spec:b', type: 'implements', confidence: 0.3 });
+
+    const original = { source: 'task:a', target: 'spec:b', type: 'implements', confidence: 0.3 };
+    const decision = await adjustSuggestion(graph, original, { rationale: 'updated rationale' });
+
+    expect(decision.confidence).toBe(0.3);
+
+    const edges = await queryEdges(graph, { source: 'task:a', target: 'spec:b', type: 'implements' });
+    expect(edges[0].props.confidence).toBe(0.3);
+  });
+
   // ── batchDecision ──────────────────────────────────────────
 
   it('batch reject processes all pending', async () => {
@@ -166,6 +180,10 @@ describe('review', () => {
     expect(result.processed).toBe(2);
     expect(result.decisions).toHaveLength(2);
     expect(result.decisions.every(d => d.action === 'reject')).toBe(true);
+  });
+
+  it('throws on invalid batch action', async () => {
+    await expect(batchDecision(graph, 'invalid')).rejects.toThrow(/Invalid batch action/);
   });
 
   it('batch accept promotes all pending', async () => {

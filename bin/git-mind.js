@@ -51,17 +51,25 @@ Edge types: implements, augments, relates-to, blocks, belongs-to,
             consumed-by, depends-on, documents`);
 }
 
+const BOOLEAN_FLAGS = new Set(['json', 'fix']);
+
 /**
  * Parse --flag value pairs from args.
+ * Boolean flags (--json, --fix) are set to true; others consume the next arg.
  * @param {string[]} args
- * @returns {Record<string, string>}
+ * @returns {Record<string, string|true>}
  */
 function parseFlags(args) {
   const flags = {};
   for (let i = 0; i < args.length; i++) {
-    if (args[i].startsWith('--') && i + 1 < args.length) {
-      flags[args[i].slice(2)] = args[i + 1];
-      i++;
+    if (args[i].startsWith('--')) {
+      const name = args[i].slice(2);
+      if (BOOLEAN_FLAGS.has(name)) {
+        flags[name] = true;
+      } else if (i + 1 < args.length) {
+        flags[name] = args[i + 1];
+        i++;
+      }
     }
   }
   return flags;

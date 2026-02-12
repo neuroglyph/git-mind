@@ -378,30 +378,32 @@ export async function review(cwd, opts = {}) {
 
     const decisions = [];
 
-    for (let i = 0; i < pending.length; i++) {
-      const item = pending[i];
-      console.log('');
-      console.log(formatReviewItem(item, i, pending.length));
+    try {
+      for (let i = 0; i < pending.length; i++) {
+        const item = pending[i];
+        console.log('');
+        console.log(formatReviewItem(item, i, pending.length));
 
-      const answer = await ask('  [a]ccept / [r]eject / [s]kip ? ');
-      const choice = answer.trim().toLowerCase();
+        const answer = await ask('  [a]ccept / [r]eject / [s]kip ? ');
+        const choice = answer.trim().toLowerCase();
 
-      if (choice === 'a' || choice === 'accept') {
-        const d = await acceptSuggestion(graph, item);
-        decisions.push(d);
-        console.log(success('Accepted'));
-      } else if (choice === 'r' || choice === 'reject') {
-        const d = await rejectSuggestion(graph, item);
-        decisions.push(d);
-        console.log(success('Rejected'));
-      } else {
-        const d = skipSuggestion(item);
-        decisions.push(d);
-        console.log(info('Skipped'));
+        if (choice === 'a' || choice === 'accept') {
+          const d = await acceptSuggestion(graph, item);
+          decisions.push(d);
+          console.log(success('Accepted'));
+        } else if (choice === 'r' || choice === 'reject') {
+          const d = await rejectSuggestion(graph, item);
+          decisions.push(d);
+          console.log(success('Rejected'));
+        } else {
+          const d = skipSuggestion(item);
+          decisions.push(d);
+          console.log(info('Skipped'));
+        }
       }
+    } finally {
+      rl.close();
     }
-
-    rl.close();
 
     console.log('');
     console.log(formatDecisionSummary({ processed: decisions.length, decisions }));

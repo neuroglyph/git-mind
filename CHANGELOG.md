@@ -22,10 +22,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PROVING GROUND integration tests** — `test/proving-ground.test.js` validates 5 real project management questions against the Echo seed with deterministic ground truth (#191)
 - **Dogfood session transcript** — `docs/dogfood-session.md` documents CLI walkthrough of all 5 questions (#191)
 
+### Fixed
+
+- **`parseFlags` boolean flag handling** — `--json` and `--fix` no longer consume the next argument as a value, fixing `git mind suggest --json --agent <cmd>` (#193)
+- **Shell injection in `extractCommitContext`** — `opts.range` validated against shell metacharacters; commit SHAs validated as hex before interpolation into `execSync` (#193)
+- **ReDoS in `parseSuggestions`** — Replaced polynomial regex for code fence extraction with non-backtracking pattern; replaced greedy array regex with `indexOf`/`lastIndexOf` (#193)
+- **Agent subprocess timeout** — `callAgent` now enforces a configurable timeout (default 2 min) via `opts.timeout`, killing hung agent processes (#193)
+- **Readline leak in interactive review** — `rl.close()` now called via `try/finally` to prevent terminal state corruption on error (#193)
+- **Non-atomic edge type change in `adjustSuggestion`** — New edge created before old edge removed, preventing data loss if `createEdge` throws (#193)
+- **Magic confidence default** — `adjustSuggestion` now preserves `original.confidence` instead of silently defaulting to 0.8 (#193)
+- **`batchDecision` action validation** — Throws on invalid action instead of silently falling through to reject (#193)
+- **Loose file node matching** — `extractGraphContext` uses exact match (`file:${fp}`) or suffix match instead of `includes()` to prevent false positives (#193)
+- **`fixResult.details` guard** — `formatDoctorResult` handles undefined `details` array with nullish coalescing (#193)
+- **`makeDecisionId` JSDoc** — Updated to say "unique" instead of "deterministic" since it includes `Date.now()` (#193)
+- **`fixIssues` named properties** — Uses `issue.source`/`issue.target`/`issue.edgeType` instead of positional destructuring (#193)
+- **N+1 query optimization** — `getPendingSuggestions` and `getReviewHistory` use `Promise.all` for concurrent node prop fetches (#193)
+
 ### Changed
 
 - **`suggest` and `review` stubs replaced** with full implementations (#193)
-- **Test count** — 200 tests across 13 files (was 143 across 8)
+- **Test count** — 205 tests across 13 files (was 143 across 8)
 
 ## [2.0.0-alpha.1] - 2026-02-11
 

@@ -94,6 +94,14 @@ That's all!`;
     expect(errors[0]).toMatch(/Empty response/);
   });
 
+  it('extracts JSON array using indexOf fallback', () => {
+    const input = 'Some preamble text [ { "source": "task:a", "target": "spec:b", "type": "implements", "confidence": 0.6 } ] trailing';
+    const { suggestions, errors } = parseSuggestions(input);
+    expect(errors).toHaveLength(0);
+    expect(suggestions).toHaveLength(1);
+    expect(suggestions[0].source).toBe('task:a');
+  });
+
   it('handles malformed JSON', () => {
     const { suggestions, errors } = parseSuggestions('not json at all');
     expect(suggestions).toHaveLength(0);

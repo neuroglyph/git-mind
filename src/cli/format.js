@@ -216,7 +216,7 @@ export function formatDoctorResult(result, fixResult) {
     lines.push(chalk.bold('Fix Results'));
     lines.push(`  ${chalk.green(figures.tick)} Fixed: ${fixResult.fixed}`);
     lines.push(`  ${chalk.dim('Skipped:')} ${fixResult.skipped}`);
-    for (const detail of fixResult.details) {
+    for (const detail of fixResult.details ?? []) {
       lines.push(`  ${chalk.dim('·')} ${detail}`);
     }
   }
