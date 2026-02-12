@@ -200,6 +200,9 @@ export async function extractGraphContext(graph, filePaths) {
 export function buildPrompt(context, opts = {}) {
   const maxLength = opts.maxLength ?? 4000;
   const parts = [];
+  const graph = context.graph ?? { nodes: [], edges: [] };
+  const commits = context.commits ?? [];
+  const files = context.files ?? [];
 
   parts.push('You are a knowledge graph assistant for a software project.');
   parts.push('Suggest new semantic edges for the project knowledge graph.');
@@ -211,32 +214,32 @@ export function buildPrompt(context, opts = {}) {
   parts.push('');
 
   // Existing graph
-  if (context.graph.nodes.length > 0) {
+  if (graph.nodes.length > 0) {
     parts.push('## Existing Nodes');
-    const nodeSlice = context.graph.nodes.slice(0, 50);
+    const nodeSlice = graph.nodes.slice(0, 50);
     parts.push(nodeSlice.join(', '));
-    if (context.graph.nodes.length > 50) {
-      parts.push(`... and ${context.graph.nodes.length - 50} more`);
+    if (graph.nodes.length > 50) {
+      parts.push(`... and ${graph.nodes.length - 50} more`);
     }
     parts.push('');
   }
 
-  if (context.graph.edges.length > 0) {
+  if (graph.edges.length > 0) {
     parts.push('## Existing Edges');
-    const edgeSlice = context.graph.edges.slice(0, 30);
+    const edgeSlice = graph.edges.slice(0, 30);
     for (const e of edgeSlice) {
       parts.push(`  ${e.from} --[${e.label}]--> ${e.to}`);
     }
-    if (context.graph.edges.length > 30) {
-      parts.push(`... and ${context.graph.edges.length - 30} more`);
+    if (graph.edges.length > 30) {
+      parts.push(`... and ${graph.edges.length - 30} more`);
     }
     parts.push('');
   }
 
   // Recent commits
-  if (context.commits.length > 0) {
+  if (commits.length > 0) {
     parts.push('## Recent Commits');
-    for (const c of context.commits) {
+    for (const c of commits) {
       parts.push(`  ${c.sha} ${c.message}`);
       if (c.files.length > 0) {
         parts.push(`    files: ${c.files.slice(0, 5).join(', ')}${c.files.length > 5 ? ' ...' : ''}`);
@@ -246,12 +249,12 @@ export function buildPrompt(context, opts = {}) {
   }
 
   // Files
-  if (context.files.length > 0) {
+  if (files.length > 0) {
     parts.push('## Tracked Files');
-    const fileSlice = context.files.slice(0, 30);
+    const fileSlice = files.slice(0, 30);
     parts.push(fileSlice.map(f => f.path).join(', '));
-    if (context.files.length > 30) {
-      parts.push(`... and ${context.files.length - 30} more`);
+    if (files.length > 30) {
+      parts.push(`... and ${files.length - 30} more`);
     }
     parts.push('');
   }

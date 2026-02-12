@@ -38,7 +38,7 @@ describe('context', () => {
 
     const files = extractFileContext(tempDir);
 
-    expect(files.length).toBeGreaterThanOrEqual(2);
+    expect(files).toHaveLength(2);
     const jsFile = files.find(f => f.path === 'app.js');
     expect(jsFile).toBeDefined();
     expect(jsFile.language).toBe('javascript');
@@ -77,6 +77,8 @@ describe('context', () => {
     expect(commits.length).toBeGreaterThanOrEqual(1);
     expect(commits[0].sha).toBeTruthy();
     expect(commits[0].message).toBeTruthy();
+    const hasFiles = commits.some(c => c.files && c.files.includes('app.js'));
+    expect(hasFiles).toBe(true);
   });
 
   it('returns empty array for repo with no commits', () => {
@@ -143,6 +145,13 @@ describe('context', () => {
     const matchedNodes = ctx.nodes.filter(n => n.startsWith('file:'));
     expect(matchedNodes).toContain('file:src/app.js');
     expect(matchedNodes).not.toContain('file:src/app.json');
+  });
+
+  it('buildPrompt handles partial context gracefully', () => {
+    // Missing graph, commits, files should not throw
+    const prompt = buildPrompt({});
+    expect(prompt).toContain('Graph Schema');
+    expect(prompt).toContain('JSON array');
   });
 
   // ── extractContext orchestrator ─────────────────────────────

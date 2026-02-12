@@ -74,6 +74,19 @@ async function recordDecision(graph, decision) {
 }
 
 /**
+ * Fetch all decision-node IDs and their properties from the graph.
+ *
+ * @param {import('@git-stunts/git-warp').default} graph
+ * @returns {Promise<Array<{ id: string, props: Map<string, unknown> | null }>>}
+ */
+async function fetchDecisionProps(graph) {
+  const nodes = await graph.getNodes();
+  const decisionNodes = nodes.filter(n => n.startsWith('decision:'));
+  const propsResults = await Promise.all(decisionNodes.map(id => graph.getNodeProps(id)));
+  return decisionNodes.map((id, i) => ({ id, props: propsResults[i] }));
+}
+
+/**
  * Get pending suggestions: low-confidence edges that haven't been reviewed yet.
  *
  * @param {import('@git-stunts/git-warp').default} graph
@@ -86,12 +99,8 @@ export async function getPendingSuggestions(graph) {
   if (lowConf.length === 0) return [];
 
   // Find reviewed edge keys from decision nodes
-  const nodes = await graph.getNodes();
-  const decisionNodes = nodes.filter(n => n.startsWith('decision:'));
-
   const reviewedKeys = new Set();
-  const propsResults = await Promise.all(decisionNodes.map(id => graph.getNodeProps(id)));
-  for (const propsMap of propsResults) {
+  for (const { props: propsMap } of await fetchDecisionProps(graph)) {
     if (!propsMap) continue;
     const source = propsMap.get('source');
     const target = propsMap.get('target');
@@ -256,20 +265,15 @@ export function skipSuggestion(suggestion) {
  * @returns {Promise<ReviewDecision[]>}
  */
 export async function getReviewHistory(graph, filter = {}) {
-  const nodes = await graph.getNodes();
-  const decisionNodes = nodes.filter(n => n.startsWith('decision:'));
-
   const decisions = [];
-  const propsResults = await Promise.all(decisionNodes.map(id => graph.getNodeProps(id)));
-  for (let i = 0; i < decisionNodes.length; i++) {
-    const propsMap = propsResults[i];
+  for (const { id, props: propsMap } of await fetchDecisionProps(graph)) {
     if (!propsMap) continue;
 
     const action = propsMap.get('action');
     if (filter.action && action !== filter.action) continue;
 
     decisions.push({
-      id: decisionNodes[i],
+      id,
       action,
       source: propsMap.get('source'),
       target: propsMap.get('target'),

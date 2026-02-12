@@ -52,11 +52,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`generateSuggestions` rejection diagnostic** — Returns `rejectedCount` and logs a diagnostic when all suggestions were previously rejected (#193)
 - **`child.stdin` error handler** — `callAgent` attaches a no-op error listener on stdin to prevent uncaught EPIPE exceptions (#193)
 - **Doctor test fixture corrected** — Dangling-edge test issue now includes `source`/`target`/`edgeType` matching `fixIssues` expectations (#193)
+- **`buildPrompt` defensive guards** — Handles nullish `context.graph`/`commits`/`files` with defaults instead of throwing TypeError (#193)
+- **`fetchDecisionProps` shared helper** — Extracted duplicated decision-node fetch logic from `getPendingSuggestions` and `getReviewHistory` into a reusable helper (#193)
 
 ### Changed
 
 - **`suggest` and `review` stubs replaced** with full implementations (#193)
-- **Test count** — 207 tests across 13 files (was 143 across 8)
+- **Test count** — 208 tests across 13 files (was 143 across 8)
 
 ## [2.0.0-alpha.1] - 2026-02-11
 
