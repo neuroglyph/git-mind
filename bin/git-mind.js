@@ -19,6 +19,7 @@ Commands:
   link <source> <target>        Create a semantic edge
     --type <type>               Edge type (default: relates-to)
     --confidence <n>            Confidence 0.0-1.0 (default: 1.0)
+    --remote <owner/name>       Qualify IDs as cross-repo
   remove <source> <target>      Remove a semantic edge
     --type <type>               Edge type (default: relates-to)
   view [name]                   Show a named view (or list views)
@@ -97,6 +98,7 @@ switch (command) {
     await link(cwd, source, target, {
       type: flags.type,
       confidence: flags.confidence ? parseFloat(flags.confidence) : undefined,
+      remote: flags.remote,
     });
     break;
   }

@@ -13,6 +13,7 @@ import { computeStatus } from '../status.js';
 import { importFile } from '../import.js';
 import { importFromMarkdown } from '../frontmatter.js';
 import { exportGraph, serializeExport, exportToFile } from '../export.js';
+import { qualifyNodeId } from '../remote.js';
 import { renderView, listViews } from '../views.js';
 import { processCommit } from '../hooks.js';
 import { runDoctor, fixIssues } from '../doctor.js';
@@ -39,15 +40,19 @@ export async function init(cwd) {
  * @param {string} cwd
  * @param {string} source
  * @param {string} target
- * @param {{ type?: string, confidence?: number }} opts
+ * @param {{ type?: string, confidence?: number, remote?: string }} opts
  */
 export async function link(cwd, source, target, opts = {}) {
   const type = opts.type ?? 'relates-to';
 
+  // Qualify node IDs with remote repo if --remote is specified
+  const src = opts.remote ? qualifyNodeId(source, opts.remote) : source;
+  const tgt = opts.remote ? qualifyNodeId(target, opts.remote) : target;
+
   try {
     const graph = await loadGraph(cwd);
-    await createEdge(graph, { source, target, type, confidence: opts.confidence });
-    console.log(success(`${source} --[${type}]--> ${target}`));
+    await createEdge(graph, { source: src, target: tgt, type, confidence: opts.confidence });
+    console.log(success(`${src} --[${type}]--> ${tgt}`));
   } catch (err) {
     console.error(error(err.message));
     process.exitCode = 1;

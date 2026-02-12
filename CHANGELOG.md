@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`git mind import --from-markdown` command** — Import nodes and edges from markdown file frontmatter. Auto-generates `doc:` IDs from file paths, recognizes all 8 edge types as frontmatter fields. Supports `--dry-run`, `--json`, glob patterns (#196)
 - **Frontmatter API** — `parseFrontmatter(content)`, `extractGraphData(path, frontmatter)`, `findMarkdownFiles(basePath, pattern)`, `importFromMarkdown(graph, cwd, pattern, opts)` in `src/frontmatter.js` (#196)
 - **`importData` shared pipeline** — Extracted from `importFile` in `src/import.js` for reuse by frontmatter import and future merge (#196)
+- **Cross-repo edge protocol** — `repo:owner/name:prefix:identifier` syntax for referencing nodes in other repositories. `git mind link --remote <owner/name>` qualifies local IDs. Validators accept cross-repo format, `extractPrefix` returns inner prefix (#197)
+- **Remote API** — `parseCrossRepoId`, `buildCrossRepoId`, `isCrossRepoId`, `extractRepo`, `qualifyNodeId` in `src/remote.js` (#197)
 
 ## [2.0.0-alpha.2] - 2026-02-11
 

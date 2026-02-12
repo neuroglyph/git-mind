@@ -65,15 +65,21 @@ The `/` does not require escaping outside JS regex literals.
 | Whitespace | Invalid anywhere in the ID — no trimming, no normalization |
 | Comparison | Exact byte/character match — no Unicode normalization |
 
-### Reserved: Cross-Repo IDs (v2)
+### Cross-Repo IDs
 
-The following syntax is **reserved** for version 2. Version 1 parsers must not accept it.
+Cross-repo IDs reference nodes in other repositories.
 
 ```
 cross-repo-id  = "repo:" owner "/" name ":" prefix ":" identifier
 ```
 
 Example: `repo:neuroglyph/echo:crate:echo-core`
+
+**Rules:**
+- The `repo:` prefix is a system prefix — it cannot be used for regular nodes
+- `extractPrefix` returns the **inner** prefix (e.g., `crate` for `repo:owner/name:crate:id`)
+- Cross-repo IDs are valid in any context where a node ID is accepted
+- Use `git mind link --remote <owner/name>` to qualify local IDs as cross-repo
 
 ---
 

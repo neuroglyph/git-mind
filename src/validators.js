@@ -4,6 +4,8 @@
  * Implements constraints from GRAPH_SCHEMA.md (BDK-001).
  */
 
+import { CROSS_REPO_ID_REGEX } from './remote.js';
+
 // ── Constants ────────────────────────────────────────────────────────
 
 /** @type {RegExp} Canonical regex for node IDs (prefix:identifier) */
@@ -22,7 +24,7 @@ export const CANONICAL_PREFIXES = [
 ];
 
 /** @type {string[]} System-generated prefixes (reserved, not user-writable) */
-export const SYSTEM_PREFIXES = ['commit'];
+export const SYSTEM_PREFIXES = ['commit', 'repo'];
 
 /** @type {string[]} Valid edge types */
 export const EDGE_TYPES = [
@@ -49,6 +51,12 @@ const SELF_EDGE_FORBIDDEN = ['blocks', 'depends-on'];
  */
 export function extractPrefix(nodeId) {
   if (typeof nodeId !== 'string') return null;
+  // Cross-repo IDs: repo:owner/name:prefix:identifier → return inner prefix
+  if (nodeId.startsWith('repo:')) {
+    const match = CROSS_REPO_ID_REGEX.exec(nodeId);
+    if (match) return match[2]; // inner prefix
+    return 'repo';
+  }
   const idx = nodeId.indexOf(':');
   if (idx === -1) return null;
   return nodeId.slice(0, idx);
@@ -67,7 +75,7 @@ export function validateNodeId(nodeId) {
   if (nodeId.length > NODE_ID_MAX_LENGTH) {
     return { valid: false, error: `Node ID exceeds max length of ${NODE_ID_MAX_LENGTH} characters (got ${nodeId.length})` };
   }
-  if (!NODE_ID_REGEX.test(nodeId)) {
+  if (!NODE_ID_REGEX.test(nodeId) && !CROSS_REPO_ID_REGEX.test(nodeId)) {
     return { valid: false, error: `Invalid node ID: "${nodeId}". Must match prefix:identifier (lowercase prefix, valid identifier chars)` };
   }
   return { valid: true };

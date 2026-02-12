@@ -23,6 +23,10 @@ export {
   detectLowConfidenceEdges, runDoctor, fixIssues,
 } from './doctor.js';
 export {
+  parseCrossRepoId, buildCrossRepoId, isCrossRepoId,
+  extractRepo, qualifyNodeId, CROSS_REPO_ID_REGEX,
+} from './remote.js';
+export {
   extractFileContext, extractCommitContext, extractGraphContext,
   buildPrompt, extractContext,
 } from './context.js';
