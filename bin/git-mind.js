@@ -39,8 +39,13 @@ Commands:
   doctor                        Run graph integrity checks
     --fix                       Auto-fix dangling edges
     --json                      Output as JSON
-  suggest                       AI suggestions (stub)
-  review                        Review edges (stub)
+  suggest                       AI-powered edge suggestions
+    --agent <command>           Override GITMIND_AGENT
+    --context <sha-range>       Git range for context (default: HEAD~10..HEAD)
+    --json                      Output as JSON
+  review                        Review pending suggestions
+    --batch accept|reject       Non-interactive batch mode
+    --json                      Output as JSON
 
 Edge types: implements, augments, relates-to, blocks, belongs-to,
             consumed-by, depends-on, documents`);
@@ -161,13 +166,24 @@ switch (command) {
     break;
   }
 
-  case 'suggest':
-    await suggest();
+  case 'suggest': {
+    const suggestFlags = parseFlags(args.slice(1));
+    await suggest(cwd, {
+      agent: suggestFlags.agent,
+      context: suggestFlags.context,
+      json: args.includes('--json'),
+    });
     break;
+  }
 
-  case 'review':
-    await review();
+  case 'review': {
+    const reviewFlags = parseFlags(args.slice(1));
+    await review(cwd, {
+      batch: reviewFlags.batch,
+      json: args.includes('--json'),
+    });
     break;
+  }
 
   case '--help':
   case '-h':
