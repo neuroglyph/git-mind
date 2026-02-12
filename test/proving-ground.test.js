@@ -258,24 +258,24 @@ describe('PROVING GROUND', () => {
 
       for (const size of sizes) {
         const { graph: g, dir } = await generateGraph(size);
-
-        const start = performance.now();
-        await renderView(g, 'milestone');
-        await renderView(g, 'traceability');
-        await renderView(g, 'coverage');
-        await renderView(g, 'onboarding');
-        await renderView(g, 'suggestions');
-        const elapsed = performance.now() - start;
-
-        timings.push(elapsed);
-        await rm(dir, { recursive: true, force: true });
+        try {
+          const start = performance.now();
+          await renderView(g, 'milestone');
+          await renderView(g, 'traceability');
+          await renderView(g, 'coverage');
+          await renderView(g, 'onboarding');
+          await renderView(g, 'suggestions');
+          timings.push(performance.now() - start);
+        } finally {
+          await rm(dir, { recursive: true, force: true });
+        }
       }
 
       // Check growth factors between consecutive 5x size steps.
       // Linear (O(N+E)) ≈ 5x growth. Quadratic (O(N²)) = 25x growth.
       // Threshold of 15x catches O(N²) with margin for constant-factor overhead.
       for (let i = 1; i < timings.length; i++) {
-        const growthFactor = timings[i] / timings[i - 1];
+        const growthFactor = timings[i] / Math.max(timings[i - 1], 1);
         expect(growthFactor).toBeLessThan(15);
       }
     }, 120_000);
