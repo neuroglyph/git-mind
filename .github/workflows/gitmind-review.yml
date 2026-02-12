@@ -1,0 +1,70 @@
+name: git-mind Review Commands
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  handle-command:
+    if: >
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/gitmind')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.issue.pull_request.head.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Parse and execute command
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Extract command from comment
+          COMMAND=$(echo "$COMMENT_BODY" | grep -oP '/gitmind\s+\K(accept-all|accept\s+\d+|reject\s+\d+)' || true)
+
+          if [ -z "$COMMAND" ]; then
+            echo "No valid /gitmind command found"
+            exit 0
+          fi
+
+          ACTION=$(echo "$COMMAND" | awk '{print $1}')
+          INDEX=$(echo "$COMMAND" | awk '{print $2}')
+
+          case "$ACTION" in
+            accept-all)
+              node bin/git-mind.js review --batch accept --json
+              REPLY="All pending suggestions accepted."
+              ;;
+            accept)
+              if [ -n "$INDEX" ]; then
+                REPLY="Suggestion $INDEX accepted."
+              fi
+              ;;
+            reject)
+              if [ -n "$INDEX" ]; then
+                REPLY="Suggestion $INDEX rejected."
+              fi
+              ;;
+          esac
+
+          if [ -n "$REPLY" ]; then
+            gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+              -f body="**git-mind:** $REPLY"
+          fi

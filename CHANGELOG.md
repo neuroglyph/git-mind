@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`git mind merge` command** — Merge another repository's graph into the local graph with cross-repo qualification. Supports `--from <path>`, `--repo-name <owner/name>`, `--dry-run`, `--json`. Auto-detects repo identifier from origin remote (#198)
 - **Merge API** — `mergeFromRepo(localGraph, remotePath, opts)`, `detectRepoIdentifier(repoPath)` in `src/merge.js` (#198)
 - **GitHub Action** — Composite action (`action.yml`) that runs `git mind suggest` on PRs and posts formatted suggestions as a comment. Configurable agent command via action input or `.github/git-mind.yml` (#199)
+- **PR suggestion display** — `formatSuggestionsAsMarkdown` renders suggestions as a markdown table with `/gitmind accept|reject|accept-all` commands. `parseReviewCommand` parses slash commands from comment bodies (#200)
+- **Slash command workflow** — `.github/workflows/gitmind-review.yml` handles `/gitmind accept N`, `/gitmind reject N`, and `/gitmind accept-all` commands in PR comments (#200)
 
 ## [2.0.0-alpha.2] - 2026-02-11
 

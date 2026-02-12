@@ -9,6 +9,7 @@
  */
 
 import { execSync } from 'node:child_process';
+import { formatSuggestionsAsMarkdown } from '../src/format-pr.js';
 
 const [repo, prNumber] = process.argv.slice(2);
 
@@ -18,35 +19,6 @@ if (!repo || !prNumber) {
 }
 
 const raw = process.env.SUGGEST_RESULT ?? '';
-
-/**
- * Format suggestions as a markdown table.
- * @param {Array<{source: string, target: string, type: string, confidence: number, rationale?: string}>} suggestions
- * @returns {string}
- */
-export function formatSuggestionsAsMarkdown(suggestions) {
-  if (!suggestions || suggestions.length === 0) {
-    return '> No new edge suggestions for this PR.';
-  }
-
-  const lines = [
-    '| # | Source | Target | Type | Confidence | Rationale |',
-    '|---|--------|--------|------|------------|-----------|',
-  ];
-
-  for (let i = 0; i < suggestions.length; i++) {
-    const s = suggestions[i];
-    const conf = `${(s.confidence * 100).toFixed(0)}%`;
-    const rationale = s.rationale ?? '';
-    lines.push(`| ${i + 1} | \`${s.source}\` | \`${s.target}\` | ${s.type} | ${conf} | ${rationale} |`);
-  }
-
-  lines.push('');
-  lines.push('---');
-  lines.push('*Posted by [git-mind](https://github.com/neuroglyph/git-mind)*');
-
-  return lines.join('\n');
-}
 
 // Parse the suggest result
 let result;
