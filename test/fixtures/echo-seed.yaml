@@ -12,127 +12,187 @@ version: 1
 nodes:
   # ── Milestones (5) ──────────────────────────────────────────────
   - id: "milestone:M1"
-    properties: { title: "Core Foundation", status: "complete" }
+    properties:
+      title: "Core Foundation"
+      status: "complete"
   - id: "milestone:M2"
-    properties: { title: "API Layer", status: "blocked" }
+    properties:
+      title: "API Layer"
+      status: "blocked"
   - id: "milestone:M3"
-    properties: { title: "Real-time Features", status: "in-progress" }
+    properties:
+      title: "Real-time Features"
+      status: "in-progress"
   - id: "milestone:M4"
-    properties: { title: "Developer Experience", status: "planned" }
+    properties:
+      title: "Developer Experience"
+      status: "planned"
   - id: "milestone:M5"
-    properties: { title: "Production Readiness", status: "planned" }
+    properties:
+      title: "Production Readiness"
+      status: "planned"
 
   # ── Specs (5) ───────────────────────────────────────────────────
   - id: "spec:001-auth-flow"
-    properties: { title: "Authentication Flow" }
+    properties:
+      title: "Authentication Flow"
   - id: "spec:002-queue-protocol"
-    properties: { title: "Message Queue Protocol" }
+    properties:
+      title: "Message Queue Protocol"
   - id: "spec:003-web-sockets"
-    properties: { title: "WebSocket Transport" }
+    properties:
+      title: "WebSocket Transport"
   - id: "spec:004-rest-api"
-    properties: { title: "REST API Design" }
+    properties:
+      title: "REST API Design"
   - id: "spec:005-data-model"
-    properties: { title: "Data Model Schema" }
+    properties:
+      title: "Data Model Schema"
 
   # ── ADRs (5) ────────────────────────────────────────────────────
   - id: "adr:001-event-sourcing"
-    properties: { title: "Use event sourcing for audit trail" }
+    properties:
+      title: "Use event sourcing for audit trail"
   - id: "adr:002-postgres"
-    properties: { title: "PostgreSQL as primary store" }
+    properties:
+      title: "PostgreSQL as primary store"
   - id: "adr:003-encryption-at-rest"
-    properties: { title: "Encryption at rest for PII" }
+    properties:
+      title: "Encryption at rest for PII"
   - id: "adr:004-rest-vs-grpc"
-    properties: { title: "REST over gRPC for public API" }
+    properties:
+      title: "REST over gRPC for public API"
   - id: "adr:005-crate-structure"
-    properties: { title: "Workspace crate structure" }
+    properties:
+      title: "Workspace crate structure"
 
   # ── Docs (5) ────────────────────────────────────────────────────
   - id: "doc:getting-started"
-    properties: { title: "Getting Started Guide" }
+    properties:
+      title: "Getting Started Guide"
   - id: "doc:architecture-overview"
-    properties: { title: "Architecture Overview" }
+    properties:
+      title: "Architecture Overview"
   - id: "doc:api-reference"
-    properties: { title: "API Reference" }
+    properties:
+      title: "API Reference"
   - id: "doc:deployment-guide"
-    properties: { title: "Deployment Guide" }
+    properties:
+      title: "Deployment Guide"
   - id: "doc:contributing"
-    properties: { title: "Contributing Guide" }
+    properties:
+      title: "Contributing Guide"
 
   # ── Crates (15) — 6 linked to specs/ADRs, 9 unlinked ──────────
   - id: "crate:echo-core"
-    properties: { description: "Core event-sourcing engine" }
+    properties:
+      description: "Core event-sourcing engine"
   - id: "crate:echo-api"
-    properties: { description: "REST API server" }
+    properties:
+      description: "REST API server"
   - id: "crate:echo-db"
-    properties: { description: "Database layer (Postgres)" }
+    properties:
+      description: "Database layer (Postgres)"
   - id: "crate:echo-auth"
-    properties: { description: "Authentication module" }
+    properties:
+      description: "Authentication module"
   - id: "crate:echo-queue"
-    properties: { description: "Message queue adapter" }
+    properties:
+      description: "Message queue adapter"
   - id: "crate:echo-web"
-    properties: { description: "WebSocket server" }
+    properties:
+      description: "WebSocket server"
   - id: "crate:echo-crypto"
-    properties: { description: "Cryptographic helpers" }
+    properties:
+      description: "Cryptographic helpers"
   - id: "crate:echo-cli"
-    properties: { description: "CLI interface" }
+    properties:
+      description: "CLI interface"
   - id: "crate:echo-config"
-    properties: { description: "Configuration loader" }
+    properties:
+      description: "Configuration loader"
   - id: "crate:echo-log"
-    properties: { description: "Structured logging" }
+    properties:
+      description: "Structured logging"
   - id: "crate:echo-test-utils"
-    properties: { description: "Test utilities and fixtures" }
+    properties:
+      description: "Test utilities and fixtures"
   - id: "crate:echo-bench"
-    properties: { description: "Benchmark harness" }
+    properties:
+      description: "Benchmark harness"
   - id: "crate:echo-migrate"
-    properties: { description: "Database migrations" }
+    properties:
+      description: "Database migrations"
   - id: "crate:echo-plugin"
-    properties: { description: "Plugin framework" }
+    properties:
+      description: "Plugin framework"
   - id: "crate:echo-sdk"
-    properties: { description: "Client SDK" }
+    properties:
+      description: "Client SDK"
 
   # ── Tasks (11) — milestone work items ───────────────────────────
   - id: "task:E-005"
-    properties: { title: "Implement auth middleware" }
+    properties:
+      title: "Implement auth middleware"
   - id: "task:E-006"
-    properties: { title: "Implement queue consumer" }
+    properties:
+      title: "Implement queue consumer"
   - id: "task:E-007"
-    properties: { title: "Build REST endpoints" }
+    properties:
+      title: "Build REST endpoints"
   - id: "task:E-008"
-    properties: { title: "API schema validation" }
+    properties:
+      title: "API schema validation"
   - id: "task:E-009"
-    properties: { title: "WebSocket handshake" }
+    properties:
+      title: "WebSocket handshake"
   - id: "task:E-010"
-    properties: { title: "Message broadcast" }
+    properties:
+      title: "Message broadcast"
   - id: "task:E-011"
-    properties: { title: "Connection pooling" }
+    properties:
+      title: "Connection pooling"
   - id: "task:E-012"
-    properties: { title: "CLI scaffolding" }
+    properties:
+      title: "CLI scaffolding"
   - id: "task:E-013"
-    properties: { title: "Config file support" }
+    properties:
+      title: "Config file support"
   - id: "task:E-014"
-    properties: { title: "Migration runner" }
+    properties:
+      title: "Migration runner"
   - id: "task:E-015"
-    properties: { title: "Health check endpoint" }
+    properties:
+      title: "Health check endpoint"
 
   # ── Issues (9) — bugs, blockers, investigations ─────────────────
   - id: "issue:E-001"
-    properties: { title: "Auth token expiry bug" }
+    properties:
+      title: "Auth token expiry bug"
   - id: "issue:E-002"
-    properties: { title: "Queue deadlock under load" }
+    properties:
+      title: "Queue deadlock under load"
   - id: "issue:E-003"
-    properties: { title: "REST schema breaks on nested objects" }
+    properties:
+      title: "REST schema breaks on nested objects"
   - id: "issue:E-004"
-    properties: { title: "Validation rejects valid payloads" }
+    properties:
+      title: "Validation rejects valid payloads"
   - id: "issue:E-016"
-    properties: { title: "Flaky integration test" }
+    properties:
+      title: "Flaky integration test"
   - id: "issue:E-017"
-    properties: { title: "Slow query on large datasets" }
+    properties:
+      title: "Slow query on large datasets"
   - id: "issue:E-018"
-    properties: { title: "Crypto padding oracle concern" }
+    properties:
+      title: "Crypto padding oracle concern"
   - id: "issue:E-019"
-    properties: { title: "WebSocket reconnect storms" }
+    properties:
+      title: "WebSocket reconnect storms"
   - id: "issue:E-020"
-    properties: { title: "Contributor docs outdated" }
+    properties:
+      title: "Contributor docs outdated"
 
 edges:
   # ── belongs-to: tasks → milestones (11) ─────────────────────────

@@ -25,11 +25,13 @@ const SEED_PATH = resolve(__dirname, 'fixtures', 'echo-seed.yaml');
 describe('PROVING GROUND', () => {
   let tempDir;
   let graph;
+  let importResult;
 
   beforeAll(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'gitmind-proving-ground-'));
     execSync('git init', { cwd: tempDir, stdio: 'ignore' });
     graph = await initGraph(tempDir);
+    importResult = await importFile(graph, SEED_PATH);
   });
 
   afterAll(async () => {
@@ -39,11 +41,10 @@ describe('PROVING GROUND', () => {
   // ── PRV-002: Seed import ─────────────────────────────────────
 
   describe('seed import', () => {
-    it('imports the Echo seed without errors', async () => {
-      const result = await importFile(graph, SEED_PATH);
-      expect(result.valid).toBe(true);
-      expect(result.errors).toEqual([]);
-      expect(result.dryRun).toBe(false);
+    it('imports the Echo seed without errors', () => {
+      expect(importResult.valid).toBe(true);
+      expect(importResult.errors).toEqual([]);
+      expect(importResult.dryRun).toBe(false);
     });
 
     it('produces expected node count', async () => {
@@ -163,25 +164,120 @@ describe('PROVING GROUND', () => {
       const result = await renderView(graph, 'suggestions');
       const confidences = result.edges
         .map(e => e.props?.confidence)
-        .sort();
+        .sort((a, b) => a - b);
       expect(confidences).toEqual([0.2, 0.3, 0.3, 0.4]);
     });
   });
 
-  // ── PRV-004: Timing ──────────────────────────────────────────
+  // ── PRV-004: Complexity verification ──────────────────────────
 
-  describe('timing', () => {
-    it('all 5 queries complete in under 60s total', async () => {
-      const start = performance.now();
+  describe('complexity', () => {
+    /**
+     * Generate a synthetic graph with ~N nodes and ~2N edges.
+     * Uses the same prefixes/types as echo-seed so views exercise real code paths.
+     */
+    async function generateGraph(nodeCount) {
+      const dir = await mkdtemp(join(tmpdir(), 'gitmind-complexity-'));
+      execSync('git init', { cwd: dir, stdio: 'ignore' });
+      const g = await initGraph(dir);
 
-      await renderView(graph, 'milestone');
-      await renderView(graph, 'traceability');
-      await renderView(graph, 'coverage');
-      await renderView(graph, 'onboarding');
-      await renderView(graph, 'suggestions');
+      const patch = await g.createPatch();
 
-      const elapsed = performance.now() - start;
-      expect(elapsed).toBeLessThan(60_000);
-    });
+      // Distribute nodes across 6 prefixes
+      const nMilestones = Math.floor(nodeCount / 5);
+      const nTasks = Math.floor(nodeCount / 5);
+      const nSpecs = Math.floor(nodeCount / 5);
+      const nCrates = Math.floor(nodeCount / 5);
+      const nDocs = Math.floor(nodeCount / 10);
+      const nIssues = Math.floor(nodeCount / 10);
+
+      // Create nodes
+      for (let i = 0; i < nMilestones; i++) {
+        patch.addNode(`milestone:M${i}`);
+        patch.setProperty(`milestone:M${i}`, 'title', `Milestone ${i}`);
+        patch.setProperty(`milestone:M${i}`, 'status', i % 3 === 0 ? 'complete' : 'planned');
+      }
+      for (let i = 0; i < nTasks; i++) {
+        patch.addNode(`task:T${i}`);
+        patch.setProperty(`task:T${i}`, 'title', `Task ${i}`);
+      }
+      for (let i = 0; i < nSpecs; i++) {
+        patch.addNode(`spec:S${i}`);
+        patch.setProperty(`spec:S${i}`, 'title', `Spec ${i}`);
+      }
+      for (let i = 0; i < nCrates; i++) {
+        patch.addNode(`crate:C${i}`);
+        patch.setProperty(`crate:C${i}`, 'description', `Crate ${i}`);
+      }
+      for (let i = 0; i < nDocs; i++) {
+        patch.addNode(`doc:D${i}`);
+        patch.setProperty(`doc:D${i}`, 'title', `Doc ${i}`);
+      }
+      for (let i = 0; i < nIssues; i++) {
+        patch.addNode(`issue:I${i}`);
+        patch.setProperty(`issue:I${i}`, 'title', `Issue ${i}`);
+      }
+
+      // belongs-to: tasks → milestones
+      for (let i = 0; i < nTasks; i++) {
+        patch.addEdge(`task:T${i}`, `milestone:M${i % nMilestones}`, 'belongs-to');
+      }
+      // implements: crates → specs
+      for (let i = 0; i < Math.min(nCrates, nSpecs); i++) {
+        patch.addEdge(`crate:C${i}`, `spec:S${i}`, 'implements');
+      }
+      // depends-on: crate → crate chain
+      for (let i = 1; i < nCrates; i++) {
+        patch.addEdge(`crate:C${i}`, `crate:C${i - 1}`, 'depends-on');
+      }
+      // depends-on: doc → doc chain (for onboarding view)
+      for (let i = 1; i < nDocs; i++) {
+        patch.addEdge(`doc:D${i}`, `doc:D${i - 1}`, 'depends-on');
+      }
+      // 4 low-confidence relates-to edges (for suggestions view)
+      if (nIssues >= 2 && nCrates >= 1) {
+        patch.addEdge(`issue:I0`, `issue:I1`, 'relates-to');
+        patch.setEdgeProperty(`issue:I0`, `issue:I1`, 'relates-to', 'confidence', 0.2);
+        patch.addEdge(`issue:I1`, `crate:C0`, 'relates-to');
+        patch.setEdgeProperty(`issue:I1`, `crate:C0`, 'relates-to', 'confidence', 0.3);
+      }
+      if (nIssues >= 4) {
+        patch.addEdge(`issue:I2`, `issue:I3`, 'relates-to');
+        patch.setEdgeProperty(`issue:I2`, `issue:I3`, 'relates-to', 'confidence', 0.4);
+        patch.addEdge(`issue:I3`, `issue:I0`, 'relates-to');
+        patch.setEdgeProperty(`issue:I3`, `issue:I0`, 'relates-to', 'confidence', 0.1);
+      }
+
+      await patch.commit();
+      return { graph: g, dir };
+    }
+
+    it('all 5 views scale sub-quadratically (O(N+E))', async () => {
+      const sizes = [100, 500, 2500, 12500];
+      const timings = [];
+
+      for (const size of sizes) {
+        const { graph: g, dir } = await generateGraph(size);
+
+        const start = performance.now();
+        await renderView(g, 'milestone');
+        await renderView(g, 'traceability');
+        await renderView(g, 'coverage');
+        await renderView(g, 'onboarding');
+        await renderView(g, 'suggestions');
+        const elapsed = performance.now() - start;
+
+        timings.push(elapsed);
+        await rm(dir, { recursive: true, force: true });
+      }
+
+      // Check growth factors between consecutive 5x size steps.
+      // Linear (O(N+E)) ≈ 5x growth. Quadratic (O(N²)) = 25x growth.
+      // Threshold of 15x catches O(N²) with margin for constant-factor overhead.
+      for (let i = 1; i < timings.length; i++) {
+        const growthFactor = timings[i] / timings[i - 1];
+        expect(growthFactor).toBeLessThan(15);
+      }
+    }, 120_000);
   });
 });
