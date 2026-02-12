@@ -26,6 +26,7 @@ export {
   parseCrossRepoId, buildCrossRepoId, isCrossRepoId,
   extractRepo, qualifyNodeId, CROSS_REPO_ID_REGEX,
 } from './remote.js';
+export { mergeFromRepo, detectRepoIdentifier } from './merge.js';
 export {
   extractFileContext, extractCommitContext, extractGraphContext,
   buildPrompt, extractContext,

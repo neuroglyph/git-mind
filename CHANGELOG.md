@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`importData` shared pipeline** — Extracted from `importFile` in `src/import.js` for reuse by frontmatter import and future merge (#196)
 - **Cross-repo edge protocol** — `repo:owner/name:prefix:identifier` syntax for referencing nodes in other repositories. `git mind link --remote <owner/name>` qualifies local IDs. Validators accept cross-repo format, `extractPrefix` returns inner prefix (#197)
 - **Remote API** — `parseCrossRepoId`, `buildCrossRepoId`, `isCrossRepoId`, `extractRepo`, `qualifyNodeId` in `src/remote.js` (#197)
+- **`git mind merge` command** — Merge another repository's graph into the local graph with cross-repo qualification. Supports `--from <path>`, `--repo-name <owner/name>`, `--dry-run`, `--json`. Auto-detects repo identifier from origin remote (#198)
+- **Merge API** — `mergeFromRepo(localGraph, remotePath, opts)`, `detectRepoIdentifier(repoPath)` in `src/merge.js` (#198)
 
 ## [2.0.0-alpha.2] - 2026-02-11
 

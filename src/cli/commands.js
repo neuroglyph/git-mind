@@ -14,6 +14,7 @@ import { importFile } from '../import.js';
 import { importFromMarkdown } from '../frontmatter.js';
 import { exportGraph, serializeExport, exportToFile } from '../export.js';
 import { qualifyNodeId } from '../remote.js';
+import { mergeFromRepo } from '../merge.js';
 import { renderView, listViews } from '../views.js';
 import { processCommit } from '../hooks.js';
 import { runDoctor, fixIssues } from '../doctor.js';
@@ -339,6 +340,40 @@ export async function exportCmd(cwd, opts = {}) {
       } else {
         const output = serializeExport(data, format);
         process.stdout.write(output);
+      }
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Merge a remote repository's graph into the local graph.
+ * @param {string} cwd
+ * @param {{ from: string, repoName?: string, dryRun?: boolean, json?: boolean }} opts
+ */
+export async function mergeCmd(cwd, opts = {}) {
+  if (!opts.from) {
+    console.error(error('Usage: git mind merge --from <repo-path> [--repo-name <owner/name>]'));
+    process.exitCode = 1;
+    return;
+  }
+
+  try {
+    const graph = await loadGraph(cwd);
+    const result = await mergeFromRepo(graph, opts.from, {
+      repoName: opts.repoName,
+      dryRun: opts.dryRun,
+    });
+
+    if (opts.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      if (result.dryRun) {
+        console.log(info(`Dry run: would merge ${result.nodes} node(s), ${result.edges} edge(s) from ${result.repoName}`));
+      } else {
+        console.log(success(`Merged ${result.nodes} node(s), ${result.edges} edge(s) from ${result.repoName}`));
       }
     }
   } catch (err) {

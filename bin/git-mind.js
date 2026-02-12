@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, nodes, status, importCmd, importMarkdownCmd, exportCmd, installHooks, processCommitCmd, doctor, suggest, review } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, status, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review } from '../src/cli/commands.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -41,6 +41,11 @@ Commands:
     --format yaml|json          Output format (default: yaml)
     --prefix <prefix>           Filter by node prefix
     --json                      Output as JSON metadata
+  merge                          Merge another repo's graph
+    --from <repo-path>          Path to remote repo
+    --repo-name <owner/name>    Override detected repo identifier
+    --dry-run                   Preview without writing
+    --json                      Output as JSON
   install-hooks                  Install post-commit Git hook
   doctor                        Run graph integrity checks
     --fix                       Auto-fix dangling edges
@@ -174,6 +179,17 @@ switch (command) {
       format: exportFlags.format,
       prefix: exportFlags.prefix,
       json: exportFlags.json ?? false,
+    });
+    break;
+  }
+
+  case 'merge': {
+    const mergeFlags = parseFlags(args.slice(1));
+    await mergeCmd(cwd, {
+      from: mergeFlags.from,
+      repoName: mergeFlags['repo-name'],
+      dryRun: args.includes('--dry-run'),
+      json: mergeFlags.json ?? false,
     });
     break;
   }
