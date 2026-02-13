@@ -97,7 +97,7 @@ export function detectOrphanNodes(nodes, edges) {
   }
 
   return nodes
-    .filter(n => !connected.has(n) && !n.startsWith('decision:'))
+    .filter(n => !connected.has(n) && !n.startsWith('decision:') && !n.startsWith('epoch:'))
     .map(n => ({
       type: 'orphan-node',
       severity: 'info',

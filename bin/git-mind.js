@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, nodes, status, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review } from '../src/cli/commands.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -32,6 +32,8 @@ Commands:
     --id <nodeId>               Show details for a single node
     --json                      Output as JSON
   status                        Show graph health dashboard
+    --json                      Output as JSON
+  at <ref>                      Show graph at a historical point in time
     --json                      Output as JSON
   import <file>                 Import a YAML graph file
     --dry-run, --validate       Validate without writing
@@ -150,6 +152,17 @@ switch (command) {
   case 'status':
     await status(cwd, { json: args.includes('--json') });
     break;
+
+  case 'at': {
+    const atRef = args[1];
+    if (!atRef || atRef.startsWith('--')) {
+      console.error('Usage: git mind at <ref>');
+      process.exitCode = 1;
+      break;
+    }
+    await at(cwd, atRef, { json: args.includes('--json') });
+    break;
+  }
 
   case 'import': {
     const importFlags = parseFlags(args.slice(1));

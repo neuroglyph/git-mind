@@ -14,9 +14,10 @@ Everything you need to know — from zero to power user.
 6. [Views](#views)
 7. [Importing graphs from YAML](#importing-graphs-from-yaml)
 8. [Commit directives](#commit-directives)
-9. [Using git-mind as a library](#using-git-mind-as-a-library)
-10. [Appendix A: How it works under the hood](#appendix-a-how-it-works-under-the-hood)
-11. [Appendix B: Edge types reference](#appendix-b-edge-types-reference)
+9. [Time-travel with `git mind at`](#time-travel-with-git-mind-at)
+10. [Using git-mind as a library](#using-git-mind-as-a-library)
+11. [Appendix A: How it works under the hood](#appendix-a-how-it-works-under-the-hood)
+12. [Appendix B: Edge types reference](#appendix-b-edge-types-reference)
 
 ---
 
@@ -32,7 +33,7 @@ git-mind captures those relationships explicitly, so you can query them, visuali
 
 **What makes it different?**
 
-- **Git-native** — Your graph is versioned alongside your code. Check out an old commit, get the old graph.
+- **Git-native** — Your graph is versioned alongside your code. Use `git mind at` to see the graph at any historical point.
 - **Conflict-free** — Built on CRDTs, so multiple people can add edges simultaneously without conflicts.
 - **Branch and merge** — Try experimental connections in a branch, merge what works.
 - **No setup** — No database to run. No config files. Just `git mind init`.
@@ -298,17 +299,43 @@ git mind view roadmap      # render the roadmap view
 git mind view architecture # render the architecture view
 ```
 
+### `git mind at <ref>`
+
+Show the graph at a historical point in time.
+
+```bash
+git mind at HEAD~50
+git mind at v1.0.0
+git mind at abc123 --json
+```
+
+Resolves the ref to a commit SHA, finds the epoch marker (or nearest ancestor), and materializes the graph at that Lamport tick. See [Time-travel with `git mind at`](#time-travel-with-git-mind-at) for details.
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON (includes epoch metadata) |
+
 ### `git mind suggest`
 
-*(Stub — not yet implemented)*
+Generate AI-powered edge suggestions based on recent code changes.
 
-Will use AI to suggest edges based on code analysis.
+```bash
+git mind suggest
+git mind suggest --agent "my-agent-cmd" --context HEAD~5..HEAD --json
+```
 
 ### `git mind review`
 
-*(Stub — not yet implemented)*
+Review pending AI suggestions interactively or in batch.
 
-Will present suggested edges for human review and approval.
+```bash
+git mind review                    # interactive mode
+git mind review --batch accept     # accept all pending
+git mind review --batch reject     # reject all pending
+git mind review --json             # list pending as JSON
+```
 
 ### `git mind help`
 
@@ -464,6 +491,70 @@ await processCommit(graph, {
   sha: 'abc123def456',
   message: 'feat: add login\n\nIMPLEMENTS: spec:auth',
 });
+```
+
+---
+
+## Time-travel with `git mind at`
+
+git-mind records **epoch markers** as you commit. Each epoch correlates a git commit SHA to a Lamport tick in the CRDT graph, allowing you to materialize the graph at any historical point in time.
+
+### Setup
+
+Epoch markers are recorded automatically when you use `git mind process-commit` (either manually or via the post-commit hook). Install the hook to start recording:
+
+```bash
+git mind install-hooks
+```
+
+### Usage
+
+```bash
+# See the graph as it was at a specific commit
+git mind at HEAD~50
+
+# Use any git ref — branch names, tags, SHAs
+git mind at v1.0.0
+git mind at abc123
+
+# JSON output (includes epoch metadata)
+git mind at HEAD~10 --json
+```
+
+### How it works
+
+When a commit is processed, git-mind:
+
+1. Records the current Lamport tick (the CRDT's logical clock)
+2. Stores an `epoch:<sha8>` node in the graph with the tick, full SHA, and timestamp
+3. These epoch nodes travel with the graph on push/pull/merge — they're part of the CRDT
+
+When you run `git mind at <ref>`:
+
+1. The ref is resolved to a commit SHA
+2. The epoch node for that SHA is looked up (or the nearest ancestor's epoch)
+3. The graph is materialized with a ceiling at that tick — only patches with `lamport <= tick` are visible
+4. You see the graph exactly as it was at that moment in time
+
+### Programmatic usage
+
+```javascript
+import { loadGraph, getEpochForRef, computeStatus, getCurrentTick, recordEpoch } from '@neuroglyph/git-mind';
+
+const graph = await loadGraph('.');
+
+// Record an epoch for the current commit
+const tick = await getCurrentTick(graph);
+await recordEpoch(graph, commitSha, tick);
+
+// Time-travel to a ref
+const result = await getEpochForRef(graph, '.', 'HEAD~10');
+if (result) {
+  graph._seekCeiling = result.epoch.tick;
+  await graph.materialize({ ceiling: result.epoch.tick });
+  const status = await computeStatus(graph);
+  console.log(status);
+}
 ```
 
 ---

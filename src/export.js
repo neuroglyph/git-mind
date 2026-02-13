@@ -12,7 +12,7 @@ import { extractPrefix } from './validators.js';
 const EXCLUDED_EDGE_PROPS = new Set(['createdAt', 'importedAt', 'reviewedAt']);
 
 /** Node prefixes excluded from export by default (system-generated). */
-const EXCLUDED_PREFIXES = new Set(['decision', 'commit']);
+const EXCLUDED_PREFIXES = new Set(['decision', 'commit', 'epoch']);
 
 /**
  * @typedef {object} ExportOptions

@@ -4,6 +4,7 @@
  */
 
 import { createEdge } from './edges.js';
+import { getCurrentTick, recordEpoch } from './epoch.js';
 
 /**
  * @typedef {object} Directive
@@ -62,6 +63,12 @@ export async function processCommit(graph, commit) {
       rationale: `Auto-created from commit ${commit.sha.slice(0, 8)}`,
     });
   }
+
+  // Record an epoch marker correlating this commit to the current Lamport tick
+  try {
+    const tick = await getCurrentTick(graph);
+    await recordEpoch(graph, commit.sha, tick);
+  } catch { /* non-fatal — epoch recording should never break commit processing */ }
 
   return directives;
 }

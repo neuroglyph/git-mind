@@ -17,10 +17,11 @@ import { qualifyNodeId } from '../remote.js';
 import { mergeFromRepo } from '../merge.js';
 import { renderView, listViews } from '../views.js';
 import { processCommit } from '../hooks.js';
+import { getEpochForRef } from '../epoch.js';
 import { runDoctor, fixIssues } from '../doctor.js';
 import { generateSuggestions } from '../suggest.js';
 import { getPendingSuggestions, acceptSuggestion, rejectSuggestion, skipSuggestion, batchDecision } from '../review.js';
-import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary } from './format.js';
+import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus } from './format.js';
 
 /**
  * Initialize a git-mind graph in the current repo.
@@ -254,6 +255,56 @@ export async function status(cwd, opts = {}) {
       console.log(JSON.stringify(result, null, 2));
     } else {
       console.log(formatStatus(result));
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Show the graph at a historical point in time via epoch markers.
+ * @param {string} cwd
+ * @param {string} ref - Git ref (HEAD, HEAD~5, branch name, SHA, etc.)
+ * @param {{ json?: boolean }} opts
+ */
+export async function at(cwd, ref, opts = {}) {
+  if (!ref) {
+    console.error(error('Usage: git mind at <ref>'));
+    process.exitCode = 1;
+    return;
+  }
+
+  try {
+    const graph = await loadGraph(cwd);
+    const result = await getEpochForRef(graph, cwd, ref);
+
+    if (!result) {
+      console.error(error(`No epoch marker found for "${ref}" or any of its ancestors`));
+      process.exitCode = 1;
+      return;
+    }
+
+    const { sha, epoch } = result;
+
+    // Set the ceiling so subsequent queries see the graph at that tick
+    graph._seekCeiling = epoch.tick;
+    await graph.materialize({ ceiling: epoch.tick });
+
+    const statusResult = await computeStatus(graph);
+
+    if (opts.json) {
+      console.log(JSON.stringify({
+        ref,
+        sha: sha.slice(0, 8),
+        fullSha: sha,
+        tick: epoch.tick,
+        nearest: epoch.nearest ?? false,
+        recordedAt: epoch.recordedAt,
+        status: statusResult,
+      }, null, 2));
+    } else {
+      console.log(formatAtStatus(ref, sha, epoch, statusResult));
     }
   } catch (err) {
     console.error(error(err.message));

@@ -19,6 +19,10 @@ export {
 export { defineView, declareView, renderView, listViews, resetViews } from './views.js';
 export { parseDirectives, processCommit } from './hooks.js';
 export {
+  getCurrentTick, recordEpoch, lookupEpoch,
+  lookupNearestEpoch, getEpochForRef,
+} from './epoch.js';
+export {
   detectDanglingEdges, detectOrphanMilestones, detectOrphanNodes,
   detectLowConfidenceEdges, runDoctor, fixIssues,
 } from './doctor.js';

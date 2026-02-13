@@ -24,7 +24,7 @@ export const CANONICAL_PREFIXES = [
 ];
 
 /** @type {string[]} System-generated prefixes (reserved, not user-writable) */
-export const SYSTEM_PREFIXES = ['commit', 'repo'];
+export const SYSTEM_PREFIXES = ['commit', 'repo', 'epoch'];
 
 /** @type {string[]} Valid edge types */
 export const EDGE_TYPES = [

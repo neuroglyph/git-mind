@@ -323,6 +323,45 @@ export function formatExportResult(result, toStdout = false) {
 }
 
 /**
+ * Format an `at` (time-travel) status for terminal display.
+ * @param {string} ref - The git ref that was resolved
+ * @param {string} sha - Resolved commit SHA
+ * @param {import('../epoch.js').EpochInfo} epoch - Epoch marker info
+ * @param {import('../status.js').GraphStatus} status - Computed status at that tick
+ * @returns {string}
+ */
+export function formatAtStatus(ref, sha, epoch, status) {
+  const lines = [];
+
+  lines.push(chalk.bold(`Graph at ${ref}`));
+  const shaStr = `commit ${chalk.cyan(sha.slice(0, 8))}`;
+  const tickStr = `tick ${chalk.yellow(String(epoch.tick))}`;
+  const nearestStr = epoch.nearest ? chalk.dim('  (nearest epoch)') : '';
+  lines.push(`${shaStr}  ${tickStr}${nearestStr}`);
+  lines.push(chalk.dim('═'.repeat(32)));
+  lines.push('');
+
+  // Nodes section
+  lines.push(`${chalk.bold('Nodes:')} ${status.nodes.total}`);
+  const prefixes = Object.entries(status.nodes.byPrefix)
+    .sort(([, a], [, b]) => b - a);
+  for (const [prefix, count] of prefixes) {
+    lines.push(`  ${chalk.yellow(prefix.padEnd(14))} ${String(count).padStart(3)}`);
+  }
+  lines.push('');
+
+  // Edges section
+  lines.push(`${chalk.bold('Edges:')} ${status.edges.total}`);
+  const types = Object.entries(status.edges.byType)
+    .sort(([, a], [, b]) => b - a);
+  for (const [type, count] of types) {
+    lines.push(`  ${chalk.yellow(type.padEnd(14))} ${String(count).padStart(3)}`);
+  }
+
+  return lines.join('\n');
+}
+
+/**
  * Format an import result for terminal display.
  * @param {import('../import.js').ImportResult} result
  * @returns {string}
