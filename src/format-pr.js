@@ -3,9 +3,11 @@
  * Markdown formatting for PR suggestion display and slash command parsing.
  */
 
-/** Escape pipe characters for markdown table cells. */
+/** Escape backslashes and pipe characters for markdown table cells. */
 function escapeCell(str) {
-  return str.replace(/\|/g, '\\|');
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/\|/g, '\\|');
 }
 
 /**
