@@ -30,18 +30,22 @@ export function parseFrontmatter(content) {
   const firstNewline = content.indexOf('\n');
   if (firstNewline === -1) return { frontmatter: null, body: content };
 
-  const endIdx = content.indexOf('\n---', firstNewline);
-  if (endIdx === -1) {
+  // Match standalone closing delimiter: \n--- followed by newline or end-of-string
+  const closeRe = /\n---(?:\n|$)/;
+  const closeMatch = closeRe.exec(content.slice(firstNewline));
+  if (!closeMatch) {
     return { frontmatter: null, body: content };
   }
+  const endIdx = firstNewline + closeMatch.index;
+  const bodyStart = endIdx + closeMatch[0].length;
 
   const yamlBlock = content.slice(firstNewline + 1, endIdx);
   try {
     const parsed = yaml.load(yamlBlock);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return { frontmatter: null, body: content.slice(endIdx + 4) };
+      return { frontmatter: null, body: content.slice(bodyStart) };
     }
-    return { frontmatter: parsed, body: content.slice(endIdx + 4) };
+    return { frontmatter: parsed, body: content.slice(bodyStart) };
   } catch {
     return { frontmatter: null, body: content };
   }

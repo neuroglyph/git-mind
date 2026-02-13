@@ -287,8 +287,7 @@ export async function at(cwd, ref, opts = {}) {
 
     const { sha, epoch } = result;
 
-    // Set the ceiling so subsequent queries see the graph at that tick
-    graph._seekCeiling = epoch.tick;
+    // Materialize the graph at the epoch's Lamport tick
     await graph.materialize({ ceiling: epoch.tick });
 
     const statusResult = await computeStatus(graph);

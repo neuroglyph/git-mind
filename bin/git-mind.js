@@ -174,8 +174,8 @@ switch (command) {
       break;
     }
 
-    const importPath = args[1];
-    if (!importPath || importPath.startsWith('--')) {
+    const importPath = args.slice(1).find(a => !a.startsWith('--'));
+    if (!importPath) {
       console.error('Usage: git mind import <file> [--dry-run] [--json] [--from-markdown <glob>]');
       process.exitCode = 1;
       break;

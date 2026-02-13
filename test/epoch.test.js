@@ -57,10 +57,10 @@ describe('epoch', () => {
     expect(epoch).toBeNull();
   });
 
-  it('uses first 8 chars of SHA as node ID', async () => {
+  it('uses first 12 chars of SHA as node ID', async () => {
     await recordEpoch(graph, 'abc123def456789', 10);
     const nodes = await graph.getNodes();
-    expect(nodes).toContain('epoch:abc123de');
+    expect(nodes).toContain('epoch:abc123def456');
   });
 
   // ── lookupNearestEpoch ─────────────────────────────────────
@@ -167,19 +167,18 @@ describe('epoch', () => {
 
     const data = await exportGraph(graph);
     const ids = data.nodes.map(n => n.id);
-    expect(ids).not.toContain('epoch:abc123de');
+    expect(ids).not.toContain('epoch:abc123def456');
     expect(ids).toContain('task:a');
   });
 
   // ── Doctor filtering ───────────────────────────────────────
 
   it('excludes epoch nodes from orphan detection', () => {
-    const nodes = ['task:a', 'task:b', 'epoch:abc123de'];
+    const nodes = ['task:a', 'task:b', 'epoch:abc123def456'];
     const edges = [{ from: 'task:a', to: 'task:b', label: 'blocks' }];
     const issues = detectOrphanNodes(nodes, edges);
 
     expect(issues).toHaveLength(0);
-    expect(issues.find(i => i.affected[0] === 'epoch:abc123de')).toBeUndefined();
   });
 
   // ── Validators ──────────────────────────────────────────────

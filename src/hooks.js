@@ -68,7 +68,9 @@ export async function processCommit(graph, commit) {
   try {
     const tick = await getCurrentTick(graph);
     await recordEpoch(graph, commit.sha, tick);
-  } catch { /* non-fatal — epoch recording should never break commit processing */ }
+  } catch (err) {
+    if (process.env.GITMIND_DEBUG) console.error('epoch recording failed:', err);
+  }
 
   return directives;
 }

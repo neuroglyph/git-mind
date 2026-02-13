@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, mkdir, chmod } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
@@ -154,16 +154,15 @@ Body`;
     it('throws on permission errors (not ENOENT)', async () => {
       // Create a directory with no read permissions
       const restrictedDir = join(tempDir, 'restricted');
-      const { mkdir: mkdirFs, chmod: chmodFs } = await import('node:fs/promises');
-      await mkdirFs(restrictedDir);
-      await chmodFs(restrictedDir, 0o000);
+      await mkdir(restrictedDir);
+      await chmod(restrictedDir, 0o000);
 
       try {
         await expect(findMarkdownFiles(tempDir, 'restricted/**/*.md'))
           .rejects.toThrow();
       } finally {
         // Restore permissions for cleanup
-        await chmodFs(restrictedDir, 0o755);
+        await chmod(restrictedDir, 0o755);
       }
     });
   });

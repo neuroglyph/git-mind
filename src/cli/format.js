@@ -7,6 +7,23 @@ import chalk from 'chalk';
 import figures from 'figures';
 
 /**
+ * Render a sorted key→count table (shared by formatStatus and formatAtStatus).
+ * @param {Record<string, number>} entries - Key→count map
+ * @param {string[]} lines - Output array to push into
+ * @param {{ pct?: number }} [opts] - If pct is provided, show percentage based on total
+ */
+function renderCountTable(entries, lines, opts = {}) {
+  const sorted = Object.entries(entries).sort(([, a], [, b]) => b - a);
+  for (const [key, count] of sorted) {
+    let suffix = '';
+    if (opts.pct !== undefined && opts.pct > 0) {
+      suffix = `  ${chalk.dim(`(${Math.round((count / opts.pct) * 100)}%)`)}`;
+    }
+    lines.push(`  ${chalk.yellow(key.padEnd(14))} ${String(count).padStart(3)}${suffix}`);
+  }
+}
+
+/**
  * Format a success message.
  * @param {string} msg
  * @returns {string}
@@ -136,23 +153,12 @@ export function formatStatus(status) {
 
   // Nodes section
   lines.push(`${chalk.bold('Nodes:')} ${status.nodes.total}`);
-  const prefixes = Object.entries(status.nodes.byPrefix)
-    .sort(([, a], [, b]) => b - a);
-  for (const [prefix, count] of prefixes) {
-    const pct = status.nodes.total > 0
-      ? Math.round((count / status.nodes.total) * 100)
-      : 0;
-    lines.push(`  ${chalk.yellow(prefix.padEnd(14))} ${String(count).padStart(3)}  ${chalk.dim(`(${pct}%)`)}`);
-  }
+  renderCountTable(status.nodes.byPrefix, lines, { pct: status.nodes.total });
   lines.push('');
 
   // Edges section
   lines.push(`${chalk.bold('Edges:')} ${status.edges.total}`);
-  const types = Object.entries(status.edges.byType)
-    .sort(([, a], [, b]) => b - a);
-  for (const [type, count] of types) {
-    lines.push(`  ${chalk.yellow(type.padEnd(14))} ${String(count).padStart(3)}`);
-  }
+  renderCountTable(status.edges.byType, lines);
   lines.push('');
 
   // Health section
@@ -343,20 +349,12 @@ export function formatAtStatus(ref, sha, epoch, status) {
 
   // Nodes section
   lines.push(`${chalk.bold('Nodes:')} ${status.nodes.total}`);
-  const prefixes = Object.entries(status.nodes.byPrefix)
-    .sort(([, a], [, b]) => b - a);
-  for (const [prefix, count] of prefixes) {
-    lines.push(`  ${chalk.yellow(prefix.padEnd(14))} ${String(count).padStart(3)}`);
-  }
+  renderCountTable(status.nodes.byPrefix, lines);
   lines.push('');
 
   // Edges section
   lines.push(`${chalk.bold('Edges:')} ${status.edges.total}`);
-  const types = Object.entries(status.edges.byType)
-    .sort(([, a], [, b]) => b - a);
-  for (const [type, count] of types) {
-    lines.push(`  ${chalk.yellow(type.padEnd(14))} ${String(count).padStart(3)}`);
-  }
+  renderCountTable(status.edges.byType, lines);
 
   return lines.join('\n');
 }

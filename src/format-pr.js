@@ -28,10 +28,10 @@ export function formatSuggestionsAsMarkdown(suggestions) {
 
   for (let i = 0; i < suggestions.length; i++) {
     const s = suggestions[i];
-    const conf = `${(s.confidence * 100).toFixed(0)}%`;
+    const conf = `${(((s.confidence ?? 0)) * 100).toFixed(0)}%`;
     const rationale = escapeCell(s.rationale ?? '');
-    const source = escapeCell(s.source.replace(/`/g, ''));
-    const target = escapeCell(s.target.replace(/`/g, ''));
+    const source = escapeCell((s.source ?? '').replace(/`/g, ''));
+    const target = escapeCell((s.target ?? '').replace(/`/g, ''));
     lines.push(`| ${i + 1} | \`${source}\` | \`${target}\` | ${escapeCell(s.type)} | ${conf} | ${rationale} |`);
   }
 

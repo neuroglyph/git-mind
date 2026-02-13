@@ -36,8 +36,8 @@ export async function getCurrentTick(graph) {
  * @returns {Promise<void>}
  */
 export async function recordEpoch(graph, commitSha, tick) {
-  const sha8 = commitSha.slice(0, 8);
-  const nodeId = `epoch:${sha8}`;
+  const shaPrefix = commitSha.slice(0, 12);
+  const nodeId = `epoch:${shaPrefix}`;
 
   const patch = await graph.createPatch();
 
@@ -60,8 +60,8 @@ export async function recordEpoch(graph, commitSha, tick) {
  * @returns {Promise<EpochInfo|null>}
  */
 export async function lookupEpoch(graph, commitSha) {
-  const sha8 = commitSha.slice(0, 8);
-  const nodeId = `epoch:${sha8}`;
+  const shaPrefix = commitSha.slice(0, 12);
+  const nodeId = `epoch:${shaPrefix}`;
 
   const exists = await graph.hasNode(nodeId);
   if (!exists) return null;

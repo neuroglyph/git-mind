@@ -110,6 +110,9 @@ export function serializeExport(data, format = 'yaml') {
   if (format === 'json') {
     return JSON.stringify(data, null, 2);
   }
+  if (format !== 'yaml') {
+    throw new Error(`Unsupported export format: "${format}". Expected "yaml" or "json".`);
+  }
   return yaml.dump(data, { lineWidth: -1, noRefs: true, sortKeys: false });
 }
 
