@@ -153,8 +153,8 @@ switch (command) {
 
   case 'import': {
     const importFlags = parseFlags(args.slice(1));
-    const dryRun = args.includes('--dry-run') || args.includes('--validate');
-    const jsonMode = args.includes('--json');
+    const dryRun = importFlags['dry-run'] === true || importFlags['validate'] === true;
+    const jsonMode = importFlags.json === true;
 
     if (importFlags['from-markdown']) {
       await importMarkdownCmd(cwd, importFlags['from-markdown'], { dryRun, json: jsonMode });
@@ -188,8 +188,8 @@ switch (command) {
     await mergeCmd(cwd, {
       from: mergeFlags.from,
       repoName: mergeFlags['repo-name'],
-      dryRun: args.includes('--dry-run'),
-      json: mergeFlags.json ?? false,
+      dryRun: mergeFlags['dry-run'] === true,
+      json: mergeFlags.json === true,
     });
     break;
   }
@@ -230,6 +230,7 @@ switch (command) {
     const reviewFlags = parseFlags(args.slice(1));
     await review(cwd, {
       batch: reviewFlags.batch,
+      index: reviewFlags.index ? parseInt(reviewFlags.index, 10) : undefined,
       json: reviewFlags.json ?? false,
     });
     break;

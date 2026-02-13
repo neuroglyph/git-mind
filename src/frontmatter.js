@@ -20,6 +20,9 @@ const EDGE_TYPE_SET = new Set(EDGE_TYPES);
  * @returns {{ frontmatter: Record<string, unknown> | null, body: string }}
  */
 export function parseFrontmatter(content) {
+  // Normalize CRLF to LF for consistent delimiter handling
+  content = content.replace(/\r\n/g, '\n');
+
   if (!content.startsWith('---')) {
     return { frontmatter: null, body: content };
   }
@@ -86,11 +89,21 @@ export function extractGraphData(relativePath, frontmatter) {
 
 /**
  * Find markdown files matching a glob pattern.
- * Supports ** for recursive and *.md for extension matching.
+ *
+ * Supported patterns:
+ * - `**\/*.md` — all .md files recursively from basePath
+ * - `docs/**\/*.md` — all .md files recursively under docs/
+ * - `*.md` — top-level .md files in basePath
+ * - `docs/*.md` — top-level .md files in docs/
+ *
+ * Limitations:
+ * - Exact file paths (e.g., "docs/README.md") are not matched directly
+ * - Complex globs with character classes (e.g., "docs/202?/*.md") are not supported
+ * - Returns empty results for non-existent start directories (no error thrown)
  *
  * @param {string} basePath - Root directory to search from
- * @param {string} pattern - Glob pattern (e.g., "docs/**\/*.md", "*.md")
- * @returns {Promise<string[]>} Absolute paths of matching files
+ * @param {string} pattern - Glob pattern (see supported patterns above)
+ * @returns {Promise<string[]>} Sorted absolute paths of matching .md files
  */
 export async function findMarkdownFiles(basePath, pattern) {
   const recursive = pattern.includes('**');

@@ -23,6 +23,16 @@ runs:
       run: npm ci
       working-directory: ${{ github.action_path }}
 
+    - name: Validate agent configuration
+      shell: bash
+      env:
+        GITMIND_AGENT: ${{ inputs.agent || '' }}
+      run: |
+        if [ -z "$GITMIND_AGENT" ]; then
+          echo "::error::No agent configured. Set the 'agent' input or the GITMIND_AGENT environment variable."
+          exit 1
+        fi
+
     - name: Run git-mind suggest
       id: suggest
       shell: bash
@@ -31,10 +41,16 @@ runs:
       run: |
         BASE_SHA="${{ github.event.pull_request.base.sha }}"
         HEAD_SHA="${{ github.event.pull_request.head.sha }}"
-        RESULT=$(node ${{ github.action_path }}/bin/git-mind.js suggest --json --context "${BASE_SHA}..${HEAD_SHA}" 2>/dev/null) || true
+        SUGGEST_ERR=$(mktemp)
+        RESULT=$(node ${{ github.action_path }}/bin/git-mind.js suggest --json --context "${BASE_SHA}..${HEAD_SHA}" 2>"$SUGGEST_ERR") || true
+        if [ -s "$SUGGEST_ERR" ]; then
+          echo "::warning::git-mind suggest stderr:"
+          cat "$SUGGEST_ERR"
+        fi
         echo "result<<GITMIND_EOF" >> "$GITHUB_OUTPUT"
         echo "$RESULT" >> "$GITHUB_OUTPUT"
         echo "GITMIND_EOF" >> "$GITHUB_OUTPUT"
+        rm -f "$SUGGEST_ERR"
 
     - name: Post comment
       shell: bash

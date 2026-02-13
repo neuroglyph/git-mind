@@ -21,15 +21,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check commenter permissions
+        id: authz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENTER: ${{ github.event.comment.user.login }}
+          REPO: ${{ github.repository }}
+        run: |
+          PERMISSION=$(gh api "repos/${REPO}/collaborators/${COMMENTER}/permission" --jq '.permission')
+          if [[ "$PERMISSION" != "admin" && "$PERMISSION" != "write" && "$PERMISSION" != "maintain" ]]; then
+            echo "User ${COMMENTER} does not have write access. Skipping."
+            echo "authorized=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "authorized=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Node.js
+        if: steps.authz.outputs.authorized == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
       - name: Install dependencies
+        if: steps.authz.outputs.authorized == 'true'
         run: npm ci
 
       - name: Parse and execute command
+        if: steps.authz.outputs.authorized == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMENT_BODY: ${{ github.event.comment.body }}
@@ -49,20 +67,28 @@ jobs:
 
           case "$ACTION" in
             accept-all)
-              node bin/git-mind.js review --batch accept --json
-              REPLY="All pending suggestions accepted."
+              if node bin/git-mind.js review --batch accept --json; then
+                REPLY="All pending suggestions accepted."
+              else
+                REPLY="Failed to accept suggestions."
+              fi
               ;;
             accept)
-              if [ -n "$INDEX" ]; then
-                # Individual accept by index is not yet supported in the CLI.
-                # accept-all is available; individual accept requires CLI changes.
-                REPLY="Individual accept by index is not yet supported. Use \`/gitmind accept-all\` instead."
+              if [ -z "$INDEX" ] || ! [[ "$INDEX" =~ ^[0-9]+$ ]]; then
+                REPLY="Invalid index. Usage: \`/gitmind accept <number>\`"
+              elif node bin/git-mind.js review --batch accept --index "$INDEX" --json; then
+                REPLY="Suggestion $INDEX accepted."
+              else
+                REPLY="Failed to accept suggestion $INDEX."
               fi
               ;;
             reject)
-              if [ -n "$INDEX" ]; then
-                # Individual reject by index is not yet supported in the CLI.
-                REPLY="Individual reject by index is not yet supported."
+              if [ -z "$INDEX" ] || ! [[ "$INDEX" =~ ^[0-9]+$ ]]; then
+                REPLY="Invalid index. Usage: \`/gitmind reject <number>\`"
+              elif node bin/git-mind.js review --batch reject --index "$INDEX" --json; then
+                REPLY="Suggestion $INDEX rejected."
+              else
+                REPLY="Failed to reject suggestion $INDEX."
               fi
               ;;
           esac

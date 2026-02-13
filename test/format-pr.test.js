@@ -63,6 +63,22 @@ describe('format-pr', () => {
       expect(result).toContain('reason B');
     });
 
+    it('escapes backslash-pipe sequence in rationale', () => {
+      const suggestions = [{
+        source: 'task:a',
+        target: 'spec:b',
+        type: 'implements',
+        confidence: 0.8,
+        rationale: 'test\\|end', // literal backslash followed by pipe
+      }];
+
+      const result = formatSuggestionsAsMarkdown(suggestions);
+      const dataRow = result.split('\n').find(l => l.startsWith('| 1'));
+      // A 7-column table row should have exactly 8 pipe delimiters.
+      // Without backslash escaping, \| becomes \\| which is a raw pipe = 9 delimiters.
+      expect((dataRow.match(/\|/g) || []).length).toBe(8);
+    });
+
     it('handles missing rationale', () => {
       const suggestions = [{
         source: 'task:a',

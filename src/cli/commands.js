@@ -452,6 +452,30 @@ export async function review(cwd, opts = {}) {
         process.exitCode = 1;
         return;
       }
+
+      // Individual item by index
+      if (opts.index !== undefined) {
+        const pending = await getPendingSuggestions(graph);
+        const idx = opts.index - 1; // 1-indexed to 0-indexed
+        if (idx < 0 || idx >= pending.length) {
+          console.error(error(`Index ${opts.index} out of range (1-${pending.length})`));
+          process.exitCode = 1;
+          return;
+        }
+        const suggestion = pending[idx];
+        const decision = opts.batch === 'accept'
+          ? await acceptSuggestion(graph, suggestion)
+          : await rejectSuggestion(graph, suggestion);
+        const result = { processed: 1, decisions: [decision] };
+
+        if (opts.json) {
+          console.log(JSON.stringify(result, null, 2));
+        } else {
+          console.log(formatDecisionSummary(result));
+        }
+        return;
+      }
+
       const result = await batchDecision(graph, opts.batch);
 
       if (opts.json) {
