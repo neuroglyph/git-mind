@@ -114,6 +114,11 @@ Body`;
       expect(edges[1].target).toBe('spec:b');
     });
 
+    it('strips extension from filename, not directory', () => {
+      const { node } = extractGraphData('notes.md/index.md', { title: 'Notes' });
+      expect(node.id).toBe('doc:notes.md/index');
+    });
+
     it('extracts multiple edge types', () => {
       const { edges } = extractGraphData('design.md', {
         id: 'doc:design',
@@ -144,6 +149,22 @@ Body`;
     it('returns empty for non-existent directory', async () => {
       const files = await findMarkdownFiles(tempDir, 'nonexistent/**/*.md');
       expect(files).toEqual([]);
+    });
+
+    it('throws on permission errors (not ENOENT)', async () => {
+      // Create a directory with no read permissions
+      const restrictedDir = join(tempDir, 'restricted');
+      const { mkdir: mkdirFs, chmod: chmodFs } = await import('node:fs/promises');
+      await mkdirFs(restrictedDir);
+      await chmodFs(restrictedDir, 0o000);
+
+      try {
+        await expect(findMarkdownFiles(tempDir, 'restricted/**/*.md'))
+          .rejects.toThrow();
+      } finally {
+        // Restore permissions for cleanup
+        await chmodFs(restrictedDir, 0o755);
+      }
     });
   });
 

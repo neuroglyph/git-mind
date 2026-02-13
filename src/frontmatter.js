@@ -56,7 +56,8 @@ export function parseFrontmatter(content) {
  */
 export function extractGraphData(relativePath, frontmatter) {
   // Determine node ID
-  const pathWithoutExt = relativePath.replace(extname(relativePath), '');
+  const ext = extname(relativePath);
+  const pathWithoutExt = ext ? relativePath.slice(0, -ext.length) : relativePath;
   const id = typeof frontmatter.id === 'string' ? frontmatter.id : `doc:${pathWithoutExt}`;
 
   // Build node properties from non-edge frontmatter fields
@@ -144,8 +145,12 @@ export async function findMarkdownFiles(basePath, pattern) {
         }
       }
     }
-  } catch {
-    // Directory doesn't exist — return empty results
+  } catch (err) {
+    if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+      // Directory doesn't exist — return empty results
+    } else {
+      throw err;
+    }
   }
 
   return results.sort();
