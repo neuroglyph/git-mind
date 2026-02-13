@@ -26,9 +26,11 @@ runs:
     - name: Validate agent configuration
       shell: bash
       env:
-        GITMIND_AGENT: ${{ inputs.agent || '' }}
+        INPUT_AGENT: ${{ inputs.agent }}
       run: |
-        if [ -z "$GITMIND_AGENT" ]; then
+        # Prefer explicit input; fall back to inherited GITMIND_AGENT env var
+        EFFECTIVE="${INPUT_AGENT:-${GITMIND_AGENT:-}}"
+        if [ -z "$EFFECTIVE" ]; then
           echo "::error::No agent configured. Set the 'agent' input or the GITMIND_AGENT environment variable."
           exit 1
         fi
@@ -37,7 +39,7 @@ runs:
       id: suggest
       shell: bash
       env:
-        GITMIND_AGENT: ${{ inputs.agent }}
+        GITMIND_AGENT: ${{ inputs.agent || env.GITMIND_AGENT }}
       run: |
         BASE_SHA="${{ github.event.pull_request.base.sha }}"
         HEAD_SHA="${{ github.event.pull_request.head.sha }}"
