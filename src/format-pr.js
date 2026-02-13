@@ -32,7 +32,7 @@ export function formatSuggestionsAsMarkdown(suggestions) {
     const rationale = escapeCell(s.rationale ?? '');
     const source = escapeCell((s.source ?? '').replace(/`/g, ''));
     const target = escapeCell((s.target ?? '').replace(/`/g, ''));
-    lines.push(`| ${i + 1} | \`${source}\` | \`${target}\` | ${escapeCell(s.type)} | ${conf} | ${rationale} |`);
+    lines.push(`| ${i + 1} | \`${source}\` | \`${target}\` | ${escapeCell(s.type ?? '')} | ${conf} | ${rationale} |`);
   }
 
   lines.push('');

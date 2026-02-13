@@ -506,6 +506,11 @@ export async function review(cwd, opts = {}) {
       // Individual item by index
       if (opts.index !== undefined) {
         const pending = await getPendingSuggestions(graph);
+        if (pending.length === 0) {
+          console.error(error('No pending suggestions to review.'));
+          process.exitCode = 1;
+          return;
+        }
         const idx = opts.index - 1; // 1-indexed to 0-indexed
         if (idx < 0 || idx >= pending.length) {
           console.error(error(`Index ${opts.index} out of range (1-${pending.length})`));

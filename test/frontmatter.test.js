@@ -152,6 +152,7 @@ Body`;
     });
 
     it('throws on permission errors (not ENOENT)', async () => {
+      if (process.getuid?.() === 0) return; // root ignores chmod
       // Create a directory with no read permissions
       const restrictedDir = join(tempDir, 'restricted');
       await mkdir(restrictedDir);

@@ -89,5 +89,13 @@ export function qualifyNodeId(nodeId, repo) {
       `Node IDs must use the prefix:identifier format (e.g. "task:auth").`
     );
   }
+  // Validate local ID has exactly one colon (prefix:identifier, no extra colons)
+  const parts = nodeId.split(':');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    throw new Error(
+      `qualifyNodeId: "${nodeId}" is not a valid node ID. ` +
+      `Node IDs must use the prefix:identifier format (e.g. "task:auth").`
+    );
+  }
   return buildCrossRepoId(repo, nodeId);
 }

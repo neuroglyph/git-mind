@@ -109,6 +109,11 @@ describe('remote', () => {
       expect(() => qualifyNodeId('readme', 'owner/name'))
         .toThrow(/not a valid node ID.*prefix:identifier/);
     });
+
+    it('throws a clear error for multi-colon local IDs', () => {
+      expect(() => qualifyNodeId('a:b:c', 'owner/name'))
+        .toThrow(/not a valid node ID/);
+    });
   });
 
   // ── Validator integration ───────────────────────────────────

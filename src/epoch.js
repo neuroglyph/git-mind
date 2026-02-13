@@ -2,7 +2,7 @@
  * @module epoch
  * Epoch markers for time-travel — correlate git commits to CRDT Lamport ticks.
  *
- * Epoch nodes (`epoch:<sha8>`) are stored in the CRDT graph itself, so they
+ * Epoch nodes (`epoch:<sha12>`) are stored in the CRDT graph itself, so they
  * travel with push/pull/merge like any other graph data.
  */
 
@@ -31,7 +31,7 @@ export async function getCurrentTick(graph) {
  * Record an epoch marker correlating a git commit SHA to a Lamport tick.
  *
  * @param {import('@git-stunts/git-warp').default} graph
- * @param {string} commitSha - Full or abbreviated commit SHA
+ * @param {string} commitSha - Full commit SHA (at least 12 characters)
  * @param {number} tick - Lamport tick to record
  * @returns {Promise<void>}
  */
@@ -56,7 +56,7 @@ export async function recordEpoch(graph, commitSha, tick) {
  * Look up an epoch marker by commit SHA.
  *
  * @param {import('@git-stunts/git-warp').default} graph
- * @param {string} commitSha - Full or abbreviated commit SHA
+ * @param {string} commitSha - Full commit SHA (at least 12 characters)
  * @returns {Promise<EpochInfo|null>}
  */
 export async function lookupEpoch(graph, commitSha) {

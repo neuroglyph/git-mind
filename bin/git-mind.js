@@ -186,7 +186,7 @@ switch (command) {
 
   case 'export': {
     const exportFlags = parseFlags(args.slice(1));
-    const exportFile = args[1] && !args[1].startsWith('--') ? args[1] : undefined;
+    const exportFile = args.slice(1).find(a => !a.startsWith('--'));
     await exportCmd(cwd, {
       file: exportFile,
       format: exportFlags.format,

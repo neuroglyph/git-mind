@@ -23,11 +23,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`findMarkdownFiles` swallows all errors** — Now only catches `ENOENT`/`ENOTDIR`; permission errors and other failures propagate (#196)
 - **`extractGraphData` strips extension from directory name** — `String.replace` with `extname` only replaced the first `.md` occurrence; now uses `slice` to target only the trailing extension (#196)
 - **`qualifyNodeId` unhelpful error for non-prefixed IDs** — Now throws a descriptive error mentioning `prefix:identifier` format instead of falling through to `buildCrossRepoId`'s generic validation (#197)
+- **`qualifyNodeId` accepts multi-colon local IDs** — `a:b:c` now throws a clear error instead of falling through to `buildCrossRepoId`'s generic validation (#197)
+- **`formatSuggestionsAsMarkdown` crashes on missing `type`** — All suggestion fields (`source`, `target`, `type`, `confidence`, `rationale`) now have null-coalescing guards (#200)
+- **Empty pending list produces confusing range** — `reviewCmd` now says "No pending suggestions to review" instead of "Index N out of range (1-0)" (#200)
+- **`import`/`export` positional arg breaks with preceding flags** — Both `git mind import --dry-run file.yaml` and `git mind export --format json file.yaml` now scan for the first non-flag argument (#196, #195)
+- **Frontmatter closing delimiter matches `---suffix`** — `parseFrontmatter` now requires `---` followed by newline or EOF (#196)
+- **Doctor orphan detection uses hardcoded prefixes** — Now uses `SYSTEM_PREFIXES` from validators plus `decision` instead of hardcoded `startsWith` checks (#201)
+- **Epoch SHA truncation too short** — Widened from 8 to 12 characters to reduce birthday-paradox collision risk (#202)
+- **`serializeExport` silently falls back to YAML** — Now throws on unsupported format instead of silently defaulting (#195)
+- **Empty `catch` in `processCommit`** — Epoch recording errors now logged when `GITMIND_DEBUG` is set (#202)
+- **`gitmind-review.yml` `echo` for untrusted input** — Replaced with `printf '%s'` to prevent `-n`/`-e`/backslash misbehavior (#200)
 
 ### Changed
 
 - **`epoch` added to `SYSTEM_PREFIXES`** — Epoch markers use the `epoch:` prefix, classified as system. Excluded from export and doctor orphan detection (#202)
-- **Test count** — 310 tests across 19 files (was 286 across 18)
+- **Permission test skipped under root** — `findMarkdownFiles` chmod test now skips when running as root (CI containers) (#196)
+- **Test count** — 312 tests across 19 files (was 286 across 18)
 
 ## [2.0.0-alpha.3] - 2026-02-12
 

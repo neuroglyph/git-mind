@@ -106,6 +106,18 @@ describe('format-pr', () => {
       // Should not contain "undefined"
       expect(result).not.toContain('undefined');
     });
+
+    it('handles suggestion with missing type gracefully', () => {
+      const suggestions = [{
+        source: 'task:a',
+        target: 'spec:b',
+        confidence: 0.8,
+      }];
+
+      const result = formatSuggestionsAsMarkdown(suggestions);
+      expect(result).not.toContain('undefined');
+      expect(result).toContain('| 1 |');
+    });
   });
 
   // ── parseReviewCommand ──────────────────────────────────────
