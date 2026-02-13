@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-alpha.4] - 2026-02-13
+
+### Added
+
+- **`git mind at <ref>` command** — Time-travel: materialize the graph at a historical point via epoch markers. Resolves git refs to Lamport ticks and filters the CRDT graph to that ceiling. Supports `--json` output with epoch metadata (#202)
+- **Epoch API** — `getCurrentTick(graph)`, `recordEpoch(graph, sha, tick)`, `lookupEpoch(graph, sha)`, `lookupNearestEpoch(graph, cwd, sha)`, `getEpochForRef(graph, cwd, ref)` in `src/epoch.js` (#202)
+- **Automatic epoch recording** — `processCommit` now records an epoch marker after processing each commit, correlating the commit SHA to the current Lamport tick (#202)
+
+### Fixed
+
+- **Shell injection in `src/epoch.js`** — Replaced `execSync` string interpolation with `execFileSync` array args in `lookupNearestEpoch` and `getEpochForRef`, preventing command injection via crafted ref names (#202)
+- **Missing `contents` permission in `gitmind-review.yml`** — Workflow now includes `contents: read` so `actions/checkout` can fetch the repo; unspecified scopes default to `none` when `permissions` is explicit (#200)
+- **`action.yml` ignores workflow-level `GITMIND_AGENT`** — Validation step no longer overrides inherited env var with empty `inputs.agent`; suggest step falls back to `env.GITMIND_AGENT` (#199)
+- **`parseReviewCommand` accepts index 0** — Now returns `null` for index `< 1` since suggestions are 1-indexed (#200)
+- **Backtick characters in PR suggestion table** — `formatSuggestionsAsMarkdown` strips backticks from source/target to prevent breaking inline code spans (#200)
+- **`findMarkdownFiles` swallows all errors** — Now only catches `ENOENT`/`ENOTDIR`; permission errors and other failures propagate (#196)
+- **`extractGraphData` strips extension from directory name** — `String.replace` with `extname` only replaced the first `.md` occurrence; now uses `slice` to target only the trailing extension (#196)
+- **`qualifyNodeId` unhelpful error for non-prefixed IDs** — Now throws a descriptive error mentioning `prefix:identifier` format instead of falling through to `buildCrossRepoId`'s generic validation (#197)
+
+### Changed
+
+- **`epoch` added to `SYSTEM_PREFIXES`** — Epoch markers use the `epoch:` prefix, classified as system. Excluded from export and doctor orphan detection (#202)
+- **Test count** — 310 tests across 19 files (was 286 across 18)
+
 ## [2.0.0-alpha.3] - 2026-02-12
 
 ### Added
