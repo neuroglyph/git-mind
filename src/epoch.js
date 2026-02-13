@@ -6,7 +6,7 @@
  * travel with push/pull/merge like any other graph data.
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 /**
  * @typedef {object} EpochInfo
@@ -89,8 +89,8 @@ export async function lookupEpoch(graph, commitSha) {
 export async function lookupNearestEpoch(graph, cwd, targetSha, maxWalk = 100) {
   let shas;
   try {
-    const output = execSync(
-      `git rev-list --max-count=${maxWalk} ${targetSha}`,
+    const output = execFileSync(
+      'git', ['rev-list', `--max-count=${maxWalk}`, targetSha],
       { cwd, encoding: 'utf-8' },
     ).trim();
     shas = output ? output.split('\n') : [];
@@ -121,7 +121,7 @@ export async function lookupNearestEpoch(graph, cwd, targetSha, maxWalk = 100) {
 export async function getEpochForRef(graph, cwd, ref) {
   let sha;
   try {
-    sha = execSync(`git rev-parse ${ref}`, { cwd, encoding: 'utf-8' }).trim();
+    sha = execFileSync('git', ['rev-parse', ref], { cwd, encoding: 'utf-8' }).trim();
   } catch {
     return null;
   }
