@@ -176,7 +176,6 @@ export async function importFromMarkdown(graph, cwd, pattern, opts = {}) {
   // Collect all nodes and edges from frontmatter
   const nodes = [];
   const edges = [];
-  const warnings = [];
 
   for (const filePath of files) {
     const content = await readFile(filePath, 'utf-8');

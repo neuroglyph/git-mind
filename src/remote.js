@@ -41,14 +41,15 @@ export function parseCrossRepoId(nodeId) {
  * @returns {string} Cross-repo ID (repo:owner/name:prefix:identifier)
  */
 export function buildCrossRepoId(repo, localId) {
-  if (typeof localId !== 'string' || !/^[a-z][a-z0-9-]*:[A-Za-z0-9._\/@-]+$/.test(localId)) {
+  const candidate = `repo:${repo}:${localId}`;
+  if (!isCrossRepoId(candidate)) {
     throw new Error(
-      `buildCrossRepoId: invalid localId "${localId}". ` +
-      `Must match "prefix:identifier" (e.g. "task:auth"). ` +
+      `buildCrossRepoId: invalid result "${candidate}". ` +
+      `localId "${localId}" must match "prefix:identifier" (e.g. "task:auth"). ` +
       `See CROSS_REPO_ID_REGEX / isCrossRepoId for full format.`
     );
   }
-  return `repo:${repo}:${localId}`;
+  return candidate;
 }
 
 /**

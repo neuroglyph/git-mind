@@ -63,6 +63,20 @@ describe('format-pr', () => {
       expect(result).toContain('reason B');
     });
 
+    it('escapes backslashes in rationale', () => {
+      const suggestions = [{
+        source: 'task:a',
+        target: 'spec:b',
+        type: 'implements',
+        confidence: 0.8,
+        rationale: 'path\\to\\file',
+      }];
+
+      const result = formatSuggestionsAsMarkdown(suggestions);
+      // Backslashes should be escaped so markdown doesn't treat them as escape chars
+      expect(result).toContain('path\\\\to\\\\file');
+    });
+
     it('escapes backslash-pipe sequence in rationale', () => {
       const suggestions = [{
         source: 'task:a',
