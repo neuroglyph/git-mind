@@ -139,5 +139,34 @@ describe('format-pr', () => {
       const body = 'LGTM!\n\n/gitmind accept 2\n\nGreat work!';
       expect(parseReviewCommand(body)).toEqual({ command: 'accept', index: 2 });
     });
+
+    it('returns null for accept with index 0 (1-indexed)', () => {
+      expect(parseReviewCommand('/gitmind accept 0')).toBeNull();
+    });
+
+    it('returns null for reject with index 0 (1-indexed)', () => {
+      expect(parseReviewCommand('/gitmind reject 0')).toBeNull();
+    });
+  });
+
+  // ── backtick escaping ──────────────────────────────────────
+
+  describe('backtick escaping in suggestions', () => {
+    it('strips backtick characters from source and target', () => {
+      const suggestions = [{
+        source: 'file:`auth`.js',
+        target: 'spec:`auth`',
+        type: 'implements',
+        confidence: 0.8,
+      }];
+
+      const result = formatSuggestionsAsMarkdown(suggestions);
+      // Backticks should be stripped to prevent breaking code spans
+      expect(result).toContain('`file:auth.js`');
+      expect(result).toContain('`spec:auth`');
+      // Verify table structure is intact (6 columns = 7 pipe delimiters)
+      const dataRow = result.split('\n').find(l => l.startsWith('| 1'));
+      expect((dataRow.match(/\|/g) || []).length).toBe(7);
+    });
   });
 });

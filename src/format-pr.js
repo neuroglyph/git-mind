@@ -30,7 +30,9 @@ export function formatSuggestionsAsMarkdown(suggestions) {
     const s = suggestions[i];
     const conf = `${(s.confidence * 100).toFixed(0)}%`;
     const rationale = escapeCell(s.rationale ?? '');
-    lines.push(`| ${i + 1} | \`${s.source}\` | \`${s.target}\` | ${escapeCell(s.type)} | ${conf} | ${rationale} |`);
+    const source = escapeCell(s.source.replace(/`/g, ''));
+    const target = escapeCell(s.target.replace(/`/g, ''));
+    lines.push(`| ${i + 1} | \`${source}\` | \`${target}\` | ${escapeCell(s.type)} | ${conf} | ${rationale} |`);
   }
 
   lines.push('');
@@ -69,7 +71,7 @@ export function parseReviewCommand(body) {
   }
 
   const index = match[2] ? parseInt(match[2], 10) : undefined;
-  if (index === undefined) return null; // accept/reject require an index
+  if (index === undefined || index < 1) return null; // accept/reject require a positive 1-indexed value
 
   return { command, index };
 }
