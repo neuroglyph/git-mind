@@ -104,6 +104,11 @@ describe('remote', () => {
       const id = 'repo:neuroglyph/echo:crate:echo-core';
       expect(qualifyNodeId(id, 'other/repo')).toBe(id);
     });
+
+    it('throws a clear error for non-prefixed local IDs', () => {
+      expect(() => qualifyNodeId('readme', 'owner/name'))
+        .toThrow(/not a valid node ID.*prefix:identifier/);
+    });
   });
 
   // ── Validator integration ───────────────────────────────────

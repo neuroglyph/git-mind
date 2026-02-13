@@ -83,5 +83,11 @@ export function extractRepo(nodeId) {
  */
 export function qualifyNodeId(nodeId, repo) {
   if (isCrossRepoId(nodeId)) return nodeId;
+  if (typeof nodeId !== 'string' || !nodeId.includes(':')) {
+    throw new Error(
+      `qualifyNodeId: "${nodeId}" is not a valid node ID. ` +
+      `Node IDs must use the prefix:identifier format (e.g. "task:auth").`
+    );
+  }
   return buildCrossRepoId(repo, nodeId);
 }
