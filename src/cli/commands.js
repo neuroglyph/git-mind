@@ -25,6 +25,18 @@ import { computeDiff } from '../diff.js';
 import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus, formatDiff } from './format.js';
 
 /**
+ * Write structured JSON to stdout with schemaVersion and command fields.
+ * CLI layer is authoritative — schemaVersion is always forced last.
+ *
+ * @param {string} command - Command name for downstream routing
+ * @param {object} data - Payload from the source module
+ */
+function outputJson(command, data) {
+  const out = { ...data, schemaVersion: 1, command };
+  console.log(JSON.stringify(out, null, 2));
+}
+
+/**
  * Initialize a git-mind graph in the current repo.
  * @param {string} cwd
  */
@@ -212,7 +224,7 @@ export async function nodes(cwd, opts = {}) {
         return;
       }
       if (opts.json) {
-        console.log(JSON.stringify(node, null, 2));
+        outputJson('nodes', node);
       } else {
         console.log(formatNode(node));
       }
@@ -225,7 +237,7 @@ export async function nodes(cwd, opts = {}) {
       : await getNodes(graph);
 
     if (opts.json) {
-      console.log(JSON.stringify(nodeList, null, 2));
+      outputJson('nodes', { nodes: nodeList });
       return;
     }
 
@@ -253,7 +265,7 @@ export async function status(cwd, opts = {}) {
     const result = await computeStatus(graph);
 
     if (opts.json) {
-      console.log(JSON.stringify(result, null, 2));
+      outputJson('status', result);
     } else {
       console.log(formatStatus(result));
     }
@@ -294,7 +306,7 @@ export async function at(cwd, ref, opts = {}) {
     const statusResult = await computeStatus(graph);
 
     if (opts.json) {
-      console.log(JSON.stringify({
+      outputJson('at', {
         ref,
         sha: sha.slice(0, 8),
         fullSha: sha,
@@ -302,7 +314,7 @@ export async function at(cwd, ref, opts = {}) {
         nearest: epoch.nearest ?? false,
         recordedAt: epoch.recordedAt,
         status: statusResult,
-      }, null, 2));
+      });
     } else {
       console.log(formatAtStatus(ref, sha, epoch, statusResult));
     }
@@ -324,7 +336,7 @@ export async function importCmd(cwd, filePath, opts = {}) {
     const result = await importFile(graph, filePath, { dryRun: opts.dryRun });
 
     if (opts.json) {
-      console.log(JSON.stringify(result, null, 2));
+      outputJson('import', result);
     } else {
       console.log(formatImportResult(result));
     }
@@ -350,7 +362,7 @@ export async function importMarkdownCmd(cwd, pattern, opts = {}) {
     const result = await importFromMarkdown(graph, cwd, pattern, { dryRun: opts.dryRun });
 
     if (opts.json) {
-      console.log(JSON.stringify(result, null, 2));
+      outputJson('import', result);
     } else {
       console.log(formatImportResult(result));
     }
@@ -378,7 +390,7 @@ export async function exportCmd(cwd, opts = {}) {
       const result = await exportToFile(graph, opts.file, { format, prefix: opts.prefix });
 
       if (opts.json) {
-        console.log(JSON.stringify(result, null, 2));
+        outputJson('export', result);
       } else {
         console.log(formatExportResult(result));
       }
@@ -387,7 +399,7 @@ export async function exportCmd(cwd, opts = {}) {
       const data = await exportGraph(graph, { prefix: opts.prefix });
 
       if (opts.json) {
-        console.log(JSON.stringify(data, null, 2));
+        outputJson('export', data);
       } else {
         const output = serializeExport(data, format);
         process.stdout.write(output);
@@ -419,7 +431,7 @@ export async function mergeCmd(cwd, opts = {}) {
     });
 
     if (opts.json) {
-      console.log(JSON.stringify(result, null, 2));
+      outputJson('merge', result);
     } else {
       if (result.dryRun) {
         console.log(info(`Dry run: would merge ${result.nodes} node(s), ${result.edges} edge(s) from ${result.repoName}`));
@@ -449,7 +461,7 @@ export async function doctor(cwd, opts = {}) {
     }
 
     if (opts.json) {
-      console.log(JSON.stringify(fixResult ? { ...result, fix: fixResult } : result, null, 2));
+      outputJson('doctor', fixResult ? { ...result, fix: fixResult } : result);
     } else {
       console.log(formatDoctorResult(result, fixResult));
     }
@@ -477,7 +489,7 @@ export async function suggest(cwd, opts = {}) {
     });
 
     if (opts.json) {
-      console.log(JSON.stringify(result, null, 2));
+      outputJson('suggest', result);
     } else {
       console.log(formatSuggestions(result));
     }
@@ -525,7 +537,7 @@ export async function review(cwd, opts = {}) {
         const result = { processed: 1, decisions: [decision] };
 
         if (opts.json) {
-          console.log(JSON.stringify(result, null, 2));
+          outputJson('review', result);
         } else {
           console.log(formatDecisionSummary(result));
         }
@@ -535,7 +547,7 @@ export async function review(cwd, opts = {}) {
       const result = await batchDecision(graph, opts.batch);
 
       if (opts.json) {
-        console.log(JSON.stringify(result, null, 2));
+        outputJson('review', result);
       } else {
         console.log(formatDecisionSummary(result));
       }
@@ -551,7 +563,7 @@ export async function review(cwd, opts = {}) {
     }
 
     if (opts.json) {
-      console.log(JSON.stringify(pending, null, 2));
+      outputJson('review', { pending });
       return;
     }
 
@@ -608,7 +620,7 @@ export async function diff(cwd, refA, refB, opts = {}) {
     const result = await computeDiff(cwd, refA, refB, { prefix: opts.prefix });
 
     if (opts.json) {
-      console.log(JSON.stringify(result, null, 2));
+      outputJson('diff', result);
     } else {
       console.log(formatDiff(result));
     }
