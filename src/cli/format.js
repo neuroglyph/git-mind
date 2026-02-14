@@ -7,6 +7,23 @@ import chalk from 'chalk';
 import figures from 'figures';
 
 /**
+ * Render a sorted key→count table (shared by formatStatus and formatAtStatus).
+ * @param {Record<string, number>} entries - Key→count map
+ * @param {string[]} lines - Output array to push into
+ * @param {{ pct?: number }} [opts] - If pct is provided, show percentage based on total
+ */
+function renderCountTable(entries, lines, opts = {}) {
+  const sorted = Object.entries(entries).sort(([, a], [, b]) => b - a);
+  for (const [key, count] of sorted) {
+    let suffix = '';
+    if (opts.pct !== undefined && opts.pct > 0) {
+      suffix = `  ${chalk.dim(`(${Math.round((count / opts.pct) * 100)}%)`)}`;
+    }
+    lines.push(`  ${chalk.yellow(key.padEnd(14))} ${String(count).padStart(3)}${suffix}`);
+  }
+}
+
+/**
  * Format a success message.
  * @param {string} msg
  * @returns {string}
@@ -136,23 +153,12 @@ export function formatStatus(status) {
 
   // Nodes section
   lines.push(`${chalk.bold('Nodes:')} ${status.nodes.total}`);
-  const prefixes = Object.entries(status.nodes.byPrefix)
-    .sort(([, a], [, b]) => b - a);
-  for (const [prefix, count] of prefixes) {
-    const pct = status.nodes.total > 0
-      ? Math.round((count / status.nodes.total) * 100)
-      : 0;
-    lines.push(`  ${chalk.yellow(prefix.padEnd(14))} ${String(count).padStart(3)}  ${chalk.dim(`(${pct}%)`)}`);
-  }
+  renderCountTable(status.nodes.byPrefix, lines, { pct: status.nodes.total });
   lines.push('');
 
   // Edges section
   lines.push(`${chalk.bold('Edges:')} ${status.edges.total}`);
-  const types = Object.entries(status.edges.byType)
-    .sort(([, a], [, b]) => b - a);
-  for (const [type, count] of types) {
-    lines.push(`  ${chalk.yellow(type.padEnd(14))} ${String(count).padStart(3)}`);
-  }
+  renderCountTable(status.edges.byType, lines);
   lines.push('');
 
   // Health section
@@ -305,6 +311,50 @@ export function formatDecisionSummary(result) {
       lines.push(`    ${icon} ${action}: ${count}`);
     }
   }
+
+  return lines.join('\n');
+}
+
+/**
+ * Format an export result for terminal display.
+ * @param {{stats: {nodes: number, edges: number}, path?: string}} result
+ * @param {boolean} [toStdout=false]
+ * @returns {string}
+ */
+export function formatExportResult(result, toStdout = false) {
+  if (toStdout) {
+    return `${chalk.green(figures.tick)} Exported ${result.stats.nodes} node(s), ${result.stats.edges} edge(s)`;
+  }
+  return `${chalk.green(figures.tick)} Exported ${result.stats.nodes} node(s), ${result.stats.edges} edge(s) to ${chalk.cyan(result.path)}`;
+}
+
+/**
+ * Format an `at` (time-travel) status for terminal display.
+ * @param {string} ref - The git ref that was resolved
+ * @param {string} sha - Resolved commit SHA
+ * @param {import('../epoch.js').EpochInfo} epoch - Epoch marker info
+ * @param {import('../status.js').GraphStatus} status - Computed status at that tick
+ * @returns {string}
+ */
+export function formatAtStatus(ref, sha, epoch, status) {
+  const lines = [];
+
+  lines.push(chalk.bold(`Graph at ${ref}`));
+  const shaStr = `commit ${chalk.cyan(sha.slice(0, 8))}`;
+  const tickStr = `tick ${chalk.yellow(String(epoch.tick))}`;
+  const nearestStr = epoch.nearest ? chalk.dim('  (nearest epoch)') : '';
+  lines.push(`${shaStr}  ${tickStr}${nearestStr}`);
+  lines.push(chalk.dim('═'.repeat(32)));
+  lines.push('');
+
+  // Nodes section
+  lines.push(`${chalk.bold('Nodes:')} ${status.nodes.total}`);
+  renderCountTable(status.nodes.byPrefix, lines);
+  lines.push('');
+
+  // Edges section
+  lines.push(`${chalk.bold('Edges:')} ${status.edges.total}`);
+  renderCountTable(status.edges.byType, lines);
 
   return lines.join('\n');
 }

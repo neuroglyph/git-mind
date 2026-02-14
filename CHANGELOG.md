@@ -5,6 +5,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-alpha.4] - 2026-02-13
+
+### Added
+
+- **`git mind at <ref>` command** — Time-travel: materialize the graph at a historical point via epoch markers. Resolves git refs to Lamport ticks and filters the CRDT graph to that ceiling. Supports `--json` output with epoch metadata (#202)
+- **Epoch API** — `getCurrentTick(graph)`, `recordEpoch(graph, sha, tick)`, `lookupEpoch(graph, sha)`, `lookupNearestEpoch(graph, cwd, sha)`, `getEpochForRef(graph, cwd, ref)` in `src/epoch.js` (#202)
+- **Automatic epoch recording** — `processCommit` now records an epoch marker after processing each commit, correlating the commit SHA to the current Lamport tick (#202)
+
+### Fixed
+
+- **Shell injection in `src/epoch.js`** — Replaced `execSync` string interpolation with `execFileSync` array args in `lookupNearestEpoch` and `getEpochForRef`, preventing command injection via crafted ref names (#202)
+- **Missing `contents` permission in `gitmind-review.yml`** — Workflow now includes `contents: read` so `actions/checkout` can fetch the repo; unspecified scopes default to `none` when `permissions` is explicit (#200)
+- **`action.yml` ignores workflow-level `GITMIND_AGENT`** — Validation step no longer overrides inherited env var with empty `inputs.agent`; suggest step falls back to `env.GITMIND_AGENT` (#199)
+- **`parseReviewCommand` accepts index 0** — Now returns `null` for index `< 1` since suggestions are 1-indexed (#200)
+- **Backtick characters in PR suggestion table** — `formatSuggestionsAsMarkdown` strips backticks from source/target to prevent breaking inline code spans (#200)
+- **`findMarkdownFiles` swallows all errors** — Now only catches `ENOENT`/`ENOTDIR`; permission errors and other failures propagate (#196)
+- **`extractGraphData` strips extension from directory name** — `String.replace` with `extname` only replaced the first `.md` occurrence; now uses `slice` to target only the trailing extension (#196)
+- **`qualifyNodeId` unhelpful error for non-prefixed IDs** — Now throws a descriptive error mentioning `prefix:identifier` format instead of falling through to `buildCrossRepoId`'s generic validation (#197)
+- **`qualifyNodeId` accepts multi-colon local IDs** — `a:b:c` now throws a clear error instead of falling through to `buildCrossRepoId`'s generic validation (#197)
+- **`formatSuggestionsAsMarkdown` crashes on missing `type`** — All suggestion fields (`source`, `target`, `type`, `confidence`, `rationale`) now have null-coalescing guards (#200)
+- **Empty pending list produces confusing range** — `reviewCmd` now says "No pending suggestions to review" instead of "Index N out of range (1-0)" (#200)
+- **`import`/`export` positional arg breaks with preceding flags** — Both `git mind import --dry-run file.yaml` and `git mind export --format json file.yaml` now scan for the first non-flag argument (#196, #195)
+- **Frontmatter closing delimiter matches `---suffix`** — `parseFrontmatter` now requires `---` followed by newline or EOF (#196)
+- **Doctor orphan detection uses hardcoded prefixes** — Now uses `SYSTEM_PREFIXES` from validators plus `decision` instead of hardcoded `startsWith` checks (#201)
+- **Epoch SHA truncation too short** — Widened from 8 to 12 characters to reduce birthday-paradox collision risk (#202)
+- **`serializeExport` silently falls back to YAML** — Now throws on unsupported format instead of silently defaulting (#195)
+- **Empty `catch` in `processCommit`** — Epoch recording errors now logged when `GITMIND_DEBUG` is set (#202)
+- **`gitmind-review.yml` `echo` for untrusted input** — Replaced with `printf '%s'` to prevent `-n`/`-e`/backslash misbehavior (#200)
+
+### Changed
+
+- **`epoch` added to `SYSTEM_PREFIXES`** — Epoch markers use the `epoch:` prefix, classified as system. Excluded from export and doctor orphan detection (#202)
+- **Permission test skipped under root** — `findMarkdownFiles` chmod test now skips when running as root (CI containers) (#196)
+- **Test count** — 312 tests across 19 files (was 286 across 18)
+
+## [2.0.0-alpha.3] - 2026-02-12
+
+### Added
+
+- **`git mind export` command** — Serialize the graph to YAML or JSON in v1 import-compatible format, enabling round-trip workflows. Supports `--format yaml|json`, `--prefix <prefix>` filtering, file output or stdout, and `--json` for structured metadata (#195)
+- **Export API** — `exportGraph(graph, opts)`, `serializeExport(data, format)`, `exportToFile(graph, path, opts)` in `src/export.js` (#195)
+- **`git mind import --from-markdown` command** — Import nodes and edges from markdown file frontmatter. Auto-generates `doc:` IDs from file paths, recognizes all 8 edge types as frontmatter fields. Supports `--dry-run`, `--json`, glob patterns (#196)
+- **Frontmatter API** — `parseFrontmatter(content)`, `extractGraphData(path, frontmatter)`, `findMarkdownFiles(basePath, pattern)`, `importFromMarkdown(graph, cwd, pattern, opts)` in `src/frontmatter.js` (#196)
+- **`importData` shared pipeline** — Extracted from `importFile` in `src/import.js` for reuse by frontmatter import and future merge (#196)
+- **Cross-repo edge protocol** — `repo:owner/name:prefix:identifier` syntax for referencing nodes in other repositories. `git mind link --remote <owner/name>` qualifies local IDs. Validators accept cross-repo format, `extractPrefix` returns inner prefix (#197)
+- **Remote API** — `parseCrossRepoId`, `buildCrossRepoId`, `isCrossRepoId`, `extractRepo`, `qualifyNodeId` in `src/remote.js` (#197)
+- **`git mind merge` command** — Merge another repository's graph into the local graph with cross-repo qualification. Supports `--from <path>`, `--repo-name <owner/name>`, `--dry-run`, `--json`. Auto-detects repo identifier from origin remote (#198)
+- **Merge API** — `mergeFromRepo(localGraph, remotePath, opts)`, `detectRepoIdentifier(repoPath)` in `src/merge.js` (#198)
+- **GitHub Action** — Composite action (`action.yml`) that runs `git mind suggest` on PRs and posts formatted suggestions as a comment. Configurable agent command via action input or `.github/git-mind.yml` (#199)
+- **PR suggestion display** — `formatSuggestionsAsMarkdown` renders suggestions as a markdown table with `/gitmind accept|reject|accept-all` commands. `parseReviewCommand` parses slash commands from comment bodies (#200)
+- **Slash command workflow** — `.github/workflows/gitmind-review.yml` handles `/gitmind accept N`, `/gitmind reject N`, and `/gitmind accept-all` commands in PR comments (#200)
+
+### Fixed
+
+- **Privileged workflow checkout** — `gitmind-review.yml` now checks out the default branch (trusted code) instead of the PR head ref, preventing untrusted code execution in `issue_comment` context. Permissions scoped to `pull-requests: write` and `issues: write` only (#200)
+- **Shell injection in `post-comment.js`** — Comment body passed via stdin (`--input -`) instead of shell interpolation, preventing backtick command substitution. Repo and PR number validated before use (#199)
+- **`BOOLEAN_FLAGS` missing `dry-run` and `validate`** — `parseFlags` now treats `--dry-run` and `--validate` as boolean flags instead of consuming the next argument as their value (#195, #198)
+- **Pipe characters in markdown table** — `formatSuggestionsAsMarkdown` escapes `|` in rationale and type fields to prevent table row corruption (#200)
+- **Frontmatter CRLF handling** — `parseFrontmatter` now finds the first newline dynamically instead of assuming `\n` at offset 4, supporting Windows line endings (#196)
+- **`buildCrossRepoId` validation** — Throws on malformed `localId` missing `prefix:identifier` format instead of producing an invalid cross-repo ID (#197)
+- **Orphaned JSDoc** — `formatExportResult` moved above `formatImportResult`'s JSDoc block to restore correct documentation association (#195)
+- **Accept/reject workflow stubs** — Individual `/gitmind accept N` and `/gitmind reject N` now respond with "not yet supported" instead of silently appearing to succeed (#200)
+- **`action.yml` stderr mixing** — Suggest step redirects stderr to `/dev/null` instead of mixing it into JSON output (#199)
+
+### Changed
+
+- **`repo` added to `SYSTEM_PREFIXES`** — Cross-repo IDs use the `repo:` prefix, now classified as system (#197)
+- **Test count** — 286 tests across 18 files (was 208 across 13)
+
 ## [2.0.0-alpha.2] - 2026-02-11
 
 ### Added
@@ -134,5 +203,6 @@ Complete rewrite from C23 to Node.js on `@git-stunts/git-warp`.
 - Docker-based CI/CD
 - All C-specific documentation
 
+[2.0.0-alpha.3]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.3
 [2.0.0-alpha.2]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.2
 [2.0.0-alpha.0]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.0

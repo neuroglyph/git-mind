@@ -1,0 +1,65 @@
+name: 'git-mind Suggest'
+description: 'Run git-mind suggest on a PR and post results as a comment'
+
+inputs:
+  agent:
+    description: 'Agent command for generating suggestions (overrides GITMIND_AGENT)'
+    required: false
+  github-token:
+    description: 'GitHub token for posting comments'
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
+      working-directory: ${{ github.action_path }}
+
+    - name: Validate agent configuration
+      shell: bash
+      env:
+        INPUT_AGENT: ${{ inputs.agent }}
+      run: |
+        # Prefer explicit input; fall back to inherited GITMIND_AGENT env var
+        EFFECTIVE="${INPUT_AGENT:-${GITMIND_AGENT:-}}"
+        if [ -z "$EFFECTIVE" ]; then
+          echo "::error::No agent configured. Set the 'agent' input or the GITMIND_AGENT environment variable."
+          exit 1
+        fi
+
+    - name: Run git-mind suggest
+      id: suggest
+      shell: bash
+      env:
+        GITMIND_AGENT: ${{ inputs.agent || env.GITMIND_AGENT }}
+      run: |
+        BASE_SHA="${{ github.event.pull_request.base.sha }}"
+        HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+        SUGGEST_ERR=$(mktemp)
+        RESULT=$(node ${{ github.action_path }}/bin/git-mind.js suggest --json --context "${BASE_SHA}..${HEAD_SHA}" 2>"$SUGGEST_ERR") || true
+        if [ -s "$SUGGEST_ERR" ]; then
+          echo "::warning::git-mind suggest stderr:"
+          cat "$SUGGEST_ERR"
+        fi
+        echo "result<<GITMIND_EOF" >> "$GITHUB_OUTPUT"
+        echo "$RESULT" >> "$GITHUB_OUTPUT"
+        echo "GITMIND_EOF" >> "$GITHUB_OUTPUT"
+        rm -f "$SUGGEST_ERR"
+
+    - name: Post comment
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        SUGGEST_RESULT: ${{ steps.suggest.outputs.result }}
+      run: |
+        node ${{ github.action_path }}/action/post-comment.js \
+          "${{ github.repository }}" \
+          "${{ github.event.pull_request.number }}"

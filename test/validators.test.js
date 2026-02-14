@@ -269,8 +269,9 @@ describe('constants', () => {
     expect(CANONICAL_PREFIXES).not.toContain('commit');
   });
 
-  it('SYSTEM_PREFIXES contains commit', () => {
-    expect(SYSTEM_PREFIXES).toEqual(['commit']);
+  it('SYSTEM_PREFIXES contains commit and repo', () => {
+    expect(SYSTEM_PREFIXES).toContain('commit');
+    expect(SYSTEM_PREFIXES).toContain('repo');
   });
 
   it('ALL_PREFIXES is the union of canonical and system', () => {

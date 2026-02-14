@@ -4,8 +4,11 @@
  * Composable checks that identify structural issues in the knowledge graph.
  */
 
-import { isLowConfidence } from './validators.js';
+import { isLowConfidence, SYSTEM_PREFIXES, extractPrefix } from './validators.js';
 import { removeEdge } from './edges.js';
+
+/** Prefixes excluded from orphan-node detection (system-generated + review decisions). */
+const EXCLUDED_ORPHAN_PREFIXES = new Set([...SYSTEM_PREFIXES, 'decision']);
 
 /**
  * @typedef {object} DoctorIssue
@@ -97,7 +100,7 @@ export function detectOrphanNodes(nodes, edges) {
   }
 
   return nodes
-    .filter(n => !connected.has(n) && !n.startsWith('decision:'))
+    .filter(n => !connected.has(n) && !EXCLUDED_ORPHAN_PREFIXES.has(extractPrefix(n)))
     .map(n => ({
       type: 'orphan-node',
       severity: 'info',

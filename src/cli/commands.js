@@ -11,12 +11,17 @@ import { createEdge, queryEdges, removeEdge, EDGE_TYPES } from '../edges.js';
 import { getNodes, hasNode, getNode, getNodesByPrefix } from '../nodes.js';
 import { computeStatus } from '../status.js';
 import { importFile } from '../import.js';
+import { importFromMarkdown } from '../frontmatter.js';
+import { exportGraph, serializeExport, exportToFile } from '../export.js';
+import { qualifyNodeId } from '../remote.js';
+import { mergeFromRepo } from '../merge.js';
 import { renderView, listViews } from '../views.js';
 import { processCommit } from '../hooks.js';
+import { getEpochForRef } from '../epoch.js';
 import { runDoctor, fixIssues } from '../doctor.js';
 import { generateSuggestions } from '../suggest.js';
 import { getPendingSuggestions, acceptSuggestion, rejectSuggestion, skipSuggestion, batchDecision } from '../review.js';
-import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary } from './format.js';
+import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus } from './format.js';
 
 /**
  * Initialize a git-mind graph in the current repo.
@@ -37,15 +42,19 @@ export async function init(cwd) {
  * @param {string} cwd
  * @param {string} source
  * @param {string} target
- * @param {{ type?: string, confidence?: number }} opts
+ * @param {{ type?: string, confidence?: number, remote?: string }} opts
  */
 export async function link(cwd, source, target, opts = {}) {
   const type = opts.type ?? 'relates-to';
 
+  // Qualify node IDs with remote repo if --remote is specified
+  const src = opts.remote ? qualifyNodeId(source, opts.remote) : source;
+  const tgt = opts.remote ? qualifyNodeId(target, opts.remote) : target;
+
   try {
     const graph = await loadGraph(cwd);
-    await createEdge(graph, { source, target, type, confidence: opts.confidence });
-    console.log(success(`${source} --[${type}]--> ${target}`));
+    await createEdge(graph, { source: src, target: tgt, type, confidence: opts.confidence });
+    console.log(success(`${src} --[${type}]--> ${tgt}`));
   } catch (err) {
     console.error(error(err.message));
     process.exitCode = 1;
@@ -254,6 +263,55 @@ export async function status(cwd, opts = {}) {
 }
 
 /**
+ * Show the graph at a historical point in time via epoch markers.
+ * @param {string} cwd
+ * @param {string} ref - Git ref (HEAD, HEAD~5, branch name, SHA, etc.)
+ * @param {{ json?: boolean }} opts
+ */
+export async function at(cwd, ref, opts = {}) {
+  if (!ref) {
+    console.error(error('Usage: git mind at <ref>'));
+    process.exitCode = 1;
+    return;
+  }
+
+  try {
+    const graph = await loadGraph(cwd);
+    const result = await getEpochForRef(graph, cwd, ref);
+
+    if (!result) {
+      console.error(error(`No epoch marker found for "${ref}" or any of its ancestors`));
+      process.exitCode = 1;
+      return;
+    }
+
+    const { sha, epoch } = result;
+
+    // Materialize the graph at the epoch's Lamport tick
+    await graph.materialize({ ceiling: epoch.tick });
+
+    const statusResult = await computeStatus(graph);
+
+    if (opts.json) {
+      console.log(JSON.stringify({
+        ref,
+        sha: sha.slice(0, 8),
+        fullSha: sha,
+        tick: epoch.tick,
+        nearest: epoch.nearest ?? false,
+        recordedAt: epoch.recordedAt,
+        status: statusResult,
+      }, null, 2));
+    } else {
+      console.log(formatAtStatus(ref, sha, epoch, statusResult));
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
  * Import a YAML file into the graph.
  * @param {string} cwd
  * @param {string} filePath
@@ -272,6 +330,101 @@ export async function importCmd(cwd, filePath, opts = {}) {
 
     if (!result.valid) {
       process.exitCode = 1;
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Import nodes and edges from markdown frontmatter.
+ * @param {string} cwd
+ * @param {string} pattern - Glob pattern for markdown files
+ * @param {{ dryRun?: boolean, json?: boolean }} opts
+ */
+export async function importMarkdownCmd(cwd, pattern, opts = {}) {
+  try {
+    const graph = await loadGraph(cwd);
+    const result = await importFromMarkdown(graph, cwd, pattern, { dryRun: opts.dryRun });
+
+    if (opts.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(formatImportResult(result));
+    }
+
+    if (!result.valid) {
+      process.exitCode = 1;
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Export the graph to a file or stdout.
+ * @param {string} cwd
+ * @param {{ file?: string, format?: string, prefix?: string, json?: boolean }} opts
+ */
+export async function exportCmd(cwd, opts = {}) {
+  try {
+    const graph = await loadGraph(cwd);
+    const format = opts.format ?? 'yaml';
+
+    if (opts.file) {
+      const result = await exportToFile(graph, opts.file, { format, prefix: opts.prefix });
+
+      if (opts.json) {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        console.log(formatExportResult(result));
+      }
+    } else {
+      // stdout mode
+      const data = await exportGraph(graph, { prefix: opts.prefix });
+
+      if (opts.json) {
+        console.log(JSON.stringify(data, null, 2));
+      } else {
+        const output = serializeExport(data, format);
+        process.stdout.write(output);
+      }
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Merge a remote repository's graph into the local graph.
+ * @param {string} cwd
+ * @param {{ from: string, repoName?: string, dryRun?: boolean, json?: boolean }} opts
+ */
+export async function mergeCmd(cwd, opts = {}) {
+  if (!opts.from) {
+    console.error(error('Usage: git mind merge --from <repo-path> [--repo-name <owner/name>]'));
+    process.exitCode = 1;
+    return;
+  }
+
+  try {
+    const graph = await loadGraph(cwd);
+    const result = await mergeFromRepo(graph, opts.from, {
+      repoName: opts.repoName,
+      dryRun: opts.dryRun,
+    });
+
+    if (opts.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      if (result.dryRun) {
+        console.log(info(`Dry run: would merge ${result.nodes} node(s), ${result.edges} edge(s) from ${result.repoName}`));
+      } else {
+        console.log(success(`Merged ${result.nodes} node(s), ${result.edges} edge(s) from ${result.repoName}`));
+      }
     }
   } catch (err) {
     console.error(error(err.message));
@@ -349,6 +502,35 @@ export async function review(cwd, opts = {}) {
         process.exitCode = 1;
         return;
       }
+
+      // Individual item by index
+      if (opts.index !== undefined) {
+        const pending = await getPendingSuggestions(graph);
+        if (pending.length === 0) {
+          console.error(error('No pending suggestions to review.'));
+          process.exitCode = 1;
+          return;
+        }
+        const idx = opts.index - 1; // 1-indexed to 0-indexed
+        if (idx < 0 || idx >= pending.length) {
+          console.error(error(`Index ${opts.index} out of range (1-${pending.length})`));
+          process.exitCode = 1;
+          return;
+        }
+        const suggestion = pending[idx];
+        const decision = opts.batch === 'accept'
+          ? await acceptSuggestion(graph, suggestion)
+          : await rejectSuggestion(graph, suggestion);
+        const result = { processed: 1, decisions: [decision] };
+
+        if (opts.json) {
+          console.log(JSON.stringify(result, null, 2));
+        } else {
+          console.log(formatDecisionSummary(result));
+        }
+        return;
+      }
+
       const result = await batchDecision(graph, opts.batch);
 
       if (opts.json) {
