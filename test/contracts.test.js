@@ -159,21 +159,29 @@ const VALID_SAMPLES = {
 describe('CLI JSON Schema contracts', () => {
   let schemas;
   let ajv;
+  /** @type {Map<string, import('ajv').ValidateFunction>} */
+  let validators;
 
   beforeAll(async () => {
     schemas = await loadSchemas();
     ajv = new Ajv({ strict: true, allErrors: true });
+    validators = new Map();
+    for (const { file, schema } of schemas) {
+      validators.set(file, ajv.compile(schema));
+    }
   });
 
-  it('has exactly 13 schema files', () => {
-    expect(schemas).toHaveLength(13);
+  it('every schema file has a valid sample', () => {
+    expect(schemas.length).toBeGreaterThan(0);
+    for (const { file } of schemas) {
+      expect(VALID_SAMPLES[file], `missing VALID_SAMPLES entry for ${file}`).toBeDefined();
+    }
   });
 
   describe('schema compilation', () => {
     it('every .schema.json compiles as valid JSON Schema', () => {
-      for (const { file, schema } of schemas) {
-        const validate = ajv.compile(schema);
-        expect(validate).toBeDefined();
+      for (const { file } of schemas) {
+        expect(validators.get(file), `${file} failed to compile`).toBeDefined();
       }
     });
   });
@@ -203,38 +211,38 @@ describe('CLI JSON Schema contracts', () => {
 
   describe('sample validation', () => {
     it('valid sample passes each schema', () => {
-      for (const { file, schema } of schemas) {
+      for (const { file } of schemas) {
         const sample = VALID_SAMPLES[file];
         expect(sample, `missing valid sample for ${file}`).toBeDefined();
-        const validate = ajv.compile(schema);
+        const validate = validators.get(file);
         const valid = validate(structuredClone(sample));
         expect(valid, `${file}: ${JSON.stringify(validate.errors)}`).toBe(true);
       }
     });
 
     it('missing schemaVersion rejected by every schema', () => {
-      for (const { file, schema } of schemas) {
+      for (const { file } of schemas) {
         const sample = structuredClone(VALID_SAMPLES[file]);
         delete sample.schemaVersion;
-        const validate = ajv.compile(schema);
+        const validate = validators.get(file);
         expect(validate(sample), `${file} should reject missing schemaVersion`).toBe(false);
       }
     });
 
     it('missing command rejected by every schema', () => {
-      for (const { file, schema } of schemas) {
+      for (const { file } of schemas) {
         const sample = structuredClone(VALID_SAMPLES[file]);
         delete sample.command;
-        const validate = ajv.compile(schema);
+        const validate = validators.get(file);
         expect(validate(sample), `${file} should reject missing command`).toBe(false);
       }
     });
 
     it('wrong schemaVersion rejected by every schema', () => {
-      for (const { file, schema } of schemas) {
+      for (const { file } of schemas) {
         const sample = structuredClone(VALID_SAMPLES[file]);
         sample.schemaVersion = 99;
-        const validate = ajv.compile(schema);
+        const validate = validators.get(file);
         expect(validate(sample), `${file} should reject schemaVersion 99`).toBe(false);
       }
     });
@@ -242,66 +250,58 @@ describe('CLI JSON Schema contracts', () => {
 
   describe('optional fields', () => {
     it('doctor schema accepts output with fix field', () => {
-      const schema = schemas.find(s => s.file === 'doctor.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['doctor.schema.json']);
       sample.fix = { fixed: 1, skipped: 0, details: ['Removed dangling edge'] };
-      const validate = ajv.compile(schema);
+      const validate = validators.get('doctor.schema.json');
       expect(validate(sample)).toBe(true);
     });
 
     it('doctor schema accepts output without fix field', () => {
-      const schema = schemas.find(s => s.file === 'doctor.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['doctor.schema.json']);
-      const validate = ajv.compile(schema);
+      const validate = validators.get('doctor.schema.json');
       expect(validate(sample)).toBe(true);
     });
 
     it('at schema accepts null recordedAt', () => {
-      const schema = schemas.find(s => s.file === 'at.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['at.schema.json']);
       sample.recordedAt = null;
-      const validate = ajv.compile(schema);
+      const validate = validators.get('at.schema.json');
       expect(validate(sample)).toBe(true);
     });
 
     it('at schema accepts missing recordedAt', () => {
-      const schema = schemas.find(s => s.file === 'at.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['at.schema.json']);
       delete sample.recordedAt;
-      const validate = ajv.compile(schema);
+      const validate = validators.get('at.schema.json');
       expect(validate(sample)).toBe(true);
     });
 
     it('diff schema accepts sameTick in stats', () => {
-      const schema = schemas.find(s => s.file === 'diff.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['diff.schema.json']);
       sample.stats.sameTick = true;
-      const validate = ajv.compile(schema);
+      const validate = validators.get('diff.schema.json');
       expect(validate(sample)).toBe(true);
     });
 
-    it('import schema accepts dryRun field', () => {
-      const schema = schemas.find(s => s.file === 'import.schema.json')?.schema;
+    it('import schema allows missing dryRun (optional)', () => {
       const sample = structuredClone(VALID_SAMPLES['import.schema.json']);
-      sample.dryRun = true;
-      const validate = ajv.compile(schema);
+      delete sample.dryRun;
+      const validate = validators.get('import.schema.json');
       expect(validate(sample)).toBe(true);
     });
 
     it('review-list schema accepts optional rationale and createdAt', () => {
-      const schema = schemas.find(s => s.file === 'review-list.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['review-list.schema.json']);
       sample.pending[0].rationale = 'test rationale';
       sample.pending[0].createdAt = '2026-01-01T00:00:00Z';
-      const validate = ajv.compile(schema);
+      const validate = validators.get('review-list.schema.json');
       expect(validate(sample)).toBe(true);
     });
 
     it('suggest schema accepts null prompt', () => {
-      const schema = schemas.find(s => s.file === 'suggest.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['suggest.schema.json']);
       sample.prompt = null;
-      const validate = ajv.compile(schema);
+      const validate = validators.get('suggest.schema.json');
       expect(validate(sample)).toBe(true);
     });
   });

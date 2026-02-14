@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { existsSync } from 'node:fs';
 import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -52,6 +53,9 @@ describe('CLI schema contract canaries', () => {
     execFileSync(process.execPath, [BIN, 'init'], { cwd: tempDir, stdio: 'ignore' });
 
     // Import the echo-seed fixture
+    if (!existsSync(FIXTURE)) {
+      throw new Error(`Fixture not found: ${FIXTURE}`);
+    }
     execFileSync(process.execPath, [BIN, 'import', FIXTURE], { cwd: tempDir, stdio: 'ignore' });
   });
 
@@ -85,8 +89,8 @@ describe('CLI schema contract canaries', () => {
   it('nodes --id <known> --json validates against node-detail.schema.json', async () => {
     // Get a known node from the list first
     const listOutput = runCli(['nodes', '--json'], tempDir);
+    expect(listOutput.nodes.length, 'seed fixture should produce at least one node — check echo-seed.yaml import').toBeGreaterThan(0);
     const knownId = listOutput.nodes[0];
-    expect(knownId).toBeDefined();
 
     const schema = await loadSchema('node-detail.schema.json');
     const output = runCli(['nodes', '--id', knownId, '--json'], tempDir);
@@ -142,6 +146,18 @@ describe('CLI schema contract canaries', () => {
     expect(output.schemaVersion).toBe(1);
     expect(output.command).toBe('import');
     expect(output.valid).toBe(true);
+
+    const validate = ajv.compile(schema);
+    expect(validate(output), JSON.stringify(validate.errors)).toBe(true);
+  });
+
+  it('review --json validates against review-list.schema.json', async () => {
+    const schema = await loadSchema('review-list.schema.json');
+    const output = runCli(['review', '--json'], tempDir);
+
+    expect(output.schemaVersion).toBe(1);
+    expect(output.command).toBe('review');
+    expect(Array.isArray(output.pending)).toBe(true);
 
     const validate = ajv.compile(schema);
     expect(validate(output), JSON.stringify(validate.errors)).toBe(true);
