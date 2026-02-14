@@ -45,8 +45,8 @@ const EXCLUDED_PREFIXES = new Set(['decision', 'commit', 'epoch']);
  * @property {number} schemaVersion
  * @property {DiffEndpoint} from
  * @property {DiffEndpoint} to
- * @property {{ added: string[], removed: string[], total: { before: number, after: number } }} nodes
- * @property {{ added: EdgeDiffEntry[], removed: EdgeDiffEntry[], total: { before: number, after: number } }} edges
+ * @property {{ added: string[], removed: string[], total: { before: number, after: number } | null }} nodes
+ * @property {{ added: EdgeDiffEntry[], removed: EdgeDiffEntry[], total: { before: number, after: number } | null }} edges
  * @property {{ nodesByPrefix: Record<string, {before: number, after: number}>, edgesByType: Record<string, {before: number, after: number}> }} summary
  * @property {{ materializeMs: { a: number, b: number }, diffMs: number, nodeCount: { a: number, b: number }, edgeCount: { a: number, b: number } }} stats
  */
