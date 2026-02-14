@@ -40,6 +40,9 @@ Every `--json` output from the git-mind CLI includes a standard envelope:
 | `suggest --json` | [`suggest.schema.json`](cli/suggest.schema.json) |
 | `review --json` | [`review-list.schema.json`](cli/review-list.schema.json) |
 | `review --batch --json` | [`review-batch.schema.json`](cli/review-batch.schema.json) |
+| `diff <ref-a>..<ref-b> --json` | [`diff.schema.json`](cli/diff.schema.json) |
+
+> **Note:** `nodes --id` and `nodes` (list) both emit `"command": "nodes"`. To select the correct schema, check for a top-level `id` field (node-detail) vs. a `nodes` array (node-list).
 
 ## Programmatic Validation
 
@@ -63,7 +66,7 @@ if (!validate(output)) {
 The output changed from a bare JSON array to a wrapped object.
 
 ```bash
-# Before (v2.0.0-alpha.5 and earlier):
+# Before (prior to v3.0.0):
 git mind nodes --json | jq '.[]'
 
 # After:
@@ -75,7 +78,7 @@ git mind nodes --json | jq '.nodes[]'
 The output changed from a bare JSON array to a wrapped object.
 
 ```bash
-# Before (v2.0.0-alpha.5 and earlier):
+# Before (prior to v3.0.0):
 git mind review --json | jq '.[].source'
 
 # After:

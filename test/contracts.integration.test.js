@@ -28,7 +28,11 @@ function runCli(args, cwd) {
     timeout: 30_000,
     env: { ...process.env, NO_COLOR: '1' },
   });
-  return JSON.parse(stdout);
+  try {
+    return JSON.parse(stdout);
+  } catch (err) {
+    throw new Error(`Failed to parse CLI output for [${args.join(' ')}]:\n${stdout}`, { cause: err });
+  }
 }
 
 describe('CLI schema contract canaries', () => {
@@ -52,7 +56,7 @@ describe('CLI schema contract canaries', () => {
   });
 
   afterAll(async () => {
-    await rm(tempDir, { recursive: true, force: true });
+    if (tempDir) await rm(tempDir, { recursive: true, force: true });
   });
 
   it('status --json validates against status.schema.json', async () => {

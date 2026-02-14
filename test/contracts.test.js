@@ -170,7 +170,7 @@ describe('CLI JSON Schema contracts', () => {
   });
 
   describe('schema compilation', () => {
-    it('every .schema.json compiles as valid JSON Schema', async () => {
+    it('every .schema.json compiles as valid JSON Schema', () => {
       for (const { file, schema } of schemas) {
         const validate = ajv.compile(schema);
         expect(validate).toBeDefined();
@@ -179,19 +179,19 @@ describe('CLI JSON Schema contracts', () => {
   });
 
   describe('envelope requirements', () => {
-    it('every schema requires schemaVersion', async () => {
+    it('every schema requires schemaVersion', () => {
       for (const { file, schema } of schemas) {
         expect(schema.required, `${file} missing required array`).toContain('schemaVersion');
       }
     });
 
-    it('every schema requires command', async () => {
+    it('every schema requires command', () => {
       for (const { file, schema } of schemas) {
         expect(schema.required, `${file} missing command in required`).toContain('command');
       }
     });
 
-    it('every schema defines schemaVersion as integer const 1', async () => {
+    it('every schema defines schemaVersion as integer const 1', () => {
       for (const { file, schema } of schemas) {
         const sv = schema.properties?.schemaVersion;
         expect(sv, `${file} missing schemaVersion property`).toBeDefined();
@@ -202,7 +202,7 @@ describe('CLI JSON Schema contracts', () => {
   });
 
   describe('sample validation', () => {
-    it('valid sample passes each schema', async () => {
+    it('valid sample passes each schema', () => {
       for (const { file, schema } of schemas) {
         const sample = VALID_SAMPLES[file];
         expect(sample, `missing valid sample for ${file}`).toBeDefined();
@@ -212,7 +212,7 @@ describe('CLI JSON Schema contracts', () => {
       }
     });
 
-    it('missing schemaVersion rejected by every schema', async () => {
+    it('missing schemaVersion rejected by every schema', () => {
       for (const { file, schema } of schemas) {
         const sample = structuredClone(VALID_SAMPLES[file]);
         delete sample.schemaVersion;
@@ -221,7 +221,7 @@ describe('CLI JSON Schema contracts', () => {
       }
     });
 
-    it('missing command rejected by every schema', async () => {
+    it('missing command rejected by every schema', () => {
       for (const { file, schema } of schemas) {
         const sample = structuredClone(VALID_SAMPLES[file]);
         delete sample.command;
@@ -230,7 +230,7 @@ describe('CLI JSON Schema contracts', () => {
       }
     });
 
-    it('wrong schemaVersion rejected by every schema', async () => {
+    it('wrong schemaVersion rejected by every schema', () => {
       for (const { file, schema } of schemas) {
         const sample = structuredClone(VALID_SAMPLES[file]);
         sample.schemaVersion = 99;
@@ -241,7 +241,7 @@ describe('CLI JSON Schema contracts', () => {
   });
 
   describe('optional fields', () => {
-    it('doctor schema accepts output with fix field', async () => {
+    it('doctor schema accepts output with fix field', () => {
       const schema = schemas.find(s => s.file === 'doctor.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['doctor.schema.json']);
       sample.fix = { fixed: 1, skipped: 0, details: ['Removed dangling edge'] };
@@ -249,14 +249,14 @@ describe('CLI JSON Schema contracts', () => {
       expect(validate(sample)).toBe(true);
     });
 
-    it('doctor schema accepts output without fix field', async () => {
+    it('doctor schema accepts output without fix field', () => {
       const schema = schemas.find(s => s.file === 'doctor.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['doctor.schema.json']);
       const validate = ajv.compile(schema);
       expect(validate(sample)).toBe(true);
     });
 
-    it('at schema accepts null recordedAt', async () => {
+    it('at schema accepts null recordedAt', () => {
       const schema = schemas.find(s => s.file === 'at.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['at.schema.json']);
       sample.recordedAt = null;
@@ -264,7 +264,7 @@ describe('CLI JSON Schema contracts', () => {
       expect(validate(sample)).toBe(true);
     });
 
-    it('at schema accepts missing recordedAt', async () => {
+    it('at schema accepts missing recordedAt', () => {
       const schema = schemas.find(s => s.file === 'at.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['at.schema.json']);
       delete sample.recordedAt;
@@ -272,7 +272,7 @@ describe('CLI JSON Schema contracts', () => {
       expect(validate(sample)).toBe(true);
     });
 
-    it('diff schema accepts sameTick in stats', async () => {
+    it('diff schema accepts sameTick in stats', () => {
       const schema = schemas.find(s => s.file === 'diff.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['diff.schema.json']);
       sample.stats.sameTick = true;
@@ -280,7 +280,7 @@ describe('CLI JSON Schema contracts', () => {
       expect(validate(sample)).toBe(true);
     });
 
-    it('import schema accepts dryRun field', async () => {
+    it('import schema accepts dryRun field', () => {
       const schema = schemas.find(s => s.file === 'import.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['import.schema.json']);
       sample.dryRun = true;
@@ -288,7 +288,7 @@ describe('CLI JSON Schema contracts', () => {
       expect(validate(sample)).toBe(true);
     });
 
-    it('review-list schema accepts optional rationale and createdAt', async () => {
+    it('review-list schema accepts optional rationale and createdAt', () => {
       const schema = schemas.find(s => s.file === 'review-list.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['review-list.schema.json']);
       sample.pending[0].rationale = 'test rationale';
@@ -297,7 +297,7 @@ describe('CLI JSON Schema contracts', () => {
       expect(validate(sample)).toBe(true);
     });
 
-    it('suggest schema accepts null prompt', async () => {
+    it('suggest schema accepts null prompt', () => {
       const schema = schemas.find(s => s.file === 'suggest.schema.json')?.schema;
       const sample = structuredClone(VALID_SAMPLES['suggest.schema.json']);
       sample.prompt = null;
