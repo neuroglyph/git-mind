@@ -36,8 +36,16 @@ function runCli(args, cwd) {
   }
 }
 
+/** Create a git commit in a repo and return the commit SHA. */
+function gitCommit(cwd, filename, message) {
+  execSync(`git add ${filename}`, { cwd, stdio: 'ignore' });
+  execSync(`git commit -m "${message}"`, { cwd, stdio: 'ignore' });
+  return execSync('git rev-parse HEAD', { cwd, encoding: 'utf-8' }).trim();
+}
+
 describe('CLI schema contract canaries', () => {
   let tempDir;
+  let mergeDir;
   let ajv;
 
   beforeAll(async () => {
@@ -57,10 +65,32 @@ describe('CLI schema contract canaries', () => {
       throw new Error(`Fixture not found: ${FIXTURE}`);
     }
     execFileSync(process.execPath, [BIN, 'import', FIXTURE], { cwd: tempDir, stdio: 'ignore' });
+
+    // Create first commit + epoch marker (needed for at/diff tests)
+    await writeFile(join(tempDir, 'marker-1.txt'), 'epoch-1');
+    const sha1 = gitCommit(tempDir, 'marker-1.txt', 'first epoch commit');
+    execFileSync(process.execPath, [BIN, 'process-commit', sha1], { cwd: tempDir, stdio: 'ignore' });
+
+    // Add a new edge so the diff has something to show
+    execFileSync(process.execPath, [BIN, 'link', 'task:echo-app', 'spec:api-layer', '--type', 'implements'], { cwd: tempDir, stdio: 'ignore' });
+
+    // Create second commit + epoch marker
+    await writeFile(join(tempDir, 'marker-2.txt'), 'epoch-2');
+    const sha2 = gitCommit(tempDir, 'marker-2.txt', 'second epoch commit');
+    execFileSync(process.execPath, [BIN, 'process-commit', sha2], { cwd: tempDir, stdio: 'ignore' });
+
+    // Create a second repo for merge testing
+    mergeDir = await mkdtemp(join(tmpdir(), 'gitmind-merge-'));
+    execSync('git init', { cwd: mergeDir, stdio: 'ignore' });
+    execSync('git config user.email "test@test.com"', { cwd: mergeDir, stdio: 'ignore' });
+    execSync('git config user.name "Test"', { cwd: mergeDir, stdio: 'ignore' });
+    execFileSync(process.execPath, [BIN, 'init'], { cwd: mergeDir, stdio: 'ignore' });
+    execFileSync(process.execPath, [BIN, 'import', FIXTURE], { cwd: mergeDir, stdio: 'ignore' });
   });
 
   afterAll(async () => {
     if (tempDir) await rm(tempDir, { recursive: true, force: true });
+    if (mergeDir) await rm(mergeDir, { recursive: true, force: true });
   });
 
   it('status --json validates against status.schema.json', async () => {
@@ -162,4 +192,58 @@ describe('CLI schema contract canaries', () => {
     const validate = ajv.compile(schema);
     expect(validate(output), JSON.stringify(validate.errors)).toBe(true);
   });
+
+  it('at HEAD --json validates against at.schema.json', async () => {
+    const schema = await loadSchema('at.schema.json');
+    const output = runCli(['at', 'HEAD', '--json'], tempDir);
+
+    expect(output.schemaVersion).toBe(1);
+    expect(output.command).toBe('at');
+    expect(output.tick).toBeGreaterThanOrEqual(0);
+
+    const validate = ajv.compile(schema);
+    expect(validate(output), JSON.stringify(validate.errors)).toBe(true);
+  });
+
+  it('diff HEAD~1..HEAD --json validates against diff.schema.json', async () => {
+    const schema = await loadSchema('diff.schema.json');
+    const output = runCli(['diff', 'HEAD~1..HEAD', '--json'], tempDir);
+
+    expect(output.schemaVersion).toBe(1);
+    expect(output.command).toBe('diff');
+    expect(output.from).toBeDefined();
+    expect(output.to).toBeDefined();
+
+    const validate = ajv.compile(schema);
+    expect(validate(output), JSON.stringify(validate.errors)).toBe(true);
+  });
+
+  it('review --batch accept --json validates against review-batch.schema.json', async () => {
+    const schema = await loadSchema('review-batch.schema.json');
+    const output = runCli(['review', '--batch', 'accept', '--json'], tempDir);
+
+    expect(output.schemaVersion).toBe(1);
+    expect(output.command).toBe('review');
+    expect(typeof output.processed).toBe('number');
+    expect(Array.isArray(output.decisions)).toBe(true);
+
+    const validate = ajv.compile(schema);
+    expect(validate(output), JSON.stringify(validate.errors)).toBe(true);
+  });
+
+  it('merge --dry-run --json validates against merge.schema.json', async () => {
+    const schema = await loadSchema('merge.schema.json');
+    const output = runCli(['merge', '--from', mergeDir, '--repo-name', 'test/merge-repo', '--dry-run', '--json'], tempDir);
+
+    expect(output.schemaVersion).toBe(1);
+    expect(output.command).toBe('merge');
+    expect(output.dryRun).toBe(true);
+    expect(output.repoName).toBe('test/merge-repo');
+
+    const validate = ajv.compile(schema);
+    expect(validate(output), JSON.stringify(validate.errors)).toBe(true);
+  });
+
+  // Note: suggest --json is not tested here because it requires a configured
+  // GITMIND_AGENT (LLM command) which is unavailable in CI/test environments.
 });
