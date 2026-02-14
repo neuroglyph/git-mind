@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/node-detail.schema.json",
+  "title": "git-mind nodes --id --json",
+  "description": "Single node detail output from `git mind nodes --id <id> --json`",
+  "type": "object",
+  "required": ["schemaVersion", "command", "id", "prefix", "prefixClass", "properties"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "command": { "type": "string", "const": "nodes" },
+    "id": { "type": "string", "minLength": 1 },
+    "prefix": { "type": ["string", "null"] },
+    "prefixClass": {
+      "type": "string",
+      "enum": ["canonical", "system", "unknown"]
+    },
+    "properties": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

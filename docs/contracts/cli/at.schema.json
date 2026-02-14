@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/at.schema.json",
+  "title": "git-mind at --json",
+  "description": "Time-travel output from `git mind at <ref> --json`",
+  "type": "object",
+  "required": ["schemaVersion", "command", "ref", "sha", "fullSha", "tick", "nearest", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "command": { "type": "string", "const": "at" },
+    "ref": { "type": "string" },
+    "sha": { "type": "string", "minLength": 8, "maxLength": 8 },
+    "fullSha": { "type": "string", "pattern": "^[0-9a-f]+$" },
+    "tick": { "type": "integer", "minimum": 0 },
+    "nearest": { "type": "boolean" },
+    "recordedAt": { "type": ["string", "null"] },
+    "status": {
+      "type": "object",
+      "required": ["nodes", "edges", "health"],
+      "additionalProperties": false,
+      "properties": {
+        "nodes": {
+          "type": "object",
+          "required": ["total", "byPrefix"],
+          "additionalProperties": false,
+          "properties": {
+            "total": { "type": "integer", "minimum": 0 },
+            "byPrefix": {
+              "type": "object",
+              "additionalProperties": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "edges": {
+          "type": "object",
+          "required": ["total", "byType"],
+          "additionalProperties": false,
+          "properties": {
+            "total": { "type": "integer", "minimum": 0 },
+            "byType": {
+              "type": "object",
+              "additionalProperties": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "health": {
+          "type": "object",
+          "required": ["blockedItems", "lowConfidence", "orphanNodes"],
+          "additionalProperties": false,
+          "properties": {
+            "blockedItems": { "type": "integer", "minimum": 0 },
+            "lowConfidence": { "type": "integer", "minimum": 0 },
+            "orphanNodes": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    }
+  }
+}
