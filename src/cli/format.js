@@ -78,7 +78,7 @@ export function formatEdge(edge) {
  */
 export function formatView(viewName, result) {
   // Progress view has its own formatter
-  if (result.meta?.summary && typeof result.meta.summary.pct === 'number') {
+  if (viewName === 'progress' && result.meta) {
     return formatProgressMeta(result.meta);
   }
 
