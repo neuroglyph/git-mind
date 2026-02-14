@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/diff.schema.json",
+  "title": "git-mind diff --json",
+  "description": "Graph diff result from `git mind diff <ref-a>..<ref-b> --json`",
+  "type": "object",
+  "required": ["schemaVersion", "command", "from", "to", "nodes", "edges", "summary", "stats"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "command": { "type": "string", "const": "diff" },
+    "from": { "$ref": "#/$defs/diffEndpoint" },
+    "to": { "$ref": "#/$defs/diffEndpoint" },
+    "nodes": {
+      "type": "object",
+      "required": ["added", "removed", "total"],
+      "additionalProperties": false,
+      "properties": {
+        "added": { "type": "array", "items": { "type": "string" } },
+        "removed": { "type": "array", "items": { "type": "string" } },
+        "total": {
+          "type": "object",
+          "required": ["before", "after"],
+          "additionalProperties": false,
+          "properties": {
+            "before": { "type": "integer", "minimum": 0 },
+            "after": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "object",
+      "required": ["added", "removed", "total"],
+      "additionalProperties": false,
+      "properties": {
+        "added": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/edgeDiffEntry" }
+        },
+        "removed": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/edgeDiffEntry" }
+        },
+        "total": {
+          "type": "object",
+          "required": ["before", "after"],
+          "additionalProperties": false,
+          "properties": {
+            "before": { "type": "integer", "minimum": 0 },
+            "after": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["nodesByPrefix", "edgesByType"],
+      "additionalProperties": false,
+      "properties": {
+        "nodesByPrefix": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["before", "after"],
+            "additionalProperties": false,
+            "properties": {
+              "before": { "type": "integer", "minimum": 0 },
+              "after": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "edgesByType": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["before", "after"],
+            "additionalProperties": false,
+            "properties": {
+              "before": { "type": "integer", "minimum": 0 },
+              "after": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "required": ["materializeMs", "diffMs", "nodeCount", "edgeCount"],
+      "additionalProperties": false,
+      "properties": {
+        "sameTick": { "type": "boolean" },
+        "materializeMs": {
+          "type": "object",
+          "required": ["a", "b"],
+          "additionalProperties": false,
+          "properties": {
+            "a": { "type": "integer", "minimum": 0 },
+            "b": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "diffMs": { "type": "integer", "minimum": 0 },
+        "nodeCount": {
+          "type": "object",
+          "required": ["a", "b"],
+          "additionalProperties": false,
+          "properties": {
+            "a": { "type": "integer", "minimum": 0 },
+            "b": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "edgeCount": {
+          "type": "object",
+          "required": ["a", "b"],
+          "additionalProperties": false,
+          "properties": {
+            "a": { "type": "integer", "minimum": 0 },
+            "b": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "diffEndpoint": {
+      "type": "object",
+      "required": ["ref", "sha", "tick", "nearest"],
+      "additionalProperties": false,
+      "properties": {
+        "ref": { "type": "string" },
+        "sha": { "type": "string", "minLength": 8, "maxLength": 8 },
+        "tick": { "type": "integer", "minimum": 0 },
+        "nearest": { "type": "boolean" }
+      }
+    },
+    "edgeDiffEntry": {
+      "type": "object",
+      "required": ["source", "target", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string", "minLength": 1 },
+        "target": { "type": "string", "minLength": 1 },
+        "type": { "type": "string" }
+      }
+    }
+  }
+}

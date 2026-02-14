@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/export-file.schema.json",
+  "title": "git-mind export --file --json",
+  "description": "File export result from `git mind export --file <path> --json`",
+  "type": "object",
+  "required": ["schemaVersion", "command", "stats", "path"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "command": { "type": "string", "const": "export" },
+    "stats": {
+      "type": "object",
+      "required": ["nodes", "edges"],
+      "additionalProperties": false,
+      "properties": {
+        "nodes": { "type": "integer", "minimum": 0 },
+        "edges": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "path": { "type": "string", "minLength": 1 }
+  }
+}

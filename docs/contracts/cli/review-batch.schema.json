@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/review-batch.schema.json",
+  "title": "git-mind review --batch --json",
+  "description": "Batch review result from `git mind review --batch <action> --json`",
+  "type": "object",
+  "required": ["schemaVersion", "command", "processed", "decisions"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "command": { "type": "string", "const": "review" },
+    "processed": { "type": "integer", "minimum": 0 },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "action", "source", "target", "edgeType", "confidence", "timestamp"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "action": {
+            "type": "string",
+            "enum": ["accept", "reject", "adjust", "skip"]
+          },
+          "source": { "type": "string", "minLength": 1 },
+          "target": { "type": "string", "minLength": 1 },
+          "edgeType": { "type": "string" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "rationale": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "reviewer": { "type": "string" }
+        }
+      }
+    }
+  }
+}
