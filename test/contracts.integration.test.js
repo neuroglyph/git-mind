@@ -218,6 +218,7 @@ describe('CLI schema contract canaries', () => {
     expect(validate(output), JSON.stringify(validate.errors)).toBe(true);
   });
 
+  // NOTE: mutates review state (accepts all pending) — keep after review --json test
   it('review --batch accept --json validates against review-batch.schema.json', async () => {
     const schema = await loadSchema('review-batch.schema.json');
     const output = runCli(['review', '--batch', 'accept', '--json'], tempDir);
