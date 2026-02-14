@@ -15,33 +15,48 @@ The first consumer is the [Echo](https://github.com/neuroglyph/echo) ecosystem, 
 
 ---
 
-## Current State (v2.0.0-alpha.0)
+## Current State (v2.0.0-alpha.5)
 
-Shipped on `main` — Feb 2026. Complete rewrite from C23 to Node.js on `@git-stunts/git-warp`.
+All **8 milestones** shipped on `main` — Feb 2026. 342 tests across 20 files.
 
-**Done:**
+**v2.0.0-alpha.0** — Complete rewrite from C23 to Node.js on `@git-stunts/git-warp`.
+
+**Shipped features (17 CLI commands):**
 - Graph core (init, load, checkpoint via WARP CRDT)
 - Edge CRUD with 8 typed edges + confidence scores
-- CLI: `init`, `link`, `list`, `remove`, `view`, `install-hooks`, `process-commit`
-- 4 observer views: `roadmap`, `architecture`, `backlog`, `suggestions`
+- Node query API (`nodes`, `--prefix`, `--id`, `--json`)
+- Graph status dashboard (`status`, `--json`)
+- 10 observer views: `roadmap`, `architecture`, `backlog`, `suggestions`, `milestone`, `traceability`, `blockers`, `onboarding`, `coverage` + custom declarative views
+- YAML import pipeline with schema validation, dry-run, atomic writes
+- Markdown frontmatter import (`import --from-markdown`)
+- Graph export (YAML/JSON, round-trip compatible)
+- Runtime schema validators (node IDs, edge types, confidence, prefixes)
 - Commit directive parser (auto-create edges from commit messages)
-- 25 tests, CI green (GitHub Actions, Node 20 + 22)
+- Cross-repo edge protocol (`repo:owner/name:prefix:id`)
+- Multi-repo graph merge (`merge --from`)
+- Graph integrity doctor (`doctor`, `--fix`, `--json`)
+- AI-powered edge suggestions (`suggest`, `--agent`, `--context`)
+- Interactive review flow (`review`, `--batch`, decision provenance)
+- Epoch-based time-travel (`at <ref>`, `--json`)
+- Graph diff between commits (`diff <ref-a>..<ref-b>`, `--prefix`, `--json`)
+- GitHub Action for PR suggestions + slash command review
+- 342 tests across 20 files, CI green
 
 ---
 
-## The Seven Milestones
+## Milestones
 
-| # | Codename | Theme | Features | Tasks | Est. Hours |
-|---|----------|-------|----------|-------|------------|
-| 1 | **BEDROCK** | Schema & Node Foundations | 4 | 8 | 28 |
-| 2 | **INTAKE** | Data Ingestion Pipeline | 4 | 8 | 34 |
-| 3 | **PRISM** | Views & Value Surfaces | 5 | 7 | 30 |
-| 4 | **WATCHTOWER** | Dashboard & Observability | 3 | 5 | 18 |
-| 5 | **PROVING GROUND** | Dogfood Validation | 3 | 5 | 16 |
-| 6 | **ORACLE** | AI Intelligence & Curation | 4 | 7 | 40 |
-| 7 | **NEXUS** | Integration & Federation | 4 | 6 | 36 |
-
-**Total: 27 features, 46 tasks, ~202 human-hours**
+| # | Codename | Theme | Status |
+|---|----------|-------|--------|
+| 1 | **BEDROCK** | Schema & Node Foundations | DONE |
+| 2 | **INTAKE** | Data Ingestion Pipeline | DONE |
+| 3 | **PRISM** | Views & Value Surfaces | DONE |
+| 4 | **WATCHTOWER** | Dashboard & Observability | DONE |
+| 5 | **PROVING GROUND** | Dogfood Validation | DONE |
+| 6 | **ORACLE** | AI Intelligence & Curation | DONE |
+| 7 | **NEXUS** | Integration & Federation | DONE |
+| 8 | **CHRONICLE** | Graph Diff & History | DONE |
+| 9 | **IRONCLAD** | GA Hardening & Adoption | IN PROGRESS |
 
 ---
 
@@ -2055,6 +2070,107 @@ NEXUS ←── ORACLE                                         │
 
 ---
 
+# Milestone 9: IRONCLAD — GA Hardening
+
+> **"You're done with more features. Now win trust."**
+
+**Mission:** Convert git-mind from "feature complete" to "production undeniable."
+**Non-goal:** New features unless they reduce risk or adoption friction.
+**Success metric:** New team can install, model, validate, and enforce policy in under 60 minutes.
+
+---
+
+## Phase A — Contract Lockdown (P0)
+
+### A1) CLI JSON Schema Contracts (#205)
+- JSON Schema files for every `--json` command output
+- `schemaVersion` field in every JSON output
+- CI validates all `--json` output against schemas
+
+### A2) API Stability Surface (#206)
+- Public API export audit + snapshot
+- Automated API diff check in CI
+- Deprecation protocol: warning + migration note
+
+### A3) Error Taxonomy + Exit Codes (#207)
+- Structured errors: `GMIND_E_*` error codes
+- Consistent exit code table
+- JSON mode includes `errorCode`, `hint`, `docsRef`
+
+---
+
+## Phase B — Reliability Gauntlet (P0)
+
+### B1) Cross-OS CI Matrix (#208)
+- ubuntu-latest, macos-latest, windows-latest
+- Node active LTS bands
+- smoke / integration / long-run suite split
+
+### B2) Fuzz & Adversarial Inputs (#209)
+- Targets: YAML import, frontmatter parser, directive parser, validators
+- Zero unhandled exceptions across corpus
+
+### B3) Corruption & Recovery Drills (#210)
+- Missing refs, malformed payloads, partial merges, stale locks
+- `git mind doctor --strict`
+- Deterministic behavior, no silent data mutation
+
+---
+
+## Phase C — Data Safety + Atomicity (P0)
+
+### C1) Transactional Writes (#211)
+- Write to temp ref → verify checksum → atomic ref swap
+- No partial write states observable
+
+### C2) Backup / Restore (#212)
+- `git mind backup [--out file]`
+- `git mind restore <file> [--dry-run]`
+
+---
+
+## Phase D — Adoption Engine (P1)
+
+### D1) 30-Minute Zero-to-Value Tutorial (#213)
+- Fresh user reaches: imported graph, usable view, doctor clean, CI policy in <60 min
+
+### D2) Opinionated Team Starter + CI Policy Gate (#214)
+- `git mind init --preset engineering`
+- Strict mode: fail on dangling edges, blocked tasks, low-confidence edges
+
+---
+
+## Phase E — Performance Envelope (P1/P2)
+
+### E1) Benchmark Harness (#215)
+- Small/medium/large graph bench packs
+- p50/p95 latency, memory ceiling, cold vs warm
+- Regressions >10% fail benchmark gate
+
+---
+
+## GA Release Candidate (#216)
+
+**GA Checklist (must all be green):**
+- [ ] All `--json` outputs schema-validated in CI
+- [ ] Public API snapshot unchanged (or semver-major justified)
+- [ ] Typed errors + stable exit codes everywhere
+- [ ] Atomic writes proven under injected failures
+- [ ] Doctor strict catches all known corruption classes
+- [ ] Fresh-user tutorial validated by non-authors
+- [ ] CI policy gate docs + working example
+- [ ] Performance baseline + regression alarms active
+
+---
+
+## Do Not Cut
+- JSON schema contracts
+- Typed error codes
+- Atomic writes
+- Corruption drills
+
+---
+
 # Backlog (Unscheduled)
 
 These items are not assigned to a milestone yet. They'll be scheduled based on user feedback and priorities.
@@ -2062,7 +2178,6 @@ These items are not assigned to a milestone yet. They'll be scheduled based on u
 - `git mind onboarding` as a guided walkthrough (not just a view)
 - Confidence decay over time (edges rot if not refreshed)
 - View composition (combine multiple views)
-- Graph diff between commits (`git mind diff HEAD~5..HEAD`)
 - Wesley-generated typed graph accessors
 - Mermaid diagram export (`git mind export --format mermaid`)
 - GraphQL API for web frontends
