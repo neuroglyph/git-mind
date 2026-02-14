@@ -179,8 +179,9 @@ switch (command) {
     const setNodeId = args[1];
     const setKey = args[2];
     const setValue = args[3];
-    if (!setNodeId || !setKey || setValue === undefined) {
-      console.error('Usage: git mind set <nodeId> <key> <value>');
+    if (!setNodeId || !setKey || setValue === undefined || setValue.startsWith('--')) {
+      console.error('Usage: git mind set <nodeId> <key> <value> [--json]');
+      console.error('  <value> is positional and required (flags are not valid values)');
       process.exitCode = 1;
       break;
     }
