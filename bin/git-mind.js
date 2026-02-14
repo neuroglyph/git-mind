@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --disable-warning=DEP0169
 
 /**
  * git-mind CLI entry point.

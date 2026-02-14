@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`formatProgressMeta` shows remaining count** — Terminal header now reads `Progress: 60% (3/5 done, 2 remaining)` (#222)
 - **`DiffResult` typedef nullable totals** — JSDoc updated: `nodes.total` and `edges.total` are `{ before, after } | null` when diff is skipped (#222)
 - **Test count** — 412 tests across 22 files (was 371)
+- **Suppress `DEP0169` warning** — Shebang updated to `--disable-warning=DEP0169`; silences `url.parse()` deprecation from transitive dep `roaring` → `@mapbox/node-pre-gyp` (#222)
 
 ## [3.0.0] - 2026-02-13
 
