@@ -39,7 +39,8 @@ const registry = new Map();
  * @typedef {object} ViewDefinition
  * @property {string} name
  * @property {string} [description]
- * @property {(nodes: string[], edges: Edge[]) => ViewResult} filterFn
+ * @property {(nodes: string[], edges: Edge[], nodeProps?: Map<string, Record<string, unknown>>, options?: Record<string, unknown>) => ViewResult} filterFn
+ * @property {boolean} [needsProperties]
  */
 
 /**
