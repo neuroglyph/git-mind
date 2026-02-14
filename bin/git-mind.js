@@ -5,7 +5,8 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review, diff } from '../src/cli/commands.js';
+import { parseDiffRefs, collectDiffPositionals } from '../src/diff.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -35,6 +36,9 @@ Commands:
     --json                      Output as JSON
   at <ref>                      Show graph at a historical point in time
     --json                      Output as JSON
+  diff <ref-a>..<ref-b>         Compare graph between two commits
+    --json                      Output as JSON
+    --prefix <prefix>           Scope to a single prefix
   import <file>                 Import a YAML graph file
     --dry-run, --validate       Validate without writing
     --json                      Output as JSON
@@ -161,6 +165,22 @@ switch (command) {
       break;
     }
     await at(cwd, atRef, { json: args.includes('--json') });
+    break;
+  }
+
+  case 'diff': {
+    const diffFlags = parseFlags(args.slice(1));
+    const diffPositionals = collectDiffPositionals(args.slice(1));
+    try {
+      const { refA, refB } = parseDiffRefs(diffPositionals);
+      await diff(cwd, refA, refB, {
+        json: diffFlags.json ?? false,
+        prefix: diffFlags.prefix,
+      });
+    } catch (err) {
+      console.error(err.message);
+      process.exitCode = 1;
+    }
     break;
   }
 

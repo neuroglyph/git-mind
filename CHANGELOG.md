@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-alpha.5] - 2026-02-13
+
+### Added
+
+- **`git mind diff` command** — Compare the knowledge graph between two historical commits. Resolves git refs to epoch markers, materializes both snapshots, and reports node/edge additions and removals with summary tables. Supports range syntax (`A..B`), two-arg syntax (`A B`), and shorthand (`A` for `A..HEAD`). `--json` output includes `schemaVersion: 1` for forward compatibility. `--prefix` scopes the diff to a single node prefix (#203)
+- **Diff API** — `computeDiff(cwd, refA, refB, opts)` for full orchestration, `diffSnapshots(graphA, graphB, opts)` for pure snapshot comparison in `src/diff.js`. Both exported from public API (#203)
+
+### Fixed
+
+- **`--prefix` value leaks into positional args** — `git mind diff HEAD~1..HEAD --prefix task` incorrectly treated `task` as a second ref argument. Extracted `collectDiffPositionals()` helper that skips flag values consumed by non-boolean flags (#203)
+- **Same-tick shortcut reports zero totals** — When both refs resolve to the same Lamport tick, `computeDiff` returned `total: { before: 0, after: 0 }` which misrepresents an unchanged graph as empty. Now includes `stats.sameTick: true` so JSON consumers can distinguish "unchanged" from "empty graph" (#203)
+
+### Changed
+
+- **Test count** — 342 tests across 20 files (was 312 across 19)
+
 ## [2.0.0-alpha.4] - 2026-02-13
 
 ### Added
@@ -203,6 +219,8 @@ Complete rewrite from C23 to Node.js on `@git-stunts/git-warp`.
 - Docker-based CI/CD
 - All C-specific documentation
 
+[2.0.0-alpha.5]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.5
+[2.0.0-alpha.4]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.4
 [2.0.0-alpha.3]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.3
 [2.0.0-alpha.2]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.2
 [2.0.0-alpha.0]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.0

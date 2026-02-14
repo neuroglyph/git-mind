@@ -21,7 +21,8 @@ import { getEpochForRef } from '../epoch.js';
 import { runDoctor, fixIssues } from '../doctor.js';
 import { generateSuggestions } from '../suggest.js';
 import { getPendingSuggestions, acceptSuggestion, rejectSuggestion, skipSuggestion, batchDecision } from '../review.js';
-import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus } from './format.js';
+import { computeDiff } from '../diff.js';
+import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus, formatDiff } from './format.js';
 
 /**
  * Initialize a git-mind graph in the current repo.
@@ -589,6 +590,28 @@ export async function review(cwd, opts = {}) {
 
     console.log('');
     console.log(formatDecisionSummary({ processed: decisions.length, decisions }));
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Show graph diff between two commits.
+ * @param {string} cwd
+ * @param {string} refA
+ * @param {string} refB
+ * @param {{ json?: boolean, prefix?: string }} opts
+ */
+export async function diff(cwd, refA, refB, opts = {}) {
+  try {
+    const result = await computeDiff(cwd, refA, refB, { prefix: opts.prefix });
+
+    if (opts.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(formatDiff(result));
+    }
   } catch (err) {
     console.error(error(err.message));
     process.exitCode = 1;

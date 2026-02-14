@@ -15,9 +15,10 @@ Everything you need to know — from zero to power user.
 7. [Importing graphs from YAML](#importing-graphs-from-yaml)
 8. [Commit directives](#commit-directives)
 9. [Time-travel with `git mind at`](#time-travel-with-git-mind-at)
-10. [Using git-mind as a library](#using-git-mind-as-a-library)
-11. [Appendix A: How it works under the hood](#appendix-a-how-it-works-under-the-hood)
-12. [Appendix B: Edge types reference](#appendix-b-edge-types-reference)
+10. [Comparing graph snapshots](#comparing-graph-snapshots)
+11. [Using git-mind as a library](#using-git-mind-as-a-library)
+12. [Appendix A: How it works under the hood](#appendix-a-how-it-works-under-the-hood)
+13. [Appendix B: Edge types reference](#appendix-b-edge-types-reference)
 
 ---
 
@@ -317,6 +318,27 @@ Resolves the ref to a commit SHA, finds the epoch marker (or nearest ancestor), 
 |------|-------------|
 | `--json` | Output as JSON (includes epoch metadata) |
 
+### `git mind diff`
+
+Compare the knowledge graph between two commits.
+
+```bash
+git mind diff HEAD~10..HEAD           # range syntax
+git mind diff abc1234 def5678         # two-arg syntax
+git mind diff HEAD~10                 # shorthand for HEAD~10..HEAD
+git mind diff HEAD~5..HEAD --prefix task  # scope to task: nodes
+git mind diff HEAD~5..HEAD --json     # structured output
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON (includes `schemaVersion` for compatibility) |
+| `--prefix <prefix>` | Only include nodes with this prefix (edges must have both endpoints matching) |
+
+See [Comparing graph snapshots](#comparing-graph-snapshots) for details.
+
 ### `git mind suggest`
 
 Generate AI-powered edge suggestions based on recent code changes.
@@ -556,6 +578,62 @@ if (result) {
   console.log(status);
 }
 ```
+
+---
+
+## Comparing graph snapshots
+
+`git mind diff` shows what changed in your knowledge graph between two commits. It resolves each ref to an epoch marker, materializes the graph at both points in time, and reports the delta.
+
+### Usage
+
+```bash
+# Range syntax
+git mind diff HEAD~10..HEAD
+
+# Two-arg syntax
+git mind diff abc1234 def5678
+
+# Shorthand: ref..HEAD
+git mind diff HEAD~10
+
+# Scope to a single prefix
+git mind diff HEAD~10..HEAD --prefix task
+
+# JSON output (includes schemaVersion for compatibility)
+git mind diff HEAD~10..HEAD --json
+```
+
+### How it works
+
+1. Both refs are resolved to commit SHAs
+2. Each SHA is looked up in the epoch markers (or the nearest ancestor's epoch)
+3. Two separate graph instances are materialized at those Lamport ticks
+4. The diff engine compares nodes and edges, reporting additions and removals
+
+System-generated nodes (`epoch:`, `decision:`, `commit:`) are excluded from the diff, matching export behavior.
+
+### Prefix filtering
+
+When `--prefix` is specified, only nodes with that prefix are included. Edges are included **only if both endpoints pass the prefix filter** — no partial cross-prefix edges appear in the output.
+
+```bash
+git mind diff HEAD~5..HEAD --prefix module
+# Only shows module:* node changes and edges between module:* nodes
+```
+
+### JSON output and versioning
+
+The `--json` output includes a `schemaVersion` field (currently `1`). Breaking changes to the JSON structure will increment this version, so downstream tools can detect incompatible output.
+
+```bash
+git mind diff HEAD~5..HEAD --json | jq '.schemaVersion'
+# 1
+```
+
+### Nearest-epoch fallback
+
+If a ref doesn't have an exact epoch marker, the diff engine walks up the commit ancestry to find the nearest one. When this happens, the TTY output shows a warning icon next to the endpoint.
 
 ---
 
