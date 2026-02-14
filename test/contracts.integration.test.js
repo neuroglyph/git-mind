@@ -38,9 +38,9 @@ function runCli(args, cwd) {
 
 /** Create a git commit in a repo and return the commit SHA. */
 function gitCommit(cwd, filename, message) {
-  execSync(`git add ${filename}`, { cwd, stdio: 'ignore' });
-  execSync(`git commit -m "${message}"`, { cwd, stdio: 'ignore' });
-  return execSync('git rev-parse HEAD', { cwd, encoding: 'utf-8' }).trim();
+  execFileSync('git', ['add', filename], { cwd, stdio: 'ignore' });
+  execFileSync('git', ['commit', '-m', message], { cwd, stdio: 'ignore' });
+  return execFileSync('git', ['rev-parse', 'HEAD'], { cwd, encoding: 'utf-8' }).trim();
 }
 
 describe('CLI schema contract canaries', () => {
