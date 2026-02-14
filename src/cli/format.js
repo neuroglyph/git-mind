@@ -360,6 +360,111 @@ export function formatAtStatus(ref, sha, epoch, status) {
 }
 
 /**
+ * Render a summary diff table with before/after/delta columns.
+ * @param {Record<string, {before: number, after: number}>} entries
+ * @returns {string[]} Lines of formatted output
+ */
+function renderDiffTable(entries) {
+  const lines = [];
+  const sorted = Object.entries(entries).sort(([, a], [, b]) => {
+    const deltaB = Math.abs(b.after - b.before);
+    const deltaA = Math.abs(a.after - a.before);
+    return deltaB - deltaA;
+  });
+  for (const [key, { before, after }] of sorted) {
+    const delta = after - before;
+    const sign = delta > 0 ? '+' : delta < 0 ? '' : ' ';
+    const deltaStr = delta !== 0
+      ? chalk.dim(` (${sign}${delta})`)
+      : '';
+    lines.push(`  ${chalk.yellow(key.padEnd(14))} ${String(before).padStart(3)} ${figures.arrowRight} ${String(after).padStart(3)}${deltaStr}`);
+  }
+  return lines;
+}
+
+/**
+ * Format a diff result for terminal display.
+ * @param {import('../diff.js').DiffResult} diff
+ * @returns {string}
+ */
+export function formatDiff(diff) {
+  const lines = [];
+
+  // Header
+  lines.push(chalk.bold(`Graph Diff: ${diff.from.sha}..${diff.to.sha}`));
+  lines.push(chalk.dim('═'.repeat(40)));
+
+  // Endpoints
+  const fmtEndpoint = (label, ep) => {
+    const shaStr = `commit ${chalk.cyan(ep.sha)}`;
+    const tickStr = `tick ${chalk.yellow(String(ep.tick))}`;
+    const nearestStr = ep.nearest
+      ? `  ${chalk.yellow(figures.warning)} nearest from ${chalk.dim(ep.ref)}`
+      : '';
+    return `${label}  ${shaStr}  ${tickStr}${nearestStr}`;
+  };
+  lines.push(fmtEndpoint('from', diff.from));
+  lines.push(fmtEndpoint('  to', diff.to));
+  lines.push('');
+
+  // Nodes
+  const na = diff.nodes.total.before;
+  const nb = diff.nodes.total.after;
+  const nAdded = diff.nodes.added.length;
+  const nRemoved = diff.nodes.removed.length;
+  lines.push(`${chalk.bold('Nodes:')} ${na} ${figures.arrowRight} ${nb} (+${nAdded}, -${nRemoved})`);
+
+  for (const id of diff.nodes.added) {
+    lines.push(`  ${chalk.green('+')} ${chalk.cyan(id)}`);
+  }
+  for (const id of diff.nodes.removed) {
+    lines.push(`  ${chalk.red('-')} ${chalk.cyan(id)}`);
+  }
+  if (nAdded === 0 && nRemoved === 0) {
+    lines.push(chalk.dim('  (no changes)'));
+  }
+  lines.push('');
+
+  // Edges
+  const ea = diff.edges.total.before;
+  const eb = diff.edges.total.after;
+  const eAdded = diff.edges.added.length;
+  const eRemoved = diff.edges.removed.length;
+  lines.push(`${chalk.bold('Edges:')} ${ea} ${figures.arrowRight} ${eb} (+${eAdded}, -${eRemoved})`);
+
+  for (const e of diff.edges.added) {
+    lines.push(`  ${chalk.green('+')} ${chalk.cyan(e.source)} ${chalk.dim('--[')}${chalk.yellow(e.type)}${chalk.dim(']-->')} ${chalk.cyan(e.target)}`);
+  }
+  for (const e of diff.edges.removed) {
+    lines.push(`  ${chalk.red('-')} ${chalk.cyan(e.source)} ${chalk.dim('--[')}${chalk.yellow(e.type)}${chalk.dim(']-->')} ${chalk.cyan(e.target)}`);
+  }
+  if (eAdded === 0 && eRemoved === 0) {
+    lines.push(chalk.dim('  (no changes)'));
+  }
+
+  // Summary tables
+  if (Object.keys(diff.summary.nodesByPrefix).length > 0) {
+    lines.push('');
+    lines.push(chalk.bold('By Prefix'));
+    lines.push(...renderDiffTable(diff.summary.nodesByPrefix));
+  }
+
+  if (Object.keys(diff.summary.edgesByType).length > 0) {
+    lines.push('');
+    lines.push(chalk.bold('By Type'));
+    lines.push(...renderDiffTable(diff.summary.edgesByType));
+  }
+
+  // Timing stats (debug only)
+  if (process.env.GITMIND_DEBUG) {
+    lines.push('');
+    lines.push(chalk.dim(`materialize: ${diff.stats.materializeMs.a}ms + ${diff.stats.materializeMs.b}ms  diff: ${diff.stats.diffMs}ms`));
+  }
+
+  return lines.join('\n');
+}
+
+/**
  * Format an import result for terminal display.
  * @param {import('../import.js').ImportResult} result
  * @returns {string}

@@ -41,3 +41,4 @@ export {
   getPendingSuggestions, acceptSuggestion, rejectSuggestion,
   adjustSuggestion, skipSuggestion, getReviewHistory, batchDecision,
 } from './review.js';
+export { computeDiff, diffSnapshots } from './diff.js';
