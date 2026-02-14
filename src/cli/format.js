@@ -77,6 +77,11 @@ export function formatEdge(edge) {
  * @returns {string}
  */
 export function formatView(viewName, result) {
+  // Progress view has its own formatter
+  if (result.meta?.summary && typeof result.meta.summary.pct === 'number') {
+    return formatProgressMeta(result.meta);
+  }
+
   const lines = [];
   lines.push(chalk.bold(`View: ${viewName}`));
   lines.push(`${chalk.dim(`${result.nodes.length} nodes, ${result.edges.length} edges`)}`);
@@ -459,6 +464,28 @@ export function formatDiff(diff) {
   if (process.env.GITMIND_DEBUG) {
     lines.push('');
     lines.push(chalk.dim(`materialize: ${diff.stats.materializeMs.a}ms + ${diff.stats.materializeMs.b}ms  diff: ${diff.stats.diffMs}ms`));
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Format progress view meta for terminal display.
+ * @param {object} meta - Progress view meta with summary + byStatus
+ * @returns {string}
+ */
+export function formatProgressMeta(meta) {
+  const { summary } = meta;
+  const lines = [];
+
+  lines.push(chalk.bold(`Progress: ${summary.pct}% (${summary.done}/${summary.total} done)`));
+  lines.push('');
+
+  const statuses = ['done', 'in-progress', 'todo', 'blocked', 'unknown'];
+  for (const s of statuses) {
+    const count = summary[s] ?? 0;
+    const label = s.padEnd(14);
+    lines.push(`  ${chalk.yellow(label)} ${String(count).padStart(3)}`);
   }
 
   return lines.join('\n');

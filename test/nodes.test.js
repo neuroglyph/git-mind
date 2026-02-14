@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
 import { createEdge } from '../src/edges.js';
-import { getNodes, hasNode, getNode, getNodesByPrefix } from '../src/nodes.js';
+import { getNodes, hasNode, getNode, getNodesByPrefix, setNodeProperty, unsetNodeProperty } from '../src/nodes.js';
 
 describe('nodes', () => {
   let tempDir;
@@ -152,6 +152,100 @@ describe('nodes', () => {
       expect(specs).toContain('spec:auth');
       expect(specs).toContain('spec:session');
       expect(specs.length).toBe(2);
+    });
+  });
+
+  describe('setNodeProperty', () => {
+    beforeEach(async () => {
+      await createEdge(graph, { source: 'task:auth', target: 'spec:auth', type: 'implements' });
+    });
+
+    it('sets a property and returns changed: true on first set', async () => {
+      const result = await setNodeProperty(graph, 'task:auth', 'status', 'done');
+      expect(result.id).toBe('task:auth');
+      expect(result.key).toBe('status');
+      expect(result.value).toBe('done');
+      expect(result.previous).toBeNull();
+      expect(result.changed).toBe(true);
+    });
+
+    it('property is visible via getNode after set', async () => {
+      await setNodeProperty(graph, 'task:auth', 'status', 'done');
+      const node = await getNode(graph, 'task:auth');
+      expect(node.properties.status).toBe('done');
+    });
+
+    it('returns previous value on overwrite', async () => {
+      await setNodeProperty(graph, 'task:auth', 'status', 'todo');
+      const result = await setNodeProperty(graph, 'task:auth', 'status', 'done');
+      expect(result.previous).toBe('todo');
+      expect(result.changed).toBe(true);
+    });
+
+    it('returns changed: false when setting same value (idempotent)', async () => {
+      await setNodeProperty(graph, 'task:auth', 'status', 'done');
+      const result = await setNodeProperty(graph, 'task:auth', 'status', 'done');
+      expect(result.changed).toBe(false);
+      expect(result.previous).toBe('done');
+    });
+
+    it('throws for non-existent node', async () => {
+      await expect(setNodeProperty(graph, 'task:nonexistent', 'status', 'done'))
+        .rejects.toThrow('Node not found: task:nonexistent');
+    });
+
+    it('throws for empty key', async () => {
+      await expect(setNodeProperty(graph, 'task:auth', '', 'done'))
+        .rejects.toThrow('Property key must be a non-empty string');
+    });
+
+    it('two rapid sets on same node yield deterministic LWW result', async () => {
+      await Promise.all([
+        setNodeProperty(graph, 'task:auth', 'status', 'in-progress'),
+        setNodeProperty(graph, 'task:auth', 'status', 'done'),
+      ]);
+      const node = await getNode(graph, 'task:auth');
+      // LWW: one of the two values wins deterministically
+      expect(['in-progress', 'done']).toContain(node.properties.status);
+    });
+  });
+
+  describe('unsetNodeProperty', () => {
+    beforeEach(async () => {
+      await createEdge(graph, { source: 'task:auth', target: 'spec:auth', type: 'implements' });
+    });
+
+    it('returns removed: true when property existed', async () => {
+      await setNodeProperty(graph, 'task:auth', 'status', 'done');
+      const result = await unsetNodeProperty(graph, 'task:auth', 'status');
+      expect(result.id).toBe('task:auth');
+      expect(result.key).toBe('status');
+      expect(result.previous).toBe('done');
+      expect(result.removed).toBe(true);
+    });
+
+    it('property is nullified after unset', async () => {
+      await setNodeProperty(graph, 'task:auth', 'status', 'done');
+      await unsetNodeProperty(graph, 'task:auth', 'status');
+      const node = await getNode(graph, 'task:auth');
+      // CRDT stores null for removed properties (LWW semantics)
+      expect(node.properties.status).toBeNull();
+    });
+
+    it('returns removed: false when property did not exist', async () => {
+      const result = await unsetNodeProperty(graph, 'task:auth', 'status');
+      expect(result.previous).toBeNull();
+      expect(result.removed).toBe(false);
+    });
+
+    it('throws for non-existent node', async () => {
+      await expect(unsetNodeProperty(graph, 'task:nonexistent', 'status'))
+        .rejects.toThrow('Node not found: task:nonexistent');
+    });
+
+    it('throws for empty key', async () => {
+      await expect(unsetNodeProperty(graph, 'task:auth', ''))
+        .rejects.toThrow('Property key must be a non-empty string');
     });
   });
 });

@@ -8,7 +8,7 @@ import { writeFile, chmod, access, constants } from 'node:fs/promises';
 import { join } from 'node:path';
 import { initGraph, loadGraph } from '../graph.js';
 import { createEdge, queryEdges, removeEdge, EDGE_TYPES } from '../edges.js';
-import { getNodes, hasNode, getNode, getNodesByPrefix } from '../nodes.js';
+import { getNodes, hasNode, getNode, getNodesByPrefix, setNodeProperty, unsetNodeProperty } from '../nodes.js';
 import { computeStatus } from '../status.js';
 import { importFile } from '../import.js';
 import { importFromMarkdown } from '../frontmatter.js';
@@ -78,8 +78,9 @@ export async function link(cwd, source, target, opts = {}) {
  * Render a named view.
  * @param {string} cwd
  * @param {string} viewName
+ * @param {{ scope?: string, json?: boolean }} opts
  */
-export async function view(cwd, viewName) {
+export async function view(cwd, viewName, opts = {}) {
   if (!viewName) {
     console.log(info(`Available views: ${listViews().join(', ')}`));
     return;
@@ -87,8 +88,20 @@ export async function view(cwd, viewName) {
 
   try {
     const graph = await loadGraph(cwd);
-    const result = await renderView(graph, viewName);
-    console.log(formatView(viewName, result));
+
+    // Build view-specific options from CLI flags
+    const viewOpts = {};
+    if (opts.scope) {
+      viewOpts.scope = opts.scope.split(',').map(s => s.trim());
+    }
+
+    const result = await renderView(graph, viewName, viewOpts);
+
+    if (opts.json) {
+      outputJson('view', { viewName, ...result });
+    } else {
+      console.log(formatView(viewName, result));
+    }
   } catch (err) {
     console.error(error(err.message));
     process.exitCode = 1;
@@ -602,6 +615,73 @@ export async function review(cwd, opts = {}) {
 
     console.log('');
     console.log(formatDecisionSummary({ processed: decisions.length, decisions }));
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Set a property on a node.
+ * @param {string} cwd
+ * @param {string} nodeId
+ * @param {string} key
+ * @param {string} value
+ * @param {{ json?: boolean }} opts
+ */
+export async function set(cwd, nodeId, key, value, opts = {}) {
+  if (!nodeId || !key || value === undefined) {
+    console.error(error('Usage: git mind set <nodeId> <key> <value>'));
+    process.exitCode = 1;
+    return;
+  }
+
+  try {
+    const graph = await loadGraph(cwd);
+    const result = await setNodeProperty(graph, nodeId, key, value);
+
+    if (opts.json) {
+      outputJson('set', result);
+    } else {
+      if (result.changed) {
+        console.log(success(`${nodeId}.${key} = ${value}`));
+      } else {
+        console.log(info(`${nodeId}.${key} = ${value} (unchanged)`));
+      }
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Remove a property from a node.
+ * @param {string} cwd
+ * @param {string} nodeId
+ * @param {string} key
+ * @param {{ json?: boolean }} opts
+ */
+export async function unsetCmd(cwd, nodeId, key, opts = {}) {
+  if (!nodeId || !key) {
+    console.error(error('Usage: git mind unset <nodeId> <key>'));
+    process.exitCode = 1;
+    return;
+  }
+
+  try {
+    const graph = await loadGraph(cwd);
+    const result = await unsetNodeProperty(graph, nodeId, key);
+
+    if (opts.json) {
+      outputJson('unset', result);
+    } else {
+      if (result.removed) {
+        console.log(success(`${nodeId}.${key} removed`));
+      } else {
+        console.log(info(`${nodeId}.${key} was not set`));
+      }
+    }
   } catch (err) {
     console.error(error(err.message));
     process.exitCode = 1;

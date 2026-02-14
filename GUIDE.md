@@ -178,11 +178,12 @@ Confidence answers the question: *how sure are we about this connection?*
 
 Views are filtered projections of the graph. Instead of looking at every node and edge, a view shows you only what's relevant to a particular question.
 
-git-mind ships with four built-in views:
+git-mind ships with built-in views:
 - **roadmap** — Phase and task nodes
 - **architecture** — Module nodes and dependency edges
 - **backlog** — Task nodes and their relationships
 - **suggestions** — Low-confidence edges that need review
+- **progress** — Task/feature completion grouped by `status` property
 
 You can also define custom views programmatically (see [Using git-mind as a library](#using-git-mind-as-a-library)).
 
@@ -254,6 +255,40 @@ git mind nodes --json                # JSON output
 | `--id <nodeId>` | Show details for a single node (prefix classification, properties) |
 | `--json` | Output as JSON |
 
+### `git mind set <nodeId> <key> <value>`
+
+Set a property on a node.
+
+```bash
+git mind set task:BDK-001 status done
+git mind set task:BDK-001 status done --json
+```
+
+Returns `changed: true` on first set, `changed: false` if the value is already set to the same thing (idempotent). The `--json` output includes the `previous` value for audit trails. `git mind set` treats `<value>` as a string in CLI usage.
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON (includes `previous`, `changed`) |
+
+### `git mind unset <nodeId> <key>`
+
+Remove a property from a node.
+
+```bash
+git mind unset task:BDK-001 status
+git mind unset task:BDK-001 status --json
+```
+
+Returns `removed: true` if the property was set, `removed: false` if it wasn't.
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON (includes `previous`, `removed`) |
+
 ### `git mind status`
 
 Show a health dashboard for the graph.
@@ -298,7 +333,17 @@ Render a named view, or list available views.
 git mind view              # list available views
 git mind view roadmap      # render the roadmap view
 git mind view architecture # render the architecture view
+git mind view progress --json                # structured JSON output
+git mind view progress --scope task          # only task: nodes
+git mind view progress --scope task,feature  # explicit default
 ```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--scope <prefixes>` | Comma-separated prefix filter (progress view only, default: `task,feature`) |
+| `--json` | Output as JSON (validated by `view-progress.schema.json` for the progress view) |
 
 ### `git mind at <ref>`
 
@@ -400,6 +445,41 @@ Shows all `task:` nodes and their relationships.
 #### `suggestions`
 
 Shows edges with confidence below 0.5 — connections that need human review.
+
+#### `progress`
+
+Groups `task:` and `feature:` nodes by their `status` property. Shows completion percentage.
+
+```bash
+git mind set task:auth status done
+git mind set task:deploy status in-progress
+git mind view progress
+# Progress: 50% (1/2 done)
+#
+#   done             1
+#   in-progress      1
+#   todo             0
+#   blocked          0
+#   unknown          0
+```
+
+Use `--scope` to narrow which prefixes count as work items:
+
+```bash
+git mind view progress --scope task           # only task: nodes
+git mind view progress --scope task,feature   # default behavior
+```
+
+Use `--json` for structured output (includes `ratio` and `remaining` in summary):
+
+```bash
+git mind view progress --json
+# { "meta": { "summary": { "ratio": "1/2", "remaining": 1, ... } } }
+```
+
+**Canonical status values:** `todo`, `in-progress`, `blocked`, `done`
+
+Status values are normalized on read — `Done`, `DONE`, `complete`, `finished` all map to `done`. `WIP`, `in_progress`, `inprogress` all map to `in-progress`. Unrecognized values appear as `unknown`.
 
 ### Custom views (programmatic)
 
@@ -650,8 +730,9 @@ import {
   initGraph, loadGraph, saveGraph,
   // Edge CRUD
   createEdge, queryEdges, removeEdge, EDGE_TYPES,
-  // Node queries
+  // Node queries + properties
   getNodes, hasNode, getNode, getNodesByPrefix,
+  setNodeProperty, unsetNodeProperty,
   // Status
   computeStatus,
   // Import
@@ -661,7 +742,7 @@ import {
   extractPrefix, classifyPrefix,
   NODE_ID_REGEX, NODE_ID_MAX_LENGTH, CANONICAL_PREFIXES, SYSTEM_PREFIXES,
   // Views
-  defineView, renderView, listViews,
+  defineView, renderView, listViews, classifyStatus,
   // Hooks
   parseDirectives, processCommit,
 } from '@neuroglyph/git-mind';

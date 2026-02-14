@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review, diff } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review, diff, set, unsetCmd } from '../src/cli/commands.js';
 import { parseDiffRefs, collectDiffPositionals } from '../src/diff.js';
 
 const args = process.argv.slice(2);
@@ -24,6 +24,8 @@ Commands:
   remove <source> <target>      Remove a semantic edge
     --type <type>               Edge type (default: relates-to)
   view [name]                   Show a named view (or list views)
+    --scope <prefixes>          Comma-separated prefix filter (progress view)
+    --json                      Output as JSON
   list                          List all edges
     --type <type>               Filter by edge type
     --source <node>             Filter by source node
@@ -31,6 +33,10 @@ Commands:
   nodes                         List and inspect nodes
     --prefix <prefix>           Filter by prefix (e.g. task, spec)
     --id <nodeId>               Show details for a single node
+    --json                      Output as JSON
+  set <nodeId> <key> <value>    Set a node property
+    --json                      Output as JSON
+  unset <nodeId> <key>          Remove a node property
     --json                      Output as JSON
   status                        Show graph health dashboard
     --json                      Output as JSON
@@ -114,9 +120,25 @@ switch (command) {
     break;
   }
 
-  case 'view':
-    await view(cwd, args[1]);
+  case 'view': {
+    const viewArgs = args.slice(1);
+    const viewFlags = parseFlags(viewArgs);
+    // Collect positionals: skip flags and their consumed values
+    const viewPositionals = [];
+    for (let i = 0; i < viewArgs.length; i++) {
+      if (viewArgs[i].startsWith('--')) {
+        const flag = viewArgs[i].slice(2);
+        if (!BOOLEAN_FLAGS.has(flag) && i + 1 < viewArgs.length) i++; // skip value
+      } else {
+        viewPositionals.push(viewArgs[i]);
+      }
+    }
+    await view(cwd, viewPositionals[0], {
+      scope: viewFlags.scope,
+      json: viewFlags.json ?? false,
+    });
     break;
+  }
 
   case 'remove': {
     const rmSource = args[1];
@@ -150,6 +172,31 @@ switch (command) {
       id: nodesFlags.id,
       json: jsonMode,
     });
+    break;
+  }
+
+  case 'set': {
+    const setNodeId = args[1];
+    const setKey = args[2];
+    const setValue = args[3];
+    if (!setNodeId || !setKey || setValue === undefined) {
+      console.error('Usage: git mind set <nodeId> <key> <value>');
+      process.exitCode = 1;
+      break;
+    }
+    await set(cwd, setNodeId, setKey, setValue, { json: args.includes('--json') });
+    break;
+  }
+
+  case 'unset': {
+    const unsetNodeId = args[1];
+    const unsetKey = args[2];
+    if (!unsetNodeId || !unsetKey) {
+      console.error('Usage: git mind unset <nodeId> <key>');
+      process.exitCode = 1;
+      break;
+    }
+    await unsetCmd(cwd, unsetNodeId, unsetKey, { json: args.includes('--json') });
     break;
   }
 

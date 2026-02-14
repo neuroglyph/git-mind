@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/unset.schema.json",
+  "title": "git-mind unset --json",
+  "description": "Output from `git mind unset <nodeId> <key> --json`",
+  "type": "object",
+  "required": ["schemaVersion", "command", "id", "key", "previous", "removed"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "command": { "type": "string", "const": "unset" },
+    "id": { "type": "string", "minLength": 1 },
+    "key": { "type": "string", "minLength": 1 },
+    "previous": {},
+    "removed": { "type": "boolean" }
+  }
+}
