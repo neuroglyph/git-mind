@@ -19,6 +19,7 @@
       "items": {
         "type": "object",
         "required": ["from", "to", "label"],
+        "additionalProperties": false,
         "properties": {
           "from": { "type": "string" },
           "to": { "type": "string" },
