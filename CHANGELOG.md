@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`schemaVersion: 1` and `command` fields in all `--json` outputs** — Every CLI command that supports `--json` now includes a `schemaVersion` (integer, currently `1`) and `command` (string) field in its output envelope. The CLI layer is authoritative via the `outputJson()` helper (#205)
+- **JSON Schema files** — 13 Draft 2020-12 JSON Schema files in `docs/contracts/cli/` for programmatic validation of every `--json` output. Strict `additionalProperties: false` at top level; open objects where extensibility is intentional (node properties, prefix maps) (#205)
+- **Contract validation tests** — `test/contracts.test.js` (17 unit tests) validates schema compilation, envelope requirements, sample payloads, and optional field handling. `test/contracts.integration.test.js` (7 CLI canary tests) executes the real binary and validates output against schemas using `ajv` (#205)
+- **CLI Contracts documentation** — `docs/contracts/CLI_CONTRACTS.md` with version policy, command-to-schema table, programmatic validation example, and migration guide (#205)
+
+### Breaking
+
+- **`nodes --json` output wrapped** — Previously returned a bare JSON array; now returns `{ schemaVersion: 1, command: "nodes", nodes: [...] }`. Migration: `jq '.[]'` → `jq '.nodes[]'` (#205)
+- **`review --json` output wrapped** — Previously returned a bare JSON array; now returns `{ schemaVersion: 1, command: "review", pending: [...] }`. Migration: `jq '.[].source'` → `jq '.pending[].source'` (#205)
+
+### Changed
+
+- **Test count** — 366 tests across 22 files (was 342 across 20)
+
 ## [2.0.0-alpha.5] - 2026-02-13
 
 ### Added

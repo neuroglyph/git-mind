@@ -624,12 +624,15 @@ git mind diff HEAD~5..HEAD --prefix module
 
 ### JSON output and versioning
 
-The `--json` output includes a `schemaVersion` field (currently `1`). Breaking changes to the JSON structure will increment this version, so downstream tools can detect incompatible output.
+All `--json` outputs include a standard envelope with `schemaVersion` (currently `1`) and `command` fields. Breaking changes to any JSON structure will increment `schemaVersion`, so downstream tools can detect incompatible output.
 
 ```bash
-git mind diff HEAD~5..HEAD --json | jq '.schemaVersion'
+git mind status --json | jq '.schemaVersion, .command'
 # 1
+# "status"
 ```
+
+JSON Schema files for every command are published in [`docs/contracts/cli/`](docs/contracts/CLI_CONTRACTS.md). See the [CLI Contracts guide](docs/contracts/CLI_CONTRACTS.md) for validation examples and migration notes.
 
 ### Nearest-epoch fallback
 
