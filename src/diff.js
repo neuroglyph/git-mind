@@ -237,6 +237,29 @@ export function parseDiffRefs(args) {
   return { refA: arg, refB: 'HEAD' };
 }
 
+/** Boolean flags that don't consume the next arg. */
+const DIFF_BOOLEAN_FLAGS = new Set(['json']);
+
+/**
+ * Collect positional args from a diff command's arg list,
+ * skipping --flag and their consumed values.
+ *
+ * @param {string[]} args - Args after the `diff` command word
+ * @returns {string[]} Positional (non-flag) arguments
+ */
+export function collectDiffPositionals(args) {
+  const positionals = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].startsWith('--')) {
+      const name = args[i].slice(2);
+      if (!DIFF_BOOLEAN_FLAGS.has(name)) i++; // skip the flag's value
+    } else {
+      positionals.push(args[i]);
+    }
+  }
+  return positionals;
+}
+
 /**
  * Full diff orchestrator: resolve epochs, materialize graphs, compute diff.
  *
@@ -291,6 +314,7 @@ export async function computeDiff(cwd, refA, refB, opts = {}) {
       edges: { added: [], removed: [], total: { before: 0, after: 0 } },
       summary: { nodesByPrefix: {}, edgesByType: {} },
       stats: {
+        sameTick: true,
         materializeMs: { a: 0, b: 0 },
         diffMs: 0,
         nodeCount: { a: 0, b: 0 },

@@ -6,7 +6,7 @@ import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
 import { createEdge } from '../src/edges.js';
 import { recordEpoch, getCurrentTick } from '../src/epoch.js';
-import { diffSnapshots, computeDiff, parseDiffRefs, compareEdge } from '../src/diff.js';
+import { diffSnapshots, computeDiff, parseDiffRefs, compareEdge, collectDiffPositionals } from '../src/diff.js';
 
 /**
  * Create two separate graph instances in separate temp repos.
@@ -345,6 +345,7 @@ describe('computeDiff', () => {
     expect(diff.nodes.removed).toHaveLength(0);
     expect(diff.edges.added).toHaveLength(0);
     expect(diff.edges.removed).toHaveLength(0);
+    expect(diff.stats.sameTick).toBe(true);
   });
 
   it('non-linear history: branch + merge with nearest fallback on one side', async () => {
@@ -418,6 +419,36 @@ describe('parseDiffRefs', () => {
 
   it('rejects empty input', () => {
     expect(() => parseDiffRefs([])).toThrow(/Usage/);
+  });
+
+  it('ignores extra positional args beyond two', () => {
+    // Two-arg takes first two, ignores rest
+    const result = parseDiffRefs(['A', 'B', 'C']);
+    expect(result).toEqual({ refA: 'A', refB: 'B' });
+  });
+});
+
+// ── collectDiffPositionals ────────────────────────────────────────
+
+describe('collectDiffPositionals', () => {
+  it('strips flag names and their values', () => {
+    const result = collectDiffPositionals(['HEAD~1..HEAD', '--prefix', 'task']);
+    expect(result).toEqual(['HEAD~1..HEAD']);
+  });
+
+  it('strips boolean flags without consuming next arg', () => {
+    const result = collectDiffPositionals(['HEAD~3..HEAD', '--json']);
+    expect(result).toEqual(['HEAD~3..HEAD']);
+  });
+
+  it('handles flag before positional args', () => {
+    const result = collectDiffPositionals(['--prefix', 'module', 'HEAD~5', 'HEAD']);
+    expect(result).toEqual(['HEAD~5', 'HEAD']);
+  });
+
+  it('returns all positionals when no flags present', () => {
+    const result = collectDiffPositionals(['abc123', 'def456']);
+    expect(result).toEqual(['abc123', 'def456']);
   });
 });
 

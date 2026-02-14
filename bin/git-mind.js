@@ -6,7 +6,7 @@
  */
 
 import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review, diff } from '../src/cli/commands.js';
-import { parseDiffRefs } from '../src/diff.js';
+import { parseDiffRefs, collectDiffPositionals } from '../src/diff.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -170,8 +170,7 @@ switch (command) {
 
   case 'diff': {
     const diffFlags = parseFlags(args.slice(1));
-    // Collect non-flag positional args
-    const diffPositionals = args.slice(1).filter(a => !a.startsWith('--'));
+    const diffPositionals = collectDiffPositionals(args.slice(1));
     try {
       const { refA, refB } = parseDiffRefs(diffPositionals);
       await diff(cwd, refA, refB, {

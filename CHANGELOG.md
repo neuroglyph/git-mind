@@ -12,9 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`git mind diff` command** — Compare the knowledge graph between two historical commits. Resolves git refs to epoch markers, materializes both snapshots, and reports node/edge additions and removals with summary tables. Supports range syntax (`A..B`), two-arg syntax (`A B`), and shorthand (`A` for `A..HEAD`). `--json` output includes `schemaVersion: 1` for forward compatibility. `--prefix` scopes the diff to a single node prefix (#203)
 - **Diff API** — `computeDiff(cwd, refA, refB, opts)` for full orchestration, `diffSnapshots(graphA, graphB, opts)` for pure snapshot comparison in `src/diff.js`. Both exported from public API (#203)
 
+### Fixed
+
+- **`--prefix` value leaks into positional args** — `git mind diff HEAD~1..HEAD --prefix task` incorrectly treated `task` as a second ref argument. Extracted `collectDiffPositionals()` helper that skips flag values consumed by non-boolean flags (#203)
+- **Same-tick shortcut reports zero totals** — When both refs resolve to the same Lamport tick, `computeDiff` returned `total: { before: 0, after: 0 }` which misrepresents an unchanged graph as empty. Now includes `stats.sameTick: true` so JSON consumers can distinguish "unchanged" from "empty graph" (#203)
+
 ### Changed
 
-- **Test count** — 337 tests across 20 files (was 312 across 19)
+- **Test count** — 342 tests across 20 files (was 312 across 19)
 
 ## [2.0.0-alpha.4] - 2026-02-13
 
