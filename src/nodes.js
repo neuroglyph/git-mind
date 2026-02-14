@@ -91,10 +91,14 @@ export async function getNodesByPrefix(graph, prefix) {
  * Set a property on an existing node.
  * Idempotent — setting the same value returns { changed: false }.
  *
+ * Note: idempotency uses strict equality (===). The CLI always passes string
+ * values; callers using structured values (objects/arrays) will always see
+ * changed: true since === compares by reference.
+ *
  * @param {import('@git-stunts/git-warp').default} graph
  * @param {string} id - Node ID
  * @param {string} key - Property key (non-empty)
- * @param {unknown} value - Property value
+ * @param {unknown} value - Property value (string in CLI usage)
  * @returns {Promise<SetPropertyResult>}
  */
 export async function setNodeProperty(graph, id, key, value) {
