@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`formatView` uses explicit view name** — Progress view routing now checks `viewName === 'progress'` instead of duck-typing `meta.summary.pct` (#222)
 - **`set` command rejects flags as values** — `git mind set task:a status --json` now errors instead of storing `"--json"` as the property value (#222)
 - **Same-tick diff shortcut marks result as skipped** — `stats.skipped: true` and `total: null` distinguish "graph unchanged" from "empty graph" (#222)
+- **`formatProgressMeta` shows remaining count** — Terminal header now reads `Progress: 60% (3/5 done, 2 remaining)` (#222)
+- **`DiffResult` typedef nullable totals** — JSDoc updated: `nodes.total` and `edges.total` are `{ before, after } | null` when diff is skipped (#222)
 - **Test count** — 412 tests across 22 files (was 371)
 
 ## [3.0.0] - 2026-02-13
