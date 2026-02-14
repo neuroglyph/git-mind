@@ -412,6 +412,12 @@ export function formatDiff(diff) {
   lines.push(fmtEndpoint('  to', diff.to));
   lines.push('');
 
+  // Skipped shortcut: same tick, no materialization performed
+  if (diff.stats?.skipped) {
+    lines.push(chalk.dim('  Same Lamport tick — graph unchanged, diff skipped.'));
+    return lines.join('\n');
+  }
+
   // Nodes
   const na = diff.nodes.total.before;
   const nb = diff.nodes.total.after;

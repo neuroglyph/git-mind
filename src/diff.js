@@ -294,7 +294,7 @@ export async function computeDiff(cwd, refA, refB, opts = {}) {
   const tickA = resultA.epoch.tick;
   const tickB = resultB.epoch.tick;
 
-  // Same tick → empty diff
+  // Same tick → skipped diff (not computed, graph unchanged)
   if (tickA === tickB) {
     return {
       schemaVersion: 1,
@@ -310,11 +310,12 @@ export async function computeDiff(cwd, refA, refB, opts = {}) {
         tick: tickB,
         nearest: resultB.epoch.nearest ?? false,
       },
-      nodes: { added: [], removed: [], total: { before: 0, after: 0 } },
-      edges: { added: [], removed: [], total: { before: 0, after: 0 } },
+      nodes: { added: [], removed: [], total: null },
+      edges: { added: [], removed: [], total: null },
       summary: { nodesByPrefix: {}, edgesByType: {} },
       stats: {
         sameTick: true,
+        skipped: true,
         materializeMs: { a: 0, b: 0 },
         diffMs: 0,
         nodeCount: { a: 0, b: 0 },

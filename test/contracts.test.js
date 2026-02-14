@@ -327,6 +327,16 @@ describe('CLI JSON Schema contracts', () => {
       expect(validate(sample)).toBe(true);
     });
 
+    it('diff schema accepts skipped diff with null totals', () => {
+      const sample = structuredClone(VALID_SAMPLES['diff.schema.json']);
+      sample.stats.sameTick = true;
+      sample.stats.skipped = true;
+      sample.nodes.total = null;
+      sample.edges.total = null;
+      const validate = validators.get('diff.schema.json');
+      expect(validate(sample)).toBe(true);
+    });
+
     it('import schema allows missing dryRun (optional)', () => {
       const sample = structuredClone(VALID_SAMPLES['import.schema.json']);
       delete sample.dryRun;
