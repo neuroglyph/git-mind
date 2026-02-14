@@ -9,7 +9,7 @@ import { existsSync } from 'node:fs';
 import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { execSync, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import Ajv from 'ajv/dist/2020.js';
 
 const BIN = join(import.meta.dirname, '..', 'bin', 'git-mind.js');
@@ -53,9 +53,9 @@ describe('CLI schema contract canaries', () => {
 
     // Create a temp repo with seeded graph data
     tempDir = await mkdtemp(join(tmpdir(), 'gitmind-contract-'));
-    execSync('git init', { cwd: tempDir, stdio: 'ignore' });
-    execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'ignore' });
-    execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'ignore' });
+    execFileSync('git', ['init'], { cwd: tempDir, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.email', 'test@test.com'], { cwd: tempDir, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.name', 'Test'], { cwd: tempDir, stdio: 'ignore' });
 
     // Initialize graph
     execFileSync(process.execPath, [BIN, 'init'], { cwd: tempDir, stdio: 'ignore' });
@@ -81,12 +81,12 @@ describe('CLI schema contract canaries', () => {
 
     // Create a second repo for merge testing
     mergeDir = await mkdtemp(join(tmpdir(), 'gitmind-merge-'));
-    execSync('git init', { cwd: mergeDir, stdio: 'ignore' });
-    execSync('git config user.email "test@test.com"', { cwd: mergeDir, stdio: 'ignore' });
-    execSync('git config user.name "Test"', { cwd: mergeDir, stdio: 'ignore' });
+    execFileSync('git', ['init'], { cwd: mergeDir, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.email', 'test@test.com'], { cwd: mergeDir, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.name', 'Test'], { cwd: mergeDir, stdio: 'ignore' });
     execFileSync(process.execPath, [BIN, 'init'], { cwd: mergeDir, stdio: 'ignore' });
     execFileSync(process.execPath, [BIN, 'import', FIXTURE], { cwd: mergeDir, stdio: 'ignore' });
-  });
+  }, 30_000);
 
   afterAll(async () => {
     if (tempDir) await rm(tempDir, { recursive: true, force: true });
