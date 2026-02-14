@@ -484,7 +484,8 @@ export function formatProgressMeta(meta) {
   const { summary } = meta;
   const lines = [];
 
-  lines.push(chalk.bold(`Progress: ${summary.pct}% (${summary.done}/${summary.total} done)`));
+  const remaining = summary.remaining ?? (summary.total - summary.done);
+  lines.push(chalk.bold(`Progress: ${summary.pct}% (${summary.done}/${summary.total} done, ${remaining} remaining)`));
   lines.push('');
 
   const statuses = ['done', 'in-progress', 'todo', 'blocked', 'unknown'];
