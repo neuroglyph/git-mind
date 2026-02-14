@@ -23,7 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **`renderView` passes node properties and options** — View filter functions receive a third `nodeProps` argument and fourth `options` argument. Only properties fetched when the view declares `needsProperties: true`, so existing views have zero overhead (#222)
-- **Test count** — 411 tests across 22 files (was 371)
+- **`ViewDefinition` typedef updated** — `filterFn` signature now reflects all four parameters (`nodes`, `edges`, `nodeProps`, `options`) and the `needsProperties` option (#222)
+- **`formatView` uses explicit view name** — Progress view routing now checks `viewName === 'progress'` instead of duck-typing `meta.summary.pct` (#222)
+- **`set` command rejects flags as values** — `git mind set task:a status --json` now errors instead of storing `"--json"` as the property value (#222)
+- **Same-tick diff shortcut marks result as skipped** — `stats.skipped: true` and `total: null` distinguish "graph unchanged" from "empty graph" (#222)
+- **Test count** — 412 tests across 22 files (was 371)
 
 ## [3.0.0] - 2026-02-13
 
