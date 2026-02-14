@@ -303,9 +303,8 @@ describe('CLI schema contract canaries', () => {
     // Set a status on a known node so progress has data
     const listOutput = runCli(['nodes', '--json'], tempDir);
     const taskNode = listOutput.nodes.find(n => n.startsWith('task:'));
-    if (taskNode) {
-      runCli(['set', taskNode, 'status', 'done', '--json'], tempDir);
-    }
+    expect(taskNode, 'seed fixture must include at least one task: node').toBeDefined();
+    runCli(['set', taskNode, 'status', 'done', '--json'], tempDir);
 
     const schema = await loadSchema('view-progress.schema.json');
     const output = runCli(['view', 'progress', '--json'], tempDir);
