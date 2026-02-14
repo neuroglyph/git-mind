@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-02-14
+
+### Added
+
+- **`git mind set <nodeId> <key> <value>` command** — Set node properties directly from the CLI. Returns `previous` value and `changed` boolean for idempotent automation. Supports `--json` output (#222)
+- **`git mind unset <nodeId> <key>` command** — Remove a node property. Returns `previous` value and `removed` boolean. Supports `--json` output (#222)
+- **`setNodeProperty()` + `unsetNodeProperty()` API** — Programmatic node property CRUD in `src/nodes.js`, exported from public API (#222)
+- **`classifyStatus()` helper** — Normalizes status values with synonym mapping (`WIP` → `in-progress`, `Done` → `done`, etc.). Canonical values: `todo`, `in-progress`, `blocked`, `done`. Exported from `src/views.js` and public API (#222)
+- **`progress` view** — Groups `task:` and `feature:` nodes by `status` property, shows completion percentage and per-status counts. Uses `classifyStatus()` for synonym normalization (#222)
+- **JSON Schema contracts** — `set.schema.json`, `unset.schema.json`, and `view-progress.schema.json` in `docs/contracts/cli/` with integration canary tests (#222)
+- **`--json` flag for `view` command** — `git mind view progress --json` returns structured output validated against `view-progress.schema.json` (#222)
+- **`--scope` flag for `view progress`** — `git mind view progress --scope task` filters by prefix. Default scope: `task,feature` (#222)
+- **`ratio` and `remaining` in progress summary** — `meta.summary` now includes `ratio` (e.g. `"3/5"`) and `remaining` count for JSON consumers (#222)
+- **Sorted progress bucket IDs** — `meta.byStatus` arrays are alphabetically sorted for deterministic output (#222)
+
+### Changed
+
+- **`renderView` passes node properties and options** — View filter functions receive a third `nodeProps` argument and fourth `options` argument. Only properties fetched when the view declares `needsProperties: true`, so existing views have zero overhead (#222)
+- **`ViewDefinition` typedef updated** — `filterFn` signature now reflects all four parameters (`nodes`, `edges`, `nodeProps`, `options`) and the `needsProperties` option (#222)
+- **`formatView` uses explicit view name** — Progress view routing now checks `viewName === 'progress'` instead of duck-typing `meta.summary.pct` (#222)
+- **`set` command rejects flags as values** — `git mind set task:a status --json` now errors instead of storing `"--json"` as the property value (#222)
+- **Same-tick diff shortcut marks result as skipped** — `stats.skipped: true` and `total: null` distinguish "graph unchanged" from "empty graph" (#222)
+- **`formatProgressMeta` shows remaining count** — Terminal header now reads `Progress: 60% (3/5 done, 2 remaining)` (#222)
+- **`DiffResult` typedef nullable totals** — JSDoc updated: `nodes.total` and `edges.total` are `{ before, after } | null` when diff is skipped (#222)
+- **Test count** — 412 tests across 22 files (was 371)
+
 ## [3.0.0] - 2026-02-13
 
 ### Added
@@ -237,6 +263,7 @@ Complete rewrite from C23 to Node.js on `@git-stunts/git-warp`.
 - Docker-based CI/CD
 - All C-specific documentation
 
+[3.1.0]: https://github.com/neuroglyph/git-mind/releases/tag/v3.1.0
 [3.0.0]: https://github.com/neuroglyph/git-mind/releases/tag/v3.0.0
 [2.0.0-alpha.5]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.5
 [2.0.0-alpha.4]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.4

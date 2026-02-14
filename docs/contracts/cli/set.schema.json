@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/set.schema.json",
+  "title": "git-mind set --json",
+  "description": "Output from `git mind set <nodeId> <key> <value> --json`",
+  "type": "object",
+  "required": ["schemaVersion", "command", "id", "key", "value", "previous", "changed"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "command": { "type": "string", "const": "set" },
+    "id": { "type": "string", "minLength": 1 },
+    "key": { "type": "string", "minLength": 1 },
+    "value": {},
+    "previous": {},
+    "changed": { "type": "boolean" }
+  }
+}

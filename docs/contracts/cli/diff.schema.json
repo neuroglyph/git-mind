@@ -19,13 +19,18 @@
         "added": { "type": "array", "items": { "type": "string" } },
         "removed": { "type": "array", "items": { "type": "string" } },
         "total": {
-          "type": "object",
-          "required": ["before", "after"],
-          "additionalProperties": false,
-          "properties": {
-            "before": { "type": "integer", "minimum": 0 },
-            "after": { "type": "integer", "minimum": 0 }
-          }
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["before", "after"],
+              "additionalProperties": false,
+              "properties": {
+                "before": { "type": "integer", "minimum": 0 },
+                "after": { "type": "integer", "minimum": 0 }
+              }
+            }
+          ]
         }
       }
     },
@@ -43,13 +48,18 @@
           "items": { "$ref": "#/$defs/edgeDiffEntry" }
         },
         "total": {
-          "type": "object",
-          "required": ["before", "after"],
-          "additionalProperties": false,
-          "properties": {
-            "before": { "type": "integer", "minimum": 0 },
-            "after": { "type": "integer", "minimum": 0 }
-          }
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["before", "after"],
+              "additionalProperties": false,
+              "properties": {
+                "before": { "type": "integer", "minimum": 0 },
+                "after": { "type": "integer", "minimum": 0 }
+              }
+            }
+          ]
         }
       }
     },
@@ -90,6 +100,7 @@
       "additionalProperties": false,
       "properties": {
         "sameTick": { "type": "boolean" },
+        "skipped": { "type": "boolean" },
         "materializeMs": {
           "type": "object",
           "required": ["a", "b"],

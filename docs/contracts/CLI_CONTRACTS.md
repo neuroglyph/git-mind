@@ -41,6 +41,9 @@ Every `--json` output from the git-mind CLI includes a standard envelope:
 | `review --json` | [`review-list.schema.json`](cli/review-list.schema.json) |
 | `review --batch --json` | [`review-batch.schema.json`](cli/review-batch.schema.json) |
 | `diff <ref-a>..<ref-b> --json` | [`diff.schema.json`](cli/diff.schema.json) |
+| `set <nodeId> <key> <value> --json` | [`set.schema.json`](cli/set.schema.json) |
+| `unset <nodeId> <key> --json` | [`unset.schema.json`](cli/unset.schema.json) |
+| `view progress --json` | [`view-progress.schema.json`](cli/view-progress.schema.json) |
 
 > **Note:** `nodes --id` and `nodes` (list) both emit `"command": "nodes"`. To select the correct schema, check for a top-level `id` field (node-detail) vs. a `nodes` array (node-list).
 

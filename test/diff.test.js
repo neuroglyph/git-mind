@@ -338,14 +338,17 @@ describe('computeDiff', () => {
     const sha = execSync('git rev-parse HEAD', { cwd: tempDir, encoding: 'utf-8' }).trim();
     await recordEpoch(graph, sha, tick);
 
-    // Both refs point to same commit → same tick → empty diff
+    // Both refs point to same commit → same tick → skipped diff
     const diff = await computeDiff(tempDir, 'HEAD', 'HEAD');
 
     expect(diff.nodes.added).toHaveLength(0);
     expect(diff.nodes.removed).toHaveLength(0);
+    expect(diff.nodes.total).toBeNull();
     expect(diff.edges.added).toHaveLength(0);
     expect(diff.edges.removed).toHaveLength(0);
+    expect(diff.edges.total).toBeNull();
     expect(diff.stats.sameTick).toBe(true);
+    expect(diff.stats.skipped).toBe(true);
   });
 
   it('non-linear history: branch + merge with nearest fallback on one side', async () => {

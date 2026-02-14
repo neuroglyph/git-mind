@@ -154,6 +154,50 @@ const VALID_SAMPLES = {
       edgeCount: { a: 3, b: 3 },
     },
   },
+  'set.schema.json': {
+    schemaVersion: 1,
+    command: 'set',
+    id: 'task:BDK-001',
+    key: 'status',
+    value: 'done',
+    previous: null,
+    changed: true,
+  },
+  'unset.schema.json': {
+    schemaVersion: 1,
+    command: 'unset',
+    id: 'task:BDK-001',
+    key: 'status',
+    previous: 'done',
+    removed: true,
+  },
+  'view-progress.schema.json': {
+    schemaVersion: 1,
+    command: 'view',
+    viewName: 'progress',
+    nodes: ['task:a', 'task:b'],
+    edges: [{ from: 'task:a', to: 'task:b', label: 'blocks' }],
+    meta: {
+      byStatus: {
+        'done': ['task:a'],
+        'in-progress': [],
+        'todo': ['task:b'],
+        'blocked': [],
+        'unknown': [],
+      },
+      summary: {
+        total: 2,
+        done: 1,
+        'in-progress': 0,
+        todo: 1,
+        blocked: 0,
+        unknown: 0,
+        pct: 50,
+        ratio: '1/2',
+        remaining: 1,
+      },
+    },
+  },
 };
 
 describe('CLI JSON Schema contracts', () => {
@@ -279,6 +323,16 @@ describe('CLI JSON Schema contracts', () => {
     it('diff schema accepts sameTick in stats', () => {
       const sample = structuredClone(VALID_SAMPLES['diff.schema.json']);
       sample.stats.sameTick = true;
+      const validate = validators.get('diff.schema.json');
+      expect(validate(sample)).toBe(true);
+    });
+
+    it('diff schema accepts skipped diff with null totals', () => {
+      const sample = structuredClone(VALID_SAMPLES['diff.schema.json']);
+      sample.stats.sameTick = true;
+      sample.stats.skipped = true;
+      sample.nodes.total = null;
+      sample.edges.total = null;
       const validate = validators.get('diff.schema.json');
       expect(validate(sample)).toBe(true);
     });

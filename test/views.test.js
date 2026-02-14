@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
 import { createEdge } from '../src/edges.js';
-import { renderView, listViews, defineView, declareView, resetViews } from '../src/views.js';
+import { renderView, listViews, defineView, declareView, resetViews, classifyStatus } from '../src/views.js';
+import { setNodeProperty } from '../src/nodes.js';
 
 describe('views', () => {
   let tempDir;
@@ -35,6 +36,7 @@ describe('views', () => {
     expect(views).toContain('blockers');
     expect(views).toContain('onboarding');
     expect(views).toContain('coverage');
+    expect(views).toContain('progress');
   });
 
   it('renderView throws for unknown views', async () => {
@@ -369,6 +371,188 @@ describe('views', () => {
       const result = await renderView(graph, 'coverage');
       expect(result.meta.linked).toContain('module:auth');
       expect(result.meta.unlinked).toContain('pkg:utils');
+    });
+  });
+
+  // ── classifyStatus ──────────────────────────────────────────────
+
+  describe('classifyStatus', () => {
+    it('normalizes "Done" to "done"', () => {
+      expect(classifyStatus('Done')).toBe('done');
+    });
+
+    it('normalizes "DONE" to "done"', () => {
+      expect(classifyStatus('DONE')).toBe('done');
+    });
+
+    it('maps "in_progress" to "in-progress"', () => {
+      expect(classifyStatus('in_progress')).toBe('in-progress');
+    });
+
+    it('maps "WIP" to "in-progress"', () => {
+      expect(classifyStatus('WIP')).toBe('in-progress');
+    });
+
+    it('maps "inprogress" to "in-progress"', () => {
+      expect(classifyStatus('inprogress')).toBe('in-progress');
+    });
+
+    it('maps "complete" to "done"', () => {
+      expect(classifyStatus('complete')).toBe('done');
+    });
+
+    it('maps "completed" to "done"', () => {
+      expect(classifyStatus('completed')).toBe('done');
+    });
+
+    it('maps "finished" to "done"', () => {
+      expect(classifyStatus('finished')).toBe('done');
+    });
+
+    it('trims whitespace: " done " → "done"', () => {
+      expect(classifyStatus(' done ')).toBe('done');
+    });
+
+    it('returns "unknown" for non-string values', () => {
+      expect(classifyStatus(42)).toBe('unknown');
+      expect(classifyStatus(null)).toBe('unknown');
+      expect(classifyStatus(undefined)).toBe('unknown');
+    });
+
+    it('returns "unknown" for unrecognized strings', () => {
+      expect(classifyStatus('banana')).toBe('unknown');
+    });
+
+    it('passes through valid statuses', () => {
+      expect(classifyStatus('done')).toBe('done');
+      expect(classifyStatus('in-progress')).toBe('in-progress');
+      expect(classifyStatus('todo')).toBe('todo');
+      expect(classifyStatus('blocked')).toBe('blocked');
+    });
+  });
+
+  // ── progress view ──────────────────────────────────────────────
+
+  describe('progress view', () => {
+    it('groups nodes by status property', async () => {
+      await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'blocks' });
+      await createEdge(graph, { source: 'task:c', target: 'task:d', type: 'blocks' });
+      await setNodeProperty(graph, 'task:a', 'status', 'done');
+      await setNodeProperty(graph, 'task:b', 'status', 'in-progress');
+      await setNodeProperty(graph, 'task:c', 'status', 'todo');
+      // task:d has no status
+
+      const result = await renderView(graph, 'progress');
+      expect(result.meta.byStatus['done']).toContain('task:a');
+      expect(result.meta.byStatus['in-progress']).toContain('task:b');
+      expect(result.meta.byStatus['todo']).toContain('task:c');
+      expect(result.meta.byStatus['unknown']).toContain('task:d');
+    });
+
+    it('computes correct percentage', async () => {
+      await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'blocks' });
+      await setNodeProperty(graph, 'task:a', 'status', 'done');
+
+      const result = await renderView(graph, 'progress');
+      expect(result.meta.summary.total).toBe(2);
+      expect(result.meta.summary.done).toBe(1);
+      expect(result.meta.summary.pct).toBe(50);
+    });
+
+    it('returns pct: 0 for empty graph', async () => {
+      const result = await renderView(graph, 'progress');
+      expect(result.meta.summary.total).toBe(0);
+      expect(result.meta.summary.pct).toBe(0);
+    });
+
+    it('includes feature: nodes alongside task: nodes', async () => {
+      await createEdge(graph, { source: 'feature:login', target: 'task:auth', type: 'relates-to' });
+      await setNodeProperty(graph, 'feature:login', 'status', 'done');
+
+      const result = await renderView(graph, 'progress');
+      expect(result.nodes).toContain('feature:login');
+      expect(result.nodes).toContain('task:auth');
+      expect(result.meta.byStatus['done']).toContain('feature:login');
+    });
+
+    it('normalizes status synonyms', async () => {
+      await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'relates-to' });
+      await setNodeProperty(graph, 'task:a', 'status', 'WIP');
+      await setNodeProperty(graph, 'task:b', 'status', 'Completed');
+
+      const result = await renderView(graph, 'progress');
+      expect(result.meta.byStatus['in-progress']).toContain('task:a');
+      expect(result.meta.byStatus['done']).toContain('task:b');
+    });
+
+    it('excludes non-task/non-feature nodes', async () => {
+      await createEdge(graph, { source: 'spec:auth', target: 'task:a', type: 'implements' });
+      await setNodeProperty(graph, 'spec:auth', 'status', 'done');
+
+      const result = await renderView(graph, 'progress');
+      expect(result.nodes).not.toContain('spec:auth');
+      expect(result.nodes).toContain('task:a');
+    });
+
+    it('sorts IDs alphabetically within each status bucket', async () => {
+      await createEdge(graph, { source: 'task:zebra', target: 'task:alpha', type: 'relates-to' });
+      await createEdge(graph, { source: 'task:mango', target: 'task:banana', type: 'relates-to' });
+      await setNodeProperty(graph, 'task:zebra', 'status', 'done');
+      await setNodeProperty(graph, 'task:alpha', 'status', 'done');
+      await setNodeProperty(graph, 'task:mango', 'status', 'todo');
+      await setNodeProperty(graph, 'task:banana', 'status', 'todo');
+
+      const result = await renderView(graph, 'progress');
+      expect(result.meta.byStatus['done']).toEqual(['task:alpha', 'task:zebra']);
+      expect(result.meta.byStatus['todo']).toEqual(['task:banana', 'task:mango']);
+    });
+
+    it('includes ratio and remaining in summary', async () => {
+      await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'blocks' });
+      await createEdge(graph, { source: 'task:c', target: 'task:d', type: 'blocks' });
+      await setNodeProperty(graph, 'task:a', 'status', 'done');
+
+      const result = await renderView(graph, 'progress');
+      expect(result.meta.summary.ratio).toBe('1/4');
+      expect(result.meta.summary.remaining).toBe(3);
+    });
+
+    it('ratio and remaining are correct for empty graph', async () => {
+      const result = await renderView(graph, 'progress');
+      expect(result.meta.summary.ratio).toBe('0/0');
+      expect(result.meta.summary.remaining).toBe(0);
+    });
+
+    it('progress view with scope=[task] excludes feature: nodes', async () => {
+      await createEdge(graph, { source: 'feature:login', target: 'task:auth', type: 'relates-to' });
+      await setNodeProperty(graph, 'feature:login', 'status', 'done');
+      await setNodeProperty(graph, 'task:auth', 'status', 'done');
+
+      const result = await renderView(graph, 'progress', { scope: ['task'] });
+      expect(result.nodes).toContain('task:auth');
+      expect(result.nodes).not.toContain('feature:login');
+      expect(result.meta.summary.total).toBe(1);
+    });
+
+    it('progress view with default scope includes both task and feature', async () => {
+      await createEdge(graph, { source: 'feature:login', target: 'task:auth', type: 'relates-to' });
+
+      const result = await renderView(graph, 'progress');
+      expect(result.nodes).toContain('feature:login');
+      expect(result.nodes).toContain('task:auth');
+    });
+
+    it('renderView forwards options to view filterFn', async () => {
+      await createEdge(graph, { source: 'feature:x', target: 'task:y', type: 'relates-to' });
+      await setNodeProperty(graph, 'feature:x', 'status', 'todo');
+      await setNodeProperty(graph, 'task:y', 'status', 'todo');
+
+      const scoped = await renderView(graph, 'progress', { scope: ['feature'] });
+      expect(scoped.nodes).toEqual(['feature:x']);
+      expect(scoped.meta.summary.total).toBe(1);
+
+      const unscoped = await renderView(graph, 'progress');
+      expect(unscoped.meta.summary.total).toBe(2);
     });
   });
 });

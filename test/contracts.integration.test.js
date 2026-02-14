@@ -245,6 +245,80 @@ describe('CLI schema contract canaries', () => {
     expect(validate(output), JSON.stringify(validate.errors)).toBe(true);
   });
 
+  it('set --json validates against set.schema.json', async () => {
+    // First, find a known node to set a property on
+    const listOutput = runCli(['nodes', '--json'], tempDir);
+    expect(listOutput.nodes.length).toBeGreaterThan(0);
+    const knownId = listOutput.nodes[0];
+
+    const schema = await loadSchema('set.schema.json');
+    const output = runCli(['set', knownId, 'status', 'done', '--json'], tempDir);
+
+    expect(output.schemaVersion).toBe(1);
+    expect(output.command).toBe('set');
+    expect(output.id).toBe(knownId);
+    expect(output.key).toBe('status');
+    expect(output.value).toBe('done');
+    expect(typeof output.changed).toBe('boolean');
+
+    const validate = ajv.compile(schema);
+    expect(validate(output), JSON.stringify(validate.errors)).toBe(true);
+  });
+
+  it('set --json returns changed: false on idempotent re-set', async () => {
+    const listOutput = runCli(['nodes', '--json'], tempDir);
+    const knownId = listOutput.nodes[0];
+
+    // First set (may or may not change depending on previous test)
+    runCli(['set', knownId, 'status', 'done', '--json'], tempDir);
+    // Second set — should be idempotent
+    const output = runCli(['set', knownId, 'status', 'done', '--json'], tempDir);
+
+    expect(output.changed).toBe(false);
+    expect(output.previous).toBe('done');
+  });
+
+  it('unset --json validates against unset.schema.json', async () => {
+    const listOutput = runCli(['nodes', '--json'], tempDir);
+    const knownId = listOutput.nodes[0];
+
+    // Ensure the property is set first
+    runCli(['set', knownId, 'test-key', 'test-value', '--json'], tempDir);
+
+    const schema = await loadSchema('unset.schema.json');
+    const output = runCli(['unset', knownId, 'test-key', '--json'], tempDir);
+
+    expect(output.schemaVersion).toBe(1);
+    expect(output.command).toBe('unset');
+    expect(output.id).toBe(knownId);
+    expect(output.key).toBe('test-key');
+    expect(output.previous).toBe('test-value');
+    expect(output.removed).toBe(true);
+
+    const validate = ajv.compile(schema);
+    expect(validate(output), JSON.stringify(validate.errors)).toBe(true);
+  });
+
+  it('view progress --json validates against view-progress.schema.json', async () => {
+    // Set a status on a known node so progress has data
+    const listOutput = runCli(['nodes', '--json'], tempDir);
+    const taskNode = listOutput.nodes.find(n => n.startsWith('task:'));
+    expect(taskNode, 'seed fixture must include at least one task: node').toBeDefined();
+    runCli(['set', taskNode, 'status', 'done', '--json'], tempDir);
+
+    const schema = await loadSchema('view-progress.schema.json');
+    const output = runCli(['view', 'progress', '--json'], tempDir);
+
+    expect(output.schemaVersion).toBe(1);
+    expect(output.command).toBe('view');
+    expect(output.viewName).toBe('progress');
+    expect(output.meta.summary.ratio).toMatch(/^\d+\/\d+$/);
+    expect(typeof output.meta.summary.remaining).toBe('number');
+
+    const validate = ajv.compile(schema);
+    expect(validate(output), JSON.stringify(validate.errors)).toBe(true);
+  });
+
   // Note: suggest --json is not tested here because it requires a configured
   // GITMIND_AGENT (LLM command) which is unavailable in CI/test environments.
 });

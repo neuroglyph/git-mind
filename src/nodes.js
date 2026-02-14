@@ -77,3 +77,89 @@ export async function getNodesByPrefix(graph, prefix) {
   const needle = prefix + ':';
   return nodes.filter(n => n.startsWith(needle));
 }
+
+/**
+ * @typedef {object} SetPropertyResult
+ * @property {string} id - Node ID
+ * @property {string} key - Property key
+ * @property {unknown} value - New property value
+ * @property {unknown} previous - Previous value (null if unset)
+ * @property {boolean} changed - Whether the value actually changed
+ */
+
+/**
+ * Set a property on an existing node.
+ * Idempotent — setting the same value returns { changed: false }.
+ *
+ * Note: idempotency uses strict equality (===). The CLI always passes string
+ * values; callers using structured values (objects/arrays) will always see
+ * changed: true since === compares by reference.
+ *
+ * @param {import('@git-stunts/git-warp').default} graph
+ * @param {string} id - Node ID
+ * @param {string} key - Property key (non-empty)
+ * @param {unknown} value - Property value (string in CLI usage)
+ * @returns {Promise<SetPropertyResult>}
+ */
+export async function setNodeProperty(graph, id, key, value) {
+  if (!key || typeof key !== 'string') {
+    throw new Error('Property key must be a non-empty string');
+  }
+
+  const exists = await graph.hasNode(id);
+  if (!exists) {
+    throw new Error(`Node not found: ${id}`);
+  }
+
+  // Read current value
+  const propsMap = await graph.getNodeProps(id);
+  const previous = propsMap?.get(key) ?? null;
+  const changed = previous !== value;
+
+  if (changed) {
+    const patch = await graph.createPatch();
+    patch.setProperty(id, key, value);
+    await patch.commit();
+  }
+
+  return { id, key, value, previous, changed };
+}
+
+/**
+ * @typedef {object} UnsetPropertyResult
+ * @property {string} id - Node ID
+ * @property {string} key - Property key
+ * @property {unknown} previous - Previous value (null if unset)
+ * @property {boolean} removed - Whether a value was actually removed
+ */
+
+/**
+ * Remove a property from an existing node.
+ *
+ * @param {import('@git-stunts/git-warp').default} graph
+ * @param {string} id - Node ID
+ * @param {string} key - Property key
+ * @returns {Promise<UnsetPropertyResult>}
+ */
+export async function unsetNodeProperty(graph, id, key) {
+  if (!key || typeof key !== 'string') {
+    throw new Error('Property key must be a non-empty string');
+  }
+
+  const exists = await graph.hasNode(id);
+  if (!exists) {
+    throw new Error(`Node not found: ${id}`);
+  }
+
+  const propsMap = await graph.getNodeProps(id);
+  const previous = propsMap?.get(key) ?? null;
+  const removed = previous != null;
+
+  if (removed) {
+    const patch = await graph.createPatch();
+    patch.setProperty(id, key, null);
+    await patch.commit();
+  }
+
+  return { id, key, previous, removed };
+}

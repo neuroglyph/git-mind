@@ -6,6 +6,32 @@
 
 import { extractPrefix, isLowConfidence } from './validators.js';
 
+// ── Status classification ───────────────────────────────────────
+
+const SYNONYMS = new Map([
+  ['in_progress', 'in-progress'],
+  ['inprogress', 'in-progress'],
+  ['wip', 'in-progress'],
+  ['complete', 'done'],
+  ['completed', 'done'],
+  ['finished', 'done'],
+]);
+const VALID_STATUSES = new Set(['done', 'in-progress', 'todo', 'blocked']);
+
+/**
+ * Normalize a status value to a canonical form.
+ * Trims, lowercases, maps synonyms, returns 'unknown' for unrecognized.
+ *
+ * @param {unknown} value
+ * @returns {'done' | 'in-progress' | 'todo' | 'blocked' | 'unknown'}
+ */
+export function classifyStatus(value) {
+  if (typeof value !== 'string') return 'unknown';
+  const normalized = value.trim().toLowerCase();
+  const mapped = SYNONYMS.get(normalized) ?? normalized;
+  return VALID_STATUSES.has(mapped) ? mapped : 'unknown';
+}
+
 /** @type {Map<string, ViewDefinition>} */
 const registry = new Map();
 
@@ -13,7 +39,8 @@ const registry = new Map();
  * @typedef {object} ViewDefinition
  * @property {string} name
  * @property {string} [description]
- * @property {(nodes: string[], edges: Edge[]) => ViewResult} filterFn
+ * @property {(nodes: string[], edges: Edge[], nodeProps?: Map<string, Record<string, unknown>>, options?: Record<string, unknown>) => ViewResult} filterFn
+ * @property {boolean} [needsProperties]
  */
 
 /**
@@ -44,9 +71,10 @@ const registry = new Map();
  *
  * @param {string} name
  * @param {ViewDefinition['filterFn']} filterFn
+ * @param {{ needsProperties?: boolean }} [opts]
  */
-export function defineView(name, filterFn) {
-  registry.set(name, { name, filterFn });
+export function defineView(name, filterFn, opts = {}) {
+  registry.set(name, { name, filterFn, needsProperties: opts.needsProperties ?? false });
 }
 
 /**
@@ -88,9 +116,10 @@ export function declareView(name, config) {
  *
  * @param {import('@git-stunts/git-warp').default} graph
  * @param {string} viewName
+ * @param {Record<string, unknown>} [options] - Options forwarded to the view's filterFn
  * @returns {Promise<ViewResult>}
  */
-export async function renderView(graph, viewName) {
+export async function renderView(graph, viewName, options) {
   const view = registry.get(viewName);
   if (!view) {
     const available = [...registry.keys()].join(', ');
@@ -100,7 +129,22 @@ export async function renderView(graph, viewName) {
   const nodes = await graph.getNodes();
   const edges = await graph.getEdges();
 
-  return view.filterFn(nodes, edges);
+  // Only fetch node properties when the view declares it needs them
+  let nodeProps;
+  if (view.needsProperties) {
+    nodeProps = new Map();
+    // TODO: batch API at scale — O(N) getNodeProps calls is fine at ~50 nodes
+    for (const id of nodes) {
+      const propsMap = await graph.getNodeProps(id);
+      if (propsMap && propsMap.size > 0) {
+        const props = {};
+        for (const [k, v] of propsMap) props[k] = v;
+        nodeProps.set(id, props);
+      }
+    }
+  }
+
+  return view.filterFn(nodes, edges, nodeProps, options);
 }
 
 /**
@@ -445,6 +489,61 @@ defineView('coverage', (nodes, edges) => {
     },
   };
 });
+
+defineView('progress', (nodes, edges, nodeProps, options) => {
+  // Group work-item nodes by their status property.
+  // --scope narrows which prefixes count as work items (default: task + feature).
+  const prefixes = options?.scope ?? ['task', 'feature'];
+  const workItems = nodes.filter(n => {
+    const p = extractPrefix(n);
+    return p && prefixes.includes(p);
+  });
+
+  const byStatus = {
+    'done': [],
+    'in-progress': [],
+    'todo': [],
+    'blocked': [],
+    'unknown': [],
+  };
+
+  for (const id of workItems) {
+    const props = nodeProps?.get(id);
+    const raw = props?.status;
+    const status = raw !== undefined ? classifyStatus(raw) : 'unknown';
+    byStatus[status].push(id);
+  }
+
+  // Deterministic ordering within each bucket
+  for (const bucket of Object.values(byStatus)) bucket.sort();
+
+  const total = workItems.length;
+  const done = byStatus['done'].length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  // Include edges between work items
+  const workSet = new Set(workItems);
+  const relevantEdges = edges.filter(e => workSet.has(e.from) || workSet.has(e.to));
+
+  return {
+    nodes: workItems,
+    edges: relevantEdges,
+    meta: {
+      byStatus,
+      summary: {
+        total,
+        done,
+        'in-progress': byStatus['in-progress'].length,
+        todo: byStatus['todo'].length,
+        blocked: byStatus['blocked'].length,
+        unknown: byStatus['unknown'].length,
+        pct,
+        ratio: `${done}/${total}`,
+        remaining: total - done,
+      },
+    },
+  };
+}, { needsProperties: true });
 
 // Capture built-in names after all registrations
 builtInNames = new Set(registry.keys());

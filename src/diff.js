@@ -45,8 +45,8 @@ const EXCLUDED_PREFIXES = new Set(['decision', 'commit', 'epoch']);
  * @property {number} schemaVersion
  * @property {DiffEndpoint} from
  * @property {DiffEndpoint} to
- * @property {{ added: string[], removed: string[], total: { before: number, after: number } }} nodes
- * @property {{ added: EdgeDiffEntry[], removed: EdgeDiffEntry[], total: { before: number, after: number } }} edges
+ * @property {{ added: string[], removed: string[], total: { before: number, after: number } | null }} nodes
+ * @property {{ added: EdgeDiffEntry[], removed: EdgeDiffEntry[], total: { before: number, after: number } | null }} edges
  * @property {{ nodesByPrefix: Record<string, {before: number, after: number}>, edgesByType: Record<string, {before: number, after: number}> }} summary
  * @property {{ materializeMs: { a: number, b: number }, diffMs: number, nodeCount: { a: number, b: number }, edgeCount: { a: number, b: number } }} stats
  */
@@ -294,7 +294,7 @@ export async function computeDiff(cwd, refA, refB, opts = {}) {
   const tickA = resultA.epoch.tick;
   const tickB = resultB.epoch.tick;
 
-  // Same tick → empty diff
+  // Same tick → skipped diff (not computed, graph unchanged)
   if (tickA === tickB) {
     return {
       schemaVersion: 1,
@@ -310,11 +310,12 @@ export async function computeDiff(cwd, refA, refB, opts = {}) {
         tick: tickB,
         nearest: resultB.epoch.nearest ?? false,
       },
-      nodes: { added: [], removed: [], total: { before: 0, after: 0 } },
-      edges: { added: [], removed: [], total: { before: 0, after: 0 } },
+      nodes: { added: [], removed: [], total: null },
+      edges: { added: [], removed: [], total: null },
       summary: { nodesByPrefix: {}, edgesByType: {} },
       stats: {
         sameTick: true,
+        skipped: true,
         materializeMs: { a: 0, b: 0 },
         diffMs: 0,
         nodeCount: { a: 0, b: 0 },
