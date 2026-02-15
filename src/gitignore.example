@@ -1,0 +1,5 @@
+# Git Mind generated artifacts/caches (non-canonical)
+.gitmind/materialized/
+.gitmind/cache/
+dist/materialized/
+tmp/materialized/
