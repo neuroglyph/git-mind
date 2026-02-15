@@ -484,7 +484,11 @@ defineView('progress', (nodes, edges, nodeProps, options) => {
 // Capture built-in names after all registrations
 builtInNames = new Set(registry.keys());
 
-// ── Register core lenses (side-effect import) + capture ─────────
+// ── Register core lenses + capture ──────────────────────────────
+// Side-effect import: ES module imports are hoisted, so core.js
+// executes its defineLens() calls during module initialization.
+// captureBuiltIns() snapshots the registry so resetLenses() can
+// restore to this baseline during tests.
 import './lenses/core.js';
 import { captureBuiltIns as captureLensBuiltIns } from './lens.js';
 captureLensBuiltIns();

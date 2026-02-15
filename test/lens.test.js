@@ -233,9 +233,10 @@ describe('lens engine', () => {
       await setNodeProperty(graph, 'task:c', 'status', 'todo');
 
       const result = await renderView(graph, 'backlog', { lenses: ['incomplete', 'frontier'] });
-      // incomplete removes task:a (done), frontier finds leaf of remaining
+      // incomplete removes task:a (done), frontier finds leaf of remaining (b→c, leaf is c)
       expect(result.nodes).toContain('task:c');
       expect(result.nodes).not.toContain('task:a');
+      expect(result.nodes).not.toContain('task:b');
     });
 
     it('renderView without lenses behaves as before', async () => {

@@ -4,7 +4,7 @@
  */
 
 import { defineLens } from '../lens.js';
-import { buildAdjacency, topoSort, findRoots, walkChain } from '../dag.js';
+import { buildAdjacency, topoSort, findRoots } from '../dag.js';
 import { classifyStatus } from '../views.js';
 
 // ── incomplete ─────────────────────────────────────────────────
@@ -40,40 +40,72 @@ defineLens('frontier', (viewResult) => {
 });
 
 // ── critical-path ──────────────────────────────────────────────
-// Filter to the longest dependency chain. Uses depends-on + blocks edges.
+// Filter to the longest dependency chain via DP on the DAG.
+// Uses depends-on + blocks edges.
 
 defineLens('critical-path', (viewResult) => {
-  // Build adjacency from depends-on and blocks edges within the view
   const nodeSet = new Set(viewResult.nodes);
   const depEdges = viewResult.edges.filter(
     e => (e.label === 'depends-on' || e.label === 'blocks') && nodeSet.has(e.from) && nodeSet.has(e.to)
   );
-  const { forward } = buildAdjacency(depEdges);
 
-  // Find roots and walk chains from each, keep the longest
-  const roots = findRoots(forward);
-  let longestChain = [];
-
-  for (const root of roots) {
-    const chain = walkChain(root, forward);
-    if (chain.length > longestChain.length) {
-      longestChain = chain;
-    }
-  }
-
-  // If no dependency edges, fall back to topo sort of all nodes
-  if (longestChain.length === 0 && viewResult.nodes.length > 0) {
+  if (depEdges.length === 0) {
     return { nodes: [], edges: [], meta: { ...viewResult.meta, lens: 'critical-path', chain: [] } };
   }
 
-  const chainNodes = longestChain.map(c => c.node);
-  const chainSet = new Set(chainNodes);
+  const { forward } = buildAdjacency(depEdges);
+
+  // Collect all nodes participating in dependency edges
+  const depNodes = new Set();
+  for (const e of depEdges) {
+    depNodes.add(e.from);
+    depNodes.add(e.to);
+  }
+
+  // Topological sort for DP ordering
+  const { sorted } = topoSort([...depNodes], forward);
+
+  // DP: longest path ending at each node + predecessor tracking
+  const dist = new Map();
+  const pred = new Map();
+  for (const n of sorted) dist.set(n, 0);
+
+  for (const n of sorted) {
+    for (const next of (forward.get(n) || [])) {
+      if (dist.has(next) && dist.get(n) + 1 > dist.get(next)) {
+        dist.set(next, dist.get(n) + 1);
+        pred.set(next, n);
+      }
+    }
+  }
+
+  // Find the node with the maximum distance (end of longest path)
+  let endNode = sorted[0];
+  let maxDist = 0;
+  for (const [n, d] of dist) {
+    if (d > maxDist) {
+      maxDist = d;
+      endNode = n;
+    }
+  }
+
+  // Reconstruct the path by following predecessors
+  const path = [];
+  let current = endNode;
+  while (current !== undefined) {
+    path.push(current);
+    current = pred.get(current);
+  }
+  path.reverse();
+
+  const chain = path.map((node, i) => ({ node, depth: i }));
+  const chainSet = new Set(path);
   const edges = viewResult.edges.filter(e => chainSet.has(e.from) && chainSet.has(e.to));
 
   return {
-    nodes: chainNodes,
+    nodes: path,
     edges,
-    meta: { ...viewResult.meta, lens: 'critical-path', chain: longestChain },
+    meta: { ...viewResult.meta, lens: 'critical-path', chain },
   };
 });
 

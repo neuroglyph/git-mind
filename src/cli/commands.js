@@ -95,7 +95,7 @@ export async function view(cwd, viewSpec, opts = {}) {
     // Split on colon — first segment is view, rest are lenses
     const segments = viewSpec.split(':');
     const viewName = segments[0];
-    const lensNames = segments.slice(1);
+    const lensNames = segments.slice(1).filter(s => s.length > 0);
 
     const graph = await loadGraph(cwd);
 

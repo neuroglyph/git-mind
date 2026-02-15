@@ -98,16 +98,18 @@ export function composeLenses(lensNames) {
   return { composedFn, needsProperties };
 }
 
-/** @type {Set<string>} Built-in lens names, captured after registration */
-let builtInNames = new Set();
+/** @type {Map<string, LensDefinition>} Snapshot of built-in lens definitions */
+let builtInDefs = new Map();
 
 /**
- * Remove all lenses that were not registered at module load time.
+ * Reset registry to built-in lenses only.
+ * Restores overwritten built-in definitions and removes custom lenses.
  * Intended for test cleanup.
  */
 export function resetLenses() {
-  for (const name of registry.keys()) {
-    if (!builtInNames.has(name)) registry.delete(name);
+  registry.clear();
+  for (const [name, def] of builtInDefs) {
+    registry.set(name, def);
   }
 }
 
@@ -116,5 +118,5 @@ export function resetLenses() {
  * Called after core lenses are registered.
  */
 export function captureBuiltIns() {
-  builtInNames = new Set(registry.keys());
+  builtInDefs = new Map(registry);
 }
