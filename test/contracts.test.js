@@ -171,6 +171,15 @@ const VALID_SAMPLES = {
     previous: 'done',
     removed: true,
   },
+  'view-lens.schema.json': {
+    schemaVersion: 1,
+    command: 'view',
+    viewName: 'backlog',
+    lenses: ['blocked'],
+    nodes: ['task:b'],
+    edges: [{ from: 'task:a', to: 'task:b', label: 'blocks' }],
+    meta: { lens: 'blocked' },
+  },
   'view-progress.schema.json': {
     schemaVersion: 1,
     command: 'view',
