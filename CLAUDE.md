@@ -10,6 +10,7 @@
 - **NEVER** circumvent git hooks
 - **NEVER** use `git add -A` — always stage changes intentionally
 - **NEVER** commit files that contain secrets (.env, credentials, etc.)
+- **NEVER** commit directly to `main` — always work on a feature branch and merge via PR
 
 ## ENCOURAGED ACTIONS
 
@@ -46,6 +47,7 @@
 1. Before starting, use sequential thinking to make a plan
 2. Explain your plan to the user and await approval
 3. Commit your approved plan to your memory banks
+4. **Create a feature branch** — `git checkout -b feat/<topic>` — before writing any code
 
 ### 2.2. DO THE JOB
 
