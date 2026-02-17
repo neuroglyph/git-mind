@@ -123,6 +123,15 @@ describe('lens engine', () => {
       const { needsProperties } = composeLenses(['frontier']);
       expect(needsProperties).toBe(false);
     });
+
+    it('null or undefined returns identity', () => {
+      for (const input of [null, undefined]) {
+        const { composedFn, needsProperties } = composeLenses(input);
+        const vr = { nodes: ['a'], edges: [] };
+        expect(composedFn(vr)).toBe(vr);
+        expect(needsProperties).toBe(false);
+      }
+    });
   });
 
   // ── Core lenses via renderView ───────────────────────────────
@@ -178,10 +187,24 @@ describe('lens engine', () => {
       await createEdge(graph, { source: 'task:d', target: 'task:e', type: 'depends-on' });
 
       const result = await renderView(graph, 'backlog', { lenses: ['critical-path'] });
-      // The a→b→c chain (length 3) is longer than d→e (length 2)
+      // depends-on edges are reversed for execution order (c→b→a, length 3 > e→d, length 2)
       expect(result.nodes).toContain('task:a');
       expect(result.nodes).toContain('task:b');
       expect(result.nodes).toContain('task:c');
+    });
+
+    it('selects longest path not all descendants in branching DAG', async () => {
+      // a depends-on b and d; b depends-on c → execution order: c→b→a, d→a
+      await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'depends-on' });
+      await createEdge(graph, { source: 'task:b', target: 'task:c', type: 'depends-on' });
+      await createEdge(graph, { source: 'task:a', target: 'task:d', type: 'depends-on' });
+
+      const result = await renderView(graph, 'backlog', { lenses: ['critical-path'] });
+      // Longest path is c→b→a (length 3); side-branch d→a (length 2) is excluded
+      expect(result.nodes).toContain('task:a');
+      expect(result.nodes).toContain('task:b');
+      expect(result.nodes).toContain('task:c');
+      expect(result.nodes).not.toContain('task:d');
     });
 
     it('returns empty for graph with no dependency edges', async () => {

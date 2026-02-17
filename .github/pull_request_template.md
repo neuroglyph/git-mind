@@ -99,13 +99,13 @@
 
 ```bash
 # e.g.
-npm test -- test/materialization/*.test.ts
+npm test -- test/materialization/*.test.js
 ```
 
 ### Integration
 
-	•	Added/updated integration tests
-	•	Commands:
+- [ ] Added/updated integration tests
+- [ ] Commands:
 
 ```bash
 # e.g.
@@ -114,9 +114,9 @@ npm run test:integration
 
 ### Determinism
 
-	•	Determinism assertions included for relevant paths
-	•	Method:
-	•	Commands:
+- [ ] Determinism assertions included for relevant paths
+- [ ] Method:
+- [ ] Commands:
 
 ```bash
 # e.g.
@@ -125,8 +125,8 @@ npm run test:determinism
 
 ### Contract/Schema
 
-	•	Schema validation updated/passing
-	•	Commands:
+- [ ] Schema validation updated/passing
+- [ ] Commands:
 
 ```bash
 # e.g.
@@ -135,8 +135,8 @@ npm run validate:schemas
 
 ### Policy Gates
 
-	•	Mechanical architecture gates pass
-	•	Commands:
+- [ ] Mechanical architecture gates pass
+- [ ] Commands:
 
 ```bash
 # e.g.
@@ -149,35 +149,35 @@ scripts/review-checklist.sh
 
 <!-- Required for trust/materialization/extension/writeback changes -->
 
-	•	Threat surface changed?:
-	•	Trust policy impact:
-	•	Provenance/audit impact:
-	•	New failure modes introduced:
+- [ ] Threat surface changed?:
+- [ ] Trust policy impact:
+- [ ] Provenance/audit impact:
+- [ ] New failure modes introduced:
 
 ### Performance Impact
 
-	•	Hot path affected?:
-	•	Expected impact (latency/memory/io):
-	•	Benchmarks or profiling evidence:
+- [ ] Hot path affected?:
+- [ ] Expected impact (latency/memory/io):
+- [ ] Benchmarks or profiling evidence:
 
 ### Observability / Debuggability
 
-	•	Errors are actionable and include context.
-	•	Logs/diagnostics added or updated where needed.
-	•	git mind status / diagnostics updated if writeback/eventing behavior changed.
+- [ ] Errors are actionable and include context.
+- [ ] Logs/diagnostics added or updated where needed.
+- [ ] git mind status / diagnostics updated if writeback/eventing behavior changed.
 
 ## Operational Notes
 
 <!-- Runbooks, rollout, feature flags, fallback behavior -->
 
-	•	Feature flag (if any):
-	•	Rollback strategy:
-	•	Operational caveats:
+- [ ] Feature flag (if any):
+- [ ] Rollback strategy:
+- [ ] Operational caveats:
 
 ## Linked Issues / Milestones
 
-	•	Closes #
-	•	Milestone: M
+- [ ] Closes #
+- [ ] Milestone: M
 
 ---
 

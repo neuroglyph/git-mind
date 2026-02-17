@@ -18,7 +18,8 @@ defineLens('incomplete', (viewResult, nodeProps) => {
     return status !== 'done';
   });
   const nodeSet = new Set(filtered);
-  const edges = viewResult.edges.filter(e => nodeSet.has(e.from) || nodeSet.has(e.to));
+  // AND logic: keep only edges where both endpoints remain in the filtered set
+  const edges = viewResult.edges.filter(e => nodeSet.has(e.from) && nodeSet.has(e.to));
   return { nodes: filtered, edges, meta: { ...viewResult.meta, lens: 'incomplete' } };
 }, { needsProperties: true });
 
@@ -35,35 +36,50 @@ defineLens('frontier', (viewResult) => {
   }
   const filtered = viewResult.nodes.filter(n => !hasOutgoing.has(n));
   const resultSet = new Set(filtered);
-  const edges = viewResult.edges.filter(e => resultSet.has(e.from) || resultSet.has(e.to));
+  // AND logic: keep only edges where both endpoints remain in the filtered set
+  const edges = viewResult.edges.filter(e => resultSet.has(e.from) && resultSet.has(e.to));
   return { nodes: filtered, edges, meta: { ...viewResult.meta, lens: 'frontier' } };
 });
 
 // ── critical-path ──────────────────────────────────────────────
 // Filter to the longest dependency chain via DP on the DAG.
 // Uses depends-on + blocks edges.
+//
+// Edge direction semantics:
+//   'blocks':     A → B means A must complete before B (A comes first in execution)
+//   'depends-on': A → B means A waits for B (B comes first; reverse for DP)
+//
+// Both are normalised to execution-order edges before building adjacency.
 
 defineLens('critical-path', (viewResult) => {
   const nodeSet = new Set(viewResult.nodes);
-  const depEdges = viewResult.edges.filter(
-    e => (e.label === 'depends-on' || e.label === 'blocks') && nodeSet.has(e.from) && nodeSet.has(e.to)
-  );
 
-  if (depEdges.length === 0) {
+  // Normalise edges to execution-order: predecessor → successor
+  const execEdges = [];
+  for (const e of viewResult.edges) {
+    if (!nodeSet.has(e.from) || !nodeSet.has(e.to)) continue;
+    if (e.label === 'blocks') {
+      execEdges.push(e); // A blocks B → A comes before B
+    } else if (e.label === 'depends-on') {
+      execEdges.push({ ...e, from: e.to, to: e.from }); // reverse: B comes before A
+    }
+  }
+
+  if (execEdges.length === 0) {
     return { nodes: [], edges: [], meta: { ...viewResult.meta, lens: 'critical-path', chain: [] } };
   }
 
-  const { forward } = buildAdjacency(depEdges);
+  const { forward } = buildAdjacency(execEdges);
 
   // Collect all nodes participating in dependency edges
   const depNodes = new Set();
-  for (const e of depEdges) {
+  for (const e of execEdges) {
     depNodes.add(e.from);
     depNodes.add(e.to);
   }
 
-  // Topological sort for DP ordering
-  const { sorted } = topoSort([...depNodes], forward);
+  // Topological sort for DP ordering; track any cyclic nodes that were excluded
+  const { sorted, remaining } = topoSort([...depNodes], forward);
 
   // DP: longest path ending at each node + predecessor tracking
   const dist = new Map();
@@ -79,11 +95,13 @@ defineLens('critical-path', (viewResult) => {
     }
   }
 
-  // Find the node with the maximum distance (end of longest path)
+  // Find the node with the maximum distance; use topo-sort position as tie-breaker
+  // for deterministic output when multiple nodes share the same max distance.
+  const sortedIndex = new Map(sorted.map((n, i) => [n, i]));
   let endNode = sorted[0];
   let maxDist = 0;
   for (const [n, d] of dist) {
-    if (d > maxDist) {
+    if (d > maxDist || (d === maxDist && (sortedIndex.get(n) ?? Infinity) < (sortedIndex.get(endNode) ?? Infinity))) {
       maxDist = d;
       endNode = n;
     }
@@ -102,11 +120,12 @@ defineLens('critical-path', (viewResult) => {
   const chainSet = new Set(path);
   const edges = viewResult.edges.filter(e => chainSet.has(e.from) && chainSet.has(e.to));
 
-  return {
-    nodes: path,
-    edges,
-    meta: { ...viewResult.meta, lens: 'critical-path', chain },
-  };
+  const meta = { ...viewResult.meta, lens: 'critical-path', chain };
+  if (remaining && remaining.length > 0) {
+    meta.warnings = [`Nodes excluded due to dependency cycles: ${remaining.join(', ')}`];
+  }
+
+  return { nodes: path, edges, meta };
 });
 
 // ── blocked ────────────────────────────────────────────────────
@@ -116,13 +135,15 @@ defineLens('blocked', (viewResult) => {
   const nodeSet = new Set(viewResult.nodes);
   const blockedNodes = new Set();
   for (const e of viewResult.edges) {
-    if (e.label === 'blocks' && nodeSet.has(e.to)) {
+    // Both endpoints must be in the current view's node set
+    if (e.label === 'blocks' && nodeSet.has(e.from) && nodeSet.has(e.to)) {
       blockedNodes.add(e.to);
     }
   }
   const filtered = viewResult.nodes.filter(n => blockedNodes.has(n));
   const resultSet = new Set(filtered);
-  const edges = viewResult.edges.filter(e => resultSet.has(e.from) || resultSet.has(e.to));
+  // AND logic: keep only edges where both endpoints remain in the filtered set
+  const edges = viewResult.edges.filter(e => resultSet.has(e.from) && resultSet.has(e.to));
   return { nodes: filtered, edges, meta: { ...viewResult.meta, lens: 'blocked' } };
 });
 
@@ -146,6 +167,7 @@ defineLens('parallel', (viewResult) => {
 
   const filtered = viewResult.nodes.filter(n => !dependent.has(n));
   const resultSet = new Set(filtered);
-  const edges = viewResult.edges.filter(e => resultSet.has(e.from) || resultSet.has(e.to));
+  // AND logic: keep only edges where both endpoints remain in the filtered set
+  const edges = viewResult.edges.filter(e => resultSet.has(e.from) && resultSet.has(e.to));
   return { nodes: filtered, edges, meta: { ...viewResult.meta, lens: 'parallel' } };
 });
