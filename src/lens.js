@@ -35,6 +35,10 @@ export function defineLens(name, filterFn, opts = {}) {
   if (typeof filterFn !== 'function') {
     throw new Error(`defineLens("${name}"): filterFn must be a function`);
   }
+  if (builtInDefs.size > 0 && builtInDefs.has(name)) {
+    // eslint-disable-next-line no-console
+    console.warn(`defineLens: overwriting built-in lens "${name}". Call resetLenses() to restore.`);
+  }
   registry.set(name, {
     name,
     filterFn,

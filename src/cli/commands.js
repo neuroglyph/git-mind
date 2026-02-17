@@ -111,7 +111,7 @@ export async function view(cwd, viewSpec, opts = {}) {
     const result = await renderView(graph, viewName, viewOpts);
 
     if (opts.json) {
-      const payload = { viewName, ...result };
+      const payload = { ...result, viewName };
       if (lensNames.length > 0) {
         payload.lenses = lensNames;
       }

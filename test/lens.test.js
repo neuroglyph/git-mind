@@ -57,6 +57,17 @@ describe('lens engine', () => {
       expect(listLenses()).not.toContain('ephemeral');
       expect(listLenses()).toContain('incomplete');
     });
+
+    it('resetLenses restores overwritten built-in definition', () => {
+      const original = getLens('incomplete');
+      const customFn = (vr) => ({ ...vr, meta: { lens: 'custom' } });
+      defineLens('incomplete', customFn);
+      expect(getLens('incomplete').filterFn).toBe(customFn);
+      resetLenses();
+      const restored = getLens('incomplete');
+      expect(restored.filterFn).not.toBe(customFn);
+      expect(restored.filterFn).toBe(original.filterFn);
+    });
   });
 
   // ── Composition ──────────────────────────────────────────────

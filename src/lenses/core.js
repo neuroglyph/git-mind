@@ -4,7 +4,7 @@
  */
 
 import { defineLens } from '../lens.js';
-import { buildAdjacency, topoSort, findRoots } from '../dag.js';
+import { buildAdjacency, topoSort } from '../dag.js';
 import { classifyStatus } from '../views.js';
 
 // ── incomplete ─────────────────────────────────────────────────

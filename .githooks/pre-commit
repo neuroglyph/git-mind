@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
-scripts/review-checklist.sh
+ROOT="$(git rev-parse --show-toplevel)"
+"$ROOT/scripts/review-checklist.sh"
