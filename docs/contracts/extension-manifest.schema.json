@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://git-mind.dev/schemas/extension-manifest.schema.json",
+  "title": "ExtensionManifest",
+  "description": "Declares a git-mind extension: domain schemas, views, lenses, rules, and sync adapters.",
+  "type": "object",
+  "required": ["name", "version", "domain"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Extension identifier (e.g. 'roadmap', 'security-audit')",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "version": {
+      "type": "string",
+      "description": "SemVer version string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "author": {
+      "type": "string"
+    },
+    "license": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "object",
+      "description": "Domain vocabulary declared by this extension",
+      "additionalProperties": false,
+      "properties": {
+        "prefixes": {
+          "type": "array",
+          "description": "Node ID prefixes owned by this extension",
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "uniqueItems": true
+        },
+        "edgeTypes": {
+          "type": "array",
+          "description": "Edge label types declared by this extension",
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "uniqueItems": true
+        },
+        "statusValues": {
+          "type": "array",
+          "description": "Valid status property values for work items in this domain",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "views": {
+      "type": "array",
+      "description": "Declarative view definitions contributed by this extension",
+      "items": {
+        "type": "object",
+        "required": ["name", "prefixes"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "prefixes": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          },
+          "edgeTypes": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "requireBothEndpoints": { "type": "boolean" }
+        }
+      }
+    },
+    "lenses": {
+      "type": "array",
+      "description": "Lens names contributed by this extension (implementations registered in JS)",
+      "items": { "type": "string" }
+    },
+    "rules": {
+      "type": "array",
+      "description": "Integrity rules contributed by this extension",
+      "items": {
+        "type": "object",
+        "required": ["name", "severity"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "severity": { "type": "string", "enum": ["error", "warning", "info"] }
+        }
+      }
+    },
+    "syncAdapters": {
+      "type": "array",
+      "description": "External sync source adapters (e.g. GitHub Issues, Linear)",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "materializers": {
+      "type": "array",
+      "description": "Artifact render targets contributed by this extension",
+      "items": {
+        "type": "object",
+        "required": ["name", "formats"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "formats": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          }
+        }
+      }
+    }
+  }
+}

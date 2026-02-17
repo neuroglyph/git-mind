@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://git-mind.dev/schemas/context-envelope.schema.json",
+  "title": "ContextEnvelope",
+  "description": "Explicit read context passed to all graph operations. Constructed at the CLI boundary; domain functions receive a pre-resolved graph-like object.",
+  "type": "object",
+  "required": ["asOf", "observer", "trustPolicy"],
+  "additionalProperties": false,
+  "properties": {
+    "asOf": {
+      "type": "string",
+      "description": "Git ref or Lamport tick ceiling for time-travel reads. Default: 'HEAD'.",
+      "default": "HEAD"
+    },
+    "observer": {
+      "oneOf": [
+        { "type": "string", "description": "Named observer profile stored as observer:<name> node in the graph." },
+        { "type": "null", "description": "No observer filtering — full unfiltered view." }
+      ],
+      "description": "Observer name for filtered/redacted views. Default: null.",
+      "default": null
+    },
+    "trustPolicy": {
+      "type": "string",
+      "description": "Trust policy mode governing what facts are visible. Default: 'open'.",
+      "enum": ["open", "approved-only"],
+      "default": "open"
+    },
+    "extensionSet": {
+      "oneOf": [
+        { "type": "string", "description": "SHA pinning the active extension set for reproducible reads." },
+        { "type": "null" }
+      ],
+      "description": "Extension set identifier for reproducibility. Default: null.",
+      "default": null
+    },
+    "lockHash": {
+      "oneOf": [
+        { "type": "string", "description": "Hash of the complete locked extension manifest." },
+        { "type": "null" }
+      ],
+      "description": "Lock hash for reproducibility verification. Default: null.",
+      "default": null
+    }
+  }
+}

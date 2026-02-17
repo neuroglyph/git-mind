@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://git-mind.dev/schemas/provenance-envelope.schema.json",
+  "title": "ProvenanceEnvelope",
+  "description": "Provenance receipt embedded in rendered artifacts. Links a rendered output to its inputs for determinism verification and cache invalidation.",
+  "type": "object",
+  "required": ["schemaVersion", "artifactHash", "inputHash", "graphFrontier", "renderedAt"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "artifactHash": {
+      "type": "string",
+      "description": "SHA-256 (hex) of the rendered artifact content"
+    },
+    "inputHash": {
+      "type": "string",
+      "description": "SHA-256 (hex) of the combined inputs: graph snapshot + context + template"
+    },
+    "graphFrontier": {
+      "type": "object",
+      "description": "Lamport tick frontier at render time, keyed by writerId",
+      "additionalProperties": { "type": "integer" }
+    },
+    "cacheKey": {
+      "type": "string",
+      "description": "Opaque cache key for artifact reuse. Derived from inputHash + template version."
+    },
+    "renderedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the artifact was rendered"
+    },
+    "resolvedContext": {
+      "type": "object",
+      "description": "The context envelope used for this render",
+      "properties": {
+        "asOf": { "type": "string" },
+        "resolvedTick": { "type": ["integer", "null"] },
+        "observer": { "type": ["string", "null"] },
+        "trustPolicy": { "type": "string" }
+      }
+    },
+    "extensionName": {
+      "type": "string",
+      "description": "Extension that performed the render"
+    },
+    "templateVersion": {
+      "type": "string",
+      "description": "Version of the template used"
+    }
+  }
+}

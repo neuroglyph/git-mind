@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://git-mind.dev/schemas/materialization-spec.schema.json",
+  "title": "MaterializationSpec",
+  "description": "Specification for rendering graph projections to artifact files. Note: 'materialization' here means artifact rendering (MD/HTML/PDF), NOT git-warp's time-travel materialize() call — these share a word but are distinct operations. Internally prefer 'render' or 'emit' for this pipeline.",
+  "type": "object",
+  "required": ["target", "format"],
+  "additionalProperties": false,
+  "properties": {
+    "target": {
+      "type": "string",
+      "description": "View name or node prefix to render (e.g. 'roadmap', 'milestone:m1')"
+    },
+    "context": {
+      "type": "object",
+      "description": "Read context (ContextEnvelope) for the render pass. Default: HEAD, open, no observer.",
+      "properties": {
+        "asOf": { "type": "string" },
+        "observer": { "type": ["string", "null"] },
+        "trustPolicy": { "type": "string" }
+      }
+    },
+    "format": {
+      "type": "string",
+      "description": "Output artifact format",
+      "enum": ["markdown", "html", "pdf", "json", "yaml"]
+    },
+    "template": {
+      "type": "string",
+      "description": "Template name or path used for rendering. Omit for default template."
+    },
+    "outputPath": {
+      "type": "string",
+      "description": "Destination file path for the rendered artifact. Relative to repo root."
+    },
+    "includeProvenance": {
+      "type": "boolean",
+      "description": "Whether to embed a provenance envelope in the artifact output. Default: true.",
+      "default": true
+    },
+    "extensionName": {
+      "type": "string",
+      "description": "Name of the extension providing the materializer for this spec."
+    }
+  }
+}

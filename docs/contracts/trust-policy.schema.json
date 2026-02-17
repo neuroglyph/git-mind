@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://git-mind.dev/schemas/trust-policy.schema.json",
+  "title": "TrustPolicy",
+  "description": "Trust policy v1 stub governing which facts and writers are visible in a given context. Stored as trust-policy:<name> nodes in the WARP graph.",
+  "type": "object",
+  "required": ["schemaVersion", "mode"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "mode": {
+      "type": "string",
+      "description": "Trust policy operating mode",
+      "enum": ["open", "approved-only"]
+    },
+    "approvedWriters": {
+      "type": "array",
+      "description": "Writer IDs approved to contribute facts under this policy. Relevant when mode=approved-only.",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "delegations": {
+      "type": "array",
+      "description": "Trust delegation chain declarations. A delegation grants a writer the authority to vouch for other writers.",
+      "items": {
+        "type": "object",
+        "required": ["grantor", "grantee"],
+        "additionalProperties": false,
+        "properties": {
+          "grantor": {
+            "type": "string",
+            "description": "Writer ID granting authority"
+          },
+          "grantee": {
+            "type": "string",
+            "description": "Writer ID receiving authority"
+          },
+          "scope": {
+            "type": "string",
+            "description": "Node prefix glob limiting delegation scope (e.g. 'task:*'). Omit for full scope.",
+            "default": "*"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 expiry timestamp. Omit for no expiry."
+          }
+        }
+      }
+    }
+  }
+}

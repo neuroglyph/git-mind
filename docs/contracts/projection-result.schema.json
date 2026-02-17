@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://git-mind.dev/schemas/projection-result.schema.json",
+  "title": "ProjectionResult",
+  "description": "The intermediate data structure produced by a render projection pass, before format-specific serialization.",
+  "type": "object",
+  "required": ["schemaVersion", "target", "nodes", "edges"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "target": {
+      "type": "string",
+      "description": "View name or node prefix that was projected"
+    },
+    "resolvedContext": {
+      "type": "object",
+      "description": "The context envelope as resolved for this render pass",
+      "properties": {
+        "asOf": { "type": "string" },
+        "resolvedTick": { "type": ["integer", "null"] },
+        "observer": { "type": ["string", "null"] },
+        "trustPolicy": { "type": "string" },
+        "extensionLock": { "type": ["string", "null"] }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "description": "Node IDs included in this projection",
+      "items": { "type": "string" }
+    },
+    "edges": {
+      "type": "array",
+      "description": "Edges included in this projection",
+      "items": {
+        "type": "object",
+        "required": ["source", "target", "type"],
+        "properties": {
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "type": { "type": "string" }
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "description": "View-specific computed metadata (e.g. milestoneStats, coverage)"
+    },
+    "renderedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this projection was computed"
+    }
+  }
+}

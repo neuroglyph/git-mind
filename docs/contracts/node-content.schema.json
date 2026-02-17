@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://git-mind.dev/schemas/node-content.schema.json",
+  "title": "NodeContent",
+  "description": "Rich content attached to a graph node. Content is stored as CAS-backed blobs in the git object store. Exactly one of 'body' or 'casRef' must be present.",
+  "type": "object",
+  "required": ["nodeId", "mime"],
+  "additionalProperties": false,
+  "if": {
+    "not": { "required": ["casRef"] }
+  },
+  "then": {
+    "required": ["body"]
+  },
+  "properties": {
+    "nodeId": {
+      "type": "string",
+      "description": "Graph node this content is attached to (e.g. 'doc:readme')",
+      "pattern": "^[a-z][a-z0-9-]*:.+"
+    },
+    "mime": {
+      "type": "string",
+      "description": "MIME type of the content (e.g. 'text/markdown', 'text/plain')"
+    },
+    "encoding": {
+      "type": "string",
+      "description": "Content encoding (e.g. 'utf-8', 'base64')",
+      "default": "utf-8"
+    },
+    "hash": {
+      "type": "string",
+      "description": "SHA-256 content hash (hex) for integrity verification"
+    },
+    "casRef": {
+      "type": "string",
+      "description": "Git object SHA of the CAS-stored blob. Mutually exclusive with 'body'."
+    },
+    "body": {
+      "type": "string",
+      "description": "Inline content. Mutually exclusive with 'casRef'. Used for small content or when not yet committed to CAS."
+    },
+    "size": {
+      "type": "integer",
+      "description": "Content size in bytes",
+      "minimum": 0
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 creation timestamp"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 last-updated timestamp"
+    }
+  }
+}

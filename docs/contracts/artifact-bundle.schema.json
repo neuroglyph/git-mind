@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://git-mind.dev/schemas/artifact-bundle.schema.json",
+  "title": "ArtifactBundle",
+  "description": "A complete rendered artifact with provenance receipt. Artifacts are ephemeral (not tracked by git) unless attested.",
+  "type": "object",
+  "required": ["schemaVersion", "artifactClass", "spec", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "artifactClass": {
+      "type": "string",
+      "description": "Lifecycle class for this artifact",
+      "enum": ["ephemeral", "attested"]
+    },
+    "spec": {
+      "type": "object",
+      "description": "The MaterializationSpec that produced this artifact",
+      "required": ["target", "format"],
+      "properties": {
+        "target": { "type": "string" },
+        "format": { "type": "string", "enum": ["markdown", "html", "pdf", "json", "yaml"] },
+        "template": { "type": "string" },
+        "outputPath": { "type": "string" },
+        "includeProvenance": { "type": "boolean" },
+        "extensionName": { "type": "string" }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "description": "ProvenanceEnvelope receipt for determinism verification",
+      "required": ["schemaVersion", "artifactHash", "inputHash", "graphFrontier", "renderedAt"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "artifactHash": { "type": "string" },
+        "inputHash": { "type": "string" },
+        "graphFrontier": { "type": "object", "additionalProperties": { "type": "integer" } },
+        "cacheKey": { "type": "string" },
+        "renderedAt": { "type": "string", "format": "date-time" },
+        "resolvedContext": { "type": "object" },
+        "extensionName": { "type": "string" },
+        "templateVersion": { "type": "string" }
+      }
+    },
+    "contents": {
+      "type": "array",
+      "description": "Files included in this bundle",
+      "items": {
+        "type": "object",
+        "required": ["path", "format"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "format": { "type": "string" },
+          "hash": { "type": "string" },
+          "size": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "attestations": {
+      "type": "array",
+      "description": "Cryptographic attestations for attested-class artifacts",
+      "items": {
+        "type": "object",
+        "required": ["writerId", "signature"],
+        "additionalProperties": false,
+        "properties": {
+          "writerId": { "type": "string" },
+          "signature": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}
