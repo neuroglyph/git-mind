@@ -2,6 +2,10 @@
  * @module test/contracts
  * Schema contract unit tests — validates JSON Schema files compile,
  * require envelope fields, and accept/reject expected payloads.
+ *
+ * Covers two schema families:
+ * - CLI schemas (docs/contracts/cli/*.schema.json) — all require schemaVersion + command
+ * - BLP schemas (docs/contracts/*.schema.json) — structural schemas, no command field
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -10,13 +14,14 @@ import { join, basename } from 'node:path';
 import Ajv from 'ajv/dist/2020.js';
 
 const SCHEMA_DIR = join(import.meta.dirname, '..', 'docs', 'contracts', 'cli');
+const BLP_SCHEMA_DIR = join(import.meta.dirname, '..', 'docs', 'contracts');
 
-/** Load all schema files from the contracts directory. */
-async function loadSchemas() {
-  const files = await readdir(SCHEMA_DIR);
+/** Load all schema files from the given directory (non-recursive). */
+async function loadSchemas(dir = SCHEMA_DIR) {
+  const files = await readdir(dir);
   const schemas = [];
   for (const file of files.filter(f => f.endsWith('.schema.json'))) {
-    const content = JSON.parse(await readFile(join(SCHEMA_DIR, file), 'utf-8'));
+    const content = JSON.parse(await readFile(join(dir, file), 'utf-8'));
     schemas.push({ file, schema: content });
   }
   return schemas;
@@ -366,6 +371,182 @@ describe('CLI JSON Schema contracts', () => {
       sample.prompt = null;
       const validate = validators.get('suggest.schema.json');
       expect(validate(sample)).toBe(true);
+    });
+  });
+});
+
+// ── BLP Schemas (docs/contracts/*.schema.json) ───────────────────────────────
+// Structural schemas for extension manifests, context envelopes, content
+// objects, materialization specs, provenance, and trust policies.
+// These are NOT CLI output schemas — they do not require schemaVersion+command.
+
+/** Sample valid payloads for each BLP schema, keyed by filename. */
+const BLP_VALID_SAMPLES = {
+  'extension-manifest.schema.json': {
+    name: 'roadmap',
+    version: '1.0.0',
+    description: 'Roadmap domain extension',
+    domain: {
+      prefixes: ['milestone', 'phase', 'task'],
+      edgeTypes: ['belongs-to', 'blocks'],
+      statusValues: ['todo', 'in-progress', 'done'],
+    },
+  },
+  'context-envelope.schema.json': {
+    asOf: 'HEAD',
+    observer: null,
+    trustPolicy: 'open',
+  },
+  'node-content.schema.json': {
+    nodeId: 'doc:readme',
+    mime: 'text/markdown',
+    encoding: 'utf-8',
+    body: '# Project README\n\nContent here.',
+  },
+  'materialization-spec.schema.json': {
+    target: 'roadmap',
+    format: 'markdown',
+    outputPath: 'docs/published/roadmap.md',
+  },
+  'projection-result.schema.json': {
+    schemaVersion: 1,
+    target: 'roadmap',
+    nodes: ['milestone:m1', 'task:t1'],
+    edges: [{ source: 'task:t1', target: 'milestone:m1', type: 'belongs-to' }],
+  },
+  'provenance-envelope.schema.json': {
+    schemaVersion: 1,
+    artifactHash: 'abc123def456abc123def456abc123def456abc123def456abc123def456abc1',
+    inputHash: 'def456abc123def456abc123def456abc123def456abc123def456abc123def4',
+    graphFrontier: { 'local': 42 },
+    renderedAt: '2026-02-17T00:00:00Z',
+  },
+  'artifact-bundle.schema.json': {
+    schemaVersion: 1,
+    artifactClass: 'ephemeral',
+    spec: { target: 'roadmap', format: 'markdown' },
+    provenance: {
+      schemaVersion: 1,
+      artifactHash: 'abc123def456abc123def456abc123def456abc123def456abc123def456abc1',
+      inputHash: 'def456abc123def456abc123def456abc123def456abc123def456abc123def4',
+      graphFrontier: { 'local': 42 },
+      renderedAt: '2026-02-17T00:00:00Z',
+    },
+  },
+  'trust-policy.schema.json': {
+    schemaVersion: 1,
+    mode: 'open',
+  },
+};
+
+/** Invalid samples for BLP schemas to verify rejection. */
+const BLP_INVALID_SAMPLES = {
+  'extension-manifest.schema.json': { version: '1.0.0' }, // missing name + domain
+  'context-envelope.schema.json': { trustPolicy: 'open' }, // missing asOf + observer
+  'node-content.schema.json': { mime: 'text/markdown' }, // missing nodeId
+  'materialization-spec.schema.json': { target: 'roadmap' }, // missing format
+  'projection-result.schema.json': { target: 'roadmap', nodes: [] }, // missing schemaVersion + edges
+  'provenance-envelope.schema.json': { artifactHash: 'abc' }, // missing multiple required
+  'artifact-bundle.schema.json': { artifactClass: 'invalid-class', spec: {}, provenance: {} }, // invalid enum
+  'trust-policy.schema.json': { mode: 'invalid-mode' }, // missing schemaVersion + invalid enum
+};
+
+describe('BLP JSON Schema contracts', () => {
+  let schemas;
+  let ajv;
+  /** @type {Map<string, import('ajv').ValidateFunction>} */
+  let validators;
+
+  beforeAll(async () => {
+    schemas = await loadSchemas(BLP_SCHEMA_DIR);
+    // AJV strict mode is disabled for BLP schemas: they use $ref URIs and
+    // draft-2020-12 features like if/then that require allowUnionTypes etc.
+    ajv = new Ajv({ strict: false, allErrors: true });
+    validators = new Map();
+    for (const { file, schema } of schemas) {
+      validators.set(file, ajv.compile(schema));
+    }
+  });
+
+  it('BLP schema directory contains expected schemas', () => {
+    const files = schemas.map(s => s.file).sort();
+    const expected = Object.keys(BLP_VALID_SAMPLES).sort();
+    for (const name of expected) {
+      expect(files, `expected ${name} in docs/contracts/`).toContain(name);
+    }
+  });
+
+  describe('schema compilation', () => {
+    it('every .schema.json compiles as valid JSON Schema', () => {
+      expect(schemas.length).toBeGreaterThan(0);
+      for (const { file } of schemas) {
+        expect(validators.get(file), `${file} failed to compile`).toBeDefined();
+      }
+    });
+  });
+
+  describe('valid sample acceptance', () => {
+    it('valid sample passes each BLP schema', () => {
+      for (const { file } of schemas) {
+        const sample = BLP_VALID_SAMPLES[file];
+        expect(sample, `missing BLP_VALID_SAMPLES entry for ${file}`).toBeDefined();
+        const validate = validators.get(file);
+        const valid = validate(structuredClone(sample));
+        expect(valid, `${file}: ${JSON.stringify(validate.errors)}`).toBe(true);
+      }
+    });
+  });
+
+  describe('invalid sample rejection', () => {
+    it('invalid sample fails each BLP schema', () => {
+      for (const { file } of schemas) {
+        const sample = BLP_INVALID_SAMPLES[file];
+        expect(sample, `missing BLP_INVALID_SAMPLES entry for ${file}`).toBeDefined();
+        const validate = validators.get(file);
+        expect(validate(structuredClone(sample)), `${file} should reject invalid sample`).toBe(false);
+      }
+    });
+  });
+
+  describe('BLP schema spot checks', () => {
+    it('extension-manifest accepts optional views/lenses/rules', () => {
+      const sample = structuredClone(BLP_VALID_SAMPLES['extension-manifest.schema.json']);
+      sample.views = [{ name: 'roadmap', prefixes: ['milestone', 'task'] }];
+      sample.lenses = ['incomplete'];
+      sample.rules = [{ name: 'orphan-node', severity: 'info' }];
+      const validate = validators.get('extension-manifest.schema.json');
+      expect(validate(sample), JSON.stringify(validate.errors)).toBe(true);
+    });
+
+    it('context-envelope accepts non-HEAD asOf', () => {
+      const sample = { asOf: 'main~10', observer: 'security-team', trustPolicy: 'approved-only' };
+      const validate = validators.get('context-envelope.schema.json');
+      expect(validate(sample), JSON.stringify(validate.errors)).toBe(true);
+    });
+
+    it('node-content accepts casRef instead of body', () => {
+      const sample = { nodeId: 'doc:spec', mime: 'text/markdown', casRef: 'abc123def456' };
+      const validate = validators.get('node-content.schema.json');
+      expect(validate(sample), JSON.stringify(validate.errors)).toBe(true);
+    });
+
+    it('trust-policy accepts approved-only with approvedWriters', () => {
+      const sample = {
+        schemaVersion: 1,
+        mode: 'approved-only',
+        approvedWriters: ['alice', 'bob'],
+        delegations: [{ grantor: 'alice', grantee: 'carol', scope: 'task:*' }],
+      };
+      const validate = validators.get('trust-policy.schema.json');
+      expect(validate(sample), JSON.stringify(validate.errors)).toBe(true);
+    });
+
+    it('artifact-bundle attested class accepts attestations', () => {
+      const sample = structuredClone(BLP_VALID_SAMPLES['artifact-bundle.schema.json']);
+      sample.artifactClass = 'attested';
+      sample.attestations = [{ writerId: 'alice', signature: 'sig-abc123', timestamp: '2026-02-17T00:00:00Z' }];
+      const validate = validators.get('artifact-bundle.schema.json');
+      expect(validate(sample), JSON.stringify(validate.errors)).toBe(true);
     });
   });
 });
