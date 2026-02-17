@@ -1,0 +1,18 @@
+name: roadmap
+version: 1.0.0
+description: Project roadmap domain — phases, milestones, tasks, and progress tracking
+
+domain:
+  prefixes: [phase, milestone, task, feature]
+  edgeTypes: [belongs-to, blocks, implements]
+  statusValues: [todo, in-progress, done, blocked]
+
+views:
+  - name: roadmap
+    description: Phase and task nodes with all related edges
+    prefixes: [phase, task]
+  - name: backlog
+    description: Task nodes with all related edges
+    prefixes: [task]
+
+lenses: [incomplete, frontier, critical-path, blocked, parallel]
