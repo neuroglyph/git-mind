@@ -255,6 +255,40 @@ if [[ $coupling_hits -eq 0 ]]; then
 fi
 
 # -----------------------------------------------------------------------------
+# Check 7: Implicit context — process.cwd() or hardcoded 'HEAD' in domain src/
+# Architecture Law: context must be explicit and passed from the CLI boundary.
+# Excludes: src/cli/ (legitimate CLI entry point), bin/ (entry point), test/
+# -----------------------------------------------------------------------------
+say "Checking for implicit context (process.cwd() / hardcoded HEAD) in domain src/..."
+implicit_ctx_hits=0
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+  # Only scan changed JS/MJS/CJS files in src/ but NOT src/cli/
+  if [[ "$f" =~ ^src/ ]] && [[ ! "$f" =~ ^src/cli/ ]] && [[ "$f" =~ \.(js|mjs|cjs)$ ]]; then
+    # Detect process.cwd() — domain functions should receive cwd, not discover it
+    if grep -Eq "process\.cwd\(\)" "$f" 2>/dev/null; then
+      warn "Implicit context: process.cwd() in domain file $f (pass cwd explicitly)"
+      implicit_ctx_hits=$((implicit_ctx_hits+1))
+    fi
+    # Detect hardcoded 'HEAD' string literals used in graph read calls
+    # Allow legitimate uses: epoch node IDs (epoch:HEAD is not valid anyway),
+    # default values in context-envelope.js, and string comparisons.
+    # Flag patterns like loadGraph/materialize with 'HEAD' nearby.
+    if grep -Eq "asOf.*['\"]HEAD['\"]|['\"]HEAD['\"].*asOf" "$f" 2>/dev/null; then
+      # Only flag non-context-envelope files (context-envelope.js defines the default legitimately)
+      if [[ "$f" != "src/context-envelope.js" ]]; then
+        warn "Implicit context: hardcoded HEAD ref outside context-envelope.js in $f"
+        implicit_ctx_hits=$((implicit_ctx_hits+1))
+      fi
+    fi
+  fi
+done < <(changed_files)
+
+if [[ $implicit_ctx_hits -eq 0 ]]; then
+  pass "No implicit context patterns in domain src/ files."
+fi
+
+# -----------------------------------------------------------------------------
 # Final verdict
 # -----------------------------------------------------------------------------
 echo
