@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-02-17
+
+### Added
+
+- **Composable view lenses** — Post-filter views with chainable lenses using colon syntax: `git mind view roadmap:incomplete:frontier`. Lenses compose left-to-right (#250)
+- **5 built-in lenses** — `incomplete` (filter to unfinished nodes), `frontier` (leaf nodes — ready to start), `critical-path` (longest dependency chain via DP), `blocked` (nodes with unresolved blockers), `parallel` (nodes with no mutual dependencies) (#250)
+- **DAG utilities** — Pure graph helpers in `src/dag.js`: `buildAdjacency`, `topoSort`, `detectCycles`, `walkChain`, `findRoots` (#250)
+- **Lens registry and composition API** — `defineLens`, `getLens`, `listLenses`, `composeLenses`, `resetLenses`, `captureBuiltIns` exported from `src/lens.js` and public API (#250)
+- **`view-lens.schema.json` contract** — JSON Schema for `git mind view --json` output when lenses are applied, including `lenses` array and strict edge constraints (#250)
+- **Governance tooling** — Pre-commit hook, mechanical architecture gate CI workflow, PR template with hard-gate checkboxes, review checklist script (#250)
+- **Architecture docs** — `docs/VISION_NORTH_STAR.md`, `docs/ARCHITECTURE.md`, `docs/RISK_REGISTER.md`, `docs/REVIEW_RUBRIC.md`, ADR-0001, ADR-0002 (#250)
+
+### Changed
+
+- **`renderView` accepts `options.lenses`** — View pipeline applies lens composition after view filtering. Node properties fetched only when view or any lens requires them (#250)
+- **`git mind view` help** — Usage string updated to `view [name[:lens1:lens2]]` with lens list (#250)
+- **`view --json` payload** — `{ ...result, viewName, lenses? }` — spread order fixed so `renderView` properties are never shadowed (#250)
+- **Blocker and onboarding views** — Refactored to use DAG helpers from `src/dag.js` (#250)
+- **`defineLens` warns on built-in overwrite** — Console warning emitted if a registered built-in is overwritten before `resetLenses()` is called (#250)
+- **Test count** — 461 tests across 24 files (was 412)
+
 ## [3.1.0] - 2026-02-14
 
 ### Added
