@@ -7,6 +7,7 @@
 
 import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review, diff, set, unsetCmd } from '../src/cli/commands.js';
 import { parseDiffRefs, collectDiffPositionals } from '../src/diff.js';
+import { createContext } from '../src/context-envelope.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -14,6 +15,11 @@ const cwd = process.cwd();
 
 function printUsage() {
   console.log(`Usage: git mind <command> [options]
+
+Context flags (read commands: view, nodes, status, export, doctor):
+  --at <ref>                    Show graph as-of a git ref (HEAD~N, branch, SHA)
+  --observer <name>             Filter through a named observer profile
+  --trust <policy>              Trust policy (open, approved-only)
 
 Commands:
   init                          Initialize git-mind in this repo
@@ -25,6 +31,8 @@ Commands:
     --type <type>               Edge type (default: relates-to)
   view [name[:lens1:lens2]]      Show a view, optionally with lens chaining
     --scope <prefixes>          Comma-separated prefix filter (progress view)
+    --at <ref>                  Time-travel: show view as-of a git ref
+    --observer <name>           Filter through a named observer profile
     --json                      Output as JSON
     Lenses: incomplete, frontier, critical-path, blocked, parallel
   list                          List all edges
@@ -34,12 +42,16 @@ Commands:
   nodes                         List and inspect nodes
     --prefix <prefix>           Filter by prefix (e.g. task, spec)
     --id <nodeId>               Show details for a single node
+    --at <ref>                  Time-travel: show nodes as-of a git ref
+    --observer <name>           Filter through a named observer profile
     --json                      Output as JSON
   set <nodeId> <key> <value>    Set a node property
     --json                      Output as JSON
   unset <nodeId> <key>          Remove a node property
     --json                      Output as JSON
   status                        Show graph health dashboard
+    --at <ref>                  Time-travel: show status as-of a git ref
+    --observer <name>           Filter through a named observer profile
     --json                      Output as JSON
   at <ref>                      Show graph at a historical point in time
     --json                      Output as JSON
@@ -53,6 +65,8 @@ Commands:
   export [file]                 Export graph to YAML/JSON
     --format yaml|json          Output format (default: yaml)
     --prefix <prefix>           Filter by node prefix
+    --at <ref>                  Time-travel: export as-of a git ref
+    --observer <name>           Filter through a named observer profile
     --json                      Output as JSON metadata
   merge                          Merge another repo's graph
     --from <repo-path>          Path to remote repo
@@ -62,6 +76,8 @@ Commands:
   install-hooks                  Install post-commit Git hook
   doctor                        Run graph integrity checks
     --fix                       Auto-fix dangling edges
+    --at <ref>                  Time-travel: check graph as-of a git ref
+    --observer <name>           Filter through a named observer profile
     --json                      Output as JSON
   suggest                       AI-powered edge suggestions
     --agent <command>           Override GITMIND_AGENT
@@ -76,6 +92,22 @@ Edge types: implements, augments, relates-to, blocks, belongs-to,
 }
 
 const BOOLEAN_FLAGS = new Set(['json', 'fix', 'dry-run', 'validate']);
+
+/**
+ * Extract a ContextEnvelope from parsed flags.
+ * Builds one only when context flags are present; otherwise returns null.
+ *
+ * @param {Record<string, string|true>} flags
+ * @returns {import('../src/context-envelope.js').ContextEnvelope|null}
+ */
+function contextFromFlags(flags) {
+  if (!flags.at && !flags.observer && !flags.trust) return null;
+  const overrides = {};
+  if (flags.at) overrides.asOf = flags.at;
+  if (flags.observer) overrides.observer = flags.observer;
+  if (flags.trust) overrides.trustPolicy = flags.trust;
+  return createContext(overrides);
+}
 
 /**
  * Parse --flag value pairs from args.
@@ -134,9 +166,11 @@ switch (command) {
         viewPositionals.push(viewArgs[i]);
       }
     }
+    const viewCtx = contextFromFlags(viewFlags);
     await view(cwd, viewPositionals[0], {
       scope: viewFlags.scope,
       json: viewFlags.json ?? false,
+      ...(viewCtx && { context: viewCtx }),
     });
     break;
   }
@@ -165,13 +199,14 @@ switch (command) {
   }
 
   case 'nodes': {
-    const jsonMode = args.includes('--json');
-    const nodesArgs = args.slice(1).filter(a => a !== '--json');
+    const nodesArgs = args.slice(1);
     const nodesFlags = parseFlags(nodesArgs);
+    const nodesCtx = contextFromFlags(nodesFlags);
     await nodes(cwd, {
       prefix: nodesFlags.prefix,
       id: nodesFlags.id,
-      json: jsonMode,
+      json: nodesFlags.json ?? false,
+      ...(nodesCtx && { context: nodesCtx }),
     });
     break;
   }
@@ -202,9 +237,15 @@ switch (command) {
     break;
   }
 
-  case 'status':
-    await status(cwd, { json: args.includes('--json') });
+  case 'status': {
+    const statusFlags = parseFlags(args.slice(1));
+    const statusCtx = contextFromFlags(statusFlags);
+    await status(cwd, {
+      json: statusFlags.json ?? false,
+      ...(statusCtx && { context: statusCtx }),
+    });
     break;
+  }
 
   case 'at': {
     const atRef = args[1];
@@ -256,11 +297,13 @@ switch (command) {
   case 'export': {
     const exportFlags = parseFlags(args.slice(1));
     const exportFile = args.slice(1).find(a => !a.startsWith('--'));
+    const exportCtx = contextFromFlags(exportFlags);
     await exportCmd(cwd, {
       file: exportFile,
       format: exportFlags.format,
       prefix: exportFlags.prefix,
       json: exportFlags.json ?? false,
+      ...(exportCtx && { context: exportCtx }),
     });
     break;
   }
@@ -291,9 +334,11 @@ switch (command) {
 
   case 'doctor': {
     const doctorFlags = parseFlags(args.slice(1));
+    const doctorCtx = contextFromFlags(doctorFlags);
     await doctor(cwd, {
       json: doctorFlags.json ?? false,
       fix: doctorFlags.fix ?? false,
+      ...(doctorCtx && { context: doctorCtx }),
     });
     break;
   }
