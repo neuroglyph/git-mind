@@ -5,9 +5,13 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review, diff, set, unsetCmd } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review, diff, set, unsetCmd, extensionList, extensionValidate, extensionAdd } from '../src/cli/commands.js';
 import { parseDiffRefs, collectDiffPositionals } from '../src/diff.js';
 import { createContext } from '../src/context-envelope.js';
+import { registerBuiltinExtensions } from '../src/extension.js';
+
+// Register built-in extensions at startup
+await registerBuiltinExtensions();
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -86,6 +90,13 @@ Commands:
   review                        Review pending suggestions
     --batch accept|reject       Non-interactive batch mode
     --json                      Output as JSON
+  extension <subcommand>        Manage extensions
+    list                        List registered extensions
+      --json                    Output as JSON
+    validate <manifest>         Validate a manifest file without registering
+      --json                    Output as JSON
+    add <manifest>              Load and register an extension
+      --json                    Output as JSON
 
 Edge types: implements, augments, relates-to, blocks, belongs-to,
             consumed-by, depends-on, documents`);
@@ -360,6 +371,27 @@ switch (command) {
       index: reviewFlags.index ? parseInt(reviewFlags.index, 10) : undefined,
       json: reviewFlags.json ?? false,
     });
+    break;
+  }
+
+  case 'extension': {
+    const subCmd = args[1];
+    const extFlags = parseFlags(args.slice(2));
+    switch (subCmd) {
+      case 'list':
+        await extensionList(cwd, { json: extFlags.json ?? false });
+        break;
+      case 'validate':
+        await extensionValidate(cwd, args[2], { json: extFlags.json ?? false });
+        break;
+      case 'add':
+        await extensionAdd(cwd, args[2], { json: extFlags.json ?? false });
+        break;
+      default:
+        console.error(`Unknown extension subcommand: ${subCmd ?? '(none)'}`);
+        console.error('Usage: git mind extension <list|validate|add>');
+        process.exitCode = 1;
+    }
     break;
   }
 
