@@ -50,7 +50,9 @@ GENERATED_MARKER_REGEX="${GENERATED_MARKER_REGEX:-^x-gitmind-generated:|^# Gener
 
 # Contract directories
 SCHEMA_DIR="${SCHEMA_DIR:-contracts/schemas}"
-CONTRACT_DIR_REGEX="${CONTRACT_DIR_REGEX:-^src/(cli|api|contracts)/|^contracts/}"
+# Matches true contract surface files: dedicated contracts/ trees and public API/formatter modules.
+# Intentionally excludes src/cli/ broadly to avoid false positives on every command file change.
+CONTRACT_DIR_REGEX="${CONTRACT_DIR_REGEX:-^src/(contracts|api)/|^contracts/|^docs/contracts/}"
 
 # Basic patterns to detect hidden worktree coupling in core paths
 WORKTREE_COUPLING_PATTERN="${WORKTREE_COUPLING_PATTERN:-process\\.cwd\\(|fs\\.readFileSync\\(|fs\\.readFile\\(|git\\s+rev-parse\\s+--show-toplevel|git\\s+status}"
@@ -74,8 +76,8 @@ in_allowlist() {
 
 matches_any_regex_rule() {
   local file="$1"
-  local rules="$2"
-  IFS=':' read -r -a arr <<< "$rules"
+  local rules_str="$2"
+  IFS=':' read -r -a arr <<< "$rules_str"
   for re in "${arr[@]}"; do
     [[ -z "$re" ]] && continue
     if [[ "$file" =~ $re ]]; then
@@ -85,21 +87,35 @@ matches_any_regex_rule() {
   return 1
 }
 
+# Memoized changed_files: computed once and cached in _CHANGED_FILES_CACHE.
+_CHANGED_FILES_CACHE=""
+_CHANGED_FILES_COMPUTED=0
+
 changed_files() {
-  # Works in local and CI.
-  # If CI provides BASE_REF_SHA/HEAD_REF_SHA use those.
+  if [[ $_CHANGED_FILES_COMPUTED -eq 1 ]]; then
+    echo "$_CHANGED_FILES_CACHE"
+    return
+  fi
+  local result
+  # Prefer staged files when running as a pre-commit hook (no CI SHAs set).
   if [[ -n "${BASE_REF_SHA:-}" && -n "${HEAD_REF_SHA:-}" ]]; then
-    git diff --name-only "$BASE_REF_SHA" "$HEAD_REF_SHA"
+    result="$(git diff --name-only "$BASE_REF_SHA" "$HEAD_REF_SHA")"
+  elif [[ -n "$(git diff --cached --name-only 2>/dev/null)" ]]; then
+    # Pre-commit: only check staged files for speed
+    result="$(git diff --cached --name-only)"
   else
     # Local fallback against merge-base with main if exists
     if git show-ref --verify --quiet refs/heads/main; then
       local mb
       mb="$(git merge-base HEAD main)"
-      git diff --name-only "$mb" HEAD
+      result="$(git diff --name-only "$mb" HEAD)"
     else
-      git diff --name-only HEAD~1 HEAD || true
+      result="$(git diff --name-only HEAD~1 HEAD 2>/dev/null || true)"
     fi
   fi
+  _CHANGED_FILES_CACHE="$result"
+  _CHANGED_FILES_COMPUTED=1
+  echo "$result"
 }
 
 tracked_files() {

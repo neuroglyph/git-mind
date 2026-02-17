@@ -30,7 +30,12 @@ jobs:
             echo "head_sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
           else
             # push event fallback: previous commit -> current SHA
-            echo "base_sha=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+            # github.event.before is the all-zero null SHA on first-time branch pushes
+            before="${{ github.event.before }}"
+            if [[ "$before" == "0000000000000000000000000000000000000000" ]]; then
+              before="${{ github.sha }}^"
+            fi
+            echo "base_sha=$before" >> "$GITHUB_OUTPUT"
             echo "head_sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
           fi
 

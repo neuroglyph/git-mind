@@ -85,7 +85,7 @@ jobs:
             // helper: enforce "- [x] <label>"
             const unchecked = [];
             for (const label of requiredChecked) {
-              const checkedPattern = new RegExp(`- \$begin:math:display$x\\$end:math:display$ ${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, "i");
+              const checkedPattern = new RegExp(`- \\[x\\] ${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, "i");
               if (!checkedPattern.test(body)) unchecked.push(label);
             }
 
@@ -119,7 +119,10 @@ jobs:
                 "Mitigation and rollback plan:",
                 "Follow-up ADR/issue to reconcile architecture debt:"
               ];
-              const missingEx = requiredExFields.filter(f => !exText.includes(f) || new RegExp(`${f}\\s*$`, "m").test(exText));
+              const missingEx = requiredExFields.filter(f => {
+                const escaped = f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                return !exText.includes(f) || new RegExp(`${escaped}\\s*$`, "m").test(exText);
+              });
               if (missingEx.length > 0) {
                 fail(
                   "Deviation selected but Exception Request is incomplete. Fill all required fields:\n- " +

@@ -128,8 +128,10 @@ npm run test:determinism
 	•	Schema validation updated/passing
 	•	Commands:
 
+```bash
 # e.g.
 npm run validate:schemas
+```
 
 ### Policy Gates
 
@@ -180,18 +182,6 @@ scripts/review-checklist.sh
 ---
 
 ## Reviewer Quick Verdict Block (for maintainers)
-
-### MUST (Hard Gates)
-
-	•	PASS
-	•	CONDITIONAL
-	•	FAIL
-
-### SHOULD (Quality)
-
-	•	PASS
-	•	CONDITIONAL
-	•	FAIL
 
 ### MUST (Hard Gates)
 
