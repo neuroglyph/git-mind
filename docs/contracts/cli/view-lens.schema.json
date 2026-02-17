@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/view-lens.schema.json",
+  "title": "git-mind view with lenses --json",
+  "description": "View output with lens chaining from `git mind view <name>:<lens1>:<lens2> --json`",
+  "type": "object",
+  "required": ["schemaVersion", "command", "viewName", "lenses", "nodes", "edges"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "command": { "type": "string", "const": "view" },
+    "viewName": { "type": "string", "minLength": 1 },
+    "lenses": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "label": { "type": "string" },
+          "props": { "type": "object" }
+        }
+      }
+    },
+    "meta": {
+      "type": "object"
+    }
+  }
+}

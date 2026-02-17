@@ -17,6 +17,7 @@ export {
   LOW_CONFIDENCE_THRESHOLD,
 } from './validators.js';
 export { defineView, declareView, renderView, listViews, resetViews, classifyStatus } from './views.js';
+export { defineLens, listLenses, resetLenses, composeLenses } from './lens.js';
 export { parseDirectives, processCommit } from './hooks.js';
 export {
   getCurrentTick, recordEpoch, lookupEpoch,

@@ -16,6 +16,7 @@ import { exportGraph, serializeExport, exportToFile } from '../export.js';
 import { qualifyNodeId } from '../remote.js';
 import { mergeFromRepo } from '../merge.js';
 import { renderView, listViews } from '../views.js';
+import { listLenses } from '../lens.js';
 import { processCommit } from '../hooks.js';
 import { getEpochForRef } from '../epoch.js';
 import { runDoctor, fixIssues } from '../doctor.js';
@@ -75,18 +76,27 @@ export async function link(cwd, source, target, opts = {}) {
 }
 
 /**
- * Render a named view.
+ * Render a named view, optionally with lens chaining via colon syntax.
  * @param {string} cwd
- * @param {string} viewName
+ * @param {string} viewSpec - e.g. 'roadmap', 'roadmap:incomplete', 'roadmap:incomplete:frontier'
  * @param {{ scope?: string, json?: boolean }} opts
  */
-export async function view(cwd, viewName, opts = {}) {
-  if (!viewName) {
-    console.log(info(`Available views: ${listViews().join(', ')}`));
+export async function view(cwd, viewSpec, opts = {}) {
+  if (!viewSpec) {
+    const views = listViews().join(', ');
+    const lenses = listLenses().join(', ');
+    console.log(info(`Available views: ${views}`));
+    console.log(info(`Available lenses: ${lenses}`));
+    console.log(info('Compose with colons: git mind view roadmap:incomplete:frontier'));
     return;
   }
 
   try {
+    // Split on colon — first segment is view, rest are lenses
+    const segments = viewSpec.split(':');
+    const viewName = segments[0];
+    const lensNames = segments.slice(1).filter(s => s.length > 0);
+
     const graph = await loadGraph(cwd);
 
     // Build view-specific options from CLI flags
@@ -94,13 +104,21 @@ export async function view(cwd, viewName, opts = {}) {
     if (opts.scope) {
       viewOpts.scope = opts.scope.split(',').map(s => s.trim());
     }
+    if (lensNames.length > 0) {
+      viewOpts.lenses = lensNames;
+    }
 
     const result = await renderView(graph, viewName, viewOpts);
 
     if (opts.json) {
-      outputJson('view', { viewName, ...result });
+      const payload = { ...result, viewName };
+      if (lensNames.length > 0) {
+        payload.lenses = lensNames;
+      }
+      outputJson('view', payload);
     } else {
-      console.log(formatView(viewName, result));
+      const displayName = lensNames.length > 0 ? viewSpec : viewName;
+      console.log(formatView(displayName, result));
     }
   } catch (err) {
     console.error(error(err.message));

@@ -5,6 +5,8 @@
  */
 
 import { extractPrefix, isLowConfidence } from './validators.js';
+import { composeLenses } from './lens.js';
+import { buildAdjacency, topoSort, detectCycles, walkChain, findRoots } from './dag.js';
 
 // ── Status classification ───────────────────────────────────────
 
@@ -112,11 +114,11 @@ export function declareView(name, config) {
 }
 
 /**
- * Render a named view against the graph.
+ * Render a named view against the graph, optionally applying lenses.
  *
  * @param {import('@git-stunts/git-warp').default} graph
  * @param {string} viewName
- * @param {Record<string, unknown>} [options] - Options forwarded to the view's filterFn
+ * @param {Record<string, unknown> & { lenses?: string[] }} [options] - Options forwarded to the view's filterFn; `lenses` applies post-processing
  * @returns {Promise<ViewResult>}
  */
 export async function renderView(graph, viewName, options) {
@@ -126,12 +128,16 @@ export async function renderView(graph, viewName, options) {
     throw new Error(`Unknown view: "${viewName}". Available views: ${available}`);
   }
 
+  // Resolve lens composition (may throw on unknown lens)
+  const lensNames = options?.lenses ?? [];
+  const { composedFn, needsProperties: lensNeedsProps } = composeLenses(lensNames);
+
   const nodes = await graph.getNodes();
   const edges = await graph.getEdges();
 
-  // Only fetch node properties when the view declares it needs them
+  // Fetch node properties when the view OR any lens needs them
   let nodeProps;
-  if (view.needsProperties) {
+  if (view.needsProperties || lensNeedsProps) {
     nodeProps = new Map();
     // TODO: batch API at scale — O(N) getNodeProps calls is fine at ~50 nodes
     for (const id of nodes) {
@@ -144,7 +150,14 @@ export async function renderView(graph, viewName, options) {
     }
   }
 
-  return view.filterFn(nodes, edges, nodeProps, options);
+  let result = view.filterFn(nodes, edges, nodeProps, options);
+
+  // Apply composed lenses
+  if (lensNames.length > 0) {
+    result = composedFn(result, nodeProps, options);
+  }
+
+  return result;
 }
 
 /**
@@ -305,66 +318,22 @@ defineView('traceability', (nodes, edges) => {
 defineView('blockers', (nodes, edges) => {
   // Transitive blocking chain resolution with cycle detection.
   const blockEdges = edges.filter(e => e.label === 'blocks');
+  const { forward } = buildAdjacency(blockEdges);
 
-  // Build adjacency list: blocker -> [blocked]
-  const adj = new Map();
-  for (const e of blockEdges) {
-    if (!adj.has(e.from)) adj.set(e.from, []);
-    adj.get(e.from).push(e.to);
-  }
+  const cycles = detectCycles(forward);
+  const roots = findRoots(forward);
 
-  // Find all transitive chains from each root blocker
-  const chains = [];
-  const cycles = [];
+  // Collect all involved nodes
   const allInvolved = new Set();
-
-  // DFS from each node that has outgoing blocks edges
-  const visited = new Set();
-  for (const root of adj.keys()) {
-    const path = [];
-    const onStack = new Set();
-
-    const dfs = (node) => {
-      if (onStack.has(node)) {
-        // Cycle detected
-        const cycleStart = path.indexOf(node);
-        cycles.push([...path.slice(cycleStart), node]);
-        return;
-      }
-      if (visited.has(node)) return;
-      visited.add(node);
-      path.push(node);
-      onStack.add(node);
-      allInvolved.add(node);
-
-      const targets = adj.get(node) || [];
-      for (const t of targets) {
-        allInvolved.add(t);
-        dfs(t);
-      }
-      path.pop();
-      onStack.delete(node);
-    };
-
-    dfs(root);
+  for (const e of blockEdges) {
+    allInvolved.add(e.from);
+    allInvolved.add(e.to);
   }
 
-  // Build chains: root blockers (nodes that block others but aren't blocked themselves)
-  const blocked = new Set(blockEdges.map(e => e.to));
-  const roots = [...adj.keys()].filter(n => !blocked.has(n));
-
+  // Build chains from each root blocker
+  const chains = [];
   for (const root of roots) {
-    const chain = [];
-    const seen = new Set();
-    const buildChain = (node, depth) => {
-      if (seen.has(node)) return;
-      seen.add(node);
-      chain.push({ node, depth });
-      for (const t of (adj.get(node) || [])) {
-        buildChain(t, depth + 1);
-      }
-    };
-    buildChain(root, 0);
+    const chain = walkChain(root, forward);
     if (chain.length > 1) chains.push(chain);
   }
 
@@ -384,7 +353,6 @@ defineView('onboarding', (nodes, edges) => {
   const docSet = new Set(docNodes);
 
   // Relevant edges: depends-on, implements, documents between doc nodes
-  // or pointing to doc nodes
   const relevantTypes = new Set(['depends-on', 'documents', 'implements']);
   const docEdges = edges.filter(e =>
     relevantTypes.has(e.label) && docSet.has(e.from) && docSet.has(e.to)
@@ -392,48 +360,16 @@ defineView('onboarding', (nodes, edges) => {
 
   // Build dependency graph for topological sort
   // An edge A --[depends-on]--> B means read B before A
-  // An edge A --[documents]--> B means read A alongside B (no strict order)
-  const inDegree = new Map();
-  const adj = new Map();
-  for (const n of docNodes) {
-    inDegree.set(n, 0);
-    adj.set(n, []);
-  }
-
+  // So the "forward" direction for topoSort is: B → A (dependency target comes first)
+  const forward = new Map();
+  for (const n of docNodes) forward.set(n, []);
   for (const e of docEdges) {
     if (e.label === 'depends-on') {
-      adj.get(e.to).push(e.from); // B should come before A
-      inDegree.set(e.from, inDegree.get(e.from) + 1);
+      forward.get(e.to).push(e.from); // B should come before A
     }
   }
 
-  // Kahn's algorithm
-  const queue = [];
-  for (const [node, deg] of inDegree) {
-    if (deg === 0) queue.push(node);
-  }
-  queue.sort(); // deterministic tie-break: alphabetical
-
-  const sorted = [];
-  const sortedSet = new Set();
-  while (queue.length > 0) {
-    const node = queue.shift();
-    sorted.push(node);
-    sortedSet.add(node);
-    for (const next of (adj.get(node) || [])) {
-      const newDeg = inDegree.get(next) - 1;
-      inDegree.set(next, newDeg);
-      if (newDeg === 0) {
-        // Insert sorted to maintain deterministic order
-        const idx = queue.findIndex(q => q > next);
-        if (idx === -1) queue.push(next);
-        else queue.splice(idx, 0, next);
-      }
-    }
-  }
-
-  // Nodes not reached (part of a cycle) go at the end
-  const remaining = docNodes.filter(n => !sortedSet.has(n)).sort();
+  const { sorted, remaining } = topoSort(docNodes, forward);
 
   return {
     nodes: [...sorted, ...remaining],
@@ -547,3 +483,12 @@ defineView('progress', (nodes, edges, nodeProps, options) => {
 
 // Capture built-in names after all registrations
 builtInNames = new Set(registry.keys());
+
+// ── Register core lenses + capture ──────────────────────────────
+// Side-effect import: ES module imports are hoisted, so core.js
+// executes its defineLens() calls during module initialization.
+// captureBuiltIns() snapshots the registry so resetLenses() can
+// restore to this baseline during tests.
+import './lenses/core.js';
+import { captureBuiltIns as captureLensBuiltIns } from './lens.js';
+captureLensBuiltIns();

@@ -23,9 +23,10 @@ Commands:
     --remote <owner/name>       Qualify IDs as cross-repo
   remove <source> <target>      Remove a semantic edge
     --type <type>               Edge type (default: relates-to)
-  view [name]                   Show a named view (or list views)
+  view [name[:lens1:lens2]]      Show a view, optionally with lens chaining
     --scope <prefixes>          Comma-separated prefix filter (progress view)
     --json                      Output as JSON
+    Lenses: incomplete, frontier, critical-path, blocked, parallel
   list                          List all edges
     --type <type>               Filter by edge type
     --source <node>             Filter by source node

@@ -319,6 +319,21 @@ describe('CLI schema contract canaries', () => {
     expect(validate(output), JSON.stringify(validate.errors)).toBe(true);
   });
 
+  it('view backlog:blocked --json validates against view-lens.schema.json', async () => {
+    const schema = await loadSchema('view-lens.schema.json');
+    const output = runCli(['view', 'backlog:blocked', '--json'], tempDir);
+
+    expect(output.schemaVersion).toBe(1);
+    expect(output.command).toBe('view');
+    expect(output.viewName).toBe('backlog');
+    expect(output.lenses).toEqual(['blocked']);
+    expect(Array.isArray(output.nodes)).toBe(true);
+    expect(Array.isArray(output.edges)).toBe(true);
+
+    const validate = ajv.compile(schema);
+    expect(validate(output), JSON.stringify(validate.errors)).toBe(true);
+  });
+
   // Note: suggest --json is not tested here because it requires a configured
   // GITMIND_AGENT (LLM command) which is unavailable in CI/test environments.
 });

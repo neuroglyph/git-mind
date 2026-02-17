@@ -1,0 +1,135 @@
+name: check-pr-template
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+jobs:
+  enforce-pr-template:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      contents: read
+
+    steps:
+      - name: Validate PR template completeness
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || "";
+
+            const fail = (msg) => core.setFailed(msg);
+            const warn = (msg) => core.warning(msg);
+
+            // --- Required section headings (exact strings from your template) ---
+            const requiredHeadings = [
+              "## Summary",
+              "## Problem Statement",
+              "## ADR Compliance (Required)",
+              "## Architecture Laws Checklist (Hard Gates)",
+              "## Scope Control",
+              "## Backward Compatibility",
+              "## Test Plan (Required)",
+              "## Security / Trust Impact",
+              "## Performance Impact",
+              "## Observability / Debuggability",
+              "## Operational Notes",
+              "## Linked Issues / Milestones"
+            ];
+
+            const missingHeadings = requiredHeadings.filter(h => !body.includes(h));
+            if (missingHeadings.length > 0) {
+              fail(
+                "PR template is incomplete. Missing required section(s):\n- " +
+                missingHeadings.join("\n- ")
+              );
+              return;
+            }
+
+            // --- Ensure PR isn't mostly empty placeholders ---
+            // Basic signals that the author actually filled content:
+            // 1) at least one bullet in Summary
+            // 2) Problem Statement has non-trivial text
+            // 3) Linked issue has a reference
+            const summaryMatch = body.match(/## Summary([\s\S]*?)## Problem Statement/);
+            if (!summaryMatch || !/-\s+\S/.test(summaryMatch[1])) {
+              fail("Summary must include at least one non-empty bullet.");
+              return;
+            }
+
+            const problemMatch = body.match(/## Problem Statement([\s\S]*?)## ADR Compliance \(Required\)/);
+            if (!problemMatch || problemMatch[1].replace(/<!--[\s\S]*?-->/g, "").trim().length < 20) {
+              fail("Problem Statement appears empty. Please explain the concrete problem and why now.");
+              return;
+            }
+
+            const linkedMatch = body.match(/## Linked Issues \/ Milestones([\s\S]*?)## Reviewer Quick Verdict Block \(for maintainers\)/);
+            if (!linkedMatch || !/(#\d+|Closes\s+#\d+|Fixes\s+#\d+|Resolves\s+#\d+)/i.test(linkedMatch[1])) {
+              warn("No issue reference detected in Linked Issues / Milestones. Add one if applicable.");
+            }
+
+            // --- Hard gate checkboxes in Architecture Laws Checklist ---
+            // Required checkbox labels to be checked [x]
+            const requiredChecked = [
+              "Graph remains canonical truth (no dual truth with generated files).",
+              "No hidden worktree coupling introduced in core/domain/materialization paths.",
+              "Context-sensitive behavior is explicit (`--at`, `--observer`, `--trust`) or deterministically defaulted.",
+              "Resolved context is surfaced in output metadata where applicable.",
+              "Pure query/materialization paths remain deterministic for identical inputs.",
+              "Mutations/materializations include provenance receipts/envelopes where required.",
+              "No forbidden generated artifact paths are tracked.",
+              "Machine-facing outputs are schema-versioned."
+            ];
+
+            // helper: enforce "- [x] <label>"
+            const unchecked = [];
+            for (const label of requiredChecked) {
+              const checkedPattern = new RegExp(`- \\[x\\] ${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, "i");
+              if (!checkedPattern.test(body)) unchecked.push(label);
+            }
+
+            if (unchecked.length > 0) {
+              fail(
+                "Architecture hard-gate checkbox(es) must be checked before merge:\n- " +
+                unchecked.join("\n- ")
+              );
+              return;
+            }
+
+            // --- ADR compliance block must be explicitly selected ---
+            const hasAdrComplianceSelected =
+              /- \[x\] This PR is fully compliant with all checked ADRs\./i.test(body) ||
+              /- \[x\] This PR intentionally deviates from one or more checked ADRs \(complete Exception Request below\)\./i.test(body);
+
+            if (!hasAdrComplianceSelected) {
+              fail("ADR Compliance Declaration must be explicitly selected.");
+              return;
+            }
+
+            // If deviation selected, Exception Request fields must be non-empty
+            const deviates = /- \[x\] This PR intentionally deviates from one or more checked ADRs \(complete Exception Request below\)\./i.test(body);
+            if (deviates) {
+              const ex = body.match(/### Exception Request \(Required if deviating\)([\s\S]*?)---/);
+              const exText = ex ? ex[1].replace(/<!--[\s\S]*?-->/g, "").trim() : "";
+              const requiredExFields = [
+                "ADR clause(s) deviated from:",
+                "Why deviation is necessary now:",
+                "Risk introduced by deviation:",
+                "Mitigation and rollback plan:",
+                "Follow-up ADR/issue to reconcile architecture debt:"
+              ];
+              const missingEx = requiredExFields.filter(f => {
+                const escaped = f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                return !exText.includes(f) || new RegExp(`${escaped}\\s*$`, "m").test(exText);
+              });
+              if (missingEx.length > 0) {
+                fail(
+                  "Deviation selected but Exception Request is incomplete. Fill all required fields:\n- " +
+                  missingEx.join("\n- ")
+                );
+                return;
+              }
+            }
+
+            core.info("PR template check passed.");
