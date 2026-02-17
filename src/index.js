@@ -43,3 +43,4 @@ export {
   adjustSuggestion, skipSuggestion, getReviewHistory, batchDecision,
 } from './review.js';
 export { computeDiff, diffSnapshots } from './diff.js';
+export { createContext, DEFAULT_CONTEXT } from './context-envelope.js';
