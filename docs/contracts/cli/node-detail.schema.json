@@ -4,20 +4,75 @@
   "title": "git-mind nodes --id --json",
   "description": "Single node detail output from `git mind nodes --id <id> --json`",
   "type": "object",
-  "required": ["schemaVersion", "command", "id", "prefix", "prefixClass", "properties"],
+  "required": [
+    "schemaVersion",
+    "command",
+    "id",
+    "prefix",
+    "prefixClass",
+    "properties"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
-    "command": { "type": "string", "const": "nodes" },
-    "id": { "type": "string", "minLength": 1 },
-    "prefix": { "type": ["string", "null"] },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "command": {
+      "type": "string",
+      "const": "nodes"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prefix": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "prefixClass": {
       "type": "string",
-      "enum": ["canonical", "system", "unknown"]
+      "enum": [
+        "canonical",
+        "system",
+        "unknown"
+      ]
     },
     "properties": {
       "type": "object",
       "additionalProperties": true
+    },
+    "resolvedContext": {
+      "type": "object",
+      "description": "Resolved read context for this operation",
+      "properties": {
+        "asOf": {
+          "type": "string"
+        },
+        "resolvedTick": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "observer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trustPolicy": {
+          "type": "string"
+        },
+        "extensionLock": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     }
   }
 }

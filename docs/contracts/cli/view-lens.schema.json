@@ -4,37 +4,100 @@
   "title": "git-mind view with lenses --json",
   "description": "View output with lens chaining from `git mind view <name>:<lens1>:<lens2> --json`",
   "type": "object",
-  "required": ["schemaVersion", "command", "viewName", "lenses", "nodes", "edges"],
+  "required": [
+    "schemaVersion",
+    "command",
+    "viewName",
+    "lenses",
+    "nodes",
+    "edges"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
-    "command": { "type": "string", "const": "view" },
-    "viewName": { "type": "string", "minLength": 1 },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "command": {
+      "type": "string",
+      "const": "view"
+    },
+    "viewName": {
+      "type": "string",
+      "minLength": 1
+    },
     "lenses": {
       "type": "array",
-      "items": { "type": "string", "minLength": 1 },
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
       "minItems": 1
     },
     "nodes": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "edges": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["from", "to", "label"],
+        "required": [
+          "from",
+          "to",
+          "label"
+        ],
         "additionalProperties": false,
         "properties": {
-          "from": { "type": "string" },
-          "to": { "type": "string" },
-          "label": { "type": "string" },
-          "props": { "type": "object" }
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "props": {
+            "type": "object"
+          }
         }
       }
     },
     "meta": {
       "type": "object"
+    },
+    "resolvedContext": {
+      "type": "object",
+      "description": "Resolved read context for this operation",
+      "properties": {
+        "asOf": {
+          "type": "string"
+        },
+        "resolvedTick": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "observer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trustPolicy": {
+          "type": "string"
+        },
+        "extensionLock": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     }
   }
 }

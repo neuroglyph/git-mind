@@ -4,58 +4,151 @@
   "title": "git-mind doctor --json",
   "description": "Graph integrity check result from `git mind doctor --json`",
   "type": "object",
-  "required": ["schemaVersion", "command", "issues", "summary", "clean"],
+  "required": [
+    "schemaVersion",
+    "command",
+    "issues",
+    "summary",
+    "clean"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
-    "command": { "type": "string", "const": "doctor" },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "command": {
+      "type": "string",
+      "const": "doctor"
+    },
     "issues": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["type", "severity", "message", "affected"],
+        "required": [
+          "type",
+          "severity",
+          "message",
+          "affected"
+        ],
         "additionalProperties": false,
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["dangling-edge", "orphan-milestone", "orphan-node", "low-confidence"]
+            "enum": [
+              "dangling-edge",
+              "orphan-milestone",
+              "orphan-node",
+              "low-confidence"
+            ]
           },
           "severity": {
             "type": "string",
-            "enum": ["error", "warning", "info"]
+            "enum": [
+              "error",
+              "warning",
+              "info"
+            ]
           },
-          "message": { "type": "string" },
+          "message": {
+            "type": "string"
+          },
           "affected": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
-          "source": { "type": "string" },
-          "target": { "type": "string" },
-          "edgeType": { "type": "string" }
+          "source": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "edgeType": {
+            "type": "string"
+          }
         }
       }
     },
     "summary": {
       "type": "object",
-      "required": ["errors", "warnings", "info"],
+      "required": [
+        "errors",
+        "warnings",
+        "info"
+      ],
       "additionalProperties": false,
       "properties": {
-        "errors": { "type": "integer", "minimum": 0 },
-        "warnings": { "type": "integer", "minimum": 0 },
-        "info": { "type": "integer", "minimum": 0 }
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "info": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
-    "clean": { "type": "boolean" },
+    "clean": {
+      "type": "boolean"
+    },
     "fix": {
       "type": "object",
-      "required": ["fixed", "skipped", "details"],
+      "required": [
+        "fixed",
+        "skipped",
+        "details"
+      ],
       "additionalProperties": false,
       "properties": {
-        "fixed": { "type": "integer", "minimum": 0 },
-        "skipped": { "type": "integer", "minimum": 0 },
+        "fixed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        },
         "details": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "resolvedContext": {
+      "type": "object",
+      "description": "Resolved read context for this operation",
+      "properties": {
+        "asOf": {
+          "type": "string"
+        },
+        "resolvedTick": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "observer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trustPolicy": {
+          "type": "string"
+        },
+        "extensionLock": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     }

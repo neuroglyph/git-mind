@@ -4,19 +4,39 @@
   "title": "git-mind export --json (stdout)",
   "description": "Graph data export from `git mind export --json` (stdout mode)",
   "type": "object",
-  "required": ["schemaVersion", "command", "version", "nodes", "edges"],
+  "required": [
+    "schemaVersion",
+    "command",
+    "version",
+    "nodes",
+    "edges"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
-    "command": { "type": "string", "const": "export" },
-    "version": { "type": "integer", "const": 1 },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "command": {
+      "type": "string",
+      "const": "export"
+    },
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
     "nodes": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id"],
+        "required": [
+          "id"
+        ],
         "properties": {
-          "id": { "type": "string", "minLength": 1 },
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
           "properties": {
             "type": "object",
             "additionalProperties": true
@@ -29,15 +49,63 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["source", "target", "type"],
+        "required": [
+          "source",
+          "target",
+          "type"
+        ],
         "properties": {
-          "source": { "type": "string", "minLength": 1 },
-          "target": { "type": "string", "minLength": 1 },
-          "type": { "type": "string" },
-          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-          "rationale": { "type": "string" }
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "rationale": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
+      }
+    },
+    "resolvedContext": {
+      "type": "object",
+      "description": "Resolved read context for this operation",
+      "properties": {
+        "asOf": {
+          "type": "string"
+        },
+        "resolvedTick": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "observer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trustPolicy": {
+          "type": "string"
+        },
+        "extensionLock": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     }
   }

@@ -4,14 +4,56 @@
   "title": "git-mind nodes --json",
   "description": "Node list output from `git mind nodes --json`",
   "type": "object",
-  "required": ["schemaVersion", "command", "nodes"],
+  "required": [
+    "schemaVersion",
+    "command",
+    "nodes"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
-    "command": { "type": "string", "const": "nodes" },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "command": {
+      "type": "string",
+      "const": "nodes"
+    },
     "nodes": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
+    },
+    "resolvedContext": {
+      "type": "object",
+      "description": "Resolved read context for this operation",
+      "properties": {
+        "asOf": {
+          "type": "string"
+        },
+        "resolvedTick": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "observer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trustPolicy": {
+          "type": "string"
+        },
+        "extensionLock": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     }
   }
 }

@@ -4,62 +4,194 @@
   "title": "git-mind view progress --json",
   "description": "Progress view output from `git mind view progress --json`",
   "type": "object",
-  "required": ["schemaVersion", "command", "viewName", "nodes", "edges", "meta"],
+  "required": [
+    "schemaVersion",
+    "command",
+    "viewName",
+    "nodes",
+    "edges",
+    "meta"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
-    "command": { "type": "string", "const": "view" },
-    "viewName": { "type": "string", "const": "progress" },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "command": {
+      "type": "string",
+      "const": "view"
+    },
+    "viewName": {
+      "type": "string",
+      "const": "progress"
+    },
     "nodes": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "edges": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["from", "to", "label"],
+        "required": [
+          "from",
+          "to",
+          "label"
+        ],
         "additionalProperties": false,
         "properties": {
-          "from": { "type": "string" },
-          "to": { "type": "string" },
-          "label": { "type": "string" },
-          "props": { "type": "object" }
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "props": {
+            "type": "object"
+          }
         }
       }
     },
     "meta": {
       "type": "object",
-      "required": ["byStatus", "summary"],
+      "required": [
+        "byStatus",
+        "summary"
+      ],
       "additionalProperties": false,
       "properties": {
         "byStatus": {
           "type": "object",
-          "required": ["done", "in-progress", "todo", "blocked", "unknown"],
+          "required": [
+            "done",
+            "in-progress",
+            "todo",
+            "blocked",
+            "unknown"
+          ],
           "additionalProperties": false,
           "properties": {
-            "done": { "type": "array", "items": { "type": "string" } },
-            "in-progress": { "type": "array", "items": { "type": "string" } },
-            "todo": { "type": "array", "items": { "type": "string" } },
-            "blocked": { "type": "array", "items": { "type": "string" } },
-            "unknown": { "type": "array", "items": { "type": "string" } }
+            "done": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "in-progress": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "todo": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "blocked": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "unknown": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         },
         "summary": {
           "type": "object",
-          "required": ["total", "done", "in-progress", "todo", "blocked", "unknown", "pct", "ratio", "remaining"],
+          "required": [
+            "total",
+            "done",
+            "in-progress",
+            "todo",
+            "blocked",
+            "unknown",
+            "pct",
+            "ratio",
+            "remaining"
+          ],
           "additionalProperties": false,
           "properties": {
-            "total": { "type": "integer", "minimum": 0 },
-            "done": { "type": "integer", "minimum": 0 },
-            "in-progress": { "type": "integer", "minimum": 0 },
-            "todo": { "type": "integer", "minimum": 0 },
-            "blocked": { "type": "integer", "minimum": 0 },
-            "unknown": { "type": "integer", "minimum": 0 },
-            "pct": { "type": "integer", "minimum": 0, "maximum": 100 },
-            "ratio": { "type": "string", "pattern": "^\\d+/\\d+$" },
-            "remaining": { "type": "integer", "minimum": 0 }
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "done": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "in-progress": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "todo": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "blocked": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unknown": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "pct": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "ratio": {
+              "type": "string",
+              "pattern": "^\\d+/\\d+$"
+            },
+            "remaining": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
+        }
+      }
+    },
+    "resolvedContext": {
+      "type": "object",
+      "description": "Resolved read context for this operation",
+      "properties": {
+        "asOf": {
+          "type": "string"
+        },
+        "resolvedTick": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "observer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trustPolicy": {
+          "type": "string"
+        },
+        "extensionLock": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     }

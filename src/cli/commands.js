@@ -23,6 +23,7 @@ import { runDoctor, fixIssues } from '../doctor.js';
 import { generateSuggestions } from '../suggest.js';
 import { getPendingSuggestions, acceptSuggestion, rejectSuggestion, skipSuggestion, batchDecision } from '../review.js';
 import { computeDiff } from '../diff.js';
+import { createContext, DEFAULT_CONTEXT } from '../context-envelope.js';
 import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus, formatDiff } from './format.js';
 
 /**
@@ -35,6 +36,76 @@ import { success, error, info, warning, formatEdge, formatView, formatNode, form
 function outputJson(command, data) {
   const out = { ...data, schemaVersion: 1, command };
   console.log(JSON.stringify(out, null, 2));
+}
+
+/**
+ * Resolve a ContextEnvelope to a live graph-like object.
+ *
+ * This is the CLI boundary — context is resolved here so domain functions
+ * (renderView, computeStatus, etc.) remain clean and context-unaware.
+ *
+ * Resolution order:
+ * 1. Load base graph.
+ * 2. If asOf != 'HEAD': resolve ref → epoch tick → materialize fresh instance.
+ * 3. If observer != null: read observer config from graph, create filtered view.
+ *
+ * @param {string} cwd - Repository working directory
+ * @param {import('../context-envelope.js').ContextEnvelope} envelope
+ * @returns {Promise<{ graph: object, resolvedContext: object }>}
+ */
+export async function resolveContext(cwd, envelope) {
+  const { asOf, observer, trustPolicy, extensionLock } = envelope;
+
+  let resolvedTick = null;
+  let graph;
+
+  if (asOf === 'HEAD') {
+    graph = await loadGraph(cwd, { writerId: 'ctx-reader' });
+  } else {
+    // Time-travel: resolve git ref → Lamport tick → materialize
+    // Use a separate resolver instance so we can materialize a fresh one.
+    const resolver = await loadGraph(cwd, { writerId: 'ctx-resolver' });
+    const result = await getEpochForRef(resolver, cwd, asOf);
+    if (!result) {
+      throw new Error(
+        `No epoch marker found for "${asOf}" or any ancestor. ` +
+        `Run "git mind process-commit" to record epoch markers.`,
+      );
+    }
+    resolvedTick = result.epoch.tick;
+    // materialize({ ceiling }) is destructive — use a dedicated instance
+    graph = await loadGraph(cwd, { writerId: 'ctx-temporal' });
+    await graph.materialize({ ceiling: resolvedTick });
+  }
+
+  // Apply observer filter (graph-stored configs — no separate registry file)
+  if (observer !== null) {
+    const observerId = `observer:${observer}`;
+    const propsMap = await graph.getNodeProps(observerId);
+    if (!propsMap) {
+      throw new Error(
+        `Observer '${observer}' not found. ` +
+        `Define it with: git mind set observer:${observer} match 'prefix:*'`,
+      );
+    }
+    const config = { match: propsMap.get('match') };
+    const expose = propsMap.get('expose');
+    const redact = propsMap.get('redact');
+    if (expose !== undefined) config.expose = expose;
+    if (redact !== undefined) config.redact = redact;
+    graph = await graph.observer(observer, config);
+  }
+
+  return {
+    graph,
+    resolvedContext: {
+      asOf,
+      resolvedTick,
+      observer,
+      trustPolicy,
+      extensionLock,
+    },
+  };
 }
 
 /**
@@ -79,7 +150,7 @@ export async function link(cwd, source, target, opts = {}) {
  * Render a named view, optionally with lens chaining via colon syntax.
  * @param {string} cwd
  * @param {string} viewSpec - e.g. 'roadmap', 'roadmap:incomplete', 'roadmap:incomplete:frontier'
- * @param {{ scope?: string, json?: boolean }} opts
+ * @param {{ scope?: string, json?: boolean, context?: import('../context-envelope.js').ContextEnvelope }} opts
  */
 export async function view(cwd, viewSpec, opts = {}) {
   if (!viewSpec) {
@@ -97,7 +168,8 @@ export async function view(cwd, viewSpec, opts = {}) {
     const viewName = segments[0];
     const lensNames = segments.slice(1).filter(s => s.length > 0);
 
-    const graph = await loadGraph(cwd);
+    const envelope = opts.context ?? DEFAULT_CONTEXT;
+    const { graph, resolvedContext } = await resolveContext(cwd, envelope);
 
     // Build view-specific options from CLI flags
     const viewOpts = {};
@@ -115,6 +187,7 @@ export async function view(cwd, viewSpec, opts = {}) {
       if (lensNames.length > 0) {
         payload.lenses = lensNames;
       }
+      payload.resolvedContext = resolvedContext;
       outputJson('view', payload);
     } else {
       const displayName = lensNames.length > 0 ? viewSpec : viewName;
@@ -240,11 +313,12 @@ export async function processCommitCmd(cwd, sha) {
 /**
  * List and inspect nodes in the graph.
  * @param {string} cwd
- * @param {{ prefix?: string, id?: string, json?: boolean }} opts
+ * @param {{ prefix?: string, id?: string, json?: boolean, context?: import('../context-envelope.js').ContextEnvelope }} opts
  */
 export async function nodes(cwd, opts = {}) {
   try {
-    const graph = await loadGraph(cwd);
+    const envelope = opts.context ?? DEFAULT_CONTEXT;
+    const { graph, resolvedContext } = await resolveContext(cwd, envelope);
 
     // Single node detail
     if (opts.id) {
@@ -255,7 +329,7 @@ export async function nodes(cwd, opts = {}) {
         return;
       }
       if (opts.json) {
-        outputJson('nodes', node);
+        outputJson('nodes', { ...node, resolvedContext });
       } else {
         console.log(formatNode(node));
       }
@@ -268,7 +342,7 @@ export async function nodes(cwd, opts = {}) {
       : await getNodes(graph);
 
     if (opts.json) {
-      outputJson('nodes', { nodes: nodeList });
+      outputJson('nodes', { nodes: nodeList, resolvedContext });
       return;
     }
 
@@ -288,15 +362,16 @@ export async function nodes(cwd, opts = {}) {
 /**
  * Show graph status dashboard.
  * @param {string} cwd
- * @param {{ json?: boolean }} opts
+ * @param {{ json?: boolean, context?: import('../context-envelope.js').ContextEnvelope }} opts
  */
 export async function status(cwd, opts = {}) {
   try {
-    const graph = await loadGraph(cwd);
+    const envelope = opts.context ?? DEFAULT_CONTEXT;
+    const { graph, resolvedContext } = await resolveContext(cwd, envelope);
     const result = await computeStatus(graph);
 
     if (opts.json) {
-      outputJson('status', result);
+      outputJson('status', { ...result, resolvedContext });
     } else {
       console.log(formatStatus(result));
     }
@@ -410,18 +485,19 @@ export async function importMarkdownCmd(cwd, pattern, opts = {}) {
 /**
  * Export the graph to a file or stdout.
  * @param {string} cwd
- * @param {{ file?: string, format?: string, prefix?: string, json?: boolean }} opts
+ * @param {{ file?: string, format?: string, prefix?: string, json?: boolean, context?: import('../context-envelope.js').ContextEnvelope }} opts
  */
 export async function exportCmd(cwd, opts = {}) {
   try {
-    const graph = await loadGraph(cwd);
+    const envelope = opts.context ?? DEFAULT_CONTEXT;
+    const { graph, resolvedContext } = await resolveContext(cwd, envelope);
     const format = opts.format ?? 'yaml';
 
     if (opts.file) {
       const result = await exportToFile(graph, opts.file, { format, prefix: opts.prefix });
 
       if (opts.json) {
-        outputJson('export', result);
+        outputJson('export', { ...result, resolvedContext });
       } else {
         console.log(formatExportResult(result));
       }
@@ -430,7 +506,7 @@ export async function exportCmd(cwd, opts = {}) {
       const data = await exportGraph(graph, { prefix: opts.prefix });
 
       if (opts.json) {
-        outputJson('export', data);
+        outputJson('export', { ...data, resolvedContext });
       } else {
         const output = serializeExport(data, format);
         process.stdout.write(output);
@@ -479,11 +555,12 @@ export async function mergeCmd(cwd, opts = {}) {
 /**
  * Run graph integrity checks.
  * @param {string} cwd
- * @param {{ json?: boolean, fix?: boolean }} opts
+ * @param {{ json?: boolean, fix?: boolean, context?: import('../context-envelope.js').ContextEnvelope }} opts
  */
 export async function doctor(cwd, opts = {}) {
   try {
-    const graph = await loadGraph(cwd);
+    const envelope = opts.context ?? DEFAULT_CONTEXT;
+    const { graph, resolvedContext } = await resolveContext(cwd, envelope);
     const result = await runDoctor(graph);
 
     let fixResult;
@@ -492,7 +569,8 @@ export async function doctor(cwd, opts = {}) {
     }
 
     if (opts.json) {
-      outputJson('doctor', fixResult ? { ...result, fix: fixResult } : result);
+      const payload = fixResult ? { ...result, fix: fixResult } : result;
+      outputJson('doctor', { ...payload, resolvedContext });
     } else {
       console.log(formatDoctorResult(result, fixResult));
     }

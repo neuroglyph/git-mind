@@ -4,43 +4,116 @@
   "title": "git-mind status --json",
   "description": "Graph status dashboard output from `git mind status --json`",
   "type": "object",
-  "required": ["schemaVersion", "command", "nodes", "edges", "health"],
+  "required": [
+    "schemaVersion",
+    "command",
+    "nodes",
+    "edges",
+    "health"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
-    "command": { "type": "string", "const": "status" },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "command": {
+      "type": "string",
+      "const": "status"
+    },
     "nodes": {
       "type": "object",
-      "required": ["total", "byPrefix"],
+      "required": [
+        "total",
+        "byPrefix"
+      ],
       "additionalProperties": false,
       "properties": {
-        "total": { "type": "integer", "minimum": 0 },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
         "byPrefix": {
           "type": "object",
-          "additionalProperties": { "type": "integer", "minimum": 0 }
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
         }
       }
     },
     "edges": {
       "type": "object",
-      "required": ["total", "byType"],
+      "required": [
+        "total",
+        "byType"
+      ],
       "additionalProperties": false,
       "properties": {
-        "total": { "type": "integer", "minimum": 0 },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
         "byType": {
           "type": "object",
-          "additionalProperties": { "type": "integer", "minimum": 0 }
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
         }
       }
     },
     "health": {
       "type": "object",
-      "required": ["blockedItems", "lowConfidence", "orphanNodes"],
+      "required": [
+        "blockedItems",
+        "lowConfidence",
+        "orphanNodes"
+      ],
       "additionalProperties": false,
       "properties": {
-        "blockedItems": { "type": "integer", "minimum": 0 },
-        "lowConfidence": { "type": "integer", "minimum": 0 },
-        "orphanNodes": { "type": "integer", "minimum": 0 }
+        "blockedItems": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lowConfidence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "orphanNodes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "resolvedContext": {
+      "type": "object",
+      "description": "Resolved read context for this operation",
+      "properties": {
+        "asOf": {
+          "type": "string"
+        },
+        "resolvedTick": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "observer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trustPolicy": {
+          "type": "string"
+        },
+        "extensionLock": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     }
   }
