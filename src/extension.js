@@ -162,9 +162,18 @@ export function resetExtensions() {
 /**
  * Capture the current registry as the built-in baseline.
  * Called after built-in extensions are registered.
+ * @internal
  */
 export function captureBuiltIns() {
   builtInDefs = new Map(registry);
+}
+
+/**
+ * Clear the built-in snapshot. Intended for test cleanup only.
+ * @internal
+ */
+export function _resetBuiltInsForTest() {
+  builtInDefs.clear();
 }
 
 /**
@@ -178,8 +187,7 @@ export async function registerBuiltinExtensions() {
   for (const url of BUILTIN_MANIFESTS) {
     const manifestPath = fileURLToPath(url);
     const record = await loadExtension(manifestPath);
-    record.builtin = true;
-    registerExtension(record);
+    registerExtension({ ...record, builtin: true });
   }
   captureBuiltIns();
 }

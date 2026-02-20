@@ -814,7 +814,7 @@ export async function diff(cwd, refA, refB, opts = {}) {
  * @param {string} _cwd
  * @param {{ json?: boolean }} opts
  */
-export async function extensionList(_cwd, opts = {}) {
+export function extensionList(_cwd, opts = {}) {
   const extensions = listExtensions();
   if (opts.json) {
     outputJson('extension-list', { extensions });

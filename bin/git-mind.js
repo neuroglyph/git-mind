@@ -10,9 +10,6 @@ import { parseDiffRefs, collectDiffPositionals } from '../src/diff.js';
 import { createContext } from '../src/context-envelope.js';
 import { registerBuiltinExtensions } from '../src/extension.js';
 
-// Register built-in extensions at startup
-await registerBuiltinExtensions();
-
 const args = process.argv.slice(2);
 const command = args[0];
 const cwd = process.cwd();
@@ -375,18 +372,23 @@ switch (command) {
   }
 
   case 'extension': {
+    await registerBuiltinExtensions();
     const subCmd = args[1];
     const extFlags = parseFlags(args.slice(2));
     switch (subCmd) {
       case 'list':
         await extensionList(cwd, { json: extFlags.json ?? false });
         break;
-      case 'validate':
-        await extensionValidate(cwd, args[2], { json: extFlags.json ?? false });
+      case 'validate': {
+        const validatePath = args.slice(2).find(a => !a.startsWith('--'));
+        await extensionValidate(cwd, validatePath, { json: extFlags.json ?? false });
         break;
-      case 'add':
-        await extensionAdd(cwd, args[2], { json: extFlags.json ?? false });
+      }
+      case 'add': {
+        const addPath = args.slice(2).find(a => !a.startsWith('--'));
+        await extensionAdd(cwd, addPath, { json: extFlags.json ?? false });
         break;
+      }
       default:
         console.error(`Unknown extension subcommand: ${subCmd ?? '(none)'}`);
         console.error('Usage: git mind extension <list|validate|add>');

@@ -3,6 +3,8 @@ version: 1.0.0
 description: Project roadmap domain — phases, milestones, tasks, and progress tracking
 
 domain:
+  # milestone and feature are domain-owned prefixes but surfaced
+  # via dedicated built-in views (milestone, progress) rather than here
   prefixes: [phase, milestone, task, feature]
   edgeTypes: [belongs-to, blocks, implements]
   statusValues: [todo, in-progress, done, blocked]

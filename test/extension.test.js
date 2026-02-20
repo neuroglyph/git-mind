@@ -16,6 +16,7 @@ import {
   validateExtension,
   resetExtensions,
   captureBuiltIns,
+  _resetBuiltInsForTest,
 } from '../src/extension.js';
 import { listLenses } from '../src/lens.js';
 import { listViews, resetViews } from '../src/views.js';
@@ -62,6 +63,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  _resetBuiltInsForTest();
   resetExtensions();
   resetViews();
   await rm(tempDir, { recursive: true, force: true });
@@ -229,7 +231,7 @@ describe('listExtensions / getExtension', () => {
 
   it('listExtensions returns empty array when nothing registered', () => {
     // resetExtensions() was called in afterEach, no builtins captured
-    expect(Array.isArray(listExtensions())).toBe(true);
+    expect(listExtensions()).toEqual([]);
   });
 });
 

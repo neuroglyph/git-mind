@@ -146,4 +146,12 @@ describe('registerBuiltinExtensions', () => {
     expect(getExtension('roadmap')).toBeDefined();
     expect(getExtension('architecture')).toBeDefined();
   });
+
+  it('built-in views are available (pre-registered by views.js)', async () => {
+    await registerBuiltinExtensions();
+    const views = listViews();
+    expect(views).toContain('roadmap');
+    expect(views).toContain('backlog');
+    expect(views).toContain('architecture');
+  });
 });
