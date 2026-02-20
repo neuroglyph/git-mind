@@ -15,6 +15,7 @@ import {
   registerBuiltinExtensions,
   listExtensions,
   getExtension,
+  _resetBuiltInsForTest,
 } from '../src/extension.js';
 import { listLenses } from '../src/lens.js';
 import { listViews, resetViews } from '../src/views.js';
@@ -24,6 +25,7 @@ const ROADMAP_MANIFEST = join(ROOT, 'extensions', 'roadmap', 'extension.yaml');
 const ARCHITECTURE_MANIFEST = join(ROOT, 'extensions', 'architecture', 'extension.yaml');
 
 afterEach(() => {
+  _resetBuiltInsForTest();
   resetExtensions();
   resetViews();
 });
