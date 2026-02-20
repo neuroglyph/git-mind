@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.2.0] - 2026-02-17
 
+### Changed
+
+- **Upgraded `@git-stunts/git-warp`** from v10.3.2 to v11.3.3
+
 ### Added
 
 - **Composable view lenses** — Post-filter views with chainable lenses using colon syntax: `git mind view roadmap:incomplete:frontier`. Lenses compose left-to-right (#250)

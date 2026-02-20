@@ -1,0 +1,18 @@
+name: architecture
+version: 1.0.0
+description: Software architecture domain — modules, packages, and dependency tracking
+
+domain:
+  # spec, adr, doc are domain-owned prefixes for schema validation;
+  # surfaced via dedicated built-in views (traceability, coverage, onboarding)
+  prefixes: [crate, module, pkg, spec, adr, doc]
+  edgeTypes: [depends-on, documents, implements]
+
+views:
+  - name: architecture
+    description: Module nodes with depends-on edges
+    prefixes: [crate, module, pkg]
+    edgeTypes: [depends-on]
+    requireBothEndpoints: true
+
+lenses: [critical-path, blocked, parallel]
