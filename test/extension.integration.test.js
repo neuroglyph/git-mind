@@ -4,7 +4,7 @@
  * Reads actual files in extensions/ and validates them against the schema.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import {
@@ -52,7 +52,7 @@ describe('built-in manifests pass schema validation', () => {
 
 describe('roadmap manifest content', () => {
   let record;
-  beforeEach(async () => { record = (await validateExtension(ROADMAP_MANIFEST)).record; });
+  beforeAll(async () => { record = (await validateExtension(ROADMAP_MANIFEST)).record; });
 
   it('has correct name and version', () => {
     expect(record.name).toBe('roadmap');
@@ -82,7 +82,7 @@ describe('roadmap manifest content', () => {
 
 describe('architecture manifest content', () => {
   let record;
-  beforeEach(async () => { record = (await validateExtension(ARCHITECTURE_MANIFEST)).record; });
+  beforeAll(async () => { record = (await validateExtension(ARCHITECTURE_MANIFEST)).record; });
 
   it('has correct name and version', () => {
     expect(record.name).toBe('architecture');
@@ -93,6 +93,11 @@ describe('architecture manifest content', () => {
     expect(record.domain.prefixes).toContain('crate');
     expect(record.domain.prefixes).toContain('module');
     expect(record.domain.prefixes).toContain('pkg');
+  });
+
+  it('declares architecture view', () => {
+    const names = record.views.map(v => v.name);
+    expect(names).toContain('architecture');
   });
 
   it('references only built-in lenses', () => {
