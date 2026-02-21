@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Upgraded `@git-stunts/git-warp`** from v11.3.3 to v11.5.0
 - **`registerBuiltinExtensions()` memoized** — Module-level `builtInsLoaded` flag prevents redundant YAML file reads on repeated invocations within the same process (#266)
 - **Test count** — 537 tests across 28 files (was 527)
 
