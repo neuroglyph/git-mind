@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/extension-remove.schema.json",
+  "title": "git-mind extension remove --json",
+  "description": "Extension removal result from `git mind extension remove --json`",
+  "type": "object",
+  "required": ["schemaVersion", "command", "name", "version"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "command": { "type": "string", "const": "extension-remove" },
+    "name": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "minLength": 1 }
+  }
+}

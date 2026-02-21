@@ -212,6 +212,41 @@ const VALID_SAMPLES = {
       },
     },
   },
+  'extension-list.schema.json': {
+    schemaVersion: 1,
+    command: 'extension-list',
+    extensions: [
+      {
+        name: 'roadmap',
+        version: '1.0.0',
+        description: 'Project roadmap domain',
+        builtin: true,
+        views: [{ name: 'roadmap', prefixes: ['phase', 'task'] }],
+        lenses: ['incomplete', 'frontier'],
+      },
+    ],
+  },
+  'extension-validate.schema.json': {
+    schemaVersion: 1,
+    command: 'extension-validate',
+    valid: true,
+    errors: [],
+    record: { name: 'test-ext', version: '1.0.0' },
+  },
+  'extension-add.schema.json': {
+    schemaVersion: 1,
+    command: 'extension-add',
+    name: 'test-ext',
+    version: '1.0.0',
+    views: ['widgets'],
+    lenses: ['incomplete'],
+  },
+  'extension-remove.schema.json': {
+    schemaVersion: 1,
+    command: 'extension-remove',
+    name: 'test-ext',
+    version: '1.0.0',
+  },
 };
 
 describe('CLI JSON Schema contracts', () => {
