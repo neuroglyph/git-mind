@@ -379,7 +379,7 @@ switch (command) {
     const extFlags = parseFlags(args.slice(2));
     switch (subCmd) {
       case 'list':
-        await extensionList(cwd, { json: extFlags.json ?? false });
+        extensionList(cwd, { json: extFlags.json ?? false });
         break;
       case 'validate': {
         const validatePath = args.slice(2).find(a => !a.startsWith('--'));
