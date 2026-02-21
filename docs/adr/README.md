@@ -8,7 +8,7 @@ Use ADRs for decisions that are hard to reverse, cross-cut multiple subsystems, 
 
 ## ADR Index
 
-## ADR-0002 — Worktree Independence and Materialization Architecture
+## [ADR-0002](./ADR-0002.md) — Worktree Independence and Materialization Architecture
 **Status:** Accepted
 **Date:** 2026-02-15
 
@@ -24,7 +24,7 @@ Defines the core separation model: **worktree-aware, never worktree-bound**.
 
 ---
 
-## ADR-0003 — Graph-Native Content, Deterministic Materialization, and Workspace Bridge
+## [ADR-0003](./ADR-0003.md) — Graph-Native Content, Deterministic Materialization, and Workspace Bridge
 **Status:** Accepted
 **Date:** 2026-02-15
 
@@ -88,7 +88,7 @@ Recommended sections:
 
 ---
 
-## ADR-0004 — Content Attachments Belong in git-warp
+## [ADR-0004](./ADR-0004.md) — Content Attachments Belong in git-warp
 **Status:** Accepted
 **Date:** 2026-02-20
 

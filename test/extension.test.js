@@ -214,7 +214,7 @@ describe('registerExtension', () => {
   });
 
   it('built-in roadmap + architecture have no prefix collisions', async () => {
-    await expect(registerBuiltinExtensions()).resolves.not.toThrow();
+    await registerBuiltinExtensions();
     const exts = listExtensions();
     expect(exts.length).toBeGreaterThanOrEqual(2);
     const allPrefixes = exts.flatMap(e => e.domain?.prefixes ?? []);
