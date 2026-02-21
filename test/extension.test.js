@@ -185,6 +185,39 @@ describe('registerExtension', () => {
     const matches = listExtensions().filter(e => e.name === 'test-ext');
     expect(matches).toHaveLength(1);
   });
+
+  it('throws on prefix collision with another extension', async () => {
+    const yamlA = `name: ext-a\nversion: 1.0.0\ndomain:\n  prefixes: [widget]\n`;
+    const yamlB = `name: ext-b\nversion: 1.0.0\ndomain:\n  prefixes: [widget]\n`;
+    const pathA = join(tempDir, 'ext-a.yaml');
+    const pathB = join(tempDir, 'ext-b.yaml');
+    await writeFile(pathA, yamlA);
+    await writeFile(pathB, yamlB);
+    const recA = await loadExtension(pathA);
+    const recB = await loadExtension(pathB);
+    registerExtension(recA);
+    expect(() => registerExtension(recB)).toThrow(/prefix.*widget.*already owned by.*ext-a/i);
+  });
+
+  it('allows disjoint prefixes without collision', async () => {
+    const yamlA = `name: ext-a\nversion: 1.0.0\ndomain:\n  prefixes: [alpha]\n`;
+    const yamlB = `name: ext-b\nversion: 1.0.0\ndomain:\n  prefixes: [beta]\n`;
+    const pathA = join(tempDir, 'ext-a.yaml');
+    const pathB = join(tempDir, 'ext-b.yaml');
+    await writeFile(pathA, yamlA);
+    await writeFile(pathB, yamlB);
+    const recA = await loadExtension(pathA);
+    const recB = await loadExtension(pathB);
+    registerExtension(recA);
+    expect(() => registerExtension(recB)).not.toThrow();
+  });
+
+  it('built-in roadmap + architecture have no prefix collisions', async () => {
+    await registerBuiltinExtensions();
+    const exts = listExtensions();
+    expect(exts.length).toBeGreaterThanOrEqual(2);
+    // If we got here without throw, no collisions
+  });
 });
 
 // ── validateExtension ──────────────────────────────────────────────
