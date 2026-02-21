@@ -16,6 +16,7 @@ import {
   validateExtension,
   resetExtensions,
   captureBuiltIns,
+  registerBuiltinExtensions,
   _resetBuiltInsForTest,
 } from '../src/extension.js';
 import { listLenses } from '../src/lens.js';
@@ -267,5 +268,26 @@ describe('resetExtensions / captureBuiltIns', () => {
     resetExtensions();
     expect(getExtension('ephemeral')).toBeUndefined();
     expect(getExtension('test-ext')).toBeDefined(); // survived reset
+  });
+});
+
+// ── registerBuiltinExtensions memoization ──────────────────────────
+
+describe('registerBuiltinExtensions memoization', () => {
+  it('calling twice does not create duplicate registrations', async () => {
+    await registerBuiltinExtensions();
+    const countAfterFirst = listExtensions().length;
+    await registerBuiltinExtensions();
+    expect(listExtensions().length).toBe(countAfterFirst);
+  });
+
+  it('_resetBuiltInsForTest allows re-loading', async () => {
+    await registerBuiltinExtensions();
+    expect(listExtensions().length).toBeGreaterThan(0);
+    _resetBuiltInsForTest();
+    resetExtensions();
+    expect(listExtensions()).toHaveLength(0);
+    await registerBuiltinExtensions();
+    expect(listExtensions().length).toBeGreaterThan(0);
   });
 });

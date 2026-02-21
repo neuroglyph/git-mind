@@ -51,6 +51,9 @@ const registry = new Map();
 /** @type {Map<string, ExtensionRecord>} Snapshot of built-in extensions */
 let builtInDefs = new Map();
 
+/** Whether registerBuiltinExtensions() has already been called. */
+let builtInsLoaded = false;
+
 // ── Core API ─────────────────────────────────────────────────────
 
 /**
@@ -174,6 +177,7 @@ export function captureBuiltIns() {
  */
 export function _resetBuiltInsForTest() {
   builtInDefs.clear();
+  builtInsLoaded = false;
 }
 
 /**
@@ -184,12 +188,14 @@ export function _resetBuiltInsForTest() {
  * @returns {Promise<void>}
  */
 export async function registerBuiltinExtensions() {
+  if (builtInsLoaded) return;
   for (const url of BUILTIN_MANIFESTS) {
     const manifestPath = fileURLToPath(url);
     const record = await loadExtension(manifestPath);
     registerExtension({ ...record, builtin: true });
   }
   captureBuiltIns();
+  builtInsLoaded = true;
 }
 
 // ── Internal helpers ─────────────────────────────────────────────
