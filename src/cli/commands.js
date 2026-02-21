@@ -817,7 +817,16 @@ export async function diff(cwd, refA, refB, opts = {}) {
 export function extensionList(_cwd, opts = {}) {
   const extensions = listExtensions();
   if (opts.json) {
-    outputJson('extension-list', { extensions });
+    outputJson('extension-list', {
+      extensions: extensions.map(ext => ({
+        name: ext.name,
+        version: ext.version,
+        description: ext.description,
+        builtin: ext.builtin,
+        views: ext.views,
+        lenses: ext.lenses,
+      })),
+    });
     return;
   }
   if (extensions.length === 0) {

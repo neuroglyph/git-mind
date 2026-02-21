@@ -94,6 +94,8 @@ Commands:
       --json                    Output as JSON
     add <manifest>              Load and register an extension
       --json                    Output as JSON
+    remove <name>               Unregister an extension by name
+      --json                    Output as JSON
 
 Edge types: implements, augments, relates-to, blocks, belongs-to,
             consumed-by, depends-on, documents`);

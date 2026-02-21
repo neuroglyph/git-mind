@@ -99,6 +99,7 @@ export async function loadExtension(manifestPath) {
  * @param {ExtensionRecord} record
  * @param {{ skipViews?: boolean }} [opts]
  * @throws {Error} If a referenced lens is not registered
+ * @throws {Error} If incoming prefixes collide with another registered extension
  */
 export function registerExtension(record, opts = {}) {
   // Check for prefix collisions with other registered extensions
@@ -106,7 +107,8 @@ export function registerExtension(record, opts = {}) {
   if (incoming.length > 0) {
     for (const [existingName, existing] of registry) {
       if (existingName === record.name) continue; // allow idempotent re-register
-      const overlap = incoming.filter(p => existing.domain.prefixes.includes(p));
+      const existingPrefixes = new Set(existing.domain.prefixes);
+      const overlap = incoming.filter(p => existingPrefixes.has(p));
       if (overlap.length > 0) {
         throw new Error(
           `Extension "${record.name}" declares prefix(es) [${overlap.join(', ')}] already owned by "${existingName}"`
