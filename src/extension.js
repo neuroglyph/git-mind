@@ -51,6 +51,9 @@ const registry = new Map();
 /** @type {Map<string, ExtensionRecord>} Snapshot of built-in extensions */
 let builtInDefs = new Map();
 
+/** Whether registerBuiltinExtensions() has already been called. */
+let builtInsLoaded = false;
+
 // ── Core API ─────────────────────────────────────────────────────
 
 /**
@@ -96,8 +99,24 @@ export async function loadExtension(manifestPath) {
  * @param {ExtensionRecord} record
  * @param {{ skipViews?: boolean }} [opts]
  * @throws {Error} If a referenced lens is not registered
+ * @throws {Error} If incoming prefixes collide with another registered extension
  */
 export function registerExtension(record, opts = {}) {
+  // Check for prefix collisions with other registered extensions
+  const incoming = record.domain?.prefixes ?? [];
+  if (incoming.length > 0) {
+    for (const [existingName, existing] of registry) {
+      if (existingName === record.name) continue; // allow idempotent re-register
+      const existingPrefixes = new Set(existing.domain?.prefixes ?? []);
+      const overlap = incoming.filter(p => existingPrefixes.has(p));
+      if (overlap.length > 0) {
+        throw new Error(
+          `Extension "${record.name}" declares prefix(es) [${overlap.join(', ')}] already owned by "${existingName}"`
+        );
+      }
+    }
+  }
+
   // Verify all referenced lenses exist
   for (const lensName of record.lenses) {
     if (!getLens(lensName)) {
@@ -130,6 +149,27 @@ export function listExtensions() {
  */
 export function getExtension(name) {
   return registry.get(name);
+}
+
+/**
+ * Remove a registered extension by name.
+ * Throws if the extension is not registered or if it is a built-in.
+ * Note: does NOT undeclare views — views.js has no per-extension tracking.
+ *
+ * @param {string} name
+ * @returns {ExtensionRecord} The removed record
+ * @throws {Error} If not registered or if built-in
+ */
+export function removeExtension(name) {
+  const record = registry.get(name);
+  if (!record) {
+    throw new Error(`Extension "${name}" is not registered`);
+  }
+  if (record.builtin) {
+    throw new Error(`Cannot remove built-in extension "${name}"`);
+  }
+  registry.delete(name);
+  return record;
 }
 
 /**
@@ -174,6 +214,7 @@ export function captureBuiltIns() {
  */
 export function _resetBuiltInsForTest() {
   builtInDefs.clear();
+  builtInsLoaded = false;
 }
 
 /**
@@ -184,12 +225,14 @@ export function _resetBuiltInsForTest() {
  * @returns {Promise<void>}
  */
 export async function registerBuiltinExtensions() {
+  if (builtInsLoaded) return;
   for (const url of BUILTIN_MANIFESTS) {
     const manifestPath = fileURLToPath(url);
     const record = await loadExtension(manifestPath);
     registerExtension({ ...record, builtin: true });
   }
   captureBuiltIns();
+  builtInsLoaded = true;
 }
 
 // ── Internal helpers ─────────────────────────────────────────────

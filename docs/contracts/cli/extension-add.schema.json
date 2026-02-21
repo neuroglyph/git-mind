@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/extension-add.schema.json",
+  "title": "git-mind extension add --json",
+  "description": "Extension registration result from `git mind extension add --json`",
+  "type": "object",
+  "required": ["schemaVersion", "command", "name", "version", "views", "lenses"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "command": { "type": "string", "const": "extension-add" },
+    "name": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "minLength": 1 },
+    "views": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "lenses": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

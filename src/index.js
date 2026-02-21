@@ -45,6 +45,6 @@ export {
 export { computeDiff, diffSnapshots } from './diff.js';
 export { createContext, DEFAULT_CONTEXT } from './context-envelope.js';
 export {
-  loadExtension, registerExtension, listExtensions, getExtension,
+  loadExtension, registerExtension, removeExtension, listExtensions, getExtension,
   validateExtension, resetExtensions, registerBuiltinExtensions,
 } from './extension.js';

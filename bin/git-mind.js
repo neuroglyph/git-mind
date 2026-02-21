@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review, diff, set, unsetCmd, extensionList, extensionValidate, extensionAdd } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review, diff, set, unsetCmd, extensionList, extensionValidate, extensionAdd, extensionRemove } from '../src/cli/commands.js';
 import { parseDiffRefs, collectDiffPositionals } from '../src/diff.js';
 import { createContext } from '../src/context-envelope.js';
 import { registerBuiltinExtensions } from '../src/extension.js';
@@ -93,6 +93,8 @@ Commands:
     validate <manifest>         Validate a manifest file without registering
       --json                    Output as JSON
     add <manifest>              Load and register an extension
+      --json                    Output as JSON
+    remove <name>               Unregister an extension by name
       --json                    Output as JSON
 
 Edge types: implements, augments, relates-to, blocks, belongs-to,
@@ -377,7 +379,7 @@ switch (command) {
     const extFlags = parseFlags(args.slice(2));
     switch (subCmd) {
       case 'list':
-        await extensionList(cwd, { json: extFlags.json ?? false });
+        extensionList(cwd, { json: extFlags.json ?? false });
         break;
       case 'validate': {
         const validatePath = args.slice(2).find(a => !a.startsWith('--'));
@@ -389,9 +391,14 @@ switch (command) {
         await extensionAdd(cwd, addPath, { json: extFlags.json ?? false });
         break;
       }
+      case 'remove': {
+        const removeName = args.slice(2).find(a => !a.startsWith('--'));
+        extensionRemove(cwd, removeName, { json: extFlags.json ?? false });
+        break;
+      }
       default:
         console.error(`Unknown extension subcommand: ${subCmd ?? '(none)'}`);
-        console.error('Usage: git mind extension <list|validate|add>');
+        console.error('Usage: git mind extension <list|validate|add|remove>');
         process.exitCode = 1;
     }
     break;

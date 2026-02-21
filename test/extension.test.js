@@ -11,11 +11,13 @@ import { fileURLToPath } from 'node:url';
 import {
   loadExtension,
   registerExtension,
+  removeExtension,
   listExtensions,
   getExtension,
   validateExtension,
   resetExtensions,
   captureBuiltIns,
+  registerBuiltinExtensions,
   _resetBuiltInsForTest,
 } from '../src/extension.js';
 import { listLenses } from '../src/lens.js';
@@ -184,6 +186,40 @@ describe('registerExtension', () => {
     const matches = listExtensions().filter(e => e.name === 'test-ext');
     expect(matches).toHaveLength(1);
   });
+
+  it('throws on prefix collision with another extension', async () => {
+    const yamlA = `name: ext-a\nversion: 1.0.0\ndomain:\n  prefixes: [widget]\n`;
+    const yamlB = `name: ext-b\nversion: 1.0.0\ndomain:\n  prefixes: [widget]\n`;
+    const pathA = join(tempDir, 'ext-a.yaml');
+    const pathB = join(tempDir, 'ext-b.yaml');
+    await writeFile(pathA, yamlA);
+    await writeFile(pathB, yamlB);
+    const recA = await loadExtension(pathA);
+    const recB = await loadExtension(pathB);
+    registerExtension(recA);
+    expect(() => registerExtension(recB)).toThrow(/prefix.*widget.*already owned by.*ext-a/i);
+  });
+
+  it('allows disjoint prefixes without collision', async () => {
+    const yamlA = `name: ext-a\nversion: 1.0.0\ndomain:\n  prefixes: [alpha]\n`;
+    const yamlB = `name: ext-b\nversion: 1.0.0\ndomain:\n  prefixes: [beta]\n`;
+    const pathA = join(tempDir, 'ext-a.yaml');
+    const pathB = join(tempDir, 'ext-b.yaml');
+    await writeFile(pathA, yamlA);
+    await writeFile(pathB, yamlB);
+    const recA = await loadExtension(pathA);
+    const recB = await loadExtension(pathB);
+    registerExtension(recA);
+    expect(() => registerExtension(recB)).not.toThrow();
+  });
+
+  it('built-in roadmap + architecture have no prefix collisions', async () => {
+    await registerBuiltinExtensions();
+    const exts = listExtensions();
+    expect(exts.length).toBeGreaterThanOrEqual(2);
+    const allPrefixes = exts.flatMap(e => e.domain?.prefixes ?? []);
+    expect(new Set(allPrefixes).size).toBe(allPrefixes.length);
+  });
 });
 
 // ── validateExtension ──────────────────────────────────────────────
@@ -267,5 +303,54 @@ describe('resetExtensions / captureBuiltIns', () => {
     resetExtensions();
     expect(getExtension('ephemeral')).toBeUndefined();
     expect(getExtension('test-ext')).toBeDefined(); // survived reset
+  });
+});
+
+// ── removeExtension ─────────────────────────────────────────────────
+
+describe('removeExtension', () => {
+  it('removes a custom extension but views persist', async () => {
+    const path = join(tempDir, 'extension.yaml');
+    await writeFile(path, VALID_YAML);
+    const record = await loadExtension(path);
+    registerExtension(record);
+    expect(getExtension('test-ext')).toBeDefined();
+    const removed = removeExtension('test-ext');
+    expect(removed.name).toBe('test-ext');
+    expect(getExtension('test-ext')).toBeUndefined();
+    // Views declared by a removed extension are NOT automatically unregistered
+    // (views.js has no per-extension tracking — see removeExtension JSDoc)
+  });
+
+  it('throws when removing a built-in extension', async () => {
+    await registerBuiltinExtensions();
+    const builtinName = listExtensions().find(e => e.builtin)?.name;
+    expect(builtinName).toBeDefined();
+    expect(() => removeExtension(builtinName)).toThrow(/cannot remove built-in/i);
+  });
+
+  it('throws when removing a non-existent extension', () => {
+    expect(() => removeExtension('no-such-ext')).toThrow(/not registered/i);
+  });
+});
+
+// ── registerBuiltinExtensions memoization ──────────────────────────
+
+describe('registerBuiltinExtensions memoization', () => {
+  it('calling twice does not create duplicate registrations', async () => {
+    await registerBuiltinExtensions();
+    const countAfterFirst = listExtensions().length;
+    await registerBuiltinExtensions();
+    expect(listExtensions().length).toBe(countAfterFirst);
+  });
+
+  it('_resetBuiltInsForTest allows re-loading', async () => {
+    await registerBuiltinExtensions();
+    expect(listExtensions().length).toBeGreaterThan(0);
+    _resetBuiltInsForTest();
+    resetExtensions();
+    expect(listExtensions()).toHaveLength(0);
+    await registerBuiltinExtensions();
+    expect(listExtensions().length).toBeGreaterThan(0);
   });
 });

@@ -14,5 +14,14 @@ views:
     prefixes: [crate, module, pkg]
     edgeTypes: [depends-on]
     requireBothEndpoints: true
+  - name: traceability
+    description: Spec-to-implementation gap analysis
+    prefixes: [spec, adr]
+  - name: coverage
+    description: Code-to-spec coverage gap analysis
+    prefixes: [crate, module, pkg, spec, adr]
+  - name: onboarding
+    description: Topologically-sorted reading order for new engineers
+    prefixes: [doc, spec, adr]
 
 lenses: [critical-path, blocked, parallel]

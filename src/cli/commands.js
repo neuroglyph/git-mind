@@ -24,8 +24,8 @@ import { generateSuggestions } from '../suggest.js';
 import { getPendingSuggestions, acceptSuggestion, rejectSuggestion, skipSuggestion, batchDecision } from '../review.js';
 import { computeDiff } from '../diff.js';
 import { createContext, DEFAULT_CONTEXT } from '../context-envelope.js';
-import { loadExtension, registerExtension, listExtensions, validateExtension } from '../extension.js';
-import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus, formatDiff } from './format.js';
+import { loadExtension, registerExtension, removeExtension, listExtensions, validateExtension } from '../extension.js';
+import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus, formatDiff, formatExtensionList } from './format.js';
 
 /**
  * Write structured JSON to stdout with schemaVersion and command fields.
@@ -817,24 +817,23 @@ export async function diff(cwd, refA, refB, opts = {}) {
 export function extensionList(_cwd, opts = {}) {
   const extensions = listExtensions();
   if (opts.json) {
-    outputJson('extension-list', { extensions });
+    outputJson('extension-list', {
+      extensions: extensions.map(ext => ({
+        name: ext.name,
+        version: ext.version,
+        description: ext.description,
+        builtin: ext.builtin,
+        views: ext.views,
+        lenses: ext.lenses,
+      })),
+    });
     return;
   }
   if (extensions.length === 0) {
     console.log(info('No extensions registered.'));
     return;
   }
-  for (const ext of extensions) {
-    const tag = ext.builtin ? '[builtin]' : '[custom]';
-    console.log(`${ext.name} ${ext.version} ${tag}`);
-    if (ext.description) console.log(`  ${ext.description}`);
-    if (ext.views.length > 0) {
-      console.log(`  views: ${ext.views.map(v => v.name).join(', ')}`);
-    }
-    if (ext.lenses.length > 0) {
-      console.log(`  lenses: ${ext.lenses.join(', ')}`);
-    }
-  }
+  console.log(formatExtensionList(extensions));
 }
 
 /**
@@ -892,6 +891,34 @@ export async function extensionAdd(_cwd, manifestPath, opts = {}) {
       if (record.lenses.length > 0) {
         console.log(info(`Lenses available: ${record.lenses.join(', ')}`));
       }
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Remove a registered extension by name.
+ * @param {string} _cwd
+ * @param {string} name
+ * @param {{ json?: boolean }} opts
+ */
+export function extensionRemove(_cwd, name, opts = {}) {
+  if (!name) {
+    console.error(error('Usage: git mind extension remove <name>'));
+    process.exitCode = 1;
+    return;
+  }
+  try {
+    const record = removeExtension(name);
+    if (opts.json) {
+      outputJson('extension-remove', {
+        name: record.name,
+        version: record.version,
+      });
+    } else {
+      console.log(success(`Removed extension: ${record.name} v${record.version}`));
     }
   } catch (err) {
     console.error(error(err.message));

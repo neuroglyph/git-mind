@@ -66,10 +66,12 @@ describe('roadmap manifest content', () => {
     expect(record.domain.prefixes).toContain('feature');
   });
 
-  it('declares roadmap and backlog views', () => {
+  it('declares roadmap, backlog, milestone, and progress views', () => {
     const names = record.views.map(v => v.name);
     expect(names).toContain('roadmap');
     expect(names).toContain('backlog');
+    expect(names).toContain('milestone');
+    expect(names).toContain('progress');
   });
 
   it('references only built-in lenses', () => {
@@ -95,9 +97,12 @@ describe('architecture manifest content', () => {
     expect(record.domain.prefixes).toContain('pkg');
   });
 
-  it('declares architecture view', () => {
+  it('declares architecture, traceability, coverage, and onboarding views', () => {
     const names = record.views.map(v => v.name);
     expect(names).toContain('architecture');
+    expect(names).toContain('traceability');
+    expect(names).toContain('coverage');
+    expect(names).toContain('onboarding');
   });
 
   it('references only built-in lenses', () => {

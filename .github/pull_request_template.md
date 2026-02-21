@@ -19,8 +19,8 @@
 ### Relevant ADR(s)
 
 <!-- List all applicable ADR IDs. If none, explicitly state "None". -->
-- [ ] ADR-00XX (Worktree Independence and Materialization Architecture)
-- [ ] ADR-00XY (Graph-Native Content, Deterministic Materialization, and Workspace Bridge)
+- [ ] ADR-0002 (Worktree Independence and Materialization Architecture)
+- [ ] ADR-0003 (Graph-Native Content, Deterministic Materialization, and Workspace Bridge)
 - [ ] None
 
 ### Compliance Declaration

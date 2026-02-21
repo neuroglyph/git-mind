@@ -499,6 +499,34 @@ export function formatProgressMeta(meta) {
 }
 
 /**
+ * Format the extension list for terminal display.
+ * @param {import('../extension.js').ExtensionRecord[]} extensions
+ * @returns {string}
+ */
+export function formatExtensionList(extensions) {
+  if (extensions.length === 0) return chalk.dim('  (none)');
+  const blocks = [];
+  for (const ext of extensions) {
+    const lines = [];
+    const tag = ext.builtin
+      ? chalk.yellow('[builtin]')
+      : chalk.magenta('[custom]');
+    lines.push(`${chalk.cyan.bold(ext.name)} ${chalk.dim(ext.version)} ${tag}`);
+    if (ext.description) {
+      lines.push(`  ${chalk.dim(ext.description)}`);
+    }
+    if (ext.views.length > 0) {
+      lines.push(`  ${chalk.dim('views:')} ${ext.views.map(v => v.name).join(', ')}`);
+    }
+    if (ext.lenses.length > 0) {
+      lines.push(`  ${chalk.dim('lenses:')} ${ext.lenses.join(', ')}`);
+    }
+    blocks.push(lines.join('\n'));
+  }
+  return blocks.join('\n\n');
+}
+
+/**
  * Format an import result for terminal display.
  * @param {import('../import.js').ImportResult} result
  * @returns {string}
