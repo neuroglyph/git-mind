@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **ADR-0004: Content Attachments Belong in git-warp** — Decision record establishing that CAS-backed content-on-node is a git-warp substrate responsibility, not a git-mind domain concern. Aligns with Paper I's `Atom(p)` attachment formalism (#252)
+- **Chalk formatting for `extension list`** — `formatExtensionList()` renders extension names in cyan bold, versions dimmed, `[builtin]` in yellow / `[custom]` in magenta, consistent with all other CLI commands (#265)
+- **Prefix collision detection** — `registerExtension()` now checks incoming domain prefixes against all registered extensions and throws a descriptive error on overlap. Idempotent re-registration of the same extension name is still allowed (#264)
+- **Imperative views declared in extension manifests** — `milestone` and `progress` views added to the roadmap manifest; `traceability`, `coverage`, and `onboarding` views added to the architecture manifest. Purely declarative — makes `extension list` show the full picture (#268)
+- **`git mind extension remove <name>` subcommand** — Removes a custom extension from the registry. Throws on built-in or non-existent extensions. `--json` output supported. `removeExtension()` exported from public API (#263)
+- **JSON Schema contracts for extension CLI output** — 4 new schemas in `docs/contracts/cli/`: `extension-list`, `extension-validate`, `extension-add`, `extension-remove`. Valid samples added to the contract test harness (#262)
+- **Deferred items documented in ROADMAP** — #261 (ephemeral registration) and #269 (`--extension` flag) documented with rationale and recommended H2 slot
+
+### Changed
+
+- **`registerBuiltinExtensions()` memoized** — Module-level `builtInsLoaded` flag prevents redundant YAML file reads on repeated invocations within the same process (#266)
+- **Test count** — 537 tests across 28 files (was 527)
 
 ## [3.2.0] - 2026-02-17
 

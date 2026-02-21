@@ -2175,6 +2175,20 @@ NEXUS ←── ORACLE                                         │
 
 These items are not assigned to a milestone yet. They'll be scheduled based on user feedback and priorities.
 
+### Extension persistence & ephemeral loading (deferred from M12 polish)
+
+Two issues were filed during the M12 extension polish pass and intentionally deferred:
+
+- **#261 — Ephemeral registration: extension add doesn't persist across invocations.**
+  `git mind extension add <path>` registers for the current process only. The fix requires a persistence mechanism — a lockfile (`.git/git-mind/extensions.yaml`), graph-stored config, or git-config entries. Each option has different tradeoffs for portability, discoverability, and merge semantics. This also changes the CLI boot sequence for ALL commands (startup must load user extensions after built-ins), so it needs careful design.
+
+- **#269 — `--extension <path>` flag for single-invocation loading.**
+  A workaround for #261: load an extension for one command only (`git mind view my-view --extension ./ext.yaml`). Useful for CI/CD pipelines that inject custom domain logic. Deferred because this is cleaner to design after #261's persistence exists — the flag would be "like `extension add` but ephemeral", which is only meaningful once `add` is actually persistent.
+
+**Recommended slot:** H2 (CONTENT + MATERIALIZATION) planning. Both issues naturally fall into the extension lifecycle story — persistence is a prerequisite for the extension marketplace vision (H4). Design the persistence mechanism during H2 kickoff, implement as the first H2 deliverable so that all subsequent extension work (content system extensions, materializer extensions) benefits from proper registration.
+
+### Other backlog items
+
 - `git mind onboarding` as a guided walkthrough (not just a view)
 - Confidence decay over time (edges rot if not refreshed)
 - View composition (combine multiple views)
