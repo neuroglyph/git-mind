@@ -88,6 +88,21 @@ Recommended sections:
 
 ---
 
+## ADR-0004 — Content Attachments Belong in git-warp
+**Status:** Proposed
+**Date:** 2026-02-20
+
+### What it establishes
+- Content-on-node (CAS-backed blob attachment) is a **git-warp** responsibility, not git-mind.
+- git-warp should install `git-cas` and expose an API for attaching content-addressed blobs to nodes.
+- git-mind provides the CLI/UX layer (`content set/show/edit`) on top.
+- This aligns git-warp with Paper I's `(S, α, β)` formalism — nodes carrying `Atom(p)` payloads.
+
+### Why it matters
+Prevents git-mind from duplicating CRDT, time-travel, observer, and provenance guarantees that already exist in the substrate. Makes the attachment primitive available to any git-warp consumer, not just git-mind.
+
+---
+
 ## Quick Contribution Rules
 
 - Keep ADRs concise but specific.
