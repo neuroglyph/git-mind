@@ -25,7 +25,7 @@ import { getPendingSuggestions, acceptSuggestion, rejectSuggestion, skipSuggesti
 import { computeDiff } from '../diff.js';
 import { createContext, DEFAULT_CONTEXT } from '../context-envelope.js';
 import { loadExtension, registerExtension, listExtensions, validateExtension } from '../extension.js';
-import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus, formatDiff } from './format.js';
+import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus, formatDiff, formatExtensionList } from './format.js';
 
 /**
  * Write structured JSON to stdout with schemaVersion and command fields.
@@ -824,17 +824,7 @@ export function extensionList(_cwd, opts = {}) {
     console.log(info('No extensions registered.'));
     return;
   }
-  for (const ext of extensions) {
-    const tag = ext.builtin ? '[builtin]' : '[custom]';
-    console.log(`${ext.name} ${ext.version} ${tag}`);
-    if (ext.description) console.log(`  ${ext.description}`);
-    if (ext.views.length > 0) {
-      console.log(`  views: ${ext.views.map(v => v.name).join(', ')}`);
-    }
-    if (ext.lenses.length > 0) {
-      console.log(`  lenses: ${ext.lenses.join(', ')}`);
-    }
-  }
+  console.log(formatExtensionList(extensions));
 }
 
 /**
