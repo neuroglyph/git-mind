@@ -16,5 +16,11 @@ views:
   - name: backlog
     description: Task nodes with all related edges
     prefixes: [task]
+  - name: milestone
+    description: Milestone progress — completion stats per milestone
+    prefixes: [milestone, task, feature]
+  - name: progress
+    description: Work-item status breakdown (done/in-progress/todo/blocked)
+    prefixes: [task, feature]
 
 lenses: [incomplete, frontier, critical-path, blocked, parallel]
