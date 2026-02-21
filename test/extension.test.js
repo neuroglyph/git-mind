@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import {
   loadExtension,
   registerExtension,
+  removeExtension,
   listExtensions,
   getExtension,
   validateExtension,
@@ -301,6 +302,30 @@ describe('resetExtensions / captureBuiltIns', () => {
     resetExtensions();
     expect(getExtension('ephemeral')).toBeUndefined();
     expect(getExtension('test-ext')).toBeDefined(); // survived reset
+  });
+});
+
+// ── removeExtension ─────────────────────────────────────────────────
+
+describe('removeExtension', () => {
+  it('removes a custom extension', async () => {
+    const path = join(tempDir, 'extension.yaml');
+    await writeFile(path, VALID_YAML);
+    const record = await loadExtension(path);
+    registerExtension(record);
+    expect(getExtension('test-ext')).toBeDefined();
+    const removed = removeExtension('test-ext');
+    expect(removed.name).toBe('test-ext');
+    expect(getExtension('test-ext')).toBeUndefined();
+  });
+
+  it('throws when removing a built-in extension', async () => {
+    await registerBuiltinExtensions();
+    expect(() => removeExtension('roadmap')).toThrow(/cannot remove built-in/i);
+  });
+
+  it('throws when removing a non-existent extension', () => {
+    expect(() => removeExtension('no-such-ext')).toThrow(/not registered/i);
   });
 });
 

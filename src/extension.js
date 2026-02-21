@@ -150,6 +150,27 @@ export function getExtension(name) {
 }
 
 /**
+ * Remove a registered extension by name.
+ * Throws if the extension is not registered or if it is a built-in.
+ * Note: does NOT undeclare views — views.js has no per-extension tracking.
+ *
+ * @param {string} name
+ * @returns {ExtensionRecord} The removed record
+ * @throws {Error} If not registered or if built-in
+ */
+export function removeExtension(name) {
+  const record = registry.get(name);
+  if (!record) {
+    throw new Error(`Extension "${name}" is not registered`);
+  }
+  if (record.builtin) {
+    throw new Error(`Cannot remove built-in extension "${name}"`);
+  }
+  registry.delete(name);
+  return record;
+}
+
+/**
  * Validate a manifest file without registering it.
  * Returns validation result + parsed record (or null on failure).
  *

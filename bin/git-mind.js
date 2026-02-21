@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review, diff, set, unsetCmd, extensionList, extensionValidate, extensionAdd } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review, diff, set, unsetCmd, extensionList, extensionValidate, extensionAdd, extensionRemove } from '../src/cli/commands.js';
 import { parseDiffRefs, collectDiffPositionals } from '../src/diff.js';
 import { createContext } from '../src/context-envelope.js';
 import { registerBuiltinExtensions } from '../src/extension.js';
@@ -389,9 +389,14 @@ switch (command) {
         await extensionAdd(cwd, addPath, { json: extFlags.json ?? false });
         break;
       }
+      case 'remove': {
+        const removeName = args.slice(2).find(a => !a.startsWith('--'));
+        extensionRemove(cwd, removeName, { json: extFlags.json ?? false });
+        break;
+      }
       default:
         console.error(`Unknown extension subcommand: ${subCmd ?? '(none)'}`);
-        console.error('Usage: git mind extension <list|validate|add>');
+        console.error('Usage: git mind extension <list|validate|add|remove>');
         process.exitCode = 1;
     }
     break;
