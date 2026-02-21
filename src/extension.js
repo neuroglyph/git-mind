@@ -107,7 +107,7 @@ export function registerExtension(record, opts = {}) {
   if (incoming.length > 0) {
     for (const [existingName, existing] of registry) {
       if (existingName === record.name) continue; // allow idempotent re-register
-      const existingPrefixes = new Set(existing.domain.prefixes);
+      const existingPrefixes = new Set(existing.domain?.prefixes ?? []);
       const overlap = incoming.filter(p => existingPrefixes.has(p));
       if (overlap.length > 0) {
         throw new Error(

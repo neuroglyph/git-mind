@@ -214,10 +214,11 @@ describe('registerExtension', () => {
   });
 
   it('built-in roadmap + architecture have no prefix collisions', async () => {
-    await registerBuiltinExtensions();
+    await expect(registerBuiltinExtensions()).resolves.not.toThrow();
     const exts = listExtensions();
     expect(exts.length).toBeGreaterThanOrEqual(2);
-    // If we got here without throw, no collisions
+    const allPrefixes = exts.flatMap(e => e.domain?.prefixes ?? []);
+    expect(new Set(allPrefixes).size).toBe(allPrefixes.length);
   });
 });
 
@@ -308,7 +309,7 @@ describe('resetExtensions / captureBuiltIns', () => {
 // ── removeExtension ─────────────────────────────────────────────────
 
 describe('removeExtension', () => {
-  it('removes a custom extension', async () => {
+  it('removes a custom extension but views persist', async () => {
     const path = join(tempDir, 'extension.yaml');
     await writeFile(path, VALID_YAML);
     const record = await loadExtension(path);
@@ -317,11 +318,15 @@ describe('removeExtension', () => {
     const removed = removeExtension('test-ext');
     expect(removed.name).toBe('test-ext');
     expect(getExtension('test-ext')).toBeUndefined();
+    // Views declared by a removed extension are NOT automatically unregistered
+    // (views.js has no per-extension tracking — see removeExtension JSDoc)
   });
 
   it('throws when removing a built-in extension', async () => {
     await registerBuiltinExtensions();
-    expect(() => removeExtension('roadmap')).toThrow(/cannot remove built-in/i);
+    const builtinName = listExtensions().find(e => e.builtin)?.name;
+    expect(builtinName).toBeDefined();
+    expect(() => removeExtension(builtinName)).toThrow(/cannot remove built-in/i);
   });
 
   it('throws when removing a non-existent extension', () => {

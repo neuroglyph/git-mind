@@ -504,8 +504,10 @@ export function formatProgressMeta(meta) {
  * @returns {string}
  */
 export function formatExtensionList(extensions) {
-  const lines = [];
+  if (extensions.length === 0) return chalk.dim('  (none)');
+  const blocks = [];
   for (const ext of extensions) {
+    const lines = [];
     const tag = ext.builtin
       ? chalk.yellow('[builtin]')
       : chalk.magenta('[custom]');
@@ -519,8 +521,9 @@ export function formatExtensionList(extensions) {
     if (ext.lenses.length > 0) {
       lines.push(`  ${chalk.dim('lenses:')} ${ext.lenses.join(', ')}`);
     }
+    blocks.push(lines.join('\n'));
   }
-  return lines.join('\n');
+  return blocks.join('\n\n');
 }
 
 /**

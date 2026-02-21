@@ -8,8 +8,8 @@ Use ADRs for decisions that are hard to reverse, cross-cut multiple subsystems, 
 
 ## ADR Index
 
-## ADR-00XX — Worktree Independence and Materialization Architecture
-**Status:** Accepted  
+## ADR-0002 — Worktree Independence and Materialization Architecture
+**Status:** Accepted
 **Date:** 2026-02-15
 
 ### What it establishes
@@ -24,8 +24,8 @@ Defines the core separation model: **worktree-aware, never worktree-bound**.
 
 ---
 
-## ADR-00XY — Graph-Native Content, Deterministic Materialization, and Workspace Bridge
-**Status:** Accepted  
+## ADR-0003 — Graph-Native Content, Deterministic Materialization, and Workspace Bridge
+**Status:** Accepted
 **Date:** 2026-02-15
 
 ### What it adds
@@ -41,10 +41,10 @@ Turns the separation model into an adoption-ready product path without breaking 
 
 ---
 
-## What changed from ADR-00XX to ADR-00XY
+## What changed from ADR-0002 to ADR-0003
 
 1. **From principle to execution:**  
-   ADR-00XX defined boundaries; ADR-00XY defines how users actually work within them.
+   ADR-0002 defined boundaries; ADR-0003 defines how users actually work within them.
 
 2. **Editing UX became first-class:**  
    The project now explicitly treats editing ergonomics as a top adoption risk.
@@ -89,7 +89,7 @@ Recommended sections:
 ---
 
 ## ADR-0004 — Content Attachments Belong in git-warp
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-02-20
 
 ### What it establishes
