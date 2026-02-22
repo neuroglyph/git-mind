@@ -86,7 +86,7 @@ export async function readContent(graph, nodeId) {
     );
   }
 
-  if (!contentBuf || (contentBuf.length === 0 && meta.size > 0)) {
+  if (contentBuf == null || (contentBuf.length === 0 && meta.size > 0)) {
     throw new Error(
       `Content blob ${meta.sha} not found in git object store for node: ${nodeId}`,
     );
@@ -133,7 +133,7 @@ export async function hasContent(graph, nodeId) {
   if (!exists) return false;
 
   const sha = await graph.getContentOid(nodeId);
-  return sha !== null;
+  return sha != null;
 }
 
 /**
