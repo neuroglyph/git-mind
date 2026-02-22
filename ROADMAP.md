@@ -2189,13 +2189,20 @@ Two issues were filed during the M12 extension polish pass and intentionally def
 
 ### Content system enhancements (from M13 VESSEL review)
 
-- **`git mind content list`** — Query all nodes that have `_content.sha` properties. Currently there's no way to discover which nodes carry content without inspecting each one individually.
-- **Binary content support** — Add base64 encoding for non-text MIME types. Currently the content system is text-only (UTF-8); non-UTF-8 blobs fail the integrity check by design. Requires reintroducing encoding metadata and updating `readContent()` to handle buffer round-trips.
-- **`content meta --verify` flag** — Run the SHA integrity check without dumping the full content body. Useful for bulk health checks across all content-bearing nodes.
+- **`git mind content list`** — Query all nodes that have `_content` properties. Currently there's no way to discover which nodes carry content without inspecting each one individually.
+- **Binary content support** — Add base64 encoding for non-text MIME types. Currently the content system is text-only (UTF-8); WARP stores blobs natively but `readContent()` always calls `.toString('utf-8')`, so binary round-trips are lossy. Requires returning a `Buffer` for non-text MIME types and reintroducing encoding metadata.
+- **`content meta --verify` flag** — Verify the content blob OID exists in the git object store without dumping the full body. Useful for bulk health checks across all content-bearing nodes.
 
 ### Codebase hardening (from M13 VESSEL review)
 
-- **Standardize all git subprocess calls to `execFileSync`** — `src/content.js` now uses `execFileSync` exclusively, but other modules (e.g. `processCommitCmd` in `commands.js`) still use `execSync` with string interpolation. Audit and migrate for consistency and defense-in-depth.
+- **Standardize all git subprocess calls to `execFileSync`** — `src/content.js` eliminated all subprocess calls via WARP-native migration, but other modules (e.g. `processCommitCmd` in `commands.js`) still use `execSync` with string interpolation. Audit and migrate for consistency and defense-in-depth.
+
+### Content module error handling (from #284 CodeRabbit review)
+
+- **Establish error message conventions** — Content module errors lack a consistent prefix/format. Consider a `[content] <operation> failed: <detail>` convention or a `ContentError` class hierarchy for typed catch handling.
+- **Audit `try/catch` blocks for cause preservation** — The `readContent()` catch now chains `{ cause: err }`, but other modules may swallow root causes. Audit all catch blocks in domain code for cause propagation.
+- **Integration test for `error.cause` chain** — Verify callers of `readContent()` can access `error.cause` when blob retrieval fails. Currently only the error message is tested.
+- **`--verbose` flag for content CLI** — Dump the full `error.cause` chain when content operations fail. Helps diagnose infrastructure vs. missing-blob issues.
 
 ### Other backlog items
 
