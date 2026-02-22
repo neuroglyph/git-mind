@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/content-meta.schema.json",
+  "title": "git-mind content meta --json",
+  "description": "Content metadata result from `git mind content meta --json`",
+  "type": "object",
+  "required": ["schemaVersion", "command", "nodeId", "hasContent"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "command": { "type": "string", "const": "content-meta" },
+    "nodeId": { "type": "string", "minLength": 1 },
+    "hasContent": { "type": "boolean" },
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "mime": { "type": "string", "minLength": 1 },
+    "size": { "type": "integer", "minimum": 0 },
+    "encoding": { "type": "string", "minLength": 1 }
+  },
+  "if": { "properties": { "hasContent": { "const": true } } },
+  "then": { "required": ["sha", "mime", "size", "encoding"] }
+}
