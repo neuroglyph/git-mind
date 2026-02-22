@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/content-delete.schema.json",
+  "title": "git-mind content delete --json",
+  "description": "Content deletion result from `git mind content delete --json`",
+  "type": "object",
+  "required": ["schemaVersion", "command", "nodeId", "removed", "previousSha"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "command": { "type": "string", "const": "content-delete" },
+    "nodeId": { "type": "string", "minLength": 1 },
+    "removed": { "type": "boolean" },
+    "previousSha": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40,64}$" }
+  }
+}

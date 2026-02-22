@@ -2187,6 +2187,16 @@ Two issues were filed during the M12 extension polish pass and intentionally def
 
 **Recommended slot:** H2 (CONTENT + MATERIALIZATION) planning. Both issues naturally fall into the extension lifecycle story — persistence is a prerequisite for the extension marketplace vision (H4). Design the persistence mechanism during H2 kickoff, implement as the first H2 deliverable so that all subsequent extension work (content system extensions, materializer extensions) benefits from proper registration.
 
+### Content system enhancements (from M13 VESSEL review)
+
+- **`git mind content list`** — Query all nodes that have `_content.sha` properties. Currently there's no way to discover which nodes carry content without inspecting each one individually.
+- **Binary content support** — Add base64 encoding for non-text MIME types. Currently the content system is text-only (UTF-8); non-UTF-8 blobs fail the integrity check by design. Requires reintroducing encoding metadata and updating `readContent()` to handle buffer round-trips.
+- **`content meta --verify` flag** — Run the SHA integrity check without dumping the full content body. Useful for bulk health checks across all content-bearing nodes.
+
+### Codebase hardening (from M13 VESSEL review)
+
+- **Standardize all git subprocess calls to `execFileSync`** — `src/content.js` now uses `execFileSync` exclusively, but other modules (e.g. `processCommitCmd` in `commands.js`) still use `execSync` with string interpolation. Audit and migrate for consistency and defense-in-depth.
+
 ### Other backlog items
 
 - `git mind onboarding` as a guided walkthrough (not just a view)

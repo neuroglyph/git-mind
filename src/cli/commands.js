@@ -4,8 +4,8 @@
  */
 
 import { execSync } from 'node:child_process';
-import { writeFile, chmod, access, constants } from 'node:fs/promises';
-import { join } from 'node:path';
+import { writeFile, chmod, access, constants, readFile } from 'node:fs/promises';
+import { join, extname } from 'node:path';
 import { initGraph, loadGraph } from '../graph.js';
 import { createEdge, queryEdges, removeEdge, EDGE_TYPES } from '../edges.js';
 import { getNodes, hasNode, getNode, getNodesByPrefix, setNodeProperty, unsetNodeProperty } from '../nodes.js';
@@ -25,7 +25,8 @@ import { getPendingSuggestions, acceptSuggestion, rejectSuggestion, skipSuggesti
 import { computeDiff } from '../diff.js';
 import { createContext, DEFAULT_CONTEXT } from '../context-envelope.js';
 import { loadExtension, registerExtension, removeExtension, listExtensions, validateExtension } from '../extension.js';
-import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus, formatDiff, formatExtensionList } from './format.js';
+import { writeContent, readContent, getContentMeta, hasContent, deleteContent } from '../content.js';
+import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus, formatDiff, formatExtensionList, formatContentMeta } from './format.js';
 
 /**
  * Write structured JSON to stdout with schemaVersion and command fields.
@@ -800,6 +801,134 @@ export async function diff(cwd, refA, refB, opts = {}) {
       outputJson('diff', result);
     } else {
       console.log(formatDiff(result));
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+// ── Content commands ─────────────────────────────────────────────
+
+/** MIME type mapping from file extensions. */
+const MIME_MAP = {
+  '.md': 'text/markdown',
+  '.markdown': 'text/markdown',
+  '.txt': 'text/plain',
+  '.json': 'application/json',
+  '.yaml': 'application/yaml',
+  '.yml': 'application/yaml',
+  '.html': 'text/html',
+  '.xml': 'application/xml',
+  '.csv': 'text/csv',
+  '.css': 'text/css',
+  '.svg': 'image/svg+xml',
+};
+
+/**
+ * Attach content to a graph node from a file.
+ * @param {string} cwd
+ * @param {string} nodeId
+ * @param {string} filePath
+ * @param {{ mime?: string, json?: boolean }} opts
+ */
+export async function contentSet(cwd, nodeId, filePath, opts = {}) {
+  try {
+    const buf = await readFile(filePath);
+    const mime = opts.mime ?? MIME_MAP[extname(filePath).toLowerCase()] ?? 'application/octet-stream';
+
+    const graph = await loadGraph(cwd);
+    const result = await writeContent(cwd, graph, nodeId, buf, { mime });
+
+    if (opts.json) {
+      outputJson('content-set', result);
+    } else {
+      console.log(success(`Content attached to ${nodeId}`));
+      console.log(formatContentMeta(result));
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Show content attached to a graph node.
+ * @param {string} cwd
+ * @param {string} nodeId
+ * @param {{ raw?: boolean, json?: boolean }} opts
+ */
+export async function contentShow(cwd, nodeId, opts = {}) {
+  try {
+    const graph = await loadGraph(cwd);
+    const { content, meta } = await readContent(cwd, graph, nodeId);
+
+    if (opts.json) {
+      outputJson('content-show', { nodeId, content, ...meta });
+      return;
+    }
+
+    if (opts.raw) {
+      process.stdout.write(content);
+    } else {
+      console.log(formatContentMeta({ nodeId, ...meta }));
+      console.log('');
+      console.log(content);
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Show content metadata for a graph node.
+ * @param {string} cwd
+ * @param {string} nodeId
+ * @param {{ json?: boolean }} opts
+ */
+export async function contentMeta(cwd, nodeId, opts = {}) {
+  try {
+    const graph = await loadGraph(cwd);
+    const meta = await getContentMeta(graph, nodeId);
+
+    if (!meta) {
+      if (opts.json) {
+        outputJson('content-meta', { nodeId, hasContent: false });
+      } else {
+        console.log(info(`No content attached to ${nodeId}`));
+      }
+      return;
+    }
+
+    if (opts.json) {
+      outputJson('content-meta', { nodeId, hasContent: true, ...meta });
+    } else {
+      console.log(formatContentMeta({ nodeId, ...meta }));
+    }
+  } catch (err) {
+    console.error(error(err.message));
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Delete content from a graph node.
+ * @param {string} cwd
+ * @param {string} nodeId
+ * @param {{ json?: boolean }} opts
+ */
+export async function contentDelete(cwd, nodeId, opts = {}) {
+  try {
+    const graph = await loadGraph(cwd);
+    const result = await deleteContent(graph, nodeId);
+
+    if (opts.json) {
+      outputJson('content-delete', result);
+    } else if (result.removed) {
+      console.log(success(`Content removed from ${nodeId}`));
+    } else {
+      console.log(info(`No content to remove from ${nodeId}`));
     }
   } catch (err) {
     console.error(error(err.message));

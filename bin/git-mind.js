@@ -5,7 +5,7 @@
  * Usage: git mind <command> [options]
  */
 
-import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review, diff, set, unsetCmd, extensionList, extensionValidate, extensionAdd, extensionRemove } from '../src/cli/commands.js';
+import { init, link, view, list, remove, nodes, status, at, importCmd, importMarkdownCmd, exportCmd, mergeCmd, installHooks, processCommitCmd, doctor, suggest, review, diff, set, unsetCmd, contentSet, contentShow, contentMeta, contentDelete, extensionList, extensionValidate, extensionAdd, extensionRemove } from '../src/cli/commands.js';
 import { parseDiffRefs, collectDiffPositionals } from '../src/diff.js';
 import { createContext } from '../src/context-envelope.js';
 import { registerBuiltinExtensions } from '../src/extension.js';
@@ -87,6 +87,17 @@ Commands:
   review                        Review pending suggestions
     --batch accept|reject       Non-interactive batch mode
     --json                      Output as JSON
+  content <subcommand>           Manage node content
+    set <node> --from <file>    Attach content from a file
+      --mime <type>             Override MIME type detection
+      --json                    Output as JSON
+    show <node>                 Display attached content
+      --raw                     Output body only (no metadata header)
+      --json                    Output as JSON
+    meta <node>                 Show content metadata
+      --json                    Output as JSON
+    delete <node>               Remove attached content
+      --json                    Output as JSON
   extension <subcommand>        Manage extensions
     list                        List registered extensions
       --json                    Output as JSON
@@ -101,7 +112,7 @@ Edge types: implements, augments, relates-to, blocks, belongs-to,
             consumed-by, depends-on, documents`);
 }
 
-const BOOLEAN_FLAGS = new Set(['json', 'fix', 'dry-run', 'validate']);
+const BOOLEAN_FLAGS = new Set(['json', 'fix', 'dry-run', 'validate', 'raw']);
 
 /**
  * Extract a ContextEnvelope from parsed flags.
@@ -141,6 +152,24 @@ function parseFlags(args) {
   return flags;
 }
 
+/**
+ * Extract positional arguments from args, skipping --flag value pairs.
+ * @param {string[]} args
+ * @returns {string[]}
+ */
+function extractPositionals(args) {
+  const positionals = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].startsWith('--')) {
+      const flag = args[i].slice(2);
+      if (!BOOLEAN_FLAGS.has(flag) && i + 1 < args.length) i++; // skip value
+    } else {
+      positionals.push(args[i]);
+    }
+  }
+  return positionals;
+}
+
 switch (command) {
   case 'init':
     await init(cwd);
@@ -166,16 +195,7 @@ switch (command) {
   case 'view': {
     const viewArgs = args.slice(1);
     const viewFlags = parseFlags(viewArgs);
-    // Collect positionals: skip flags and their consumed values
-    const viewPositionals = [];
-    for (let i = 0; i < viewArgs.length; i++) {
-      if (viewArgs[i].startsWith('--')) {
-        const flag = viewArgs[i].slice(2);
-        if (!BOOLEAN_FLAGS.has(flag) && i + 1 < viewArgs.length) i++; // skip value
-      } else {
-        viewPositionals.push(viewArgs[i]);
-      }
-    }
+    const viewPositionals = extractPositionals(viewArgs);
     const viewCtx = contextFromFlags(viewFlags);
     await view(cwd, viewPositionals[0], {
       scope: viewFlags.scope,
@@ -370,6 +390,67 @@ switch (command) {
       index: reviewFlags.index ? parseInt(reviewFlags.index, 10) : undefined,
       json: reviewFlags.json ?? false,
     });
+    break;
+  }
+
+  case 'content': {
+    const contentSubCmd = args[1];
+    const contentArgs = args.slice(2);
+    const contentFlags = parseFlags(contentArgs);
+    const contentPositionals = extractPositionals(contentArgs);
+    switch (contentSubCmd) {
+      case 'set': {
+        const setNode = contentPositionals[0];
+        const fromFile = contentFlags.from;
+        if (!setNode || !fromFile) {
+          console.error('Usage: git mind content set <node> --from <file> [--mime <type>] [--json]');
+          process.exitCode = 1;
+          break;
+        }
+        await contentSet(cwd, setNode, fromFile, {
+          mime: contentFlags.mime,
+          json: contentFlags.json ?? false,
+        });
+        break;
+      }
+      case 'show': {
+        const showNode = contentPositionals[0];
+        if (!showNode) {
+          console.error('Usage: git mind content show <node> [--raw] [--json]');
+          process.exitCode = 1;
+          break;
+        }
+        await contentShow(cwd, showNode, {
+          raw: contentFlags.raw ?? false,
+          json: contentFlags.json ?? false,
+        });
+        break;
+      }
+      case 'meta': {
+        const metaNode = contentPositionals[0];
+        if (!metaNode) {
+          console.error('Usage: git mind content meta <node> [--json]');
+          process.exitCode = 1;
+          break;
+        }
+        await contentMeta(cwd, metaNode, { json: contentFlags.json ?? false });
+        break;
+      }
+      case 'delete': {
+        const deleteNode = contentPositionals[0];
+        if (!deleteNode) {
+          console.error('Usage: git mind content delete <node> [--json]');
+          process.exitCode = 1;
+          break;
+        }
+        await contentDelete(cwd, deleteNode, { json: contentFlags.json ?? false });
+        break;
+      }
+      default:
+        console.error(`Unknown content subcommand: ${contentSubCmd ?? '(none)'}`);
+        console.error('Usage: git mind content <set|show|meta|delete>');
+        process.exitCode = 1;
+    }
     break;
   }
 

@@ -499,6 +499,22 @@ export function formatProgressMeta(meta) {
 }
 
 /**
+ * Format content metadata for terminal display.
+ * @param {{ nodeId?: string, sha: string, mime: string, size: number }} meta
+ * @returns {string}
+ */
+export function formatContentMeta(meta) {
+  const lines = [];
+  if (meta.nodeId) {
+    lines.push(`  ${chalk.dim('node:')}     ${chalk.cyan.bold(meta.nodeId)}`);
+  }
+  lines.push(`  ${chalk.dim('sha:')}      ${meta.sha}`);
+  lines.push(`  ${chalk.dim('mime:')}     ${meta.mime}`);
+  lines.push(`  ${chalk.dim('size:')}     ${meta.size} bytes`);
+  return lines.join('\n');
+}
+
+/**
  * Format the extension list for terminal display.
  * @param {import('../extension.js').ExtensionRecord[]} extensions
  * @returns {string}
