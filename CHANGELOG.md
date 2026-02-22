@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Null guard in `readContent()`** — Changed `!contentBuf` to explicit `contentBuf == null` for clearer null/undefined intent (#284)
+- **Null guard in `hasContent()`** — Changed `sha !== null` to `sha != null` to catch both null and undefined from `getContentOid()`, consistent with other callers (#284)
 - **ROADMAP stale integrity-check language** — Corrected binary content backlog item to reflect WARP-native blob storage; reframed `--verify` flag as OID existence check (#284)
 - **JSDoc typedef terminology** — Changed "Git blob SHA" / "Written blob SHA" to "Git blob OID" in `ContentMeta` and `WriteContentResult` typedefs (#284)
 - **Dead `execSync` import** — Removed unused `execSync` from `test/content.test.js`; only `execFileSync` is used (#284)
