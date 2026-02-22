@@ -821,6 +821,8 @@ const MIME_MAP = {
   '.html': 'text/html',
   '.xml': 'application/xml',
   '.csv': 'text/csv',
+  '.css': 'text/css',
+  '.svg': 'image/svg+xml',
 };
 
 /**

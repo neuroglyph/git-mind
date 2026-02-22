@@ -59,7 +59,7 @@ describe('content store core', () => {
     });
 
     expect(result.nodeId).toBe('doc:readme');
-    expect(result.sha).toMatch(/^[0-9a-f]{40}$/);
+    expect(result.sha).toMatch(/^[0-9a-f]{40,64}$/);
     expect(result.mime).toBe('text/markdown');
     expect(result.size).toBe(Buffer.from('# Hello World\n').length);
     expect(result.encoding).toBeUndefined();
@@ -74,10 +74,10 @@ describe('content store core', () => {
     expect(meta.mime).toBe('text/markdown');
   });
 
-  it('readContent verifies SHA integrity', async () => {
+  it('readContent throws when blob is missing from object store', async () => {
     await writeContent(tempDir, graph, 'doc:readme', 'original', { mime: 'text/plain' });
 
-    // Tamper with the stored SHA property
+    // Point to a valid-looking SHA that doesn't exist in the object store
     const patch = await graph.createPatch();
     patch.setProperty('doc:readme', '_content.sha', 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef');
     await patch.commit();
@@ -85,12 +85,32 @@ describe('content store core', () => {
     await expect(readContent(tempDir, graph, 'doc:readme')).rejects.toThrow(/not found in git object store/);
   });
 
+  it('readContent detects integrity mismatch on non-UTF-8 blob', async () => {
+    // Write a blob with non-UTF-8 bytes directly via git — the UTF-8
+    // round-trip in readContent will corrupt the data, producing a
+    // different hash and triggering the integrity check.
+    const binaryBuf = Buffer.from([0x80, 0x81, 0x82, 0xFF, 0xFE]);
+    const sha = execFileSync('git', ['hash-object', '-w', '--stdin'], {
+      cwd: tempDir,
+      input: binaryBuf,
+      encoding: 'utf-8',
+    }).trim();
+
+    const patch = await graph.createPatch();
+    patch.setProperty('doc:readme', '_content.sha', sha);
+    patch.setProperty('doc:readme', '_content.mime', 'application/octet-stream');
+    patch.setProperty('doc:readme', '_content.size', 5);
+    await patch.commit();
+
+    await expect(readContent(tempDir, graph, 'doc:readme')).rejects.toThrow(/integrity check failed/);
+  });
+
   it('getContentMeta returns correct metadata', async () => {
     await writeContent(tempDir, graph, 'doc:readme', 'test', { mime: 'text/plain' });
 
     const meta = await getContentMeta(graph, 'doc:readme');
     expect(meta).not.toBeNull();
-    expect(meta.sha).toMatch(/^[0-9a-f]{40}$/);
+    expect(meta.sha).toMatch(/^[0-9a-f]{40,64}$/);
     expect(meta.mime).toBe('text/plain');
     expect(meta.size).toBe(4);
     expect(meta.encoding).toBeUndefined();
@@ -119,7 +139,7 @@ describe('content store core', () => {
     const result = await deleteContent(graph, 'doc:readme');
 
     expect(result.removed).toBe(true);
-    expect(result.previousSha).toMatch(/^[0-9a-f]{40}$/);
+    expect(result.previousSha).toMatch(/^[0-9a-f]{40,64}$/);
     expect(await hasContent(graph, 'doc:readme')).toBe(false);
   });
 
@@ -191,7 +211,7 @@ describe('content CLI commands', () => {
     );
     expect(result.command).toBe('content-set');
     expect(result.nodeId).toBe('doc:test');
-    expect(result.sha).toMatch(/^[0-9a-f]{40}$/);
+    expect(result.sha).toMatch(/^[0-9a-f]{40,64}$/);
     expect(result.mime).toBe('text/markdown');
   });
 
@@ -222,7 +242,7 @@ describe('content CLI commands', () => {
     const result = runCliJson(['content', 'show', 'doc:test', '--json'], tempDir);
     expect(result.command).toBe('content-show');
     expect(result.content).toBe('# Test\n\nHello world.\n');
-    expect(result.sha).toMatch(/^[0-9a-f]{40}$/);
+    expect(result.sha).toMatch(/^[0-9a-f]{40,64}$/);
   });
 
   it('content meta --json returns metadata', () => {

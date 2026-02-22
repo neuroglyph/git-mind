@@ -6,6 +6,18 @@
   "type": "object",
   "required": ["schemaVersion", "command", "nodeId", "hasContent"],
   "additionalProperties": false,
+  "if": {
+    "properties": { "hasContent": { "const": true } },
+    "required": ["hasContent"]
+  },
+  "then": {
+    "required": ["sha", "mime", "size"],
+    "properties": {
+      "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+      "mime": { "type": "string", "minLength": 1 },
+      "size": { "type": "integer", "minimum": 0 }
+    }
+  },
   "properties": {
     "schemaVersion": { "type": "integer", "const": 1 },
     "command": { "type": "string", "const": "content-meta" },
@@ -14,10 +26,5 @@
     "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
     "mime": { "type": "string", "minLength": 1 },
     "size": { "type": "integer", "minimum": 0 }
-  },
-  "dependentRequired": {
-    "sha": ["mime", "size"],
-    "mime": ["sha", "size"],
-    "size": ["sha", "mime"]
   }
 }

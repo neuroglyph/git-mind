@@ -12,7 +12,7 @@
  *   _content.size     — byte count
  */
 
-import { execSync, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 /** Property key prefix for content metadata. */
 const PREFIX = '_content.';
@@ -71,7 +71,7 @@ export async function writeContent(cwd, graph, nodeId, content, opts = {}) {
   const size = buf.length;
 
   // Write blob to git object store
-  const sha = execSync('git hash-object -w --stdin', {
+  const sha = execFileSync('git', ['hash-object', '-w', '--stdin'], {
     cwd,
     input: buf,
     encoding: 'utf-8',
@@ -120,7 +120,7 @@ export async function readContent(cwd, graph, nodeId) {
 
   // Verify integrity: re-hash and compare
   const verifyBuf = Buffer.from(content, 'utf-8');
-  const verifySha = execSync('git hash-object --stdin', {
+  const verifySha = execFileSync('git', ['hash-object', '--stdin'], {
     cwd,
     input: verifyBuf,
     encoding: 'utf-8',
@@ -174,7 +174,7 @@ export async function hasContent(graph, nodeId) {
 
   const propsMap = await graph.getNodeProps(nodeId);
   const sha = propsMap?.get(KEYS.sha) ?? null;
-  return sha !== null && sha !== undefined;
+  return sha !== null;
 }
 
 /**
