@@ -19,7 +19,7 @@ const SIZE_KEY = '_content.size';
 
 /**
  * @typedef {object} ContentMeta
- * @property {string} sha - Git blob SHA
+ * @property {string} sha - Git blob OID
  * @property {string} mime - MIME type
  * @property {number} size - Content size in bytes
  */
@@ -27,7 +27,7 @@ const SIZE_KEY = '_content.size';
 /**
  * @typedef {object} WriteContentResult
  * @property {string} nodeId - Target node
- * @property {string} sha - Written blob SHA
+ * @property {string} sha - Written blob OID
  * @property {string} mime - MIME type
  * @property {number} size - Byte count
  */

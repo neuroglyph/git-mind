@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
 import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { execFileSync, execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import Ajv from 'ajv/dist/2020.js';
 import { CONTENT_PROPERTY_KEY } from '@git-stunts/git-warp';
 import { initGraph } from '../src/graph.js';
@@ -175,6 +175,17 @@ describe('content store core', () => {
 
     const { content } = await readContent(graph, 'doc:readme');
     expect(content).toBe('binary-safe content');
+  });
+
+  it('stores empty string content', async () => {
+    const result = await writeContent(graph, 'doc:readme', '', { mime: 'text/plain' });
+
+    expect(result.size).toBe(0);
+    const meta = await getContentMeta(graph, 'doc:readme');
+    expect(meta.size).toBe(0);
+
+    const { content } = await readContent(graph, 'doc:readme');
+    expect(content).toBe('');
   });
 });
 

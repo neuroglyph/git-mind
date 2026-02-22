@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.1] - 2026-02-22
+
+### Fixed
+
+- **ROADMAP stale integrity-check language** — Corrected binary content backlog item to reflect WARP-native blob storage; reframed `--verify` flag as OID existence check (#284)
+- **JSDoc typedef terminology** — Changed "Git blob SHA" / "Written blob SHA" to "Git blob OID" in `ContentMeta` and `WriteContentResult` typedefs (#284)
+- **Dead `execSync` import** — Removed unused `execSync` from `test/content.test.js`; only `execFileSync` is used (#284)
+
+### Added
+
+- **Empty content edge-case test** — Verifies `writeContent()` handles empty string input correctly (size 0, round-trip intact) (#284)
+
+## [4.0.0] - 2026-02-22
+
+### Changed
+
+- **BREAKING: Migrate content system to git-warp native API** — Replaced custom CAS layer (`git hash-object` / `git cat-file`) with `@git-stunts/git-warp` native `setContent()` / `getContent()` API. Content properties now use WARP's `CONTENT_PROPERTY_KEY` instead of custom `_content.sha`. Removes all direct git subprocess calls from content module (#284)
+- **Test count** — 577 tests across 29 files (was 571)
+
 ## [3.3.0] - 2026-02-22
 
 ### Added
