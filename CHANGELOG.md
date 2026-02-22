@@ -7,24 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- **CRITICAL: Command injection in `readContent()`** — Replaced all `execSync` shell interpolation with `execFileSync` arg arrays + SHA validation regex. Zero shell invocations in content module (#276)
-- **Dead `encoding` parameter removed** — Removed unused `encoding` field from content store, CLI format, JSON Schema contracts, and tests. Content is always UTF-8 (#276)
-- **Static imports in content CLI** — Replaced dynamic `await import('node:fs/promises')` and `await import('node:path')` with static imports (#276)
-- **`nodeId` in `content show` metadata** — Non-raw `content show` now passes `nodeId` to `formatContentMeta` for consistent display (#276)
-- **Schema `if/then` conditional** — `content-meta.schema.json` enforces `sha`, `mime`, and `size` required when `hasContent` is `true` (#276)
-- **Redundant null check** — Removed dead `sha !== undefined` in `hasContent()` — `?? null` guarantees non-undefined (#276)
-- **Misleading integrity test** — Split into blob-not-found test + genuine integrity mismatch test using non-UTF-8 blob (#276)
-- **SHA regex future-proofed** — Test assertions accept both SHA-1 (40 chars) and SHA-256 (64 chars) (#276)
-- **Schema test compile-once** — Content schema validators compiled once in `beforeAll` instead of per-test; removed `$id` stripping workaround (#276)
-- **Error-path CLI tests** — 4 new tests: nonexistent file, node without content, non-existent node for show/delete (#276)
-- **MIME map extended** — Added `.css` → `text/css` and `.svg` → `image/svg+xml` (#276)
-
-### Changed
-
-- **Test count** — 569 tests across 29 files (was 564)
-
 ## [3.3.0] - 2026-02-22
 
 ### Added
@@ -45,11 +27,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **JSON Schema contracts for extension CLI output** — 4 new schemas in `docs/contracts/cli/`: `extension-list`, `extension-validate`, `extension-add`, `extension-remove`. Valid samples added to the contract test harness (#262)
 - **Deferred items documented in ROADMAP** — #261 (ephemeral registration) and #269 (`--extension` flag) documented with rationale and recommended H2 slot
 
+### Fixed
+
+- **CRITICAL: Command injection in `readContent()`** — Replaced all `execSync` shell interpolation with `execFileSync` arg arrays + SHA validation regex. Zero shell invocations in content module (#276)
+- **Dead `encoding` parameter removed** — Removed unused `encoding` field from content store, CLI format, JSON Schema contracts, and tests. Content is always UTF-8 (#276)
+- **Static imports in content CLI** — Replaced dynamic `await import('node:fs/promises')` and `await import('node:path')` with static imports (#276)
+- **`nodeId` in `content show` metadata** — Non-raw `content show` now passes `nodeId` to `formatContentMeta` for consistent display (#276)
+- **Schema `if/then/else` conditional** — `content-meta.schema.json` enforces `sha`, `mime`, and `size` required when `hasContent` is `true`; forbids them when `false` (#276)
+- **Redundant null check** — Removed dead `sha !== undefined` in `hasContent()` — `?? null` guarantees non-undefined (#276)
+- **Misleading integrity test** — Split into blob-not-found test + genuine integrity mismatch test using non-UTF-8 blob (#276)
+- **Test SHA assertions accept both SHA-1 (40 chars) and SHA-256 (64 chars)** (#276)
+- **Schema test compile-once** — Content schema validators compiled once in `beforeAll` instead of per-test; removed `$id` stripping workaround (#276)
+- **Error-path CLI tests** — 4 new tests: nonexistent file, node without content, non-existent node for show/delete (#276)
+- **MIME map extended** — Added `.css` → `text/css` and `.svg` → `image/svg+xml` (#276)
+- **YAML MIME type** — Changed `.yaml`/`.yml` mapping from `text/yaml` to `application/yaml` (IANA standard) (#276)
+- **Missing `content-delete.schema.json` contract** — Added JSON Schema for `content delete --json` output (#276)
+- **Content subcommand positional parsing** — `extractPositionals()` helper properly skips `--flag value` pairs instead of naive `!startsWith('--')` check (#276)
+
 ### Changed
 
 - **Upgraded `@git-stunts/git-warp`** from v11.3.3 to v11.5.0
 - **`registerBuiltinExtensions()` memoized** — Module-level `builtInsLoaded` flag prevents redundant YAML file reads on repeated invocations within the same process (#266)
-- **Test count** — 564 tests across 29 files (was 537)
+- **Test count** — 571 tests across 29 files (was 537)
 
 ## [3.2.0] - 2026-02-17
 

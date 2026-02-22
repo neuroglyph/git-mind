@@ -273,6 +273,13 @@ const VALID_SAMPLES = {
     mime: 'text/markdown',
     size: 15,
   },
+  'content-delete.schema.json': {
+    schemaVersion: 1,
+    command: 'content-delete',
+    nodeId: 'doc:readme',
+    removed: true,
+    previousSha: 'a'.repeat(40),
+  },
 };
 
 describe('CLI JSON Schema contracts', () => {

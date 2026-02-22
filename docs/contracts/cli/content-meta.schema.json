@@ -18,6 +18,13 @@
       "size": { "type": "integer", "minimum": 0 }
     }
   },
+  "else": {
+    "properties": {
+      "sha": false,
+      "mime": false,
+      "size": false
+    }
+  },
   "properties": {
     "schemaVersion": { "type": "integer", "const": 1 },
     "command": { "type": "string", "const": "content-meta" },

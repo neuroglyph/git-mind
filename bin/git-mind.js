@@ -152,6 +152,24 @@ function parseFlags(args) {
   return flags;
 }
 
+/**
+ * Extract positional arguments from args, skipping --flag value pairs.
+ * @param {string[]} args
+ * @returns {string[]}
+ */
+function extractPositionals(args) {
+  const positionals = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].startsWith('--')) {
+      const flag = args[i].slice(2);
+      if (!BOOLEAN_FLAGS.has(flag) && i + 1 < args.length) i++; // skip value
+    } else {
+      positionals.push(args[i]);
+    }
+  }
+  return positionals;
+}
+
 switch (command) {
   case 'init':
     await init(cwd);
@@ -386,10 +404,12 @@ switch (command) {
 
   case 'content': {
     const contentSubCmd = args[1];
-    const contentFlags = parseFlags(args.slice(2));
+    const contentArgs = args.slice(2);
+    const contentFlags = parseFlags(contentArgs);
+    const contentPositionals = extractPositionals(contentArgs);
     switch (contentSubCmd) {
       case 'set': {
-        const setNode = args.slice(2).find(a => !a.startsWith('--'));
+        const setNode = contentPositionals[0];
         const fromFile = contentFlags.from;
         if (!setNode || !fromFile) {
           console.error('Usage: git mind content set <node> --from <file> [--mime <type>] [--json]');
@@ -403,7 +423,7 @@ switch (command) {
         break;
       }
       case 'show': {
-        const showNode = args.slice(2).find(a => !a.startsWith('--'));
+        const showNode = contentPositionals[0];
         if (!showNode) {
           console.error('Usage: git mind content show <node> [--raw] [--json]');
           process.exitCode = 1;
@@ -416,7 +436,7 @@ switch (command) {
         break;
       }
       case 'meta': {
-        const metaNode = args.slice(2).find(a => !a.startsWith('--'));
+        const metaNode = contentPositionals[0];
         if (!metaNode) {
           console.error('Usage: git mind content meta <node> [--json]');
           process.exitCode = 1;
@@ -426,7 +446,7 @@ switch (command) {
         break;
       }
       case 'delete': {
-        const deleteNode = args.slice(2).find(a => !a.startsWith('--'));
+        const deleteNode = contentPositionals[0];
         if (!deleteNode) {
           console.error('Usage: git mind content delete <node> [--json]');
           process.exitCode = 1;

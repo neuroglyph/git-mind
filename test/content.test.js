@@ -301,13 +301,14 @@ describe('content CLI commands', () => {
 
 describe('content CLI schema contracts', () => {
   let tempDir;
-  let validateSet, validateShow, validateMeta;
+  let validateSet, validateShow, validateMeta, validateDelete;
 
   beforeAll(async () => {
     const ajv = new Ajv({ strict: true, allErrors: true });
     validateSet = ajv.compile(await loadSchema('content-set.schema.json'));
     validateShow = ajv.compile(await loadSchema('content-show.schema.json'));
     validateMeta = ajv.compile(await loadSchema('content-meta.schema.json'));
+    validateDelete = ajv.compile(await loadSchema('content-delete.schema.json'));
   });
 
   beforeEach(async () => {
@@ -357,5 +358,20 @@ describe('content CLI schema contracts', () => {
     const result = runCliJson(['content', 'meta', 'doc:schema-test', '--json'], tempDir);
     expect(validateMeta(result), JSON.stringify(validateMeta.errors)).toBe(true);
     expect(result.hasContent).toBe(false);
+  });
+
+  it('content delete --json validates against content-delete.schema.json', () => {
+    runCli(['content', 'set', 'doc:schema-test', '--from', join(tempDir, 'test.md')], tempDir);
+    const result = runCliJson(['content', 'delete', 'doc:schema-test', '--json'], tempDir);
+    expect(validateDelete(result), JSON.stringify(validateDelete.errors)).toBe(true);
+    expect(result.removed).toBe(true);
+    expect(result.previousSha).toMatch(/^[0-9a-f]{40,64}$/);
+  });
+
+  it('content delete --json (no content) validates against content-delete.schema.json', () => {
+    const result = runCliJson(['content', 'delete', 'doc:schema-test', '--json'], tempDir);
+    expect(validateDelete(result), JSON.stringify(validateDelete.errors)).toBe(true);
+    expect(result.removed).toBe(false);
+    expect(result.previousSha).toBeNull();
   });
 });
