@@ -60,6 +60,10 @@ export async function writeContent(graph, nodeId, content, opts = {}) {
 
   const sha = await graph.getContentOid(nodeId);
 
+  if (sha == null) {
+    throw new Error(`Failed to retrieve OID after writing content to node: ${nodeId}`);
+  }
+
   return { nodeId, sha, mime, size };
 }
 
@@ -80,15 +84,16 @@ export async function readContent(graph, nodeId) {
   let contentBuf;
   try {
     contentBuf = await graph.getContent(nodeId);
-  } catch {
+  } catch (err) {
     throw new Error(
-      `Content blob ${meta.sha} not found in git object store for node: ${nodeId}`,
+      `Failed to retrieve content blob ${meta.sha} for node: ${nodeId}`,
+      { cause: err },
     );
   }
 
   if (contentBuf == null || (contentBuf.length === 0 && meta.size > 0)) {
     throw new Error(
-      `Content blob ${meta.sha} not found in git object store for node: ${nodeId}`,
+      `Failed to retrieve content blob ${meta.sha} for node: ${nodeId}`,
     );
   }
 

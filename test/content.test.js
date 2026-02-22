@@ -89,7 +89,7 @@ describe('content store core', () => {
     patch.setProperty('doc:readme', CONTENT_PROPERTY_KEY, 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef');
     await patch.commit();
 
-    await expect(readContent(graph, 'doc:readme')).rejects.toThrow(/not found in git object store/);
+    await expect(readContent(graph, 'doc:readme')).rejects.toThrow(/Failed to retrieve content blob/);
   });
 
   it('getContentMeta returns correct metadata', async () => {
