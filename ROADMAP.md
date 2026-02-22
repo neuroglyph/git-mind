@@ -2195,7 +2195,14 @@ Two issues were filed during the M12 extension polish pass and intentionally def
 
 ### Codebase hardening (from M13 VESSEL review)
 
-- **Standardize all git subprocess calls to `execFileSync`** — `src/content.js` now uses `execFileSync` exclusively, but other modules (e.g. `processCommitCmd` in `commands.js`) still use `execSync` with string interpolation. Audit and migrate for consistency and defense-in-depth.
+- **Standardize all git subprocess calls to `execFileSync`** — `src/content.js` eliminated all subprocess calls via WARP-native migration, but other modules (e.g. `processCommitCmd` in `commands.js`) still use `execSync` with string interpolation. Audit and migrate for consistency and defense-in-depth.
+
+### Content module error handling (from #284 CodeRabbit review)
+
+- **Establish error message conventions** — Content module errors lack a consistent prefix/format. Consider a `[content] <operation> failed: <detail>` convention or a `ContentError` class hierarchy for typed catch handling.
+- **Audit `try/catch` blocks for cause preservation** — The `readContent()` catch now chains `{ cause: err }`, but other modules may swallow root causes. Audit all catch blocks in domain code for cause propagation.
+- **Integration test for `error.cause` chain** — Verify callers of `readContent()` can access `error.cause` when blob retrieval fails. Currently only the error message is tested.
+- **`--verbose` flag for content CLI** — Dump the full `error.cause` chain when content operations fail. Helps diagnose infrastructure vs. missing-blob issues.
 
 ### Other backlog items
 
