@@ -7,8 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-02-22
+
 ### Added
 
+- **Content-on-node (M13 VESSEL)** — Attach rich content to graph nodes using git's native CAS. Content stored as git blobs via `hash-object`, SHA and metadata recorded as WARP node properties under the `_content.*` prefix (#271)
+- **`git mind content set <node> --from <file>`** — Attach content from a file. MIME auto-detected from extension, `--mime` override supported. `--json` output (#273)
+- **`git mind content show <node>`** — Display attached content. `--raw` for piping (body only, no metadata header). `--json` output (#273)
+- **`git mind content meta <node>`** — Show content metadata (SHA, MIME, size, encoding). `--json` output (#273)
+- **`git mind content delete <node>`** — Remove content attachment from a node. `--json` output (#273)
+- **Content store API** — `writeContent()`, `readContent()`, `getContentMeta()`, `hasContent()`, `deleteContent()` exported from public API (#272)
+- **SHA integrity verification** — `readContent()` re-hashes retrieved blob and compares to stored SHA on every read (#272)
+- **JSON Schema contracts for content CLI** — `content-set.schema.json`, `content-show.schema.json`, `content-meta.schema.json` in `docs/contracts/cli/` (#274)
 - **ADR-0004: Content Attachments Belong in git-warp** — Decision record establishing that CAS-backed content-on-node is a git-warp substrate responsibility, not a git-mind domain concern. Aligns with Paper I's `Atom(p)` attachment formalism (#252)
 - **Chalk formatting for `extension list`** — `formatExtensionList()` renders extension names in cyan bold, versions dimmed, `[builtin]` in yellow / `[custom]` in magenta, consistent with all other CLI commands (#265)
 - **Prefix collision detection** — `registerExtension()` now checks incoming domain prefixes against all registered extensions and throws a descriptive error on overlap. Idempotent re-registration of the same extension name is still allowed (#264)
@@ -21,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Upgraded `@git-stunts/git-warp`** from v11.3.3 to v11.5.0
 - **`registerBuiltinExtensions()` memoized** — Module-level `builtInsLoaded` flag prevents redundant YAML file reads on repeated invocations within the same process (#266)
-- **Test count** — 537 tests across 28 files (was 527)
+- **Test count** — 564 tests across 29 files (was 537)
 
 ## [3.2.0] - 2026-02-17
 
