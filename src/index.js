@@ -48,3 +48,6 @@ export {
   loadExtension, registerExtension, removeExtension, listExtensions, getExtension,
   validateExtension, resetExtensions, registerBuiltinExtensions,
 } from './extension.js';
+export {
+  writeContent, readContent, getContentMeta, hasContent, deleteContent,
+} from './content.js';
