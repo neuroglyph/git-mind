@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **OID guard in `writeContent()`** — Throw if `getContentOid()` returns null after a successful write, enforcing the `WriteContentResult.sha: string` contract (#284)
+- **Error cause chain in `readContent()`** — Capture original error via `{ cause: err }` so callers can distinguish blob-not-found from infrastructure failures (#284)
 - **Null guard in `readContent()`** — Changed `!contentBuf` to explicit `contentBuf == null` for clearer null/undefined intent (#284)
 - **Null guard in `hasContent()`** — Changed `sha !== null` to `sha != null` to catch both null and undefined from `getContentOid()`, consistent with other callers (#284)
 - **ROADMAP stale integrity-check language** — Corrected binary content backlog item to reflect WARP-native blob storage; reframed `--verify` flag as OID existence check (#284)
