@@ -2204,6 +2204,19 @@ Two issues were filed during the M12 extension polish pass and intentionally def
 - **Integration test for `error.cause` chain** — Verify callers of `readContent()` can access `error.cause` when blob retrieval fails. Currently only the error message is tested.
 - **`--verbose` flag for content CLI** — Dump the full `error.cause` chain when content operations fail. Helps diagnose infrastructure vs. missing-blob issues.
 
+### CI/CD & release hygiene (from #285 merge experience)
+
+- **Version consistency gate** — Add a CI check that `package-lock.json` top-level version matches `package.json` version. During #285 the lock file was stale at `3.2.0` while `package.json` was `4.0.0` — only caught manually.
+- **Changelog entry validation** — Add a CI check that `CHANGELOG.md` contains a heading matching the current `package.json` version. The `[4.0.0]` entry was missing until manually added during the PR.
+
+### Content system UX (from #284/#285 post-merge review)
+
+- **`content set` from stdin** — Allow piping content via `echo "..." | git mind content set <node>`. Currently only `--from <file>` is supported, limiting scriptability.
+- **Content health checks in `git mind doctor`** — Detect nodes with stale MIME types, orphaned content properties (OID present but blob missing), and size/OID mismatches. Extends the existing doctor detectors.
+- **`--as-of` guard for content commands** — Emit a clear error or warning if `--as-of` is used with `content show|meta|set|delete`. WARP ticks are independent of git commit history; time-travel for content is intentionally excluded but not enforced at the CLI boundary.
+- **Content CLI fast-path unit tests** — The current content CLI tests shell out to `bin/git-mind.js` (~700ms each). Add a parallel set of fast tests that invoke command handlers directly with a mock graph for faster feedback loops.
+- **WARP-native migration guide** — `src/content.js` is the first module to eliminate all git subprocess calls via WARP's native API. Document the migration pattern (before/after, gotchas, WARP null semantics) as a reference for migrating other modules.
+
 ### Other backlog items
 
 - `git mind onboarding` as a guided walkthrough (not just a view)
