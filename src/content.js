@@ -170,7 +170,8 @@ export async function hasContent(graph, nodeId) {
   if (!exists) return false;
 
   const propsMap = await graph.getNodeProps(nodeId);
-  return propsMap?.has(KEYS.sha) ?? false;
+  const sha = propsMap?.get(KEYS.sha) ?? null;
+  return sha !== null && sha !== undefined;
 }
 
 /**

@@ -247,6 +247,35 @@ const VALID_SAMPLES = {
     name: 'test-ext',
     version: '1.0.0',
   },
+  'content-set.schema.json': {
+    schemaVersion: 1,
+    command: 'content-set',
+    nodeId: 'doc:readme',
+    sha: 'a'.repeat(40),
+    mime: 'text/markdown',
+    size: 42,
+    encoding: 'utf-8',
+  },
+  'content-show.schema.json': {
+    schemaVersion: 1,
+    command: 'content-show',
+    nodeId: 'doc:readme',
+    content: '# Hello World\n',
+    sha: 'a'.repeat(40),
+    mime: 'text/markdown',
+    size: 15,
+    encoding: 'utf-8',
+  },
+  'content-meta.schema.json': {
+    schemaVersion: 1,
+    command: 'content-meta',
+    nodeId: 'doc:readme',
+    hasContent: true,
+    sha: 'a'.repeat(40),
+    mime: 'text/markdown',
+    size: 15,
+    encoding: 'utf-8',
+  },
 };
 
 describe('CLI JSON Schema contracts', () => {
