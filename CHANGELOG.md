@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **CRITICAL: Command injection in `readContent()`** — Replaced `execSync` shell interpolation with `execFileSync` + SHA validation regex. Content blob SHAs are now validated before passing to git (#276)
+- **Dead `encoding` parameter removed** — Removed unused `encoding` field from content store, CLI format, JSON Schema contracts, and tests. Content is always UTF-8 (#276)
+- **Static imports in content CLI** — Replaced dynamic `await import('node:fs/promises')` and `await import('node:path')` with static imports (#276)
+- **`nodeId` in `content show` metadata** — Non-raw `content show` now passes `nodeId` to `formatContentMeta` for consistent display (#276)
+- **Schema `dependentRequired` constraint** — `content-meta.schema.json` now enforces that `sha`, `mime`, and `size` must appear together (#276)
+- **Schema test compile-once** — Content schema validators compiled once in `beforeAll` instead of per-test; removed `$id` stripping workaround (#276)
+- **Error-path CLI tests** — 4 new tests: nonexistent file, node without content, non-existent node for show/delete (#276)
+
+### Changed
+
+- **Test count** — 568 tests across 29 files (was 564)
+
 ## [3.3.0] - 2026-02-22
 
 ### Added

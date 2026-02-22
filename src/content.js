@@ -10,10 +10,9 @@
  *   _content.sha      — git blob SHA
  *   _content.mime     — MIME type (e.g. "text/markdown")
  *   _content.size     — byte count
- *   _content.encoding — "utf-8" | "base64"
  */
 
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 
 /** Property key prefix for content metadata. */
 const PREFIX = '_content.';
@@ -23,15 +22,23 @@ const KEYS = {
   sha: `${PREFIX}sha`,
   mime: `${PREFIX}mime`,
   size: `${PREFIX}size`,
-  encoding: `${PREFIX}encoding`,
 };
+
+/** Validates a string is a 40-hex-char git SHA. */
+const SHA_RE = /^[0-9a-f]{40}$/;
+
+/** @throws {Error} if sha is not a valid 40-hex-char git object hash. */
+function assertValidSha(sha) {
+  if (typeof sha !== 'string' || !SHA_RE.test(sha)) {
+    throw new Error(`Invalid content SHA: ${sha}`);
+  }
+}
 
 /**
  * @typedef {object} ContentMeta
  * @property {string} sha - Git blob SHA
  * @property {string} mime - MIME type
  * @property {number} size - Content size in bytes
- * @property {string} encoding - Content encoding
  */
 
 /**
@@ -40,7 +47,6 @@ const KEYS = {
  * @property {string} sha - Written blob SHA
  * @property {string} mime - MIME type
  * @property {number} size - Byte count
- * @property {string} encoding - Content encoding
  */
 
 /**
@@ -51,7 +57,7 @@ const KEYS = {
  * @param {import('@git-stunts/git-warp').default} graph - WARP graph instance
  * @param {string} nodeId - Target node ID
  * @param {Buffer|string} content - Content to store
- * @param {{ mime?: string, encoding?: string }} [opts]
+ * @param {{ mime?: string }} [opts]
  * @returns {Promise<WriteContentResult>}
  */
 export async function writeContent(cwd, graph, nodeId, content, opts = {}) {
@@ -62,7 +68,6 @@ export async function writeContent(cwd, graph, nodeId, content, opts = {}) {
 
   const buf = Buffer.isBuffer(content) ? content : Buffer.from(content, 'utf-8');
   const mime = opts.mime ?? 'text/plain';
-  const encoding = opts.encoding ?? 'utf-8';
   const size = buf.length;
 
   // Write blob to git object store
@@ -77,10 +82,9 @@ export async function writeContent(cwd, graph, nodeId, content, opts = {}) {
   patch.setProperty(nodeId, KEYS.sha, sha);
   patch.setProperty(nodeId, KEYS.mime, mime);
   patch.setProperty(nodeId, KEYS.size, size);
-  patch.setProperty(nodeId, KEYS.encoding, encoding);
   await patch.commit();
 
-  return { nodeId, sha, mime, size, encoding };
+  return { nodeId, sha, mime, size };
 }
 
 /**
@@ -98,12 +102,15 @@ export async function readContent(cwd, graph, nodeId) {
     throw new Error(`No content attached to node: ${nodeId}`);
   }
 
+  // Validate SHA before passing to git
+  assertValidSha(meta.sha);
+
   // Retrieve blob from git object store
   let content;
   try {
-    content = execSync(`git cat-file blob ${meta.sha}`, {
+    content = execFileSync('git', ['cat-file', 'blob', meta.sha], {
       cwd,
-      encoding: meta.encoding === 'base64' ? 'buffer' : 'utf-8',
+      encoding: 'utf-8',
     });
   } catch {
     throw new Error(
@@ -112,7 +119,7 @@ export async function readContent(cwd, graph, nodeId) {
   }
 
   // Verify integrity: re-hash and compare
-  const verifyBuf = Buffer.isBuffer(content) ? content : Buffer.from(content, 'utf-8');
+  const verifyBuf = Buffer.from(content, 'utf-8');
   const verifySha = execSync('git hash-object --stdin', {
     cwd,
     input: verifyBuf,
@@ -126,10 +133,7 @@ export async function readContent(cwd, graph, nodeId) {
     );
   }
 
-  return {
-    content: Buffer.isBuffer(content) ? content.toString('base64') : content,
-    meta,
-  };
+  return { content, meta };
 }
 
 /**
@@ -154,7 +158,6 @@ export async function getContentMeta(graph, nodeId) {
     sha,
     mime: propsMap.get(KEYS.mime) ?? 'text/plain',
     size: propsMap.get(KEYS.size) ?? 0,
-    encoding: propsMap.get(KEYS.encoding) ?? 'utf-8',
   };
 }
 
@@ -199,7 +202,6 @@ export async function deleteContent(graph, nodeId) {
   patch.setProperty(nodeId, KEYS.sha, null);
   patch.setProperty(nodeId, KEYS.mime, null);
   patch.setProperty(nodeId, KEYS.size, null);
-  patch.setProperty(nodeId, KEYS.encoding, null);
   await patch.commit();
 
   return { nodeId, removed: true, previousSha };

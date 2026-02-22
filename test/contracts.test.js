@@ -254,7 +254,6 @@ const VALID_SAMPLES = {
     sha: 'a'.repeat(40),
     mime: 'text/markdown',
     size: 42,
-    encoding: 'utf-8',
   },
   'content-show.schema.json': {
     schemaVersion: 1,
@@ -264,7 +263,6 @@ const VALID_SAMPLES = {
     sha: 'a'.repeat(40),
     mime: 'text/markdown',
     size: 15,
-    encoding: 'utf-8',
   },
   'content-meta.schema.json': {
     schemaVersion: 1,
@@ -274,7 +272,6 @@ const VALID_SAMPLES = {
     sha: 'a'.repeat(40),
     mime: 'text/markdown',
     size: 15,
-    encoding: 'utf-8',
   },
 };
 

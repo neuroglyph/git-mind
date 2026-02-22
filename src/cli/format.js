@@ -500,7 +500,7 @@ export function formatProgressMeta(meta) {
 
 /**
  * Format content metadata for terminal display.
- * @param {{ nodeId?: string, sha: string, mime: string, size: number, encoding: string }} meta
+ * @param {{ nodeId?: string, sha: string, mime: string, size: number }} meta
  * @returns {string}
  */
 export function formatContentMeta(meta) {
@@ -511,7 +511,6 @@ export function formatContentMeta(meta) {
   lines.push(`  ${chalk.dim('sha:')}      ${meta.sha}`);
   lines.push(`  ${chalk.dim('mime:')}     ${meta.mime}`);
   lines.push(`  ${chalk.dim('size:')}     ${meta.size} bytes`);
-  lines.push(`  ${chalk.dim('encoding:')} ${meta.encoding}`);
   return lines.join('\n');
 }
 

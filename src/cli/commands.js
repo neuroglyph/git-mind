@@ -4,8 +4,8 @@
  */
 
 import { execSync } from 'node:child_process';
-import { writeFile, chmod, access, constants } from 'node:fs/promises';
-import { join } from 'node:path';
+import { writeFile, chmod, access, constants, readFile } from 'node:fs/promises';
+import { join, extname } from 'node:path';
 import { initGraph, loadGraph } from '../graph.js';
 import { createEdge, queryEdges, removeEdge, EDGE_TYPES } from '../edges.js';
 import { getNodes, hasNode, getNode, getNodesByPrefix, setNodeProperty, unsetNodeProperty } from '../nodes.js';
@@ -832,8 +832,6 @@ const MIME_MAP = {
  */
 export async function contentSet(cwd, nodeId, filePath, opts = {}) {
   try {
-    const { readFile } = await import('node:fs/promises');
-    const { extname } = await import('node:path');
     const buf = await readFile(filePath);
     const mime = opts.mime ?? MIME_MAP[extname(filePath).toLowerCase()] ?? 'application/octet-stream';
 
@@ -871,7 +869,7 @@ export async function contentShow(cwd, nodeId, opts = {}) {
     if (opts.raw) {
       process.stdout.write(content);
     } else {
-      console.log(formatContentMeta(meta));
+      console.log(formatContentMeta({ nodeId, ...meta }));
       console.log('');
       console.log(content);
     }

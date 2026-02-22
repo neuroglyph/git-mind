@@ -62,7 +62,7 @@ describe('content store core', () => {
     expect(result.sha).toMatch(/^[0-9a-f]{40}$/);
     expect(result.mime).toBe('text/markdown');
     expect(result.size).toBe(Buffer.from('# Hello World\n').length);
-    expect(result.encoding).toBe('utf-8');
+    expect(result.encoding).toBeUndefined();
   });
 
   it('readContent retrieves correct content', async () => {
@@ -93,7 +93,7 @@ describe('content store core', () => {
     expect(meta.sha).toMatch(/^[0-9a-f]{40}$/);
     expect(meta.mime).toBe('text/plain');
     expect(meta.size).toBe(4);
-    expect(meta.encoding).toBe('utf-8');
+    expect(meta.encoding).toBeUndefined();
   });
 
   it('getContentMeta returns null for node without content', async () => {
@@ -253,13 +253,41 @@ describe('content CLI commands', () => {
     const output = runCli(['content', 'delete', 'doc:test'], tempDir);
     expect(output).toContain('No content to remove');
   });
+
+  it('content set --from nonexistent file throws', () => {
+    expect(() => {
+      runCli(['content', 'set', 'doc:test', '--from', join(tempDir, 'nonexistent.md')], tempDir);
+    }).toThrow();
+  });
+
+  it('content show on node without content throws', () => {
+    expect(() => {
+      runCli(['content', 'show', 'doc:test'], tempDir);
+    }).toThrow();
+  });
+
+  it('content show on non-existent node throws', () => {
+    expect(() => {
+      runCli(['content', 'show', 'doc:nonexistent'], tempDir);
+    }).toThrow();
+  });
+
+  it('content delete on non-existent node throws', () => {
+    expect(() => {
+      runCli(['content', 'delete', 'doc:nonexistent'], tempDir);
+    }).toThrow();
+  });
 });
 
 describe('content CLI schema contracts', () => {
-  let tempDir, ajv;
+  let tempDir;
+  let validateSet, validateShow, validateMeta;
 
-  beforeAll(() => {
-    ajv = new Ajv({ strict: true, allErrors: true });
+  beforeAll(async () => {
+    const ajv = new Ajv({ strict: true, allErrors: true });
+    validateSet = ajv.compile(await loadSchema('content-set.schema.json'));
+    validateShow = ajv.compile(await loadSchema('content-show.schema.json'));
+    validateMeta = ajv.compile(await loadSchema('content-meta.schema.json'));
   });
 
   beforeEach(async () => {
@@ -282,43 +310,32 @@ describe('content CLI schema contracts', () => {
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  it('content set --json validates against content-set.schema.json', async () => {
-    const schema = await loadSchema('content-set.schema.json');
+  it('content set --json validates against content-set.schema.json', () => {
     const result = runCliJson(
       ['content', 'set', 'doc:schema-test', '--from', join(tempDir, 'test.md'), '--json'],
       tempDir,
     );
-    const validate = ajv.compile(schema);
-    expect(validate(result), JSON.stringify(validate.errors)).toBe(true);
+    expect(validateSet(result), JSON.stringify(validateSet.errors)).toBe(true);
   });
 
-  it('content show --json validates against content-show.schema.json', async () => {
-    const schema = await loadSchema('content-show.schema.json');
+  it('content show --json validates against content-show.schema.json', () => {
     runCli(['content', 'set', 'doc:schema-test', '--from', join(tempDir, 'test.md')], tempDir);
     const result = runCliJson(['content', 'show', 'doc:schema-test', '--json'], tempDir);
-    const validate = ajv.compile(schema);
-    expect(validate(result), JSON.stringify(validate.errors)).toBe(true);
+    expect(validateShow(result), JSON.stringify(validateShow.errors)).toBe(true);
   });
 
-  it('content meta --json (with content) validates against content-meta.schema.json', async () => {
-    const schema = await loadSchema('content-meta.schema.json');
-    const validate = ajv.compile(schema);
+  it('content meta --json (with content) validates against content-meta.schema.json', () => {
     runCli(['content', 'set', 'doc:schema-test', '--from', join(tempDir, 'test.md')], tempDir);
     const result = runCliJson(['content', 'meta', 'doc:schema-test', '--json'], tempDir);
-    expect(validate(result), JSON.stringify(validate.errors)).toBe(true);
-    // Also verify the content fields are present when hasContent=true
+    expect(validateMeta(result), JSON.stringify(validateMeta.errors)).toBe(true);
     expect(result.hasContent).toBe(true);
     expect(result.sha).toBeDefined();
     expect(result.mime).toBeDefined();
   });
 
-  it('content meta --json (no content) validates against content-meta.schema.json', async () => {
-    // Reuse compiled validator by compiling with a different $id
-    const schema = await loadSchema('content-meta.schema.json');
-    const { $id, ...schemaNoId } = schema;
-    const validate = ajv.compile(schemaNoId);
+  it('content meta --json (no content) validates against content-meta.schema.json', () => {
     const result = runCliJson(['content', 'meta', 'doc:schema-test', '--json'], tempDir);
-    expect(validate(result), JSON.stringify(validate.errors)).toBe(true);
+    expect(validateMeta(result), JSON.stringify(validateMeta.errors)).toBe(true);
     expect(result.hasContent).toBe(false);
   });
 });
