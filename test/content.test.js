@@ -161,6 +161,24 @@ describe('content store core', () => {
     ).rejects.toThrow(/Node not found/);
   });
 
+  it('readContent fails on node without content', async () => {
+    await expect(
+      readContent(tempDir, graph, 'doc:readme'),
+    ).rejects.toThrow(/No content attached/);
+  });
+
+  it('getContentMeta fails on non-existent node', async () => {
+    await expect(
+      getContentMeta(graph, 'doc:nonexistent'),
+    ).rejects.toThrow(/Node not found/);
+  });
+
+  it('deleteContent fails on non-existent node', async () => {
+    await expect(
+      deleteContent(graph, 'doc:nonexistent'),
+    ).rejects.toThrow(/Node not found/);
+  });
+
   it('overwrite replaces content cleanly', async () => {
     await writeContent(tempDir, graph, 'doc:readme', 'version 1', { mime: 'text/plain' });
     await writeContent(tempDir, graph, 'doc:readme', 'version 2', { mime: 'text/markdown' });
@@ -277,28 +295,28 @@ describe('content CLI commands', () => {
     expect(output).toContain('No content to remove');
   });
 
-  it('content set --from nonexistent file throws', () => {
+  it('content set --from nonexistent file throws with file error', () => {
     expect(() => {
       runCli(['content', 'set', 'doc:test', '--from', join(tempDir, 'nonexistent.md')], tempDir);
-    }).toThrow();
+    }).toThrow(/ENOENT|no such file/i);
   });
 
-  it('content show on node without content throws', () => {
+  it('content show on node without content throws with no-content error', () => {
     expect(() => {
       runCli(['content', 'show', 'doc:test'], tempDir);
-    }).toThrow();
+    }).toThrow(/No content attached/);
   });
 
-  it('content show on non-existent node throws', () => {
+  it('content show on non-existent node throws with not-found error', () => {
     expect(() => {
       runCli(['content', 'show', 'doc:nonexistent'], tempDir);
-    }).toThrow();
+    }).toThrow(/Node not found/);
   });
 
-  it('content delete on non-existent node throws', () => {
+  it('content delete on non-existent node throws with not-found error', () => {
     expect(() => {
       runCli(['content', 'delete', 'doc:nonexistent'], tempDir);
-    }).toThrow();
+    }).toThrow(/Node not found/);
   });
 });
 

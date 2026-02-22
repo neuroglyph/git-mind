@@ -440,6 +440,41 @@ describe('CLI JSON Schema contracts', () => {
       const validate = validators.get('suggest.schema.json');
       expect(validate(sample)).toBe(true);
     });
+
+    it('content-delete schema accepts removed: false with previousSha: null', () => {
+      const validate = validators.get('content-delete.schema.json');
+      const sample = {
+        schemaVersion: 1,
+        command: 'content-delete',
+        nodeId: 'doc:readme',
+        removed: false,
+        previousSha: null,
+      };
+      expect(validate(sample), JSON.stringify(validate.errors)).toBe(true);
+    });
+
+    it('content-meta schema accepts hasContent: false without sha/mime/size', () => {
+      const validate = validators.get('content-meta.schema.json');
+      const sample = {
+        schemaVersion: 1,
+        command: 'content-meta',
+        nodeId: 'doc:readme',
+        hasContent: false,
+      };
+      expect(validate(sample), JSON.stringify(validate.errors)).toBe(true);
+    });
+
+    it('content-meta schema rejects hasContent: false with sha present', () => {
+      const validate = validators.get('content-meta.schema.json');
+      const sample = {
+        schemaVersion: 1,
+        command: 'content-meta',
+        nodeId: 'doc:readme',
+        hasContent: false,
+        sha: 'a'.repeat(40),
+      };
+      expect(validate(sample)).toBe(false);
+    });
   });
 });
 

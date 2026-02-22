@@ -195,16 +195,7 @@ switch (command) {
   case 'view': {
     const viewArgs = args.slice(1);
     const viewFlags = parseFlags(viewArgs);
-    // Collect positionals: skip flags and their consumed values
-    const viewPositionals = [];
-    for (let i = 0; i < viewArgs.length; i++) {
-      if (viewArgs[i].startsWith('--')) {
-        const flag = viewArgs[i].slice(2);
-        if (!BOOLEAN_FLAGS.has(flag) && i + 1 < viewArgs.length) i++; // skip value
-      } else {
-        viewPositionals.push(viewArgs[i]);
-      }
-    }
+    const viewPositionals = extractPositionals(viewArgs);
     const viewCtx = contextFromFlags(viewFlags);
     await view(cwd, viewPositionals[0], {
       scope: viewFlags.scope,
