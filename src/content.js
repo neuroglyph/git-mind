@@ -24,10 +24,10 @@ const KEYS = {
   size: `${PREFIX}size`,
 };
 
-/** Validates a string is a 40-hex-char git SHA. */
-const SHA_RE = /^[0-9a-f]{40}$/;
+/** Validates a string is a 40- or 64-hex-char git object hash (SHA-1 or SHA-256). */
+const SHA_RE = /^[0-9a-f]{40,64}$/;
 
-/** @throws {Error} if sha is not a valid 40-hex-char git object hash. */
+/** @throws {Error} if sha is not a valid git object hash (40 or 64 hex chars). */
 function assertValidSha(sha) {
   if (typeof sha !== 'string' || !SHA_RE.test(sha)) {
     throw new Error(`Invalid content SHA: ${sha}`);

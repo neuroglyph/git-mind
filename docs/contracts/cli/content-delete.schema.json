@@ -11,6 +11,6 @@
     "command": { "type": "string", "const": "content-delete" },
     "nodeId": { "type": "string", "minLength": 1 },
     "removed": { "type": "boolean" },
-    "previousSha": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40}$" }
+    "previousSha": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40,64}$" }
   }
 }

@@ -10,7 +10,7 @@
     "schemaVersion": { "type": "integer", "const": 1 },
     "command": { "type": "string", "const": "content-set" },
     "nodeId": { "type": "string", "minLength": 1 },
-    "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" },
     "mime": { "type": "string", "minLength": 1 },
     "size": { "type": "integer", "minimum": 0 }
   }

@@ -12,6 +12,15 @@ import Ajv from 'ajv/dist/2020.js';
 import { initGraph } from '../src/graph.js';
 import { writeContent, readContent, getContentMeta, hasContent, deleteContent } from '../src/content.js';
 
+/** Create a temp dir with an initialized git repo. */
+async function setupGitRepo() {
+  const dir = await mkdtemp(join(tmpdir(), 'gitmind-content-'));
+  execFileSync('git', ['init'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.email', 'test@test.com'], { cwd: dir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.name', 'Test'], { cwd: dir, stdio: 'ignore' });
+  return dir;
+}
+
 const BIN = join(import.meta.dirname, '..', 'bin', 'git-mind.js');
 const SCHEMA_DIR = join(import.meta.dirname, '..', 'docs', 'contracts', 'cli');
 
@@ -36,10 +45,7 @@ describe('content store core', () => {
   let tempDir, graph;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'gitmind-content-'));
-    execSync('git init', { cwd: tempDir, stdio: 'ignore' });
-    execSync('git config user.email test@test.com', { cwd: tempDir, stdio: 'ignore' });
-    execSync('git config user.name Test', { cwd: tempDir, stdio: 'ignore' });
+    tempDir = await setupGitRepo();
     graph = await initGraph(tempDir);
 
     // Create a test node
@@ -177,10 +183,7 @@ describe('content CLI commands', () => {
   let tempDir;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'gitmind-content-cli-'));
-    execSync('git init', { cwd: tempDir, stdio: 'ignore' });
-    execSync('git config user.email test@test.com', { cwd: tempDir, stdio: 'ignore' });
-    execSync('git config user.name Test', { cwd: tempDir, stdio: 'ignore' });
+    tempDir = await setupGitRepo();
 
     // Init graph and add a node
     runCli(['init'], tempDir);
@@ -312,10 +315,7 @@ describe('content CLI schema contracts', () => {
   });
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'gitmind-content-schema-'));
-    execSync('git init', { cwd: tempDir, stdio: 'ignore' });
-    execSync('git config user.email test@test.com', { cwd: tempDir, stdio: 'ignore' });
-    execSync('git config user.name Test', { cwd: tempDir, stdio: 'ignore' });
+    tempDir = await setupGitRepo();
 
     runCli(['init'], tempDir);
     const graph = await initGraph(tempDir);

@@ -13,7 +13,7 @@
   "then": {
     "required": ["sha", "mime", "size"],
     "properties": {
-      "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+      "sha": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" },
       "mime": { "type": "string", "minLength": 1 },
       "size": { "type": "integer", "minimum": 0 }
     }
@@ -30,7 +30,7 @@
     "command": { "type": "string", "const": "content-meta" },
     "nodeId": { "type": "string", "minLength": 1 },
     "hasContent": { "type": "boolean" },
-    "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" },
     "mime": { "type": "string", "minLength": 1 },
     "size": { "type": "integer", "minimum": 0 }
   }
