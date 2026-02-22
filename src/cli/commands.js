@@ -838,7 +838,7 @@ export async function contentSet(cwd, nodeId, filePath, opts = {}) {
     const mime = opts.mime ?? MIME_MAP[extname(filePath).toLowerCase()] ?? 'application/octet-stream';
 
     const graph = await loadGraph(cwd);
-    const result = await writeContent(cwd, graph, nodeId, buf, { mime });
+    const result = await writeContent(graph, nodeId, buf, { mime });
 
     if (opts.json) {
       outputJson('content-set', result);
@@ -861,7 +861,7 @@ export async function contentSet(cwd, nodeId, filePath, opts = {}) {
 export async function contentShow(cwd, nodeId, opts = {}) {
   try {
     const graph = await loadGraph(cwd);
-    const { content, meta } = await readContent(cwd, graph, nodeId);
+    const { content, meta } = await readContent(graph, nodeId);
 
     if (opts.json) {
       outputJson('content-show', { nodeId, content, ...meta });

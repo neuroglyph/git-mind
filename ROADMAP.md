@@ -2189,7 +2189,7 @@ Two issues were filed during the M12 extension polish pass and intentionally def
 
 ### Content system enhancements (from M13 VESSEL review)
 
-- **`git mind content list`** — Query all nodes that have `_content.sha` properties. Currently there's no way to discover which nodes carry content without inspecting each one individually.
+- **`git mind content list`** — Query all nodes that have `_content` properties. Currently there's no way to discover which nodes carry content without inspecting each one individually.
 - **Binary content support** — Add base64 encoding for non-text MIME types. Currently the content system is text-only (UTF-8); non-UTF-8 blobs fail the integrity check by design. Requires reintroducing encoding metadata and updating `readContent()` to handle buffer round-trips.
 - **`content meta --verify` flag** — Run the SHA integrity check without dumping the full content body. Useful for bulk health checks across all content-bearing nodes.
 

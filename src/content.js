@@ -1,38 +1,21 @@
 /**
  * @module content
  * Content-on-node: attach rich content (markdown, text, etc.) to graph nodes
- * using git's native content-addressed storage.
+ * using git-warp's native content-addressed storage.
  *
- * Content is stored as git blobs via `git hash-object -w`. The blob SHA and
- * metadata are recorded as WARP node properties under the `_content.` prefix.
+ * Content is stored as git blobs via WARP's patch.attachContent(). The blob OID
+ * and metadata are recorded as WARP node properties.
  *
  * Property convention:
- *   _content.sha      — git blob SHA
- *   _content.mime     — MIME type (e.g. "text/markdown")
- *   _content.size     — byte count
+ *   _content        — git blob OID (managed by WARP via CONTENT_PROPERTY_KEY)
+ *   _content.mime   — MIME type (e.g. "text/markdown")
+ *   _content.size   — byte count
  */
 
-import { execFileSync } from 'node:child_process';
+import { CONTENT_PROPERTY_KEY } from '@git-stunts/git-warp';
 
-/** Property key prefix for content metadata. */
-const PREFIX = '_content.';
-
-/** Known content property keys. */
-const KEYS = {
-  sha: `${PREFIX}sha`,
-  mime: `${PREFIX}mime`,
-  size: `${PREFIX}size`,
-};
-
-/** Validates a string is a 40- or 64-hex-char git object hash (SHA-1 or SHA-256). */
-const SHA_RE = /^[0-9a-f]{40,64}$/;
-
-/** @throws {Error} if sha is not a valid git object hash (40 or 64 hex chars). */
-function assertValidSha(sha) {
-  if (typeof sha !== 'string' || !SHA_RE.test(sha)) {
-    throw new Error(`Invalid content SHA: ${sha}`);
-  }
-}
+const MIME_KEY = '_content.mime';
+const SIZE_KEY = '_content.size';
 
 /**
  * @typedef {object} ContentMeta
@@ -50,17 +33,16 @@ function assertValidSha(sha) {
  */
 
 /**
- * Write content to a graph node. Stores the content as a git blob and records
- * metadata as node properties.
+ * Write content to a graph node. Stores the content as a git blob via WARP's
+ * native content API and records metadata as node properties.
  *
- * @param {string} cwd - Repository working directory
  * @param {import('@git-stunts/git-warp').default} graph - WARP graph instance
  * @param {string} nodeId - Target node ID
  * @param {Buffer|string} content - Content to store
  * @param {{ mime?: string }} [opts]
  * @returns {Promise<WriteContentResult>}
  */
-export async function writeContent(cwd, graph, nodeId, content, opts = {}) {
+export async function writeContent(graph, nodeId, content, opts = {}) {
   const exists = await graph.hasNode(nodeId);
   if (!exists) {
     throw new Error(`Node not found: ${nodeId}`);
@@ -70,70 +52,47 @@ export async function writeContent(cwd, graph, nodeId, content, opts = {}) {
   const mime = opts.mime ?? 'text/plain';
   const size = buf.length;
 
-  // Write blob to git object store
-  const sha = execFileSync('git', ['hash-object', '-w', '--stdin'], {
-    cwd,
-    input: buf,
-    encoding: 'utf-8',
-  }).trim();
-
-  // Record metadata as node properties
   const patch = await graph.createPatch();
-  patch.setProperty(nodeId, KEYS.sha, sha);
-  patch.setProperty(nodeId, KEYS.mime, mime);
-  patch.setProperty(nodeId, KEYS.size, size);
+  await patch.attachContent(nodeId, buf);
+  patch.setProperty(nodeId, MIME_KEY, mime);
+  patch.setProperty(nodeId, SIZE_KEY, size);
   await patch.commit();
+
+  const sha = await graph.getContentOid(nodeId);
 
   return { nodeId, sha, mime, size };
 }
 
 /**
- * Read content attached to a graph node. Retrieves the blob from git's object
- * store and verifies SHA integrity.
+ * Read content attached to a graph node. Retrieves the blob from WARP's
+ * native content store.
  *
- * @param {string} cwd - Repository working directory
  * @param {import('@git-stunts/git-warp').default} graph - WARP graph instance
  * @param {string} nodeId - Target node ID
  * @returns {Promise<{ content: string, meta: ContentMeta }>}
  */
-export async function readContent(cwd, graph, nodeId) {
+export async function readContent(graph, nodeId) {
   const meta = await getContentMeta(graph, nodeId);
   if (!meta) {
     throw new Error(`No content attached to node: ${nodeId}`);
   }
 
-  // Validate SHA before passing to git
-  assertValidSha(meta.sha);
-
-  // Retrieve blob from git object store
-  let content;
+  let contentBuf;
   try {
-    content = execFileSync('git', ['cat-file', 'blob', meta.sha], {
-      cwd,
-      encoding: 'utf-8',
-    });
+    contentBuf = await graph.getContent(nodeId);
   } catch {
     throw new Error(
       `Content blob ${meta.sha} not found in git object store for node: ${nodeId}`,
     );
   }
 
-  // Verify integrity: re-hash and compare
-  const verifyBuf = Buffer.from(content, 'utf-8');
-  const verifySha = execFileSync('git', ['hash-object', '--stdin'], {
-    cwd,
-    input: verifyBuf,
-    encoding: 'utf-8',
-  }).trim();
-
-  if (verifySha !== meta.sha) {
+  if (!contentBuf || (contentBuf.length === 0 && meta.size > 0)) {
     throw new Error(
-      `Content integrity check failed for node ${nodeId}: ` +
-      `expected ${meta.sha}, got ${verifySha}`,
+      `Content blob ${meta.sha} not found in git object store for node: ${nodeId}`,
     );
   }
 
-  return { content, meta };
+  return { content: contentBuf.toString('utf-8'), meta };
 }
 
 /**
@@ -150,14 +109,15 @@ export async function getContentMeta(graph, nodeId) {
     throw new Error(`Node not found: ${nodeId}`);
   }
 
-  const propsMap = await graph.getNodeProps(nodeId);
-  const sha = propsMap?.get(KEYS.sha) ?? null;
+  const sha = await graph.getContentOid(nodeId);
   if (!sha) return null;
+
+  const propsMap = await graph.getNodeProps(nodeId);
 
   return {
     sha,
-    mime: propsMap.get(KEYS.mime) ?? 'text/plain',
-    size: propsMap.get(KEYS.size) ?? 0,
+    mime: propsMap?.get(MIME_KEY) ?? 'text/plain',
+    size: propsMap?.get(SIZE_KEY) ?? 0,
   };
 }
 
@@ -172,13 +132,12 @@ export async function hasContent(graph, nodeId) {
   const exists = await graph.hasNode(nodeId);
   if (!exists) return false;
 
-  const propsMap = await graph.getNodeProps(nodeId);
-  const sha = propsMap?.get(KEYS.sha) ?? null;
+  const sha = await graph.getContentOid(nodeId);
   return sha !== null;
 }
 
 /**
- * Delete content from a node by clearing the `_content.*` properties.
+ * Delete content from a node by clearing the content properties.
  * The git blob remains in the object store (cleaned up by git gc).
  *
  * @param {import('@git-stunts/git-warp').default} graph - WARP graph instance
@@ -191,17 +150,16 @@ export async function deleteContent(graph, nodeId) {
     throw new Error(`Node not found: ${nodeId}`);
   }
 
-  const propsMap = await graph.getNodeProps(nodeId);
-  const previousSha = propsMap?.get(KEYS.sha) ?? null;
+  const previousSha = await graph.getContentOid(nodeId);
 
   if (!previousSha) {
     return { nodeId, removed: false, previousSha: null };
   }
 
   const patch = await graph.createPatch();
-  patch.setProperty(nodeId, KEYS.sha, null);
-  patch.setProperty(nodeId, KEYS.mime, null);
-  patch.setProperty(nodeId, KEYS.size, null);
+  patch.setProperty(nodeId, CONTENT_PROPERTY_KEY, null);
+  patch.setProperty(nodeId, MIME_KEY, null);
+  patch.setProperty(nodeId, SIZE_KEY, null);
   await patch.commit();
 
   return { nodeId, removed: true, previousSha };

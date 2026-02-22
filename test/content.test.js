@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync, execSync } from 'node:child_process';
 import Ajv from 'ajv/dist/2020.js';
+import { CONTENT_PROPERTY_KEY } from '@git-stunts/git-warp';
 import { initGraph } from '../src/graph.js';
 import { writeContent, readContent, getContentMeta, hasContent, deleteContent } from '../src/content.js';
 
@@ -60,7 +61,7 @@ describe('content store core', () => {
   });
 
   it('writeContent stores blob and sets properties', async () => {
-    const result = await writeContent(tempDir, graph, 'doc:readme', '# Hello World\n', {
+    const result = await writeContent(graph, 'doc:readme', '# Hello World\n', {
       mime: 'text/markdown',
     });
 
@@ -73,46 +74,26 @@ describe('content store core', () => {
 
   it('readContent retrieves correct content', async () => {
     const body = '# Hello World\n\nThis is a test document.\n';
-    await writeContent(tempDir, graph, 'doc:readme', body, { mime: 'text/markdown' });
+    await writeContent(graph, 'doc:readme', body, { mime: 'text/markdown' });
 
-    const { content, meta } = await readContent(tempDir, graph, 'doc:readme');
+    const { content, meta } = await readContent(graph, 'doc:readme');
     expect(content).toBe(body);
     expect(meta.mime).toBe('text/markdown');
   });
 
   it('readContent throws when blob is missing from object store', async () => {
-    await writeContent(tempDir, graph, 'doc:readme', 'original', { mime: 'text/plain' });
+    await writeContent(graph, 'doc:readme', 'original', { mime: 'text/plain' });
 
     // Point to a valid-looking SHA that doesn't exist in the object store
     const patch = await graph.createPatch();
-    patch.setProperty('doc:readme', '_content.sha', 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef');
+    patch.setProperty('doc:readme', CONTENT_PROPERTY_KEY, 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef');
     await patch.commit();
 
-    await expect(readContent(tempDir, graph, 'doc:readme')).rejects.toThrow(/not found in git object store/);
-  });
-
-  it('readContent detects integrity mismatch on non-UTF-8 blob', async () => {
-    // Write a blob with non-UTF-8 bytes directly via git — the UTF-8
-    // round-trip in readContent will corrupt the data, producing a
-    // different hash and triggering the integrity check.
-    const binaryBuf = Buffer.from([0x80, 0x81, 0x82, 0xFF, 0xFE]);
-    const sha = execFileSync('git', ['hash-object', '-w', '--stdin'], {
-      cwd: tempDir,
-      input: binaryBuf,
-      encoding: 'utf-8',
-    }).trim();
-
-    const patch = await graph.createPatch();
-    patch.setProperty('doc:readme', '_content.sha', sha);
-    patch.setProperty('doc:readme', '_content.mime', 'application/octet-stream');
-    patch.setProperty('doc:readme', '_content.size', 5);
-    await patch.commit();
-
-    await expect(readContent(tempDir, graph, 'doc:readme')).rejects.toThrow(/integrity check failed/);
+    await expect(readContent(graph, 'doc:readme')).rejects.toThrow(/not found in git object store/);
   });
 
   it('getContentMeta returns correct metadata', async () => {
-    await writeContent(tempDir, graph, 'doc:readme', 'test', { mime: 'text/plain' });
+    await writeContent(graph, 'doc:readme', 'test', { mime: 'text/plain' });
 
     const meta = await getContentMeta(graph, 'doc:readme');
     expect(meta).not.toBeNull();
@@ -128,7 +109,7 @@ describe('content store core', () => {
   });
 
   it('hasContent returns true for node with content', async () => {
-    await writeContent(tempDir, graph, 'doc:readme', 'test', { mime: 'text/plain' });
+    await writeContent(graph, 'doc:readme', 'test', { mime: 'text/plain' });
     expect(await hasContent(graph, 'doc:readme')).toBe(true);
   });
 
@@ -141,7 +122,7 @@ describe('content store core', () => {
   });
 
   it('deleteContent removes properties', async () => {
-    await writeContent(tempDir, graph, 'doc:readme', 'test', { mime: 'text/plain' });
+    await writeContent(graph, 'doc:readme', 'test', { mime: 'text/plain' });
     const result = await deleteContent(graph, 'doc:readme');
 
     expect(result.removed).toBe(true);
@@ -157,13 +138,13 @@ describe('content store core', () => {
 
   it('writeContent fails on non-existent node', async () => {
     await expect(
-      writeContent(tempDir, graph, 'doc:nonexistent', 'test', { mime: 'text/plain' }),
+      writeContent(graph, 'doc:nonexistent', 'test', { mime: 'text/plain' }),
     ).rejects.toThrow(/Node not found/);
   });
 
   it('readContent fails on node without content', async () => {
     await expect(
-      readContent(tempDir, graph, 'doc:readme'),
+      readContent(graph, 'doc:readme'),
     ).rejects.toThrow(/No content attached/);
   });
 
@@ -180,19 +161,19 @@ describe('content store core', () => {
   });
 
   it('overwrite replaces content cleanly', async () => {
-    await writeContent(tempDir, graph, 'doc:readme', 'version 1', { mime: 'text/plain' });
-    await writeContent(tempDir, graph, 'doc:readme', 'version 2', { mime: 'text/markdown' });
+    await writeContent(graph, 'doc:readme', 'version 1', { mime: 'text/plain' });
+    await writeContent(graph, 'doc:readme', 'version 2', { mime: 'text/markdown' });
 
-    const { content, meta } = await readContent(tempDir, graph, 'doc:readme');
+    const { content, meta } = await readContent(graph, 'doc:readme');
     expect(content).toBe('version 2');
     expect(meta.mime).toBe('text/markdown');
   });
 
   it('handles Buffer input', async () => {
     const buf = Buffer.from('binary-safe content', 'utf-8');
-    await writeContent(tempDir, graph, 'doc:readme', buf, { mime: 'application/octet-stream' });
+    await writeContent(graph, 'doc:readme', buf, { mime: 'application/octet-stream' });
 
-    const { content } = await readContent(tempDir, graph, 'doc:readme');
+    const { content } = await readContent(graph, 'doc:readme');
     expect(content).toBe('binary-safe content');
   });
 });
