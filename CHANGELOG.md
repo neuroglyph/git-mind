@@ -357,10 +357,10 @@ Complete rewrite from C23 to Node.js on `@git-stunts/git-warp`.
 - Docker-based CI/CD
 - All C-specific documentation
 
-[3.1.0]: https://github.com/neuroglyph/git-mind/releases/tag/v3.1.0
-[3.0.0]: https://github.com/neuroglyph/git-mind/releases/tag/v3.0.0
-[2.0.0-alpha.5]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.5
-[2.0.0-alpha.4]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.4
-[2.0.0-alpha.3]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.3
-[2.0.0-alpha.2]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.2
-[2.0.0-alpha.0]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.0
+[3.1.0]: https://github.com/flyingrobots/git-mind/releases/tag/v3.1.0
+[3.0.0]: https://github.com/flyingrobots/git-mind/releases/tag/v3.0.0
+[2.0.0-alpha.5]: https://github.com/flyingrobots/git-mind/releases/tag/v2.0.0-alpha.5
+[2.0.0-alpha.4]: https://github.com/flyingrobots/git-mind/releases/tag/v2.0.0-alpha.4
+[2.0.0-alpha.3]: https://github.com/flyingrobots/git-mind/releases/tag/v2.0.0-alpha.3
+[2.0.0-alpha.2]: https://github.com/flyingrobots/git-mind/releases/tag/v2.0.0-alpha.2
+[2.0.0-alpha.0]: https://github.com/flyingrobots/git-mind/releases/tag/v2.0.0-alpha.0

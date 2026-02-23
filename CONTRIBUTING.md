@@ -11,7 +11,7 @@ Thanks for your interest in contributing. This document covers the essentials.
 ## Setup
 
 ```bash
-git clone https://github.com/neuroglyph/git-mind.git
+git clone https://github.com/flyingrobots/git-mind.git
 cd git-mind
 npm install
 npm test

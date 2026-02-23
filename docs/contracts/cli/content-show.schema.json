@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/content-show.schema.json",
+  "$id": "https://github.com/flyingrobots/git-mind/docs/contracts/cli/content-show.schema.json",
   "title": "git-mind content show --json",
   "description": "Content display result from `git mind content show --json`",
   "type": "object",

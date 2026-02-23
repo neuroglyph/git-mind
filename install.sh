@@ -1,12 +1,12 @@
 #!/bin/sh
-# install.sh — Install @neuroglyph/git-mind globally
+# install.sh — Install @flyingrobots/git-mind globally
 # Usage:
 #   ./install.sh                          npm install -g
 #   ./install.sh --prefix ~/.local        install to ~/.local/bin
 #   curl -fsSL <raw-url> | sh             pipe-friendly
 set -e
 
-PACKAGE="@neuroglyph/git-mind"
+PACKAGE="@flyingrobots/git-mind"
 MIN_NODE=22
 PREFIX=""
 

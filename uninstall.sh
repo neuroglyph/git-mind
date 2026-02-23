@@ -1,11 +1,11 @@
 #!/bin/sh
-# uninstall.sh — Remove @neuroglyph/git-mind
+# uninstall.sh — Remove @flyingrobots/git-mind
 # Usage:
 #   ./uninstall.sh                          npm uninstall -g
 #   ./uninstall.sh --prefix ~/.local        remove from ~/.local
 set -e
 
-PACKAGE="@neuroglyph/git-mind"
+PACKAGE="@flyingrobots/git-mind"
 PREFIX=""
 CLEAN_CACHE=""
 

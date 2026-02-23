@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/export-data.schema.json",
+  "$id": "https://github.com/flyingrobots/git-mind/docs/contracts/cli/export-data.schema.json",
   "title": "git-mind export --json (stdout)",
   "description": "Graph data export from `git mind export --json` (stdout mode)",
   "type": "object",

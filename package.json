@@ -1,5 +1,5 @@
 {
-  "name": "@neuroglyph/git-mind",
+  "name": "@flyingrobots/git-mind",
   "version": "4.0.1",
   "description": "A project knowledge graph tool built on git-warp",
   "type": "module",
@@ -7,11 +7,11 @@
   "author": "James Ross <james@flyingrobots.dev>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/neuroglyph/git-mind.git"
+    "url": "https://github.com/flyingrobots/git-mind.git"
   },
-  "homepage": "https://github.com/neuroglyph/git-mind#readme",
+  "homepage": "https://github.com/flyingrobots/git-mind#readme",
   "bugs": {
-    "url": "https://github.com/neuroglyph/git-mind/issues"
+    "url": "https://github.com/flyingrobots/git-mind/issues"
   },
   "bin": {
     "git-mind": "bin/git-mind.js"

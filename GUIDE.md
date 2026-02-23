@@ -51,7 +51,7 @@ git-mind captures those relationships explicitly, so you can query them, visuali
 ### From source
 
 ```bash
-git clone https://github.com/neuroglyph/git-mind.git
+git clone https://github.com/flyingrobots/git-mind.git
 cd git-mind
 npm install
 ```
@@ -484,7 +484,7 @@ Status values are normalized on read — `Done`, `DONE`, `complete`, `finished` 
 ### Custom views (programmatic)
 
 ```javascript
-import { defineView, renderView, loadGraph } from '@neuroglyph/git-mind';
+import { defineView, renderView, loadGraph } from '@flyingrobots/git-mind';
 
 defineView('my-view', (nodes, edges) => ({
   nodes: nodes.filter(n => n.startsWith('feature:')),
@@ -544,7 +544,7 @@ git mind import graph.yaml --dry-run
 ### Programmatic import
 
 ```javascript
-import { importFile, loadGraph } from '@neuroglyph/git-mind';
+import { importFile, loadGraph } from '@flyingrobots/git-mind';
 
 const graph = await loadGraph('.');
 const result = await importFile(graph, 'graph.yaml', { dryRun: false });
@@ -586,7 +586,7 @@ Edges created from directives get a confidence of **0.8** — high, but flagged 
 ### Processing commits programmatically
 
 ```javascript
-import { processCommit, loadGraph } from '@neuroglyph/git-mind';
+import { processCommit, loadGraph } from '@flyingrobots/git-mind';
 
 const graph = await loadGraph('.');
 await processCommit(graph, {
@@ -641,7 +641,7 @@ When you run `git mind at <ref>`:
 ### Programmatic usage
 
 ```javascript
-import { loadGraph, getEpochForRef, computeStatus, getCurrentTick, recordEpoch } from '@neuroglyph/git-mind';
+import { loadGraph, getEpochForRef, computeStatus, getCurrentTick, recordEpoch } from '@flyingrobots/git-mind';
 
 const graph = await loadGraph('.');
 
@@ -745,7 +745,7 @@ import {
   defineView, renderView, listViews, classifyStatus,
   // Hooks
   parseDirectives, processCommit,
-} from '@neuroglyph/git-mind';
+} from '@flyingrobots/git-mind';
 ```
 
 ### Initialize and load

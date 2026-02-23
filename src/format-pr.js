@@ -47,7 +47,7 @@ export function formatSuggestionsAsMarkdown(suggestions) {
   lines.push('</details>');
   lines.push('');
   lines.push('---');
-  lines.push('*Posted by [git-mind](https://github.com/neuroglyph/git-mind)*');
+  lines.push('*Posted by [git-mind](https://github.com/flyingrobots/git-mind)*');
 
   return lines.join('\n');
 }

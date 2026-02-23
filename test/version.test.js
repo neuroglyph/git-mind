@@ -16,7 +16,7 @@ describe('version module', () => {
   });
 
   it('NAME is the scoped package name', () => {
-    expect(NAME).toBe('@neuroglyph/git-mind');
+    expect(NAME).toBe('@flyingrobots/git-mind');
   });
 });
 

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/node-list.schema.json",
+  "$id": "https://github.com/flyingrobots/git-mind/docs/contracts/cli/node-list.schema.json",
   "title": "git-mind nodes --json",
   "description": "Node list output from `git mind nodes --json`",
   "type": "object",

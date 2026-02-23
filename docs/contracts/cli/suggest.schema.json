@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/suggest.schema.json",
+  "$id": "https://github.com/flyingrobots/git-mind/docs/contracts/cli/suggest.schema.json",
   "title": "git-mind suggest --json",
   "description": "AI-powered edge suggestion result from `git mind suggest --json`",
   "type": "object",
