@@ -9,14 +9,26 @@
     "type": "git",
     "url": "https://github.com/neuroglyph/git-mind.git"
   },
+  "homepage": "https://github.com/neuroglyph/git-mind#readme",
+  "bugs": {
+    "url": "https://github.com/neuroglyph/git-mind/issues"
+  },
   "bin": {
     "git-mind": "bin/git-mind.js"
   },
   "exports": {
-    ".": {
-      "types": "./src/index.d.ts",
-      "default": "./src/index.js"
-    }
+    ".": "./src/index.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "docs/contracts/extension-manifest.schema.json",
+    "extensions/",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "test": "vitest run",

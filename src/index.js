@@ -51,3 +51,4 @@ export {
 export {
   writeContent, readContent, getContentMeta, hasContent, deleteContent,
 } from './content.js';
+export { VERSION, NAME } from './version.js';
