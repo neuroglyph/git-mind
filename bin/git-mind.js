@@ -9,13 +9,21 @@ import { init, link, view, list, remove, nodes, status, at, importCmd, importMar
 import { parseDiffRefs, collectDiffPositionals } from '../src/diff.js';
 import { createContext } from '../src/context-envelope.js';
 import { registerBuiltinExtensions } from '../src/extension.js';
+import { VERSION } from '../src/version.js';
+import { getUpdateNotification, triggerUpdateCheck } from '../src/update-check.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
 const cwd = process.cwd();
+const jsonMode = args.includes('--json');
+
+// Fire-and-forget: fetch latest version in background
+triggerUpdateCheck();
 
 function printUsage() {
-  console.log(`Usage: git mind <command> [options]
+  console.log(`git-mind v${VERSION}
+
+Usage: git mind <command> [options]
 
 Context flags (read commands: view, nodes, status, export, doctor):
   --at <ref>                    Show graph as-of a git ref (HEAD~N, branch, SHA)
@@ -168,6 +176,12 @@ function extractPositionals(args) {
     }
   }
   return positionals;
+}
+
+// Handle --version / -v before the command switch
+if (command === '--version' || command === '-v') {
+  console.log(VERSION);
+  process.exit(0);
 }
 
 switch (command) {
@@ -498,4 +512,10 @@ switch (command) {
     printUsage();
     process.exitCode = command ? 1 : 0;
     break;
+}
+
+// Show update notification on stderr (never in --json mode)
+if (!jsonMode) {
+  const note = getUpdateNotification();
+  if (note) process.stderr.write(note);
 }
