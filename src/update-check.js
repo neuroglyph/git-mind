@@ -2,23 +2,28 @@
  * @module update-check
  * Non-blocking update check against the npm registry.
  *
- * Design:
- * - triggerUpdateCheck() fires a fetch in the background (never awaited)
- * - getUpdateNotification() reads the PREVIOUS run's cache (sync)
+ * Hexagonal design:
+ * - createUpdateChecker(ports) — pure domain logic, no I/O at module level
+ * - Ports: fetchLatest, readCache, writeCache (injected)
+ * - defaultPorts() — real adapters: fs for cache, fetch + @git-stunts/alfred for registry
+ * - Tests inject fakes; CLI wires real adapters
+ *
+ * Flow:
+ * - triggerCheck(signal?) fires a background fetch (never awaited)
+ * - getNotification() reads the PREVIOUS run's cache (sync)
  * - Cache lives at ~/.gitmind/update-check.json with 24h TTL
- * - All errors silently swallowed — must never break any command
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { NAME, VERSION } from './version.js';
 
 const CACHE_DIR = join(homedir(), '.gitmind');
 const CACHE_FILE = join(CACHE_DIR, 'update-check.json');
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-const FETCH_TIMEOUT_MS = 3000;
-const REGISTRY_URL = `https://registry.npmjs.org/${NAME}/latest`;
+const DEFAULT_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const DEFAULT_FETCH_TIMEOUT_MS = 3000;
+
+// ── Pure domain logic (no I/O) ──────────────────────────────────
 
 /**
  * Compare two semver strings. Returns true if remote > local.
@@ -39,66 +44,123 @@ export function isNewer(local, remote) {
 }
 
 /**
- * Read cached update check result (sync).
- * Returns a notification string if a newer version is available, null otherwise.
- * @returns {string|null}
- */
-export function getUpdateNotification() {
-  try {
-    const data = JSON.parse(readFileSync(CACHE_FILE, 'utf-8'));
-    if (!data.latest || !isNewer(VERSION, data.latest)) return null;
-    return formatNotification(data.latest);
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Format the update notification banner.
  * @param {string} latest
+ * @param {string} currentVersion
+ * @param {string} packageName
  * @returns {string}
  */
-export function formatNotification(latest) {
-  // Dynamic imports would be async; chalk and figures are already deps so
-  // we can import them at module level, but to keep this module light for
-  // the sync path, we do a simple string.
-  return `\n  Update available: ${VERSION} → ${latest}\n  Run \`npm install -g ${NAME}\` to update\n`;
+export function formatNotification(latest, currentVersion, packageName) {
+  return `\n  Update available: ${currentVersion} → ${latest}\n  Run \`npm install -g ${packageName}\` to update\n`;
 }
 
 /**
- * Fire-and-forget: fetch latest version from npm registry and write cache.
- * Never throws — all errors silently swallowed.
+ * @typedef {object} UpdateCheckPorts
+ * @property {(signal?: AbortSignal) => Promise<string|null>} fetchLatest  Fetch latest version string from registry
+ * @property {() => {latest: string, checkedAt: number}|null} readCache    Read cached check result (sync)
+ * @property {(data: {latest: string, checkedAt: number}) => void} writeCache  Write check result to cache
+ * @property {string} currentVersion  Current installed version
+ * @property {string} packageName     Package name (for notification)
+ * @property {number} [cacheTtlMs]    Cache TTL in ms (default 24h)
  */
-export function triggerUpdateCheck() {
-  _doCheck().catch(() => {});
+
+/**
+ * Create an update checker service.
+ * @param {UpdateCheckPorts} ports
+ * @returns {{ getNotification: () => string|null, triggerCheck: (signal?: AbortSignal) => void }}
+ */
+export function createUpdateChecker(ports) {
+  const { fetchLatest, readCache, writeCache, currentVersion, packageName,
+    cacheTtlMs = DEFAULT_CACHE_TTL_MS } = ports;
+
+  function getNotification() {
+    try {
+      const data = readCache();
+      if (!data?.latest || !isNewer(currentVersion, data.latest)) return null;
+      return formatNotification(data.latest, currentVersion, packageName);
+    } catch {
+      return null;
+    }
+  }
+
+  function triggerCheck(signal) {
+    _doCheck(signal).catch(() => {});
+  }
+
+  async function _doCheck(signal) {
+    // Skip if cache is fresh
+    try {
+      const data = readCache();
+      if (data && Date.now() - data.checkedAt < cacheTtlMs) return;
+    } catch {
+      // No cache or corrupt — proceed with fetch
+    }
+
+    const latest = await fetchLatest(signal);
+    if (!latest) return;
+    writeCache({ latest, checkedAt: Date.now() });
+  }
+
+  return { getNotification, triggerCheck };
 }
 
-/** @internal */
-async function _doCheck() {
-  // Skip if cache is fresh
-  try {
-    const data = JSON.parse(readFileSync(CACHE_FILE, 'utf-8'));
-    if (Date.now() - data.checkedAt < CACHE_TTL_MS) return;
-  } catch {
-    // No cache or corrupt — proceed with fetch
-  }
+// ── Default adapters (real I/O) ─────────────────────────────────
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+/**
+ * Build real adapters for production use.
+ * Alfred is lazy-loaded only when a fetch is needed.
+ * @param {string} registryUrl  npm registry URL for the package
+ * @param {object} [opts]
+ * @param {number} [opts.timeoutMs]  Fetch timeout (default 3000)
+ * @returns {Pick<UpdateCheckPorts, 'fetchLatest' | 'readCache' | 'writeCache'>}
+ */
+export function defaultPorts(registryUrl, opts = {}) {
+  const { timeoutMs = DEFAULT_FETCH_TIMEOUT_MS } = opts;
 
-  try {
-    const res = await fetch(REGISTRY_URL, {
-      signal: controller.signal,
-      headers: { Accept: 'application/json' },
-    });
-    if (!res.ok) return;
-    const body = await res.json();
-    const latest = body.version;
-    if (!latest) return;
+  /** @type {import('@git-stunts/alfred').Policy|null} */
+  let policy = null;
 
-    mkdirSync(CACHE_DIR, { recursive: true });
-    writeFileSync(CACHE_FILE, JSON.stringify({ latest, checkedAt: Date.now() }));
-  } finally {
-    clearTimeout(timer);
-  }
+  return {
+    readCache() {
+      try {
+        return JSON.parse(readFileSync(CACHE_FILE, 'utf-8'));
+      } catch {
+        return null;
+      }
+    },
+
+    writeCache(data) {
+      mkdirSync(CACHE_DIR, { recursive: true });
+      writeFileSync(CACHE_FILE, JSON.stringify(data));
+    },
+
+    async fetchLatest(signal) {
+      // Lazy-load Alfred on first fetch
+      const { Policy } = await import('@git-stunts/alfred');
+
+      // External signal goes on retry options for cancellation;
+      // timeout's internal signal is passed to fn for fetch abort.
+      const registryPolicy = Policy.timeout(timeoutMs)
+        .wrap(Policy.retry({
+          retries: 1,
+          delay: 200,
+          backoff: 'exponential',
+          jitter: 'decorrelated',
+          signal,
+        }));
+
+      const body = await registryPolicy.execute(
+        (timeoutSignal) =>
+          fetch(registryUrl, {
+            signal: timeoutSignal,
+            headers: { Accept: 'application/json' },
+          }).then((res) => {
+            if (!res.ok) throw new Error(`registry ${res.status}`);
+            return res.json();
+          }),
+      );
+
+      return body.version || null;
+    },
+  };
 }

@@ -9,16 +9,24 @@ import { init, link, view, list, remove, nodes, status, at, importCmd, importMar
 import { parseDiffRefs, collectDiffPositionals } from '../src/diff.js';
 import { createContext } from '../src/context-envelope.js';
 import { registerBuiltinExtensions } from '../src/extension.js';
-import { VERSION } from '../src/version.js';
-import { getUpdateNotification, triggerUpdateCheck } from '../src/update-check.js';
+import { VERSION, NAME } from '../src/version.js';
+import { createUpdateChecker, defaultPorts } from '../src/update-check.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
 const cwd = process.cwd();
 const jsonMode = args.includes('--json');
 
-// Fire-and-forget: fetch latest version in background
-triggerUpdateCheck();
+// Wire update checker — real adapters in production, no-op when suppressed
+const updateController = new AbortController();
+const checker = process.env.GIT_MIND_DISABLE_UPGRADE_CHECK
+  ? { getNotification: () => null, triggerCheck: () => {} }
+  : createUpdateChecker({
+    ...defaultPorts(`https://registry.npmjs.org/${NAME}/latest`),
+    currentVersion: VERSION,
+    packageName: NAME,
+  });
+checker.triggerCheck(updateController.signal);
 
 function printUsage() {
   console.log(`git-mind v${VERSION}
@@ -514,8 +522,11 @@ switch (command) {
     break;
 }
 
+// Cancel background fetch — don't hold the process open
+updateController.abort();
+
 // Show update notification on stderr (never in --json mode)
 if (!jsonMode) {
-  const note = getUpdateNotification();
+  const note = checker.getNotification();
   if (note) process.stderr.write(note);
 }
