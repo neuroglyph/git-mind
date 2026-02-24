@@ -6,7 +6,7 @@
 
 import { spawn } from 'node:child_process';
 import { validateNodeId, validateEdgeType, validateConfidence } from './validators.js';
-// edges.js imported for future use in context-aware suggestions
+// TODO: import from './edges.js' when context-aware suggestions are implemented
 import { extractContext } from './context.js';
 
 /**

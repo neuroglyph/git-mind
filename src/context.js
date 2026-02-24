@@ -103,6 +103,9 @@ export function extractFileContext(cwd, opts = {}) {
  */
 /** Validate that a string is safe for use as a git command argument. */
 function sanitizeGitArg(value) {
+  if (/^-/.test(value)) {
+    throw new Error(`Unsafe characters in git argument: ${value}`);
+  }
   if (/[;&|`$(){}!#<>\s\\]/.test(value)) {
     throw new Error(`Unsafe characters in git argument: ${value}`);
   }
