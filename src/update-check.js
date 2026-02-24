@@ -117,9 +117,6 @@ export function createUpdateChecker(ports) {
 export function defaultPorts(registryUrl, opts = {}) {
   const { timeoutMs = DEFAULT_FETCH_TIMEOUT_MS } = opts;
 
-  /** @type {import('@git-stunts/alfred').Policy|null} */
-  let policy = null;
-
   return {
     readCache() {
       try {
