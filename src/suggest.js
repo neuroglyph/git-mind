@@ -6,7 +6,7 @@
 
 import { spawn } from 'node:child_process';
 import { validateNodeId, validateEdgeType, validateConfidence } from './validators.js';
-import { queryEdges } from './edges.js';
+// edges.js imported for future use in context-aware suggestions
 import { extractContext } from './context.js';
 
 /**

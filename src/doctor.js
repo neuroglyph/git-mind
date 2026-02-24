@@ -4,7 +4,7 @@
  * Composable checks that identify structural issues in the knowledge graph.
  */
 
-import { isLowConfidence, SYSTEM_PREFIXES, extractPrefix } from './validators.js';
+import { SYSTEM_PREFIXES, extractPrefix } from './validators.js';
 import { removeEdge } from './edges.js';
 
 /** Prefixes excluded from orphan-node detection (system-generated + review decisions). */

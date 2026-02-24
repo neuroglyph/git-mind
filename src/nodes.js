@@ -3,7 +3,7 @@
  * Node query and inspection for git-mind.
  */
 
-import { validateNodeId, extractPrefix, classifyPrefix } from './validators.js';
+import { extractPrefix, classifyPrefix } from './validators.js';
 
 /**
  * @typedef {object} NodeInfo
