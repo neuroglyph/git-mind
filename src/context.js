@@ -4,7 +4,7 @@
  * Builds structured prompts from repository state and graph data.
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { EDGE_TYPES, CANONICAL_PREFIXES } from './validators.js';
 
 /**
@@ -86,7 +86,7 @@ function inferLanguage(filePath) {
 export function extractFileContext(cwd, opts = {}) {
   const limit = opts.limit ?? 200;
   try {
-    const output = execSync('git ls-files', { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+    const output = execFileSync('git', ['ls-files'], { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
     const files = output.trim().split('\n').filter(Boolean).slice(0, limit);
     return files.map(path => ({ path, language: inferLanguage(path) }));
   } catch {
@@ -103,7 +103,10 @@ export function extractFileContext(cwd, opts = {}) {
  */
 /** Validate that a string is safe for use as a git command argument. */
 function sanitizeGitArg(value) {
-  if (/[;&|`$(){}!#<>\n\r]/.test(value)) {
+  if (/^-/.test(value)) {
+    throw new Error(`Unsafe characters in git argument: ${value}`);
+  }
+  if (/[;&|`$(){}!#<>\s\\]/.test(value)) {
     throw new Error(`Unsafe characters in git argument: ${value}`);
   }
   return value;
@@ -115,10 +118,12 @@ export function extractCommitContext(cwd, opts = {}) {
 
   try {
     // Get commits with short sha and first line of message
-    const logOutput = execSync(
-      `git log --format="%h %s" ${range} 2>/dev/null || git log --format="%h %s" -${limit}`,
-      { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-    );
+    let logOutput;
+    try {
+      logOutput = execFileSync('git', ['log', '--format=%h %s', range], { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+    } catch {
+      logOutput = execFileSync('git', ['log', '--format=%h %s', `-${limit}`], { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+    }
     const lines = logOutput.trim().split('\n').filter(Boolean);
 
     return lines.map(line => {
@@ -132,8 +137,8 @@ export function extractCommitContext(cwd, opts = {}) {
       // Get changed files for this commit
       let files = [];
       try {
-        const filesOutput = execSync(
-          `git diff-tree --no-commit-id --name-only -r ${sha}`,
+        const filesOutput = execFileSync(
+          'git', ['diff-tree', '--no-commit-id', '--name-only', '-r', sha],
           { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
         );
         files = filesOutput.trim().split('\n').filter(Boolean);

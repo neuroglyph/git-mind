@@ -5,7 +5,7 @@
  */
 
 /** @type {RegExp} Regex for cross-repo node IDs. */
-export const CROSS_REPO_ID_REGEX = /^repo:([A-Za-z0-9._-]+\/[A-Za-z0-9._-]+):([a-z][a-z0-9-]*):([A-Za-z0-9._\/@-]+)$/;
+export const CROSS_REPO_ID_REGEX = /^repo:([A-Za-z0-9._-]+\/[A-Za-z0-9._-]+):([a-z][a-z0-9-]*):([A-Za-z0-9._/@-]+)$/;
 
 /**
  * @typedef {object} CrossRepoId

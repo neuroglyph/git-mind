@@ -21,6 +21,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage --exclude test/contracts.integration.test.js --exclude test/content.test.js --exclude test/version.test.js",
     "lint": "eslint src/ bin/",
     "format": "prettier --write 'src/**/*.js' 'bin/**/*.js'"
   },
@@ -33,7 +34,10 @@
     "js-yaml": "^4.1.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.3",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.0.0",
+    "globals": "^14.0.0",
     "prettier": "^3.0.0",
     "vitest": "^3.0.0"
   },

@@ -7,5 +7,11 @@ export default defineConfig({
         execArgv: ['--disable-warning=DEP0169'],
       },
     },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.js'],
+    },
   },
 });

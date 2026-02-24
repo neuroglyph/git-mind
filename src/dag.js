@@ -46,7 +46,7 @@ export function topoSort(nodes, forward) {
   const inDegree = new Map();
   for (const n of nodes) inDegree.set(n, 0);
 
-  for (const [src, targets] of forward) {
+  for (const [_src, targets] of forward) {
     for (const t of targets) {
       if (inDegree.has(t)) {
         inDegree.set(t, inDegree.get(t) + 1);

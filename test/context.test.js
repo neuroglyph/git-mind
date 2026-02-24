@@ -136,6 +136,19 @@ describe('context', () => {
     expect(() => extractCommitContext(tempDir, { range: 'HEAD\necho pwned' })).toThrow(/Unsafe characters/);
   });
 
+  it('rejects range values with spaces, tabs, and backslashes', () => {
+    expect(() => extractCommitContext(tempDir, { range: 'HEAD --pretty=format:%H' })).toThrow(/Unsafe characters/);
+    expect(() => extractCommitContext(tempDir, { range: 'HEAD\t--exec=whoami' })).toThrow(/Unsafe characters/);
+    expect(() => extractCommitContext(tempDir, { range: 'HEAD\\necho' })).toThrow(/Unsafe characters/);
+  });
+
+  it('rejects range values with leading hyphens (option injection)', () => {
+    expect(() => extractCommitContext(tempDir, { range: '--all' })).toThrow(/Unsafe characters/);
+    expect(() => extractCommitContext(tempDir, { range: '--all-match' })).toThrow(/Unsafe characters/);
+    expect(() => extractCommitContext(tempDir, { range: '-n99999' })).toThrow(/Unsafe characters/);
+    expect(() => extractCommitContext(tempDir, { range: '--pretty=format:%H' })).toThrow(/Unsafe characters/);
+  });
+
   it('uses exact match for file node association', async () => {
     await createEdge(graph, { source: 'file:src/app.js', target: 'spec:main', type: 'implements' });
     await createEdge(graph, { source: 'file:src/app.json', target: 'spec:other', type: 'implements' });

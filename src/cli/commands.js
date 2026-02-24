@@ -3,12 +3,12 @@
  * Command implementations for the git-mind CLI.
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { writeFile, chmod, access, constants, readFile } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 import { initGraph, loadGraph } from '../graph.js';
-import { createEdge, queryEdges, removeEdge, EDGE_TYPES } from '../edges.js';
-import { getNodes, hasNode, getNode, getNodesByPrefix, setNodeProperty, unsetNodeProperty } from '../nodes.js';
+import { createEdge, queryEdges, removeEdge } from '../edges.js';
+import { getNodes, getNode, getNodesByPrefix, setNodeProperty, unsetNodeProperty } from '../nodes.js';
 import { computeStatus } from '../status.js';
 import { importFile } from '../import.js';
 import { importFromMarkdown } from '../frontmatter.js';
@@ -23,10 +23,10 @@ import { runDoctor, fixIssues } from '../doctor.js';
 import { generateSuggestions } from '../suggest.js';
 import { getPendingSuggestions, acceptSuggestion, rejectSuggestion, skipSuggestion, batchDecision } from '../review.js';
 import { computeDiff } from '../diff.js';
-import { createContext, DEFAULT_CONTEXT } from '../context-envelope.js';
+import { DEFAULT_CONTEXT } from '../context-envelope.js';
 import { loadExtension, registerExtension, removeExtension, listExtensions, validateExtension } from '../extension.js';
-import { writeContent, readContent, getContentMeta, hasContent, deleteContent } from '../content.js';
-import { success, error, info, warning, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus, formatDiff, formatExtensionList, formatContentMeta } from './format.js';
+import { writeContent, readContent, getContentMeta, deleteContent } from '../content.js';
+import { success, error, info, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus, formatDiff, formatExtensionList, formatContentMeta } from './format.js';
 
 /**
  * Write structured JSON to stdout with schemaVersion and command fields.
@@ -116,7 +116,7 @@ export async function resolveContext(cwd, envelope) {
  */
 export async function init(cwd) {
   try {
-    const graph = await initGraph(cwd);
+    const _graph = await initGraph(cwd);
     console.log(success('Initialized git-mind graph'));
   } catch (err) {
     console.error(error(`Failed to initialize: ${err.message}`));
@@ -297,7 +297,8 @@ npx git-mind process-commit "$SHA" 2>/dev/null || true
  */
 export async function processCommitCmd(cwd, sha) {
   try {
-    const message = execSync(`git log -1 --format=%B ${sha}`, { cwd, encoding: 'utf-8' });
+    execFileSync('git', ['rev-parse', '--verify', sha], { cwd, encoding: 'utf-8' });
+    const message = execFileSync('git', ['log', '-1', '--format=%B', sha], { cwd, encoding: 'utf-8' });
     const graph = await loadGraph(cwd);
     const directives = await processCommit(graph, { sha, message });
 

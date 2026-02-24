@@ -9,7 +9,7 @@ import { CROSS_REPO_ID_REGEX } from './remote.js';
 // ── Constants ────────────────────────────────────────────────────────
 
 /** @type {RegExp} Canonical regex for node IDs (prefix:identifier) */
-export const NODE_ID_REGEX = /^[a-z][a-z0-9-]*:[A-Za-z0-9._\/@-]+$/;
+export const NODE_ID_REGEX = /^[a-z][a-z0-9-]*:[A-Za-z0-9._/@-]+$/;
 
 /** @type {number} Maximum total length of a node ID */
 export const NODE_ID_MAX_LENGTH = 256;
