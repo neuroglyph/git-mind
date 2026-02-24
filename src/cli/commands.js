@@ -3,7 +3,7 @@
  * Command implementations for the git-mind CLI.
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { writeFile, chmod, access, constants, readFile } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 import { initGraph, loadGraph } from '../graph.js';
@@ -297,7 +297,7 @@ npx git-mind process-commit "$SHA" 2>/dev/null || true
  */
 export async function processCommitCmd(cwd, sha) {
   try {
-    const message = execSync(`git log -1 --format=%B ${sha}`, { cwd, encoding: 'utf-8' });
+    const message = execFileSync('git', ['log', '-1', '--format=%B', sha], { cwd, encoding: 'utf-8' });
     const graph = await loadGraph(cwd);
     const directives = await processCommit(graph, { sha, message });
 
