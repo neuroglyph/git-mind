@@ -3,7 +3,7 @@
  * Multi-repo graph merge — import another repo's graph with cross-repo qualification.
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { initGraph } from './graph.js';
 import { qualifyNodeId } from './remote.js';
 
@@ -16,7 +16,7 @@ import { qualifyNodeId } from './remote.js';
  */
 export function detectRepoIdentifier(repoPath) {
   try {
-    const url = execSync('git remote get-url origin', {
+    const url = execFileSync('git', ['remote', 'get-url', 'origin'], {
       cwd: repoPath,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
