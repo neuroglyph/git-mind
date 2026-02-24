@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/status.schema.json",
+  "$id": "https://github.com/flyingrobots/git-mind/docs/contracts/cli/status.schema.json",
   "title": "git-mind status --json",
   "description": "Graph status dashboard output from `git mind status --json`",
   "type": "object",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/review-list.schema.json",
+  "$id": "https://github.com/flyingrobots/git-mind/docs/contracts/cli/review-list.schema.json",
   "title": "git-mind review --json",
   "description": "Pending review list from `git mind review --json`",
   "type": "object",

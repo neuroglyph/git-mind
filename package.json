@@ -1,5 +1,5 @@
 {
-  "name": "@neuroglyph/git-mind",
+  "name": "@flyingrobots/git-mind",
   "version": "4.0.1",
   "description": "A project knowledge graph tool built on git-warp",
   "type": "module",
@@ -7,25 +7,40 @@
   "author": "James Ross <james@flyingrobots.dev>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/neuroglyph/git-mind.git"
+    "url": "https://github.com/flyingrobots/git-mind.git"
+  },
+  "homepage": "https://github.com/flyingrobots/git-mind#readme",
+  "bugs": {
+    "url": "https://github.com/flyingrobots/git-mind/issues"
   },
   "bin": {
     "git-mind": "bin/git-mind.js"
   },
   "exports": {
-    ".": {
-      "types": "./src/index.d.ts",
-      "default": "./src/index.js"
-    }
+    ".": "./src/index.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "docs/contracts/extension-manifest.schema.json",
+    "extensions/",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run --exclude test/contracts.integration.test.js --exclude test/content.test.js --exclude test/version.test.js",
+    "test:integration": "docker build -f test/Dockerfile -t git-mind-integration . && docker run --rm git-mind-integration",
+    "test:all": "npm test && npm run test:integration",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --exclude test/contracts.integration.test.js --exclude test/content.test.js --exclude test/version.test.js",
     "lint": "eslint src/ bin/",
     "format": "prettier --write 'src/**/*.js' 'bin/**/*.js'"
   },
   "dependencies": {
+    "@git-stunts/alfred": "^0.10.3",
     "@git-stunts/git-warp": "^11.5.0",
     "@git-stunts/plumbing": "^2.8.0",
     "ajv": "^8.17.1",

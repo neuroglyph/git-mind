@@ -1,5 +1,5 @@
 /**
- * @module @neuroglyph/git-mind
+ * @module @flyingrobots/git-mind
  * Public API for git-mind — a project knowledge graph tool built on git-warp.
  */
 
@@ -51,3 +51,4 @@ export {
 export {
   writeContent, readContent, getContentMeta, hasContent, deleteContent,
 } from './content.js';
+export { VERSION, NAME } from './version.js';

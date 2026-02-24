@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: git-mind
 Upstream-Contact: James Ross <james@flyingrobots.dev>
-Source: https://github.com/neuroglyph/git-mind
+Source: https://github.com/flyingrobots/git-mind
 
 Files: *
 Copyright: 2025-2026 James Ross

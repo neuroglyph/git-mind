@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/view-progress.schema.json",
+  "$id": "https://github.com/flyingrobots/git-mind/docs/contracts/cli/view-progress.schema.json",
   "title": "git-mind view progress --json",
   "description": "Progress view output from `git mind view progress --json`",
   "type": "object",

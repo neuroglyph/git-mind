@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/content-meta.schema.json",
+  "$id": "https://github.com/flyingrobots/git-mind/docs/contracts/cli/content-meta.schema.json",
   "title": "git-mind content meta --json",
   "description": "Content metadata result from `git mind content meta --json`",
   "type": "object",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/extension-add.schema.json",
+  "$id": "https://github.com/flyingrobots/git-mind/docs/contracts/cli/extension-add.schema.json",
   "title": "git-mind extension add --json",
   "description": "Extension registration result from `git mind extension add --json`",
   "type": "object",

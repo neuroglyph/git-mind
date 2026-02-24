@@ -9,13 +9,29 @@ import { init, link, view, list, remove, nodes, status, at, importCmd, importMar
 import { parseDiffRefs, collectDiffPositionals } from '../src/diff.js';
 import { createContext } from '../src/context-envelope.js';
 import { registerBuiltinExtensions } from '../src/extension.js';
+import { VERSION, NAME } from '../src/version.js';
+import { createUpdateChecker, defaultPorts } from '../src/update-check.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
 const cwd = process.cwd();
+const jsonMode = args.includes('--json');
+
+// Wire update checker — real adapters in production, no-op when suppressed
+const updateController = new AbortController();
+const checker = process.env.GIT_MIND_DISABLE_UPGRADE_CHECK
+  ? { getNotification: () => null, triggerCheck: () => {} }
+  : createUpdateChecker({
+    ...defaultPorts(`https://registry.npmjs.org/${NAME}/latest`),
+    currentVersion: VERSION,
+    packageName: NAME,
+  });
+checker.triggerCheck(updateController.signal);
 
 function printUsage() {
-  console.log(`Usage: git mind <command> [options]
+  console.log(`git-mind v${VERSION}
+
+Usage: git mind <command> [options]
 
 Context flags (read commands: view, nodes, status, export, doctor):
   --at <ref>                    Show graph as-of a git ref (HEAD~N, branch, SHA)
@@ -168,6 +184,12 @@ function extractPositionals(args) {
     }
   }
   return positionals;
+}
+
+// Handle --version / -v before the command switch
+if (command === '--version' || command === '-v') {
+  console.log(VERSION);
+  process.exit(0);
 }
 
 switch (command) {
@@ -498,4 +520,13 @@ switch (command) {
     printUsage();
     process.exitCode = command ? 1 : 0;
     break;
+}
+
+// Cancel background fetch — don't hold the process open
+updateController.abort();
+
+// Show update notification on stderr (never in --json mode)
+if (!jsonMode) {
+  const note = checker.getNotification();
+  if (note) process.stderr.write(note);
 }

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/at.schema.json",
+  "$id": "https://github.com/flyingrobots/git-mind/docs/contracts/cli/at.schema.json",
   "title": "git-mind at --json",
   "description": "Time-travel output from `git mind at <ref> --json`",
   "type": "object",

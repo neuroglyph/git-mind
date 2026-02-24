@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/neuroglyph/git-mind/docs/contracts/cli/diff.schema.json",
+  "$id": "https://github.com/flyingrobots/git-mind/docs/contracts/cli/diff.schema.json",
   "title": "git-mind diff --json",
   "description": "Graph diff result from `git mind diff <ref-a>..<ref-b> --json`",
   "type": "object",
