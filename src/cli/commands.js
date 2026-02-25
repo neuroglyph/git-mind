@@ -246,28 +246,44 @@ export async function remove(cwd, source, target, opts = {}) {
   }
 }
 
+const PRE_PUSH_SCRIPT = `#!/bin/sh
+# git-mind pre-push hook
+# Processes commit directives and runs suggest on commits about to be pushed
+
+command -v npx >/dev/null 2>&1 || exit 0
+
+ZERO="0000000000000000000000000000000000000000"
+
+while read local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$ZERO" ] && continue  # deleting ref
+  if [ "$remote_sha" = "$ZERO" ]; then
+    RANGE="HEAD~10..HEAD"  # new branch — use last 10
+  else
+    RANGE="\${remote_sha}..\${local_sha}"
+  fi
+
+  # Process commit directives for each commit in the range
+  for SHA in $(git rev-list "$RANGE" 2>/dev/null); do
+    npx git-mind process-commit "$SHA" 2>/dev/null || true
+  done
+
+  # Run suggest if an agent is configured
+  if [ -n "$GITMIND_AGENT" ]; then
+    npx git-mind suggest --context "$RANGE" 2>/dev/null || true
+  fi
+done
+
+exit 0
+`;
+
 /**
- * Install a post-commit Git hook that processes directives.
+ * Install pre-push Git hook (directives + suggest).
  * @param {string} cwd
  */
 export async function installHooks(cwd) {
-  const hookPath = join(cwd, '.git', 'hooks', 'post-commit');
-
-  const hookScript = `#!/bin/sh
-# git-mind post-commit hook
-# Parses commit directives and creates edges automatically
-
-SHA=$(git rev-parse HEAD)
-MSG=$(git log -1 --format=%B "$SHA")
-
-# Only run if git-mind is available
-command -v npx >/dev/null 2>&1 || exit 0
-
-npx git-mind process-commit "$SHA" 2>/dev/null || true
-`;
+  const hookPath = join(cwd, '.git', 'hooks', 'pre-push');
 
   try {
-    // Check if a hook already exists
     let exists = false;
     try {
       await access(hookPath, constants.F_OK);
@@ -275,15 +291,15 @@ npx git-mind process-commit "$SHA" 2>/dev/null || true
     } catch { /* doesn't exist */ }
 
     if (exists) {
-      console.error(error(`Post-commit hook already exists at ${hookPath}`));
+      console.error(error(`pre-push hook already exists at ${hookPath}`));
       console.error(info('Remove it manually or append git-mind to the existing hook'));
       process.exitCode = 1;
       return;
     }
 
-    await writeFile(hookPath, hookScript);
+    await writeFile(hookPath, PRE_PUSH_SCRIPT);
     await chmod(hookPath, 0o755);
-    console.log(success('Installed post-commit hook'));
+    console.log(success('Installed pre-push hook'));
   } catch (err) {
     console.error(error(`Failed to install hook: ${err.message}`));
     process.exitCode = 1;

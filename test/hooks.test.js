@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, stat, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
 import { queryEdges } from '../src/edges.js';
 import { parseDirectives, processCommit } from '../src/hooks.js';
+import { installHooks } from '../src/cli/commands.js';
 
 describe('hooks', () => {
   describe('parseDirectives', () => {
@@ -95,6 +96,71 @@ RELATES-TO: module:session`;
       expect(directives).toEqual([]);
       const edges = await queryEdges(graph);
       expect(edges.length).toBe(0);
+    });
+  });
+
+  describe('installHooks', () => {
+    let tempDir;
+
+    beforeEach(async () => {
+      tempDir = await mkdtemp(join(tmpdir(), 'gitmind-test-'));
+      execSync('git init', { cwd: tempDir, stdio: 'ignore' });
+      await mkdir(join(tempDir, '.git', 'hooks'), { recursive: true });
+    });
+
+    afterEach(async () => {
+      await rm(tempDir, { recursive: true, force: true });
+    });
+
+    it('creates pre-push hook', async () => {
+      await installHooks(tempDir);
+
+      const prePush = await readFile(join(tempDir, '.git', 'hooks', 'pre-push'), 'utf-8');
+      expect(prePush).toContain('git-mind suggest');
+      expect(prePush).toContain('process-commit');
+    });
+
+    it('makes hook executable', async () => {
+      await installHooks(tempDir);
+
+      const prePushStat = await stat(join(tempDir, '.git', 'hooks', 'pre-push'));
+      expect(prePushStat.mode & 0o111).toBeTruthy();
+    });
+
+    it('does not overwrite existing hook', async () => {
+      const existingContent = '#!/bin/sh\necho "existing hook"';
+      await writeFile(join(tempDir, '.git', 'hooks', 'pre-push'), existingContent);
+
+      await installHooks(tempDir);
+
+      const prePush = await readFile(join(tempDir, '.git', 'hooks', 'pre-push'), 'utf-8');
+      expect(prePush).toBe(existingContent);
+    });
+
+    it('hook runs suggest only when GITMIND_AGENT is set', async () => {
+      await installHooks(tempDir);
+
+      const prePush = await readFile(join(tempDir, '.git', 'hooks', 'pre-push'), 'utf-8');
+      expect(prePush).toContain('GITMIND_AGENT');
+      expect(prePush).toMatch(/if \[ -n "\$GITMIND_AGENT" \]/);
+    });
+
+    it('hook always exits 0', async () => {
+      await installHooks(tempDir);
+
+      const prePush = await readFile(join(tempDir, '.git', 'hooks', 'pre-push'), 'utf-8');
+      expect(prePush).toContain('exit 0');
+      expect(prePush).toContain('|| true');
+    });
+
+    it('hook processes directives unconditionally', async () => {
+      await installHooks(tempDir);
+
+      const prePush = await readFile(join(tempDir, '.git', 'hooks', 'pre-push'), 'utf-8');
+      // process-commit runs outside the GITMIND_AGENT guard
+      const agentGuardIndex = prePush.indexOf('if [ -n "$GITMIND_AGENT" ]');
+      const processCommitIndex = prePush.indexOf('process-commit');
+      expect(processCommitIndex).toBeLessThan(agentGuardIndex);
     });
   });
 });
