@@ -464,7 +464,7 @@ switch (command) {
       default:
         handleError(new GmindError('GMIND_E_UNKNOWN_CMD', `Unknown content subcommand: ${contentSubCmd ?? '(none)'}`, {
           hint: 'Usage: git mind content <set|show|meta|delete>',
-        }));
+        }), { json: contentFlags.json ?? false });
     }
     break;
   }
@@ -495,7 +495,7 @@ switch (command) {
       default:
         handleError(new GmindError('GMIND_E_UNKNOWN_CMD', `Unknown extension subcommand: ${subCmd ?? '(none)'}`, {
           hint: 'Usage: git mind extension <list|validate|add|remove>',
-        }));
+        }), { json: extFlags.json ?? false });
     }
     break;
   }
@@ -506,12 +506,14 @@ switch (command) {
     printUsage();
     break;
 
-  default:
+  default: {
+    const jsonMode = args.includes('--json');
     if (command) {
-      handleError(new GmindError('GMIND_E_UNKNOWN_CMD', `Unknown command: ${command}`));
-      console.error('');
+      handleError(new GmindError('GMIND_E_UNKNOWN_CMD', `Unknown command: ${command}`), { json: jsonMode });
+      if (!jsonMode) console.error('');
     }
-    printUsage();
+    if (!jsonMode) printUsage();
     if (!command) process.exitCode = 0;
     break;
+  }
 }

@@ -223,8 +223,7 @@ export async function view(cwd, viewSpec, opts = {}) {
       console.log(formatView(displayName, result));
     }
   } catch (err) {
-    console.error(error(err.message));
-    process.exitCode = 1;
+    handleCommandError(err, { json: opts.json });
   }
 }
 
@@ -393,8 +392,7 @@ export async function nodes(cwd, opts = {}) {
     console.log(info(`${nodeList.length} node(s):`));
     console.log(formatNodeList(nodeList));
   } catch (err) {
-    console.error(error(err.message));
-    process.exitCode = 1;
+    handleCommandError(err, { json: opts.json });
   }
 }
 
@@ -415,8 +413,7 @@ export async function status(cwd, opts = {}) {
       console.log(formatStatus(result));
     }
   } catch (err) {
-    console.error(error(err.message));
-    process.exitCode = 1;
+    handleCommandError(err, { json: opts.json });
   }
 }
 
@@ -555,8 +552,7 @@ export async function exportCmd(cwd, opts = {}) {
       }
     }
   } catch (err) {
-    console.error(error(err.message));
-    process.exitCode = 1;
+    handleCommandError(err, { json: opts.json });
   }
 }
 
@@ -623,8 +619,7 @@ export async function doctor(cwd, opts = {}) {
       process.exitCode = 1;
     }
   } catch (err) {
-    console.error(error(err.message));
-    process.exitCode = 1;
+    handleCommandError(err, { json: opts.json });
   }
 }
 
