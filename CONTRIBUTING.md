@@ -83,6 +83,37 @@ test/
   hooks.test.js      — Directive parsing tests
 ```
 
+## Public API & Deprecation Protocol
+
+git-mind's public API is everything exported from `src/index.js`. A stability
+test (`test/api-surface.test.js`) snapshots every export name and type — CI
+will fail if the surface changes without an intentional update.
+
+### Making changes to the public API
+
+| Change | Semver | Process |
+|--------|--------|---------|
+| **Add** an export | minor | Add to `API_SNAPSHOT` in `test/api-surface.test.js` |
+| **Remove** an export | **major** | Follow the deprecation protocol below |
+| **Change** an export's type/signature | **major** | Follow the deprecation protocol below |
+
+### Deprecation protocol
+
+1. **Mark deprecated** — Add `@deprecated` JSDoc tag with a migration note and
+   the target removal version (at least one minor release away):
+   ```js
+   /** @deprecated Use newFunction() instead. Removal: v6.0.0 */
+   export function oldFunction() { ... }
+   ```
+2. **Runtime warning** — Emit a one-time `console.warn` on first call:
+   ```
+   [git-mind] oldFunction() is deprecated — use newFunction(). Removal: v6.0.0
+   ```
+3. **Keep in snapshot** — The export stays in `test/api-surface.test.js` until
+   the major version that removes it.
+4. **Remove** — In the next major version, delete the export, remove it from
+   the snapshot, and document the removal in CHANGELOG.md.
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under [Apache-2.0](LICENSE).
