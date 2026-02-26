@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
-import { createEdge, queryEdges } from '../src/edges.js';
+import { createEdge } from '../src/edges.js';
 import {
   getPendingSuggestions,
   acceptSuggestion,
@@ -14,6 +14,11 @@ import {
   getReviewHistory,
   batchDecision,
 } from '../src/review.js';
+
+/** Filter edges by (from, to, label) — avoids repeating the pattern in every assertion. */
+async function findEdges(graph, from, to, label) {
+  return (await graph.getEdges()).filter(e => e.from === from && e.to === to && e.label === label);
+}
 
 describe('review', () => {
   let tempDir;
@@ -71,7 +76,7 @@ describe('review', () => {
     expect(decision.reviewer).toBe('james');
 
     // Check edge was updated
-    const edges = await queryEdges(graph, { source: 'task:a', target: 'spec:b', type: 'implements' });
+    const edges = await findEdges(graph, 'task:a', 'spec:b', 'implements');
     expect(edges[0].props.confidence).toBe(1.0);
     expect(edges[0].props.reviewedAt).toBeTruthy();
 
@@ -92,7 +97,7 @@ describe('review', () => {
     expect(decision.action).toBe('reject');
 
     // Edge should be gone
-    const edges = await queryEdges(graph, { source: 'task:a', target: 'spec:b', type: 'implements' });
+    const edges = await findEdges(graph, 'task:a', 'spec:b', 'implements');
     expect(edges).toHaveLength(0);
 
     // Decision node persists
@@ -113,7 +118,7 @@ describe('review', () => {
     expect(decision.confidence).toBe(0.9);
 
     // Check edge was updated
-    const edges = await queryEdges(graph, { source: 'task:a', target: 'spec:b', type: 'implements' });
+    const edges = await findEdges(graph, 'task:a', 'spec:b', 'implements');
     expect(edges[0].props.confidence).toBe(0.9);
   });
 
@@ -123,7 +128,7 @@ describe('review', () => {
     const original = { source: 'task:a', target: 'spec:b', type: 'implements', confidence: 0.3 };
     await adjustSuggestion(graph, original, { type: 'augments' });
 
-    const edges = await queryEdges(graph, { source: 'task:a', target: 'spec:b', type: 'augments' });
+    const edges = await findEdges(graph, 'task:a', 'spec:b', 'augments');
     expect(edges).toHaveLength(1);
     expect(edges[0].props.reviewedAt).toBeTruthy();
   });
@@ -139,7 +144,7 @@ describe('review', () => {
     expect(decision.action).toBe('skip');
 
     // Edge untouched
-    const edges = await queryEdges(graph, { source: 'task:a', target: 'spec:b', type: 'implements' });
+    const edges = await findEdges(graph, 'task:a', 'spec:b', 'implements');
     expect(edges[0].props.confidence).toBe(0.3);
 
     // No decision node in graph (skip doesn't write)
@@ -175,7 +180,7 @@ describe('review', () => {
 
     expect(decision.confidence).toBe(0.3);
 
-    const edges = await queryEdges(graph, { source: 'task:a', target: 'spec:b', type: 'implements' });
+    const edges = await findEdges(graph, 'task:a', 'spec:b', 'implements');
     expect(edges[0].props.confidence).toBe(0.3);
   });
 
@@ -206,7 +211,7 @@ describe('review', () => {
     expect(result.decisions[0].action).toBe('accept');
 
     // Confirm edge was promoted
-    const edges = await queryEdges(graph, { source: 'task:a', target: 'spec:b', type: 'implements' });
+    const edges = await findEdges(graph, 'task:a', 'spec:b', 'implements');
     expect(edges[0].props.confidence).toBe(1.0);
   });
 });

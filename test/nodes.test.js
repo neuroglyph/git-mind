@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
 import { createEdge } from '../src/edges.js';
-import { getNodes, hasNode, getNode, getNodesByPrefix, setNodeProperty, unsetNodeProperty } from '../src/nodes.js';
+import { getNode, setNodeProperty, unsetNodeProperty } from '../src/nodes.js';
 
 describe('nodes', () => {
   let tempDir;
@@ -21,9 +21,9 @@ describe('nodes', () => {
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  describe('getNodes', () => {
+  describe('graph.getNodes (native API)', () => {
     it('returns empty array for a fresh graph', async () => {
-      const nodes = await getNodes(graph);
+      const nodes = await graph.getNodes();
       expect(nodes).toEqual([]);
     });
 
@@ -34,7 +34,7 @@ describe('nodes', () => {
         type: 'implements',
       });
 
-      const nodes = await getNodes(graph);
+      const nodes = await graph.getNodes();
       expect(nodes).toContain('file:src/auth.js');
       expect(nodes).toContain('spec:auth');
       expect(nodes.length).toBe(2);
@@ -52,7 +52,7 @@ describe('nodes', () => {
         type: 'documents',
       });
 
-      const nodes = await getNodes(graph);
+      const nodes = await graph.getNodes();
       expect(nodes).toContain('file:a.js');
       expect(nodes).toContain('spec:auth');
       expect(nodes).toContain('doc:readme');
@@ -60,9 +60,9 @@ describe('nodes', () => {
     });
   });
 
-  describe('hasNode', () => {
+  describe('graph.hasNode (native API)', () => {
     it('returns false for non-existent node', async () => {
-      expect(await hasNode(graph, 'task:nonexistent')).toBe(false);
+      expect(await graph.hasNode('task:nonexistent')).toBe(false);
     });
 
     it('returns true for node created via edge', async () => {
@@ -72,8 +72,8 @@ describe('nodes', () => {
         type: 'implements',
       });
 
-      expect(await hasNode(graph, 'task:auth')).toBe(true);
-      expect(await hasNode(graph, 'spec:auth')).toBe(true);
+      expect(await graph.hasNode('task:auth')).toBe(true);
+      expect(await graph.hasNode('spec:auth')).toBe(true);
     });
   });
 
@@ -123,32 +123,36 @@ describe('nodes', () => {
     });
   });
 
-  describe('getNodesByPrefix', () => {
+  describe('prefix filtering via graph.getNodes()', () => {
     beforeEach(async () => {
       await createEdge(graph, { source: 'task:auth', target: 'spec:auth', type: 'implements' });
       await createEdge(graph, { source: 'task:login', target: 'spec:session', type: 'implements' });
       await createEdge(graph, { source: 'file:src/auth.js', target: 'spec:auth', type: 'documents' });
     });
 
-    it('returns nodes matching the prefix', async () => {
-      const tasks = await getNodesByPrefix(graph, 'task');
+    it('filters nodes by prefix using startsWith', async () => {
+      const allNodes = await graph.getNodes();
+      const tasks = allNodes.filter(n => n.startsWith('task:'));
       expect(tasks).toContain('task:auth');
       expect(tasks).toContain('task:login');
       expect(tasks.length).toBe(2);
     });
 
     it('returns empty array for non-matching prefix', async () => {
-      const modules = await getNodesByPrefix(graph, 'module');
+      const allNodes = await graph.getNodes();
+      const modules = allNodes.filter(n => n.startsWith('module:'));
       expect(modules).toEqual([]);
     });
 
     it('does not match partial prefixes', async () => {
-      const results = await getNodesByPrefix(graph, 'tas');
+      const allNodes = await graph.getNodes();
+      const results = allNodes.filter(n => n.startsWith('tas:'));
       expect(results).toEqual([]);
     });
 
     it('returns spec nodes correctly', async () => {
-      const specs = await getNodesByPrefix(graph, 'spec');
+      const allNodes = await graph.getNodes();
+      const specs = allNodes.filter(n => n.startsWith('spec:'));
       expect(specs).toContain('spec:auth');
       expect(specs).toContain('spec:session');
       expect(specs.length).toBe(2);

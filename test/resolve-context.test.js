@@ -2,7 +2,7 @@
  * @module test/resolve-context
  * Unit tests for the resolveContext() CLI boundary utility.
  *
- * resolveContext() is tested by mocking loadGraph and getEpochForRef so
+ * resolveContext() is tested by mocking initGraph and getEpochForRef so
  * no real git repo or CRDT graph is required.
  */
 
@@ -11,7 +11,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ── Mock graph module before importing commands ──────────────────────────────
 
 vi.mock('../src/graph.js', () => ({
-  loadGraph: vi.fn(),
   initGraph: vi.fn(),
 }));
 
@@ -20,7 +19,7 @@ vi.mock('../src/epoch.js', () => ({
 }));
 
 // Import after mocks are set up
-const { loadGraph } = await import('../src/graph.js');
+const { initGraph } = await import('../src/graph.js');
 const { getEpochForRef } = await import('../src/epoch.js');
 const { resolveContext } = await import('../src/cli/commands.js');
 const { DEFAULT_CONTEXT, createContext } = await import('../src/context-envelope.js');
@@ -46,13 +45,13 @@ describe('resolveContext()', () => {
   });
 
   describe('default context (HEAD, no observer)', () => {
-    it('returns graph from loadGraph with resolvedTick null', async () => {
+    it('returns graph from initGraph with resolvedTick null', async () => {
       const fakeGraph = makeFakeGraph();
-      loadGraph.mockResolvedValue(fakeGraph);
+      initGraph.mockResolvedValue(fakeGraph);
 
       const { graph, resolvedContext } = await resolveContext('/repo', DEFAULT_CONTEXT);
 
-      expect(loadGraph).toHaveBeenCalledWith('/repo', { writerId: 'ctx-reader' });
+      expect(initGraph).toHaveBeenCalledWith('/repo', { writerId: 'ctx-reader' });
       expect(graph).toBe(fakeGraph);
       expect(resolvedContext.asOf).toBe('HEAD');
       expect(resolvedContext.resolvedTick).toBeNull();
@@ -62,7 +61,7 @@ describe('resolveContext()', () => {
 
     it('does not call materialize for HEAD', async () => {
       const fakeGraph = makeFakeGraph();
-      loadGraph.mockResolvedValue(fakeGraph);
+      initGraph.mockResolvedValue(fakeGraph);
 
       await resolveContext('/repo', DEFAULT_CONTEXT);
 
@@ -71,7 +70,7 @@ describe('resolveContext()', () => {
 
     it('does not call observer() for null observer', async () => {
       const fakeGraph = makeFakeGraph();
-      loadGraph.mockResolvedValue(fakeGraph);
+      initGraph.mockResolvedValue(fakeGraph);
 
       await resolveContext('/repo', DEFAULT_CONTEXT);
 
@@ -83,8 +82,8 @@ describe('resolveContext()', () => {
     it('opens resolver + fresh temporal instance when asOf != HEAD', async () => {
       const resolver = makeFakeGraph();
       const temporal = makeFakeGraph();
-      // First loadGraph call → resolver; second → temporal
-      loadGraph
+      // First initGraph call → resolver; second → temporal
+      initGraph
         .mockResolvedValueOnce(resolver)
         .mockResolvedValueOnce(temporal);
 
@@ -93,8 +92,8 @@ describe('resolveContext()', () => {
       const envelope = createContext({ asOf: 'main~5' });
       const { graph, resolvedContext } = await resolveContext('/repo', envelope);
 
-      expect(loadGraph).toHaveBeenCalledWith('/repo', { writerId: 'ctx-resolver' });
-      expect(loadGraph).toHaveBeenCalledWith('/repo', { writerId: 'ctx-temporal' });
+      expect(initGraph).toHaveBeenCalledWith('/repo', { writerId: 'ctx-resolver' });
+      expect(initGraph).toHaveBeenCalledWith('/repo', { writerId: 'ctx-temporal' });
       expect(getEpochForRef).toHaveBeenCalledWith(resolver, '/repo', 'main~5');
       expect(temporal.materialize).toHaveBeenCalledWith({ ceiling: 42 });
       expect(graph).toBe(temporal);
@@ -104,7 +103,7 @@ describe('resolveContext()', () => {
 
     it('throws when no epoch found for ref', async () => {
       const resolver = makeFakeGraph();
-      loadGraph.mockResolvedValue(resolver);
+      initGraph.mockResolvedValue(resolver);
       getEpochForRef.mockResolvedValue(null);
 
       const envelope = createContext({ asOf: 'does-not-exist' });
@@ -123,7 +122,7 @@ describe('resolveContext()', () => {
         getNodeProps: vi.fn().mockResolvedValue(propsMap),
         observer: vi.fn().mockResolvedValue(fakeView),
       });
-      loadGraph.mockResolvedValue(fakeGraph);
+      initGraph.mockResolvedValue(fakeGraph);
 
       const envelope = createContext({ observer: 'security-team' });
       const { graph, resolvedContext } = await resolveContext('/repo', envelope);
@@ -144,7 +143,7 @@ describe('resolveContext()', () => {
         getNodeProps: vi.fn().mockResolvedValue(propsMap),
         observer: vi.fn().mockResolvedValue(fakeView),
       });
-      loadGraph.mockResolvedValue(fakeGraph);
+      initGraph.mockResolvedValue(fakeGraph);
 
       const envelope = createContext({ observer: 'minimal' });
       await resolveContext('/repo', envelope);
@@ -154,7 +153,7 @@ describe('resolveContext()', () => {
 
     it('throws when observer node does not exist', async () => {
       const fakeGraph = makeFakeGraph({ getNodeProps: vi.fn().mockResolvedValue(null) });
-      loadGraph.mockResolvedValue(fakeGraph);
+      initGraph.mockResolvedValue(fakeGraph);
 
       const envelope = createContext({ observer: 'missing-profile' });
 
@@ -167,7 +166,7 @@ describe('resolveContext()', () => {
   describe('resolvedContext fields', () => {
     it('passes trustPolicy through to resolvedContext', async () => {
       const fakeGraph = makeFakeGraph();
-      loadGraph.mockResolvedValue(fakeGraph);
+      initGraph.mockResolvedValue(fakeGraph);
 
       const envelope = createContext({ trustPolicy: 'approved-only' });
       const { resolvedContext } = await resolveContext('/repo', envelope);
@@ -177,7 +176,7 @@ describe('resolveContext()', () => {
 
     it('passes extensionLock through to resolvedContext', async () => {
       const fakeGraph = makeFakeGraph();
-      loadGraph.mockResolvedValue(fakeGraph);
+      initGraph.mockResolvedValue(fakeGraph);
 
       const envelope = createContext({ extensionLock: 'deadbeef' });
       const { resolvedContext } = await resolveContext('/repo', envelope);

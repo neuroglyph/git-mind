@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
-import { initGraph, loadGraph, saveGraph } from '../src/graph.js';
+import { initGraph } from '../src/graph.js';
 
 describe('graph', () => {
   let tempDir;
@@ -24,13 +24,13 @@ describe('graph', () => {
     expect(typeof graph.getNodes).toBe('function');
   });
 
-  it('loadGraph returns a graph (same as init — idempotent)', async () => {
+  it('initGraph is idempotent — calling twice returns a valid graph', async () => {
     await initGraph(tempDir);
-    const graph = await loadGraph(tempDir);
+    const graph = await initGraph(tempDir);
     expect(graph).toBeDefined();
   });
 
-  it('round-trip: add node, save, reload, verify', async () => {
+  it('round-trip: add node, reload via initGraph, verify', async () => {
     const graph = await initGraph(tempDir);
 
     const patch = await graph.createPatch();
@@ -39,7 +39,7 @@ describe('graph', () => {
     await patch.commit();
 
     // Reload in a new instance
-    const graph2 = await loadGraph(tempDir);
+    const graph2 = await initGraph(tempDir);
     const hasNode = await graph2.hasNode('test-node');
     expect(hasNode).toBe(true);
 

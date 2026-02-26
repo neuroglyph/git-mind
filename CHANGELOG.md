@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.0] - 2026-02-25
+
+### Breaking
+
+- **`getNodes(graph)` wrapper** — Use `graph.getNodes()` directly (#295)
+- **`hasNode(graph, id)` wrapper** — Use `graph.hasNode(id)` directly (#295)
+- **`saveGraph(graph)` wrapper** — Dead code with zero call sites (#295)
+- **`queryEdges(graph, filter)` wrapper** — Use `graph.getEdges()` with inline filter (#295)
+- **`getNodesByPrefix(graph, prefix)` wrapper** — Use `graph.getNodes()` with `startsWith()` filter (#295)
+
+### Changed
+
+- **All internal `loadGraph()` calls replaced with `initGraph()`** — `loadGraph` kept as deprecated alias for public API backward compatibility (#295)
+
 ## [4.0.1] - 2026-02-22
 
 ### Fixed
@@ -357,6 +371,11 @@ Complete rewrite from C23 to Node.js on `@git-stunts/git-warp`.
 - Docker-based CI/CD
 - All C-specific documentation
 
+[5.0.0]: https://github.com/neuroglyph/git-mind/releases/tag/v5.0.0
+[4.0.1]: https://github.com/neuroglyph/git-mind/releases/tag/v4.0.1
+[4.0.0]: https://github.com/neuroglyph/git-mind/releases/tag/v4.0.0
+[3.3.0]: https://github.com/neuroglyph/git-mind/releases/tag/v3.3.0
+[3.2.0]: https://github.com/neuroglyph/git-mind/releases/tag/v3.2.0
 [3.1.0]: https://github.com/neuroglyph/git-mind/releases/tag/v3.1.0
 [3.0.0]: https://github.com/neuroglyph/git-mind/releases/tag/v3.0.0
 [2.0.0-alpha.5]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.5

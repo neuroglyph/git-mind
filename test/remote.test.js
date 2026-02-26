@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
-import { createEdge, queryEdges } from '../src/edges.js';
+import { createEdge } from '../src/edges.js';
 import {
   parseCrossRepoId, buildCrossRepoId, isCrossRepoId,
   extractRepo, qualifyNodeId, CROSS_REPO_ID_REGEX,
@@ -161,7 +161,7 @@ describe('remote', () => {
         type: 'implements',
       });
 
-      const edges = await queryEdges(graph);
+      const edges = await graph.getEdges();
       expect(edges).toHaveLength(1);
       expect(edges[0].to).toBe('repo:neuroglyph/echo:spec:auth');
     });
@@ -173,7 +173,7 @@ describe('remote', () => {
         type: 'depends-on',
       });
 
-      const edges = await queryEdges(graph, { source: 'repo:neuroglyph/echo:crate:echo-core' });
+      const edges = (await graph.getEdges()).filter(e => e.from === 'repo:neuroglyph/echo:crate:echo-core');
       expect(edges).toHaveLength(1);
       expect(edges[0].label).toBe('depends-on');
     });

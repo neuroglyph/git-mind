@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
-import { createEdge, queryEdges, removeEdge, EDGE_TYPES } from '../src/edges.js';
+import { createEdge, removeEdge, EDGE_TYPES } from '../src/edges.js';
 
 describe('edges', () => {
   let tempDir;
@@ -35,7 +35,7 @@ describe('edges', () => {
       type: 'implements',
     });
 
-    const edges = await queryEdges(graph);
+    const edges = await graph.getEdges();
     expect(edges.length).toBe(1);
     expect(edges[0].from).toBe('file:src/auth.js');
     expect(edges[0].to).toBe('spec:auth-spec');
@@ -51,7 +51,7 @@ describe('edges', () => {
       rationale: 'test rationale',
     });
 
-    const edges = await queryEdges(graph);
+    const edges = await graph.getEdges();
     expect(edges[0].props.confidence).toBe(0.7);
     expect(edges[0].props.rationale).toBe('test rationale');
   });
@@ -86,29 +86,29 @@ describe('edges', () => {
     ).rejects.toThrow(/must be a number/);
   });
 
-  it('queryEdges filters by source', async () => {
+  it('getEdges filters by source', async () => {
     await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'relates-to' });
     await createEdge(graph, { source: 'task:c', target: 'task:d', type: 'implements' });
 
-    const filtered = await queryEdges(graph, { source: 'task:a' });
+    const filtered = (await graph.getEdges()).filter(e => e.from === 'task:a');
     expect(filtered.length).toBe(1);
     expect(filtered[0].from).toBe('task:a');
   });
 
-  it('queryEdges filters by type', async () => {
+  it('getEdges filters by type', async () => {
     await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'relates-to' });
     await createEdge(graph, { source: 'task:c', target: 'task:d', type: 'implements' });
 
-    const filtered = await queryEdges(graph, { type: 'implements' });
+    const filtered = (await graph.getEdges()).filter(e => e.label === 'implements');
     expect(filtered.length).toBe(1);
     expect(filtered[0].label).toBe('implements');
   });
 
   it('removeEdge removes an edge', async () => {
     await createEdge(graph, { source: 'task:a', target: 'task:b', type: 'relates-to' });
-    expect((await queryEdges(graph)).length).toBe(1);
+    expect((await graph.getEdges()).length).toBe(1);
 
     await removeEdge(graph, 'task:a', 'task:b', 'relates-to');
-    expect((await queryEdges(graph)).length).toBe(0);
+    expect((await graph.getEdges()).length).toBe(0);
   });
 });
