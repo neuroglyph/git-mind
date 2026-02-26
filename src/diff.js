@@ -18,7 +18,7 @@
  * endpoints pass the prefix filter**. No partial cross-prefix edges.
  */
 
-import { loadGraph } from './graph.js';
+import { initGraph } from './graph.js';
 import { getEpochForRef } from './epoch.js';
 import { extractPrefix } from './validators.js';
 
@@ -279,7 +279,7 @@ export function collectDiffPositionals(args) {
  */
 export async function computeDiff(cwd, refA, refB, opts = {}) {
   // 1. Resolve both refs to epochs using a resolver graph
-  const resolver = await loadGraph(cwd, { writerId: 'diff-resolver' });
+  const resolver = await initGraph(cwd, { writerId: 'diff-resolver' });
 
   const resultA = await getEpochForRef(resolver, cwd, refA);
   if (!resultA) {
@@ -326,12 +326,12 @@ export async function computeDiff(cwd, refA, refB, opts = {}) {
 
   // 2. Materialize two separate graph instances
   const startA = Date.now();
-  const graphA = await loadGraph(cwd, { writerId: 'diff-a' });
+  const graphA = await initGraph(cwd, { writerId: 'diff-a' });
   await graphA.materialize({ ceiling: tickA });
   const msA = Date.now() - startA;
 
   const startB = Date.now();
-  const graphB = await loadGraph(cwd, { writerId: 'diff-b' });
+  const graphB = await initGraph(cwd, { writerId: 'diff-b' });
   await graphB.materialize({ ceiling: tickB });
   const msB = Date.now() - startB;
 

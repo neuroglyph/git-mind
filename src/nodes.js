@@ -14,27 +14,6 @@ import { extractPrefix, classifyPrefix } from './validators.js';
  */
 
 /**
- * Get all node IDs from the graph.
- *
- * @param {import('@git-stunts/git-warp').default} graph
- * @returns {Promise<string[]>}
- */
-export async function getNodes(graph) {
-  return graph.getNodes();
-}
-
-/**
- * Check if a node exists in the graph.
- *
- * @param {import('@git-stunts/git-warp').default} graph
- * @param {string} id - Node ID to check
- * @returns {Promise<boolean>}
- */
-export async function hasNode(graph, id) {
-  return graph.hasNode(id);
-}
-
-/**
  * Get a node by ID with prefix classification and properties.
  * Returns null if the node doesn't exist.
  *

@@ -6,9 +6,9 @@
 import { execFileSync } from 'node:child_process';
 import { writeFile, chmod, access, constants, readFile } from 'node:fs/promises';
 import { join, extname } from 'node:path';
-import { initGraph, loadGraph } from '../graph.js';
+import { initGraph } from '../graph.js';
 import { createEdge, queryEdges, removeEdge } from '../edges.js';
-import { getNodes, getNode, getNodesByPrefix, setNodeProperty, unsetNodeProperty } from '../nodes.js';
+import { getNode, getNodesByPrefix, setNodeProperty, unsetNodeProperty } from '../nodes.js';
 import { computeStatus } from '../status.js';
 import { importFile } from '../import.js';
 import { importFromMarkdown } from '../frontmatter.js';
@@ -62,11 +62,11 @@ export async function resolveContext(cwd, envelope) {
   let graph;
 
   if (asOf === 'HEAD') {
-    graph = await loadGraph(cwd, { writerId: 'ctx-reader' });
+    graph = await initGraph(cwd, { writerId: 'ctx-reader' });
   } else {
     // Time-travel: resolve git ref → Lamport tick → materialize
     // Use a separate resolver instance so we can materialize a fresh one.
-    const resolver = await loadGraph(cwd, { writerId: 'ctx-resolver' });
+    const resolver = await initGraph(cwd, { writerId: 'ctx-resolver' });
     const result = await getEpochForRef(resolver, cwd, asOf);
     if (!result) {
       throw new Error(
@@ -76,7 +76,7 @@ export async function resolveContext(cwd, envelope) {
     }
     resolvedTick = result.epoch.tick;
     // materialize({ ceiling }) is destructive — use a dedicated instance
-    graph = await loadGraph(cwd, { writerId: 'ctx-temporal' });
+    graph = await initGraph(cwd, { writerId: 'ctx-temporal' });
     await graph.materialize({ ceiling: resolvedTick });
   }
 
@@ -139,7 +139,7 @@ export async function link(cwd, source, target, opts = {}) {
   const tgt = opts.remote ? qualifyNodeId(target, opts.remote) : target;
 
   try {
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     await createEdge(graph, { source: src, target: tgt, type, confidence: opts.confidence });
     console.log(success(`${src} --[${type}]--> ${tgt}`));
   } catch (err) {
@@ -208,7 +208,7 @@ export async function view(cwd, viewSpec, opts = {}) {
  */
 export async function list(cwd, filter = {}) {
   try {
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     const edges = await queryEdges(graph, filter);
 
     if (edges.length === 0) {
@@ -237,7 +237,7 @@ export async function remove(cwd, source, target, opts = {}) {
   const type = opts.type ?? 'relates-to';
 
   try {
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     await removeEdge(graph, source, target, type);
     console.log(success(`Removed: ${source} --[${type}]--> ${target}`));
   } catch (err) {
@@ -299,7 +299,7 @@ export async function processCommitCmd(cwd, sha) {
   try {
     execFileSync('git', ['rev-parse', '--verify', sha], { cwd, encoding: 'utf-8' });
     const message = execFileSync('git', ['log', '-1', '--format=%B', sha], { cwd, encoding: 'utf-8' });
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     const directives = await processCommit(graph, { sha, message });
 
     if (directives.length > 0) {
@@ -342,7 +342,7 @@ export async function nodes(cwd, opts = {}) {
     // List nodes (optionally filtered by prefix)
     const nodeList = opts.prefix
       ? await getNodesByPrefix(graph, opts.prefix)
-      : await getNodes(graph);
+      : await graph.getNodes();
 
     if (opts.json) {
       outputJson('nodes', { nodes: nodeList, resolvedContext });
@@ -398,7 +398,7 @@ export async function at(cwd, ref, opts = {}) {
   }
 
   try {
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     const result = await getEpochForRef(graph, cwd, ref);
 
     if (!result) {
@@ -441,7 +441,7 @@ export async function at(cwd, ref, opts = {}) {
  */
 export async function importCmd(cwd, filePath, opts = {}) {
   try {
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     const result = await importFile(graph, filePath, { dryRun: opts.dryRun });
 
     if (opts.json) {
@@ -467,7 +467,7 @@ export async function importCmd(cwd, filePath, opts = {}) {
  */
 export async function importMarkdownCmd(cwd, pattern, opts = {}) {
   try {
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     const result = await importFromMarkdown(graph, cwd, pattern, { dryRun: opts.dryRun });
 
     if (opts.json) {
@@ -534,7 +534,7 @@ export async function mergeCmd(cwd, opts = {}) {
   }
 
   try {
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     const result = await mergeFromRepo(graph, opts.from, {
       repoName: opts.repoName,
       dryRun: opts.dryRun,
@@ -594,7 +594,7 @@ export async function doctor(cwd, opts = {}) {
  */
 export async function suggest(cwd, opts = {}) {
   try {
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     const result = await generateSuggestions(cwd, graph, {
       agent: opts.agent,
       range: opts.context,
@@ -618,7 +618,7 @@ export async function suggest(cwd, opts = {}) {
  */
 export async function review(cwd, opts = {}) {
   try {
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
 
     // Batch mode
     if (opts.batch) {
@@ -736,7 +736,7 @@ export async function set(cwd, nodeId, key, value, opts = {}) {
   }
 
   try {
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     const result = await setNodeProperty(graph, nodeId, key, value);
 
     if (opts.json) {
@@ -769,7 +769,7 @@ export async function unsetCmd(cwd, nodeId, key, opts = {}) {
   }
 
   try {
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     const result = await unsetNodeProperty(graph, nodeId, key);
 
     if (opts.json) {
@@ -838,7 +838,7 @@ export async function contentSet(cwd, nodeId, filePath, opts = {}) {
     const buf = await readFile(filePath);
     const mime = opts.mime ?? MIME_MAP[extname(filePath).toLowerCase()] ?? 'application/octet-stream';
 
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     const result = await writeContent(graph, nodeId, buf, { mime });
 
     if (opts.json) {
@@ -861,7 +861,7 @@ export async function contentSet(cwd, nodeId, filePath, opts = {}) {
  */
 export async function contentShow(cwd, nodeId, opts = {}) {
   try {
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     const { content, meta } = await readContent(graph, nodeId);
 
     if (opts.json) {
@@ -890,7 +890,7 @@ export async function contentShow(cwd, nodeId, opts = {}) {
  */
 export async function contentMeta(cwd, nodeId, opts = {}) {
   try {
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     const meta = await getContentMeta(graph, nodeId);
 
     if (!meta) {
@@ -921,7 +921,7 @@ export async function contentMeta(cwd, nodeId, opts = {}) {
  */
 export async function contentDelete(cwd, nodeId, opts = {}) {
   try {
-    const graph = await loadGraph(cwd);
+    const graph = await initGraph(cwd);
     const result = await deleteContent(graph, nodeId);
 
     if (opts.json) {

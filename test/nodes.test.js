@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
 import { createEdge } from '../src/edges.js';
-import { getNodes, hasNode, getNode, getNodesByPrefix, setNodeProperty, unsetNodeProperty } from '../src/nodes.js';
+import { getNode, getNodesByPrefix, setNodeProperty, unsetNodeProperty } from '../src/nodes.js';
 
 describe('nodes', () => {
   let tempDir;
@@ -21,9 +21,9 @@ describe('nodes', () => {
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  describe('getNodes', () => {
+  describe('graph.getNodes (native API)', () => {
     it('returns empty array for a fresh graph', async () => {
-      const nodes = await getNodes(graph);
+      const nodes = await graph.getNodes();
       expect(nodes).toEqual([]);
     });
 
@@ -34,7 +34,7 @@ describe('nodes', () => {
         type: 'implements',
       });
 
-      const nodes = await getNodes(graph);
+      const nodes = await graph.getNodes();
       expect(nodes).toContain('file:src/auth.js');
       expect(nodes).toContain('spec:auth');
       expect(nodes.length).toBe(2);
@@ -52,7 +52,7 @@ describe('nodes', () => {
         type: 'documents',
       });
 
-      const nodes = await getNodes(graph);
+      const nodes = await graph.getNodes();
       expect(nodes).toContain('file:a.js');
       expect(nodes).toContain('spec:auth');
       expect(nodes).toContain('doc:readme');
@@ -60,9 +60,9 @@ describe('nodes', () => {
     });
   });
 
-  describe('hasNode', () => {
+  describe('graph.hasNode (native API)', () => {
     it('returns false for non-existent node', async () => {
-      expect(await hasNode(graph, 'task:nonexistent')).toBe(false);
+      expect(await graph.hasNode('task:nonexistent')).toBe(false);
     });
 
     it('returns true for node created via edge', async () => {
@@ -72,8 +72,8 @@ describe('nodes', () => {
         type: 'implements',
       });
 
-      expect(await hasNode(graph, 'task:auth')).toBe(true);
-      expect(await hasNode(graph, 'spec:auth')).toBe(true);
+      expect(await graph.hasNode('task:auth')).toBe(true);
+      expect(await graph.hasNode('spec:auth')).toBe(true);
     });
   });
 

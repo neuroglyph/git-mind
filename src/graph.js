@@ -44,20 +44,11 @@ export async function initGraph(repoPath, opts = {}) {
 
 /**
  * Load an existing git-mind graph from a repository.
+ * @deprecated Use initGraph — WarpGraph.open is idempotent (init and load are the same call).
  * @param {string} repoPath - Path to the Git repository
  * @param {{ writerId?: string }} [opts]
  * @returns {Promise<import('@git-stunts/git-warp').default>}
  */
 export async function loadGraph(repoPath, opts = {}) {
-  // Same operation — WarpGraph.open is idempotent
   return initGraph(repoPath, opts);
-}
-
-/**
- * Save (checkpoint) the graph state.
- * @param {import('@git-stunts/git-warp').default} graph
- * @returns {Promise<string>} checkpoint SHA
- */
-export async function saveGraph(graph) {
-  return graph.createCheckpoint();
 }
