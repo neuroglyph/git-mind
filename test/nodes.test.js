@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
 import { createEdge } from '../src/edges.js';
-import { getNode, getNodesByPrefix, setNodeProperty, unsetNodeProperty } from '../src/nodes.js';
+import { getNode, setNodeProperty, unsetNodeProperty } from '../src/nodes.js';
 
 describe('nodes', () => {
   let tempDir;
@@ -123,32 +123,36 @@ describe('nodes', () => {
     });
   });
 
-  describe('getNodesByPrefix', () => {
+  describe('prefix filtering via graph.getNodes()', () => {
     beforeEach(async () => {
       await createEdge(graph, { source: 'task:auth', target: 'spec:auth', type: 'implements' });
       await createEdge(graph, { source: 'task:login', target: 'spec:session', type: 'implements' });
       await createEdge(graph, { source: 'file:src/auth.js', target: 'spec:auth', type: 'documents' });
     });
 
-    it('returns nodes matching the prefix', async () => {
-      const tasks = await getNodesByPrefix(graph, 'task');
+    it('filters nodes by prefix using startsWith', async () => {
+      const allNodes = await graph.getNodes();
+      const tasks = allNodes.filter(n => n.startsWith('task:'));
       expect(tasks).toContain('task:auth');
       expect(tasks).toContain('task:login');
       expect(tasks.length).toBe(2);
     });
 
     it('returns empty array for non-matching prefix', async () => {
-      const modules = await getNodesByPrefix(graph, 'module');
+      const allNodes = await graph.getNodes();
+      const modules = allNodes.filter(n => n.startsWith('module:'));
       expect(modules).toEqual([]);
     });
 
     it('does not match partial prefixes', async () => {
-      const results = await getNodesByPrefix(graph, 'tas');
+      const allNodes = await graph.getNodes();
+      const results = allNodes.filter(n => n.startsWith('tas:'));
       expect(results).toEqual([]);
     });
 
     it('returns spec nodes correctly', async () => {
-      const specs = await getNodesByPrefix(graph, 'spec');
+      const allNodes = await graph.getNodes();
+      const specs = allNodes.filter(n => n.startsWith('spec:'));
       expect(specs).toContain('spec:auth');
       expect(specs).toContain('spec:session');
       expect(specs.length).toBe(2);

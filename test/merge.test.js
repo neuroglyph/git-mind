@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
-import { createEdge, queryEdges } from '../src/edges.js';
+import { createEdge } from '../src/edges.js';
 import { detectRepoIdentifier, mergeFromRepo } from '../src/merge.js';
 
 describe('merge', () => {
@@ -75,7 +75,7 @@ describe('merge', () => {
       expect(nodes).toContain('repo:other/repo:module:auth');
 
       // Check qualified edges
-      const edges = await queryEdges(localGraph);
+      const edges = await localGraph.getEdges();
       expect(edges).toHaveLength(1);
       expect(edges[0].from).toBe('repo:other/repo:spec:auth');
       expect(edges[0].to).toBe('repo:other/repo:module:auth');
@@ -104,7 +104,7 @@ describe('merge', () => {
       expect(nodes).toContain('spec:b');
       expect(nodes).toContain('repo:other/repo:crate:core');
 
-      const edges = await queryEdges(localGraph);
+      const edges = await localGraph.getEdges();
       expect(edges).toHaveLength(2); // local + remote
     });
 
@@ -119,7 +119,7 @@ describe('merge', () => {
 
       await mergeFromRepo(localGraph, remoteDir, { repoName: 'other/repo' });
 
-      const edges = await queryEdges(localGraph);
+      const edges = await localGraph.getEdges();
       expect(edges[0].props.confidence).toBe(0.7);
       expect(edges[0].props.rationale).toBe('Test rationale');
     });
@@ -166,7 +166,7 @@ describe('merge', () => {
       const qualifiedNodes = nodes.filter(n => n.startsWith('repo:'));
       expect(qualifiedNodes).toHaveLength(2);
 
-      const edges = await queryEdges(localGraph);
+      const edges = await localGraph.getEdges();
       expect(edges).toHaveLength(1);
     });
 

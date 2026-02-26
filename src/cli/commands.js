@@ -7,8 +7,8 @@ import { execFileSync } from 'node:child_process';
 import { writeFile, chmod, access, constants, readFile } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 import { initGraph } from '../graph.js';
-import { createEdge, queryEdges, removeEdge } from '../edges.js';
-import { getNode, getNodesByPrefix, setNodeProperty, unsetNodeProperty } from '../nodes.js';
+import { createEdge, removeEdge } from '../edges.js';
+import { getNode, setNodeProperty, unsetNodeProperty } from '../nodes.js';
 import { computeStatus } from '../status.js';
 import { importFile } from '../import.js';
 import { importFromMarkdown } from '../frontmatter.js';
@@ -209,7 +209,13 @@ export async function view(cwd, viewSpec, opts = {}) {
 export async function list(cwd, filter = {}) {
   try {
     const graph = await initGraph(cwd);
-    const edges = await queryEdges(graph, filter);
+    const allEdges = await graph.getEdges();
+    const edges = allEdges.filter(edge => {
+      if (filter.source && edge.from !== filter.source) return false;
+      if (filter.target && edge.to !== filter.target) return false;
+      if (filter.type && edge.label !== filter.type) return false;
+      return true;
+    });
 
     if (edges.length === 0) {
       console.log(info('No edges found'));
@@ -340,9 +346,10 @@ export async function nodes(cwd, opts = {}) {
     }
 
     // List nodes (optionally filtered by prefix)
+    const allNodes = await graph.getNodes();
     const nodeList = opts.prefix
-      ? await getNodesByPrefix(graph, opts.prefix)
-      : await graph.getNodes();
+      ? allNodes.filter(n => n.startsWith(opts.prefix + ':'))
+      : allNodes;
 
     if (opts.json) {
       outputJson('nodes', { nodes: nodeList, resolvedContext });

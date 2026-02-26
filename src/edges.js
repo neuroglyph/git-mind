@@ -54,31 +54,6 @@ export async function createEdge(graph, { source, target, type, confidence = 1.0
 }
 
 /**
- * @typedef {object} EdgeQuery
- * @property {string} [source] - Filter by source node
- * @property {string} [target] - Filter by target node
- * @property {string} [type] - Filter by edge type
- */
-
-/**
- * Query edges from the graph.
- *
- * @param {import('@git-stunts/git-warp').default} graph
- * @param {EdgeQuery} [filter={}]
- * @returns {Promise<Array<{from: string, to: string, label: string, props: object}>>}
- */
-export async function queryEdges(graph, filter = {}) {
-  const allEdges = await graph.getEdges();
-
-  return allEdges.filter(edge => {
-    if (filter.source && edge.from !== filter.source) return false;
-    if (filter.target && edge.to !== filter.target) return false;
-    if (filter.type && edge.label !== filter.type) return false;
-    return true;
-  });
-}
-
-/**
  * Remove an edge from the graph.
  *
  * @param {import('@git-stunts/git-warp').default} graph

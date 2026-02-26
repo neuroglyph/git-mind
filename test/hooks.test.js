@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { initGraph } from '../src/graph.js';
-import { queryEdges } from '../src/edges.js';
 import { parseDirectives, processCommit } from '../src/hooks.js';
 
 describe('hooks', () => {
@@ -78,7 +77,7 @@ RELATES-TO: module:session`;
 
       expect(directives.length).toBe(1);
 
-      const edges = await queryEdges(graph);
+      const edges = await graph.getEdges();
       expect(edges.length).toBe(1);
       expect(edges[0].from).toBe('commit:abc123def456');
       expect(edges[0].to).toBe('spec:auth');
@@ -93,7 +92,7 @@ RELATES-TO: module:session`;
       });
 
       expect(directives).toEqual([]);
-      const edges = await queryEdges(graph);
+      const edges = await graph.getEdges();
       expect(edges.length).toBe(0);
     });
   });

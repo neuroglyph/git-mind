@@ -4,8 +4,8 @@
  */
 
 export { initGraph, loadGraph } from './graph.js';
-export { createEdge, queryEdges, removeEdge, EDGE_TYPES } from './edges.js';
-export { getNode, getNodesByPrefix, setNodeProperty, unsetNodeProperty } from './nodes.js';
+export { createEdge, removeEdge, EDGE_TYPES } from './edges.js';
+export { getNode, setNodeProperty, unsetNodeProperty } from './nodes.js';
 export { computeStatus } from './status.js';
 export { importFile, importData, parseImportFile, validateImportData } from './import.js';
 export { importFromMarkdown, parseFrontmatter } from './frontmatter.js';

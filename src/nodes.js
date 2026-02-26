@@ -45,19 +45,6 @@ export async function getNode(graph, id) {
 }
 
 /**
- * Get all nodes matching a given prefix.
- *
- * @param {import('@git-stunts/git-warp').default} graph
- * @param {string} prefix - Prefix to filter by (without colon)
- * @returns {Promise<string[]>}
- */
-export async function getNodesByPrefix(graph, prefix) {
-  const nodes = await graph.getNodes();
-  const needle = prefix + ':';
-  return nodes.filter(n => n.startsWith(needle));
-}
-
-/**
  * @typedef {object} SetPropertyResult
  * @property {string} id - Node ID
  * @property {string} key - Property key
