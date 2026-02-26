@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-02-25
+
+### Added
+
+- **API surface stability test** — `test/api-surface.test.js` snapshots all 100 public exports (names + types); CI fails on any undocumented API change (#206)
+- **Deprecation protocol** — CONTRIBUTING.md documents the process for deprecating and removing public API exports (#206)
+- **Error taxonomy** — `src/errors.js` with `GmindError` class, 13 `GMIND_E_*` error codes, and `ExitCode` enum (#207)
+- **Structured exit codes** — 0=success, 1=general, 2=usage, 3=validation, 4=not-found (previously all errors were exit 1) (#207)
+- **JSON error envelopes** — `--json` mode now outputs `{ error, errorCode, exitCode, hint }` for usage and not-found errors (#207)
+- **Public API exports** — `GmindError`, `ExitCode`, `ERROR_CATALOG` exported from `src/index.js` (#207)
+
 ## [5.0.0] - 2026-02-25
 
 ### Breaking
@@ -371,6 +382,7 @@ Complete rewrite from C23 to Node.js on `@git-stunts/git-warp`.
 - Docker-based CI/CD
 - All C-specific documentation
 
+[5.1.0]: https://github.com/neuroglyph/git-mind/releases/tag/v5.1.0
 [5.0.0]: https://github.com/neuroglyph/git-mind/releases/tag/v5.0.0
 [4.0.1]: https://github.com/neuroglyph/git-mind/releases/tag/v4.0.1
 [4.0.0]: https://github.com/neuroglyph/git-mind/releases/tag/v4.0.0
