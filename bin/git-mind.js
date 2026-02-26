@@ -9,6 +9,7 @@ import { init, link, view, list, remove, nodes, status, at, importCmd, importMar
 import { parseDiffRefs, collectDiffPositionals } from '../src/diff.js';
 import { createContext } from '../src/context-envelope.js';
 import { registerBuiltinExtensions } from '../src/extension.js';
+import { GmindError } from '../src/errors.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -115,6 +116,28 @@ Edge types: implements, augments, relates-to, blocks, belongs-to,
 const BOOLEAN_FLAGS = new Set(['json', 'fix', 'dry-run', 'validate', 'raw']);
 
 /**
+ * Handle a GmindError at the CLI boundary.
+ * Sets exit code and outputs structured JSON when --json is active.
+ * Falls back to plain stderr for non-GmindError exceptions.
+ *
+ * @param {Error} err
+ * @param {{ json?: boolean }} [opts]
+ */
+function handleError(err, opts = {}) {
+  if (err instanceof GmindError) {
+    if (opts.json) {
+      console.log(JSON.stringify({ ...err.toJSON(), schemaVersion: 1, command: 'error' }, null, 2));
+    } else {
+      console.error(err.message);
+    }
+    process.exitCode = err.exitCode;
+  } else {
+    console.error(err.message ?? String(err));
+    process.exitCode = 1;
+  }
+}
+
+/**
  * Extract a ContextEnvelope from parsed flags.
  * Builds one only when context flags are present; otherwise returns null.
  *
@@ -179,8 +202,7 @@ switch (command) {
     const source = args[1];
     const target = args[2];
     if (!source || !target) {
-      console.error('Usage: git mind link <source> <target> [--type <type>]');
-      process.exitCode = 1;
+      handleError(new GmindError('GMIND_E_USAGE', 'Usage: git mind link <source> <target> [--type <type>]'));
       break;
     }
     const flags = parseFlags(args.slice(3));
@@ -209,8 +231,7 @@ switch (command) {
     const rmSource = args[1];
     const rmTarget = args[2];
     if (!rmSource || !rmTarget) {
-      console.error('Usage: git mind remove <source> <target> [--type <type>]');
-      process.exitCode = 1;
+      handleError(new GmindError('GMIND_E_USAGE', 'Usage: git mind remove <source> <target> [--type <type>]'));
       break;
     }
     const rmFlags = parseFlags(args.slice(3));
@@ -246,9 +267,9 @@ switch (command) {
     const setKey = args[2];
     const setValue = args[3];
     if (!setNodeId || !setKey || setValue === undefined || setValue.startsWith('--')) {
-      console.error('Usage: git mind set <nodeId> <key> <value> [--json]');
-      console.error('  <value> is positional and required (flags are not valid values)');
-      process.exitCode = 1;
+      handleError(new GmindError('GMIND_E_USAGE', 'Usage: git mind set <nodeId> <key> <value> [--json]', {
+        hint: '<value> is positional and required (flags are not valid values)',
+      }), { json: args.includes('--json') });
       break;
     }
     await set(cwd, setNodeId, setKey, setValue, { json: args.includes('--json') });
@@ -259,8 +280,7 @@ switch (command) {
     const unsetNodeId = args[1];
     const unsetKey = args[2];
     if (!unsetNodeId || !unsetKey) {
-      console.error('Usage: git mind unset <nodeId> <key>');
-      process.exitCode = 1;
+      handleError(new GmindError('GMIND_E_USAGE', 'Usage: git mind unset <nodeId> <key>'), { json: args.includes('--json') });
       break;
     }
     await unsetCmd(cwd, unsetNodeId, unsetKey, { json: args.includes('--json') });
@@ -280,8 +300,7 @@ switch (command) {
   case 'at': {
     const atRef = args[1];
     if (!atRef || atRef.startsWith('--')) {
-      console.error('Usage: git mind at <ref>');
-      process.exitCode = 1;
+      handleError(new GmindError('GMIND_E_USAGE', 'Usage: git mind at <ref>'), { json: args.includes('--json') });
       break;
     }
     await at(cwd, atRef, { json: args.includes('--json') });
@@ -298,8 +317,10 @@ switch (command) {
         prefix: diffFlags.prefix,
       });
     } catch (err) {
-      console.error(err.message);
-      process.exitCode = 1;
+      handleError(
+        err instanceof GmindError ? err : new GmindError('GMIND_E_USAGE', err.message, { cause: err }),
+        { json: diffFlags.json },
+      );
     }
     break;
   }
@@ -316,8 +337,7 @@ switch (command) {
 
     const importPath = args.slice(1).find(a => !a.startsWith('--'));
     if (!importPath) {
-      console.error('Usage: git mind import <file> [--dry-run] [--json] [--from-markdown <glob>]');
-      process.exitCode = 1;
+      handleError(new GmindError('GMIND_E_USAGE', 'Usage: git mind import <file> [--dry-run] [--json] [--from-markdown <glob>]'), { json: jsonMode });
       break;
     }
     await importCmd(cwd, importPath, { dryRun, json: jsonMode });
@@ -355,8 +375,7 @@ switch (command) {
 
   case 'process-commit':
     if (!args[1]) {
-      console.error('Usage: git mind process-commit <sha>');
-      process.exitCode = 1;
+      handleError(new GmindError('GMIND_E_USAGE', 'Usage: git mind process-commit <sha>'));
       break;
     }
     await processCommitCmd(cwd, args[1]);
@@ -403,8 +422,7 @@ switch (command) {
         const setNode = contentPositionals[0];
         const fromFile = contentFlags.from;
         if (!setNode || !fromFile) {
-          console.error('Usage: git mind content set <node> --from <file> [--mime <type>] [--json]');
-          process.exitCode = 1;
+          handleError(new GmindError('GMIND_E_USAGE', 'Usage: git mind content set <node> --from <file> [--mime <type>] [--json]'), { json: contentFlags.json });
           break;
         }
         await contentSet(cwd, setNode, fromFile, {
@@ -416,8 +434,7 @@ switch (command) {
       case 'show': {
         const showNode = contentPositionals[0];
         if (!showNode) {
-          console.error('Usage: git mind content show <node> [--raw] [--json]');
-          process.exitCode = 1;
+          handleError(new GmindError('GMIND_E_USAGE', 'Usage: git mind content show <node> [--raw] [--json]'), { json: contentFlags.json });
           break;
         }
         await contentShow(cwd, showNode, {
@@ -429,8 +446,7 @@ switch (command) {
       case 'meta': {
         const metaNode = contentPositionals[0];
         if (!metaNode) {
-          console.error('Usage: git mind content meta <node> [--json]');
-          process.exitCode = 1;
+          handleError(new GmindError('GMIND_E_USAGE', 'Usage: git mind content meta <node> [--json]'), { json: contentFlags.json });
           break;
         }
         await contentMeta(cwd, metaNode, { json: contentFlags.json ?? false });
@@ -439,17 +455,16 @@ switch (command) {
       case 'delete': {
         const deleteNode = contentPositionals[0];
         if (!deleteNode) {
-          console.error('Usage: git mind content delete <node> [--json]');
-          process.exitCode = 1;
+          handleError(new GmindError('GMIND_E_USAGE', 'Usage: git mind content delete <node> [--json]'), { json: contentFlags.json });
           break;
         }
         await contentDelete(cwd, deleteNode, { json: contentFlags.json ?? false });
         break;
       }
       default:
-        console.error(`Unknown content subcommand: ${contentSubCmd ?? '(none)'}`);
-        console.error('Usage: git mind content <set|show|meta|delete>');
-        process.exitCode = 1;
+        handleError(new GmindError('GMIND_E_UNKNOWN_CMD', `Unknown content subcommand: ${contentSubCmd ?? '(none)'}`, {
+          hint: 'Usage: git mind content <set|show|meta|delete>',
+        }));
     }
     break;
   }
@@ -478,9 +493,9 @@ switch (command) {
         break;
       }
       default:
-        console.error(`Unknown extension subcommand: ${subCmd ?? '(none)'}`);
-        console.error('Usage: git mind extension <list|validate|add|remove>');
-        process.exitCode = 1;
+        handleError(new GmindError('GMIND_E_UNKNOWN_CMD', `Unknown extension subcommand: ${subCmd ?? '(none)'}`, {
+          hint: 'Usage: git mind extension <list|validate|add|remove>',
+        }));
     }
     break;
   }
@@ -493,9 +508,10 @@ switch (command) {
 
   default:
     if (command) {
-      console.error(`Unknown command: ${command}\n`);
+      handleError(new GmindError('GMIND_E_UNKNOWN_CMD', `Unknown command: ${command}`));
+      console.error('');
     }
     printUsage();
-    process.exitCode = command ? 1 : 0;
+    if (!command) process.exitCode = 0;
     break;
 }
