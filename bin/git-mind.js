@@ -74,7 +74,7 @@ Commands:
     --repo-name <owner/name>    Override detected repo identifier
     --dry-run                   Preview without writing
     --json                      Output as JSON
-  install-hooks                  Install post-commit Git hook
+  install-hooks                  Install pre-push Git hook (directives + suggest)
   doctor                        Run graph integrity checks
     --fix                       Auto-fix dangling edges
     --at <ref>                  Time-travel: check graph as-of a git ref
