@@ -1,6 +1,6 @@
 /**
  * @module edges
- * Edge creation, querying, and removal for git-mind.
+ * Edge creation and removal for git-mind.
  */
 
 import { validateEdge } from './validators.js';

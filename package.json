@@ -1,6 +1,6 @@
 {
   "name": "@neuroglyph/git-mind",
-  "version": "4.1.0",
+  "version": "5.0.0",
   "description": "A project knowledge graph tool built on git-warp",
   "type": "module",
   "license": "Apache-2.0",
