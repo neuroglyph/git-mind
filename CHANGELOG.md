@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [5.0.0] - 2026-02-25
 
-### Removed
+### Breaking
 
 - **`getNodes(graph)` wrapper** — Use `graph.getNodes()` directly (#295)
 - **`hasNode(graph, id)` wrapper** — Use `graph.hasNode(id)` directly (#295)
@@ -371,6 +371,7 @@ Complete rewrite from C23 to Node.js on `@git-stunts/git-warp`.
 - Docker-based CI/CD
 - All C-specific documentation
 
+[5.0.0]: https://github.com/neuroglyph/git-mind/releases/tag/v5.0.0
 [3.1.0]: https://github.com/neuroglyph/git-mind/releases/tag/v3.1.0
 [3.0.0]: https://github.com/neuroglyph/git-mind/releases/tag/v3.0.0
 [2.0.0-alpha.5]: https://github.com/neuroglyph/git-mind/releases/tag/v2.0.0-alpha.5
