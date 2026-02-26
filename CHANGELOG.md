@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Error taxonomy propagation** — unknown command/subcommand handlers now pass `--json` flag to `handleError`, emitting structured JSON error envelopes instead of plain text (#207)
+- **Exit code fidelity** — `view`, `nodes`, `status`, `export`, and `doctor` commands now propagate `GmindError.exitCode` (e.g. exit 4 for NOT_FOUND) instead of always returning exit 1 (#207)
+- **Usage dump suppressed in JSON mode** — `git mind <bad-cmd> --json` no longer appends plain-text usage output after the JSON error envelope (#207)
+
 ## [5.1.0] - 2026-02-25
 
 ### Added
