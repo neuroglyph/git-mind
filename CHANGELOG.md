@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-02-25
+
+### Removed
+
+- **`getNodes(graph)` wrapper** — Use `graph.getNodes()` directly (#295)
+- **`hasNode(graph, id)` wrapper** — Use `graph.hasNode(id)` directly (#295)
+- **`saveGraph(graph)` wrapper** — Dead code with zero call sites (#295)
+- **`queryEdges(graph, filter)` wrapper** — Use `graph.getEdges()` with inline filter (#295)
+- **`getNodesByPrefix(graph, prefix)` wrapper** — Use `graph.getNodes()` with `startsWith()` filter (#295)
+
+### Changed
+
+- **All internal `loadGraph()` calls replaced with `initGraph()`** — `loadGraph` kept as deprecated alias for public API backward compatibility (#295)
+
 ## [4.0.1] - 2026-02-22
 
 ### Fixed
