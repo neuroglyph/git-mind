@@ -27,6 +27,7 @@ import { DEFAULT_CONTEXT } from '../context-envelope.js';
 import { loadExtension, registerExtension, removeExtension, listExtensions, validateExtension } from '../extension.js';
 import { writeContent, readContent, getContentMeta, deleteContent } from '../content.js';
 import { success, error, info, formatEdge, formatView, formatNode, formatNodeList, formatStatus, formatExportResult, formatImportResult, formatDoctorResult, formatSuggestions, formatReviewItem, formatDecisionSummary, formatAtStatus, formatDiff, formatExtensionList, formatContentMeta } from './format.js';
+import { GmindError } from '../errors.js';
 
 /**
  * Write structured JSON to stdout with schemaVersion and command fields.
@@ -38,6 +39,32 @@ import { success, error, info, formatEdge, formatView, formatNode, formatNodeLis
 function outputJson(command, data) {
   const out = { ...data, schemaVersion: 1, command };
   console.log(JSON.stringify(out, null, 2));
+}
+
+/**
+ * Handle an error in a CLI command. In --json mode, emits a structured
+ * error envelope. Otherwise, prints to stderr via format.error().
+ *
+ * @param {Error} err
+ * @param {{ json?: boolean }} [opts]
+ */
+function handleCommandError(err, opts = {}) {
+  if (err instanceof GmindError) {
+    if (opts.json) {
+      outputJson('error', err.toJSON());
+    } else {
+      console.error(error(err.message));
+    }
+    process.exitCode = err.exitCode;
+  } else {
+    if (opts.json) {
+      const wrapped = new GmindError('GMIND_E_INTERNAL', err.message, { cause: err });
+      outputJson('error', wrapped.toJSON());
+    } else {
+      console.error(error(err.message));
+    }
+    process.exitCode = 1;
+  }
 }
 
 /**
@@ -69,9 +96,9 @@ export async function resolveContext(cwd, envelope) {
     const resolver = await initGraph(cwd, { writerId: 'ctx-resolver' });
     const result = await getEpochForRef(resolver, cwd, asOf);
     if (!result) {
-      throw new Error(
-        `No epoch marker found for "${asOf}" or any ancestor. ` +
-        `Run "git mind process-commit" to record epoch markers.`,
+      throw new GmindError('GMIND_E_NOT_FOUND',
+        `No epoch marker found for "${asOf}" or any ancestor`,
+        { hint: 'Run "git mind process-commit" to record epoch markers' },
       );
     }
     resolvedTick = result.epoch.tick;
@@ -85,9 +112,9 @@ export async function resolveContext(cwd, envelope) {
     const observerId = `observer:${observer}`;
     const propsMap = await graph.getNodeProps(observerId);
     if (!propsMap) {
-      throw new Error(
-        `Observer '${observer}' not found. ` +
-        `Define it with: git mind set observer:${observer} match 'prefix:*'`,
+      throw new GmindError('GMIND_E_NOT_FOUND',
+        `Observer '${observer}' not found`,
+        { hint: `Define it with: git mind set observer:${observer} match 'prefix:*'` },
       );
     }
     const config = { match: propsMap.get('match') };
@@ -196,8 +223,7 @@ export async function view(cwd, viewSpec, opts = {}) {
       console.log(formatView(displayName, result));
     }
   } catch (err) {
-    console.error(error(err.message));
-    process.exitCode = 1;
+    handleCommandError(err, { json: opts.json });
   }
 }
 
@@ -333,8 +359,10 @@ export async function nodes(cwd, opts = {}) {
     if (opts.id) {
       const node = await getNode(graph, opts.id);
       if (!node) {
-        console.error(error(`Node not found: ${opts.id}`));
-        process.exitCode = 1;
+        handleCommandError(
+          new GmindError('GMIND_E_NODE_NOT_FOUND', `Node not found: ${opts.id}`),
+          { json: opts.json },
+        );
         return;
       }
       if (opts.json) {
@@ -364,8 +392,7 @@ export async function nodes(cwd, opts = {}) {
     console.log(info(`${nodeList.length} node(s):`));
     console.log(formatNodeList(nodeList));
   } catch (err) {
-    console.error(error(err.message));
-    process.exitCode = 1;
+    handleCommandError(err, { json: opts.json });
   }
 }
 
@@ -386,8 +413,7 @@ export async function status(cwd, opts = {}) {
       console.log(formatStatus(result));
     }
   } catch (err) {
-    console.error(error(err.message));
-    process.exitCode = 1;
+    handleCommandError(err, { json: opts.json });
   }
 }
 
@@ -399,8 +425,7 @@ export async function status(cwd, opts = {}) {
  */
 export async function at(cwd, ref, opts = {}) {
   if (!ref) {
-    console.error(error('Usage: git mind at <ref>'));
-    process.exitCode = 1;
+    handleCommandError(new GmindError('GMIND_E_USAGE', 'Usage: git mind at <ref>'), { json: opts.json });
     return;
   }
 
@@ -409,8 +434,12 @@ export async function at(cwd, ref, opts = {}) {
     const result = await getEpochForRef(graph, cwd, ref);
 
     if (!result) {
-      console.error(error(`No epoch marker found for "${ref}" or any of its ancestors`));
-      process.exitCode = 1;
+      handleCommandError(
+        new GmindError('GMIND_E_NOT_FOUND', `No epoch marker found for "${ref}" or any of its ancestors`, {
+          hint: 'Run "git mind process-commit" to record epoch markers',
+        }),
+        { json: opts.json },
+      );
       return;
     }
 
@@ -523,8 +552,7 @@ export async function exportCmd(cwd, opts = {}) {
       }
     }
   } catch (err) {
-    console.error(error(err.message));
-    process.exitCode = 1;
+    handleCommandError(err, { json: opts.json });
   }
 }
 
@@ -535,8 +563,10 @@ export async function exportCmd(cwd, opts = {}) {
  */
 export async function mergeCmd(cwd, opts = {}) {
   if (!opts.from) {
-    console.error(error('Usage: git mind merge --from <repo-path> [--repo-name <owner/name>]'));
-    process.exitCode = 1;
+    handleCommandError(
+      new GmindError('GMIND_E_USAGE', 'Usage: git mind merge --from <repo-path> [--repo-name <owner/name>]'),
+      { json: opts.json },
+    );
     return;
   }
 
@@ -589,8 +619,7 @@ export async function doctor(cwd, opts = {}) {
       process.exitCode = 1;
     }
   } catch (err) {
-    console.error(error(err.message));
-    process.exitCode = 1;
+    handleCommandError(err, { json: opts.json });
   }
 }
 
@@ -630,8 +659,10 @@ export async function review(cwd, opts = {}) {
     // Batch mode
     if (opts.batch) {
       if (opts.batch !== 'accept' && opts.batch !== 'reject') {
-        console.error(error('--batch must be "accept" or "reject"'));
-        process.exitCode = 1;
+        handleCommandError(
+          new GmindError('GMIND_E_USAGE', '--batch must be "accept" or "reject"'),
+          { json: opts.json },
+        );
         return;
       }
 
@@ -639,14 +670,18 @@ export async function review(cwd, opts = {}) {
       if (opts.index !== undefined) {
         const pending = await getPendingSuggestions(graph);
         if (pending.length === 0) {
-          console.error(error('No pending suggestions to review.'));
-          process.exitCode = 1;
+          handleCommandError(
+            new GmindError('GMIND_E_NOT_FOUND', 'No pending suggestions to review'),
+            { json: opts.json },
+          );
           return;
         }
         const idx = opts.index - 1; // 1-indexed to 0-indexed
         if (idx < 0 || idx >= pending.length) {
-          console.error(error(`Index ${opts.index} out of range (1-${pending.length})`));
-          process.exitCode = 1;
+          handleCommandError(
+            new GmindError('GMIND_E_USAGE', `Index ${opts.index} out of range (1-${pending.length})`),
+            { json: opts.json },
+          );
           return;
         }
         const suggestion = pending[idx];
@@ -737,8 +772,7 @@ export async function review(cwd, opts = {}) {
  */
 export async function set(cwd, nodeId, key, value, opts = {}) {
   if (!nodeId || !key || value === undefined) {
-    console.error(error('Usage: git mind set <nodeId> <key> <value>'));
-    process.exitCode = 1;
+    handleCommandError(new GmindError('GMIND_E_USAGE', 'Usage: git mind set <nodeId> <key> <value>'), { json: opts.json });
     return;
   }
 
@@ -770,8 +804,7 @@ export async function set(cwd, nodeId, key, value, opts = {}) {
  */
 export async function unsetCmd(cwd, nodeId, key, opts = {}) {
   if (!nodeId || !key) {
-    console.error(error('Usage: git mind unset <nodeId> <key>'));
-    process.exitCode = 1;
+    handleCommandError(new GmindError('GMIND_E_USAGE', 'Usage: git mind unset <nodeId> <key>'), { json: opts.json });
     return;
   }
 
@@ -981,8 +1014,7 @@ export function extensionList(_cwd, opts = {}) {
  */
 export async function extensionValidate(_cwd, manifestPath, opts = {}) {
   if (!manifestPath) {
-    console.error(error('Usage: git mind extension validate <manifest-path>'));
-    process.exitCode = 1;
+    handleCommandError(new GmindError('GMIND_E_USAGE', 'Usage: git mind extension validate <manifest-path>'), { json: opts.json });
     return;
   }
   const result = await validateExtension(manifestPath);
@@ -1006,8 +1038,7 @@ export async function extensionValidate(_cwd, manifestPath, opts = {}) {
  */
 export async function extensionAdd(_cwd, manifestPath, opts = {}) {
   if (!manifestPath) {
-    console.error(error('Usage: git mind extension add <manifest-path>'));
-    process.exitCode = 1;
+    handleCommandError(new GmindError('GMIND_E_USAGE', 'Usage: git mind extension add <manifest-path>'), { json: opts.json });
     return;
   }
   try {
@@ -1043,8 +1074,7 @@ export async function extensionAdd(_cwd, manifestPath, opts = {}) {
  */
 export function extensionRemove(_cwd, name, opts = {}) {
   if (!name) {
-    console.error(error('Usage: git mind extension remove <name>'));
-    process.exitCode = 1;
+    handleCommandError(new GmindError('GMIND_E_USAGE', 'Usage: git mind extension remove <name>'), { json: opts.json });
     return;
   }
   try {
