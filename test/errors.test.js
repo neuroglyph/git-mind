@@ -52,6 +52,8 @@ describe('GmindError (#207)', () => {
     const parsed = JSON.parse(JSON.stringify(err));
     expect(parsed.errorCode).toBe('GMIND_E_NOT_FOUND');
     expect(parsed.error).toBe('missing');
+    expect(parsed.exitCode).toBe(ExitCode.NOT_FOUND);
+    expect(parsed.hint).toBe('The requested resource does not exist');
   });
 });
 

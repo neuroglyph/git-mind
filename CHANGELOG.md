@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.1] - 2026-02-25
+
 ### Fixed
 
 - **Error taxonomy propagation** — unknown command/subcommand handlers now pass `--json` flag to `handleError`, emitting structured JSON error envelopes instead of plain text (#207)
@@ -388,6 +390,7 @@ Complete rewrite from C23 to Node.js on `@git-stunts/git-warp`.
 - Docker-based CI/CD
 - All C-specific documentation
 
+[5.1.1]: https://github.com/neuroglyph/git-mind/releases/tag/v5.1.1
 [5.1.0]: https://github.com/neuroglyph/git-mind/releases/tag/v5.1.0
 [5.0.0]: https://github.com/neuroglyph/git-mind/releases/tag/v5.0.0
 [4.0.1]: https://github.com/neuroglyph/git-mind/releases/tag/v4.0.1

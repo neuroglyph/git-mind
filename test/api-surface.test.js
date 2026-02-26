@@ -18,7 +18,7 @@ import * as api from '../src/index.js';
  * Canonical snapshot of the public API surface.
  * Sorted alphabetically. Each entry: [name, expectedType].
  *
- * Last updated: v5.0.0
+ * Last updated: v5.1.0
  */
 const API_SNAPSHOT = [
   ['ALL_PREFIXES', 'object'],

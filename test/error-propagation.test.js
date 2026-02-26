@@ -104,6 +104,7 @@ describe('resolveContext error propagation (#207)', () => {
     const parsed = JSON.parse(stdout);
     expect(parsed.errorCode).toBe('GMIND_E_NOT_FOUND');
     expect(parsed.exitCode).toBe(4);
+    expect(parsed.hint).toBeDefined();
   });
 
   it('nodes --observer <missing> returns exit code 4', () => {

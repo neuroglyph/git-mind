@@ -507,6 +507,7 @@ switch (command) {
     break;
 
   default: {
+    // No command: show usage (plain text) or exit silently (--json) with code 0.
     const jsonMode = args.includes('--json');
     if (command) {
       handleError(new GmindError('GMIND_E_UNKNOWN_CMD', `Unknown command: ${command}`), { json: jsonMode });

@@ -106,9 +106,11 @@ will fail if the surface changes without an intentional update.
    export function oldFunction() { ... }
    ```
 2. **Runtime warning** — Emit a one-time `console.warn` on first call:
-   ```
+
+   ```text
    [git-mind] oldFunction() is deprecated — use newFunction(). Removal: v6.0.0
    ```
+
 3. **Keep in snapshot** — The export stays in `test/api-surface.test.js` until
    the major version that removes it.
 4. **Remove** — In the next major version, delete the export, remove it from
